@@ -231,9 +231,9 @@ class _PGNMF(NMF):
         W, _, self.n_iter_ = self._fit_transform(X, H=H, update_H=False)
         return W
 
-    def inverse_transform(self, W):
+    def inverse_transform(self, w):
         check_is_fitted(self)
-        return np.dot(W, self.components_)
+        return np.dot(w, self.components_)
 
     def fit_transform(self, X, y=None, W=None, H=None):
         W, H, self.n_iter = self._fit_transform(X, W=W, H=H, update_H=True)
@@ -289,7 +289,7 @@ class _PGNMF(NMF):
                 self.l1_ratio,
             )
         else:  # transform
-            Wt, _, n_iter = _nls_subproblem(
+            w_t, _, n_iter = _nls_subproblem(
                 X.T,
                 H.T,
                 W.T,
@@ -298,7 +298,7 @@ class _PGNMF(NMF):
                 alpha=self.alpha,
                 l1_ratio=self.l1_ratio,
             )
-            W = Wt.T
+            W = w_t.T
 
         if n_iter == self.max_iter and self.tol > 0:
             warnings.warn(
