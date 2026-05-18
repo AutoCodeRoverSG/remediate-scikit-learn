@@ -43,7 +43,7 @@ def _norm(x):
 
 
 def _nls_subproblem(
-    X, W, H, tol, max_iter, alpha=0.0, l1_ratio=0.0, sigma=0.01, beta=0.1
+    X, w, h, tol, max_iter, alpha=0.0, l1_ratio=0.0, sigma=0.01, beta=0.1
 ):
     """Non-negative least square solver
     Solves a non-negative least squares subproblem using the projected
@@ -94,98 +94,98 @@ def _nls_subproblem(
     factorization. Neural Computation, 19(2007), 2756-2779.
     https://www.csie.ntu.edu.tw/~cjlin/nmf/
     """
-    WtX = safe_sparse_dot(W.T, X)
-    WtW = np.dot(W.T, W)
+    w_t_x = safe_sparse_dot(w.T, X)
+    w_t_w = np.dot(w.T, w)
 
     # values justified in the paper (alpha is renamed gamma)
     gamma = 1
     for n_iter in range(1, max_iter + 1):
-        grad = np.dot(WtW, H) - WtX
+        grad = np.dot(w_t_w, h) - w_t_x
         if alpha > 0 and l1_ratio == 1.0:
             grad += alpha
         elif alpha > 0:
-            grad += alpha * (l1_ratio + (1 - l1_ratio) * H)
+            grad += alpha * (l1_ratio + (1 - l1_ratio) * h)
 
         # The following multiplication with a boolean array is more than twice
         # as fast as indexing into grad.
-        if _norm(grad * np.logical_or(grad < 0, H > 0)) < tol:
+        if _norm(grad * np.logical_or(grad < 0, h > 0)) < tol:
             break
 
-        Hp = H
+        h_prev = h
 
         for inner_iter in range(20):
             # Gradient step.
-            Hn = H - gamma * grad
+            h_new = h - gamma * grad
             # Projection step.
-            Hn *= Hn > 0
-            d = Hn - H
+            h_new *= h_new > 0
+            d = h_new - h
             gradd = np.dot(grad.ravel(), d.ravel())
-            dQd = np.dot(np.dot(WtW, d).ravel(), d.ravel())
-            suff_decr = (1 - sigma) * gradd + 0.5 * dQd < 0
+            d_qd = np.dot(np.dot(w_t_w, d).ravel(), d.ravel())
+            suff_decr = (1 - sigma) * gradd + 0.5 * d_qd < 0
             if inner_iter == 0:
                 decr_gamma = not suff_decr
 
             if decr_gamma:
                 if suff_decr:
-                    H = Hn
+                    h = h_new
                     break
                 else:
                     gamma *= beta
-            elif not suff_decr or (Hp == Hn).all():
-                H = Hp
+            elif not suff_decr or (h_prev == h_new).all():
+                h = h_prev
                 break
             else:
                 gamma /= beta
-                Hp = Hn
+                h_prev = h_new
 
     if n_iter == max_iter:
         warnings.warn("Iteration limit reached in nls subproblem.", ConvergenceWarning)
 
-    return H, grad, n_iter
+    return h, grad, n_iter
 
 
-def _fit_projected_gradient(X, W, H, tol, max_iter, nls_max_iter, alpha, l1_ratio):
-    gradW = np.dot(W, np.dot(H, H.T)) - safe_sparse_dot(X, H.T, dense_output=True)
-    gradH = np.dot(np.dot(W.T, W), H) - safe_sparse_dot(W.T, X, dense_output=True)
+def _fit_projected_gradient(X, w, h, tol, max_iter, nls_max_iter, alpha, l1_ratio):
+    grad_w = np.dot(w, np.dot(h, h.T)) - safe_sparse_dot(X, h.T, dense_output=True)
+    grad_h = np.dot(np.dot(w.T, w), h) - safe_sparse_dot(w.T, X, dense_output=True)
 
-    init_grad = squared_norm(gradW) + squared_norm(gradH.T)
+    init_grad = squared_norm(grad_w) + squared_norm(grad_h.T)
     # max(0.001, tol) to force alternating minimizations of W and H
-    tolW = max(0.001, tol) * np.sqrt(init_grad)
-    tolH = tolW
+    tol_w = max(0.001, tol) * np.sqrt(init_grad)
+    tol_h = tol_w
 
     for n_iter in range(1, max_iter + 1):
         # stopping condition as discussed in paper
-        proj_grad_W = squared_norm(gradW * np.logical_or(gradW < 0, W > 0))
-        proj_grad_H = squared_norm(gradH * np.logical_or(gradH < 0, H > 0))
+        proj_grad_w = squared_norm(grad_w * np.logical_or(grad_w < 0, w > 0))
+        proj_grad_h = squared_norm(grad_h * np.logical_or(grad_h < 0, h > 0))
 
-        if (proj_grad_W + proj_grad_H) / init_grad < tol**2:
+        if (proj_grad_w + proj_grad_h) / init_grad < tol**2:
             break
 
         # update W
-        Wt, gradWt, iterW = _nls_subproblem(
-            X.T, H.T, W.T, tolW, nls_max_iter, alpha=alpha, l1_ratio=l1_ratio
+        w_t, grad_w_t, iter_w = _nls_subproblem(
+            X.T, h.T, w.T, tol_w, nls_max_iter, alpha=alpha, l1_ratio=l1_ratio
         )
-        W, gradW = Wt.T, gradWt.T
+        w, grad_w = w_t.T, grad_w_t.T
 
-        if iterW == 1:
-            tolW = 0.1 * tolW
+        if iter_w == 1:
+            tol_w = 0.1 * tol_w
 
         # update H
-        H, gradH, iterH = _nls_subproblem(
-            X, W, H, tolH, nls_max_iter, alpha=alpha, l1_ratio=l1_ratio
+        h, grad_h, iter_h = _nls_subproblem(
+            X, w, h, tol_h, nls_max_iter, alpha=alpha, l1_ratio=l1_ratio
         )
-        if iterH == 1:
-            tolH = 0.1 * tolH
+        if iter_h == 1:
+            tol_h = 0.1 * tol_h
 
-    H[H == 0] = 0  # fix up negative zeros
+    h[h == 0] = 0  # fix up negative zeros
 
     if n_iter == max_iter:
-        Wt, _, _ = _nls_subproblem(
-            X.T, H.T, W.T, tolW, nls_max_iter, alpha=alpha, l1_ratio=l1_ratio
+        w_t, _, _ = _nls_subproblem(
+            X.T, h.T, w.T, tol_w, nls_max_iter, alpha=alpha, l1_ratio=l1_ratio
         )
-        W = Wt.T
+        w = w_t.T
 
-    return W, H, n_iter
+    return w, h, n_iter
 
 
 class _PGNMF(NMF):
