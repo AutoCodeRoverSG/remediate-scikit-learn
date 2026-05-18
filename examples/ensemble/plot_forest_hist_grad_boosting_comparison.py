@@ -164,8 +164,8 @@ for idx, result in enumerate(results):
 
     scatter_trace = scatter_fig["data"][0]
     line_trace = line_fig["data"][0]
-    scatter_trace.update(marker=dict(color=colors_list[idx]))
-    line_trace.update(line=dict(color=colors_list[idx]))
+    scatter_trace.update(marker={"color": colors_list[idx]})
+    line_trace.update(line={"color": colors_list[idx]})
     fig.add_trace(scatter_trace, row=1, col=1)
     fig.add_trace(line_trace, row=1, col=1)
 
@@ -185,17 +185,17 @@ for idx, result in enumerate(results):
 
     scatter_trace = scatter_fig["data"][0]
     line_trace = line_fig["data"][0]
-    scatter_trace.update(marker=dict(color=colors_list[idx]))
-    line_trace.update(line=dict(color=colors_list[idx]))
+    scatter_trace.update(marker={"color": colors_list[idx]})
+    line_trace.update(line={"color": colors_list[idx]})
     fig.add_trace(scatter_trace, row=1, col=2)
     fig.add_trace(line_trace, row=1, col=2)
 
 fig.update_layout(
-    xaxis=dict(title="Train time (s) - lower is better"),
-    yaxis=dict(title="Test R2 score - higher is better"),
-    xaxis2=dict(title="Predict time (s) - lower is better"),
-    legend=dict(x=0.72, y=0.05, traceorder="normal", borderwidth=1),
-    title=dict(x=0.5, text="Speed-score trade-off of tree-based ensembles"),
+    xaxis={"title": "Train time (s) - lower is better"},
+    yaxis={"title": "Test R2 score - higher is better"},
+    xaxis2={"title": "Predict time (s) - lower is better"},
+    legend={"x": 0.72, "y": 0.05, "traceorder": "normal", "borderwidth": 1},
+    title={"x": 0.5, "text": "Speed-score trade-off of tree-based ensembles"},
 )
 
 # %%
