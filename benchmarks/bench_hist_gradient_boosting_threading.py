@@ -86,12 +86,13 @@ def get_estimator_and_data():
 
 
 X, y, Estimator = get_estimator_and_data()
+rng = np.random.default_rng(seed=0)
 if args.missing_fraction:
-    mask = np.random.binomial(1, args.missing_fraction, size=X.shape).astype(bool)
+    mask = rng.binomial(1, args.missing_fraction, size=X.shape).astype(bool)
     X[mask] = np.nan
 
 if args.random_sample_weights:
-    sample_weight = np.random.rand(len(X)) * 10
+    sample_weight = rng.random(len(X)) * 10
 else:
     sample_weight = None
 
@@ -140,6 +141,11 @@ if args.print_params:
             pprint(est.get_params())
 
 
+SCORE_FORMAT = "score: {:.4f}"
+FIT_DURATION_FORMAT = "fit duration: {:.3f}s,"
+SCORE_DURATION_FORMAT = "score duration: {:.3f}s,"
+
+
 def one_run(n_threads, n_samples):
     X_train = X_train_[:n_samples]
     X_test = X_test_[:n_samples]
@@ -161,9 +167,9 @@ def one_run(n_threads, n_samples):
         tic = time()
         sklearn_score = est.score(X_test, y_test)
         sklearn_score_duration = time() - tic
-    print("score: {:.4f}".format(sklearn_score))
-    print("fit duration: {:.3f}s,".format(sklearn_fit_duration))
-    print("score duration: {:.3f}s,".format(sklearn_score_duration))
+    print(SCORE_FORMAT.format(sklearn_score))
+    print(FIT_DURATION_FORMAT.format(sklearn_fit_duration))
+    print(SCORE_DURATION_FORMAT.format(sklearn_score_duration))
 
     lightgbm_score = None
     lightgbm_fit_duration = None
@@ -181,9 +187,9 @@ def one_run(n_threads, n_samples):
         tic = time()
         lightgbm_score = lightgbm_est.score(X_test, y_test)
         lightgbm_score_duration = time() - tic
-        print("score: {:.4f}".format(lightgbm_score))
-        print("fit duration: {:.3f}s,".format(lightgbm_fit_duration))
-        print("score duration: {:.3f}s,".format(lightgbm_score_duration))
+        print(SCORE_FORMAT.format(lightgbm_score))
+        print(FIT_DURATION_FORMAT.format(lightgbm_fit_duration))
+        print(SCORE_DURATION_FORMAT.format(lightgbm_score_duration))
 
     xgb_score = None
     xgb_fit_duration = None
@@ -199,9 +205,9 @@ def one_run(n_threads, n_samples):
         tic = time()
         xgb_score = xgb_est.score(X_test, y_test)
         xgb_score_duration = time() - tic
-        print("score: {:.4f}".format(xgb_score))
-        print("fit duration: {:.3f}s,".format(xgb_fit_duration))
-        print("score duration: {:.3f}s,".format(xgb_score_duration))
+        print(SCORE_FORMAT.format(xgb_score))
+        print(FIT_DURATION_FORMAT.format(xgb_fit_duration))
+        print(SCORE_DURATION_FORMAT.format(xgb_score_duration))
 
     cat_score = None
     cat_fit_duration = None
@@ -219,9 +225,9 @@ def one_run(n_threads, n_samples):
         tic = time()
         cat_score = cat_est.score(X_test, y_test)
         cat_score_duration = time() - tic
-        print("score: {:.4f}".format(cat_score))
-        print("fit duration: {:.3f}s,".format(cat_fit_duration))
-        print("score duration: {:.3f}s,".format(cat_score_duration))
+        print(SCORE_FORMAT.format(cat_score))
+        print(FIT_DURATION_FORMAT.format(cat_fit_duration))
+        print(SCORE_DURATION_FORMAT.format(cat_score_duration))
 
     return (
         sklearn_score,
