@@ -32,10 +32,10 @@ from sklearn.model_selection import train_test_split
 from sklearn.multioutput import MultiOutputRegressor
 
 # Create a random dataset
-rng = np.random.RandomState(1)
-X = np.sort(200 * rng.rand(600, 1) - 100, axis=0)
+rng = np.random.default_rng(1)
+X = np.sort(200 * rng.random((600, 1)) - 100, axis=0)
 y = np.array([np.pi * np.sin(X).ravel(), np.pi * np.cos(X).ravel()]).T
-y += 0.5 - rng.rand(*y.shape)
+y += 0.5 - rng.random(y.shape)
 
 X_train, X_test, y_train, y_test = train_test_split(
     X, y, train_size=400, test_size=200, random_state=4

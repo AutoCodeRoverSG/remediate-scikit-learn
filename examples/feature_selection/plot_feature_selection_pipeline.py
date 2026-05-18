@@ -50,7 +50,7 @@ from sklearn.svm import LinearSVC
 
 anova_filter = SelectKBest(f_classif, k=3)
 clf = LinearSVC()
-anova_svm = make_pipeline(anova_filter, clf)
+anova_svm = make_pipeline(anova_filter, clf, memory=None)
 anova_svm.fit(X_train, y_train)
 
 # %%
