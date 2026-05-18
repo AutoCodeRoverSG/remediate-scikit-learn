@@ -94,7 +94,9 @@ random_tree_embedding = RandomTreesEmbedding(
 from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import make_pipeline
 
-rt_model = make_pipeline(random_tree_embedding, LogisticRegression(max_iter=1000))
+rt_model = make_pipeline(
+    random_tree_embedding, LogisticRegression(max_iter=1000), memory=None
+)
 rt_model.fit(X_train_linear, y_train_linear)
 
 # %%
@@ -116,6 +118,7 @@ rf_model = make_pipeline(
     rf_leaves_yielder,
     OneHotEncoder(handle_unknown="ignore"),
     LogisticRegression(max_iter=1000),
+    memory=None,
 )
 rf_model.fit(X_train_linear, y_train_linear)
 

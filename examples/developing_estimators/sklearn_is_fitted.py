@@ -42,6 +42,7 @@ class CustomEstimator(BaseEstimator, ClassifierMixin):
         """
         Fit the estimator to the training data.
         """
+        self._validate_data(X, y)
         self.classes_ = sorted(set(y))
         # Custom attribute to track if the estimator is fitted
         self._is_fitted = True
@@ -58,7 +59,7 @@ class CustomEstimator(BaseEstimator, ClassifierMixin):
         predictions = [self.classes_[0]] * len(X)
         return predictions
 
-    def score(self, X, y):
+    def score(self, X, y, sample_weight=None):
         """
         Calculate Score
 

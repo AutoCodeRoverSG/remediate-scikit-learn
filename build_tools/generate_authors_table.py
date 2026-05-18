@@ -150,7 +150,7 @@ def get_profile(login):
     try:
         profile = get("https://api.github.com/users/%s" % login).json()
     except requests.exceptions.HTTPError:
-        return dict(name=login, avatar_url=LOGO_URL, html_url="")
+        return {"name": login, "avatar_url": LOGO_URL, "html_url": ""}
 
     if profile["name"] is None:
         profile["name"] = profile["login"]
