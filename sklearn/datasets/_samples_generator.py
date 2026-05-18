@@ -586,9 +586,10 @@ def make_multilabel_classification(
     if return_indicator in (True, "sparse", "dense"):
         lb = MultiLabelBinarizer(sparse_output=(return_indicator == "sparse"))
         Y = lb.fit([range(n_classes)]).transform(Y)
+    result = (X, Y)
     if return_distributions:
-        return X, Y, p_c, p_w_c
-    return X, Y
+        result += (p_c, p_w_c)
+    return result
 
 
 @validate_params(
@@ -815,11 +816,8 @@ def make_regression(
 
     y = np.squeeze(y)
 
-    if coef:
-        return X, y, np.squeeze(ground_truth)
-
-    else:
-        return X, y
+    result = (X, y, np.squeeze(ground_truth)) if coef else (X, y)
+    return result
 
 
 @validate_params(
@@ -1180,10 +1178,7 @@ def make_blobs(
     if shuffle:
         X, y = util_shuffle(X, y, random_state=generator)
 
-    if return_centers:
-        return X, y, centers
-    else:
-        return X, y
+    return (X, y, centers) if return_centers else (X, y)
 
 
 @validate_params(
