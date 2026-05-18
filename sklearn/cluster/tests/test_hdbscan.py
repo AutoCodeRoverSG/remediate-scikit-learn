@@ -328,8 +328,8 @@ def test_hdbscan_allow_single_cluster_with_epsilon():
     """
     Tests that HDBSCAN single-cluster selection with epsilon works correctly.
     """
-    rng = np.random.RandomState(0)
-    no_structure = rng.rand(150, 2)
+    rng = np.random.default_rng(0)
+    no_structure = rng.random((150, 2))
     # without epsilon we should see many noise points as children of root.
     labels = HDBSCAN(
         min_cluster_size=5,
@@ -376,7 +376,7 @@ def test_hdbscan_better_than_dbscan():
 
     n_clusters = len(set(labels)) - int(-1 in labels)
     assert n_clusters == 4
-    fowlkes_mallows_score(labels, y) > 0.99
+    assert fowlkes_mallows_score(labels, y) > 0.99
 
 
 @pytest.mark.parametrize(
@@ -505,7 +505,7 @@ def test_labelling_distinct(global_random_seed, allow_single_cluster, epsilon):
         cluster_selection_epsilon=epsilon,
     )
 
-    first_with_label = {_y: np.where(y == _y)[0][0] for _y in list(set(y))}
+    first_with_label = {_y: np.nonzero(y == _y)[0][0] for _y in list(set(y))}
     y_to_labels = {_y: labels[first_with_label[_y]] for _y in list(set(y))}
     aligned_target = np.vectorize(y_to_labels.get)(y)
     assert_array_equal(labels, aligned_target)
@@ -560,7 +560,7 @@ def test_hdbscan_error_precomputed_and_store_centers(store_centers):
     Non-regression test for:
     https://github.com/scikit-learn/scikit-learn/issues/27893
     """
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
     X = rng.random((100, 2))
     X_dist = euclidean_distances(X)
     err_msg = "Cannot store centers when using a precomputed distance matrix."
@@ -598,7 +598,7 @@ def test_hdbscan_default_copy_warning():
     Test that HDBSCAN raises a FutureWarning when the `copy`
     parameter is not set.
     """
-    X = np.random.RandomState(0).random((100, 2))
+    X = np.random.default_rng(0).random((100, 2))
     msg = r"The default value of `copy` will change from False to True in 1.10."
     with pytest.warns(FutureWarning, match=msg):
         hdb = HDBSCAN(min_cluster_size=20)

@@ -111,7 +111,7 @@ def test_dbscan_sparse_precomputed_different_eps():
 @pytest.mark.parametrize("csr_container", CSR_CONTAINERS + [None])
 def test_dbscan_input_not_modified(metric, csr_container):
     # test that the input is not modified by dbscan
-    X = np.random.RandomState(0).rand(10, 10)
+    X = np.random.default_rng(0).random((10, 10))
     X = csr_container(X) if csr_container is not None else X
     X_copy = X.copy()
     dbscan(X, metric=metric)
@@ -129,7 +129,7 @@ def test_dbscan_input_not_modified_precomputed_sparse_nodiag(csr_container):
     Non-regression test for:
     https://github.com/scikit-learn/scikit-learn/issues/27508
     """
-    X = np.random.RandomState(0).rand(10, 10)
+    X = np.random.default_rng(0).random((10, 10))
     # Add zeros on the diagonal that will be implicit when creating
     # the sparse matrix. If `X` is modified in-place, the zeros from
     # the diagonal will be made explicit.
@@ -146,8 +146,8 @@ def test_dbscan_input_not_modified_precomputed_sparse_nodiag(csr_container):
 
 @pytest.mark.parametrize("csr_container", CSR_CONTAINERS)
 def test_dbscan_no_core_samples(csr_container):
-    rng = np.random.RandomState(0)
-    X = rng.rand(40, 10)
+    rng = np.random.default_rng(0)
+    X = rng.random((40, 10))
     X[X < 0.8] = 0
 
     for X_ in [X, csr_container(X)]:
@@ -339,13 +339,13 @@ def test_weighted_dbscan(global_random_seed):
     )
 
     # for non-negative sample_weight, cores should be identical to repetition
-    rng = np.random.RandomState(global_random_seed)
-    sample_weight = rng.randint(0, 5, X.shape[0])
+    rng = np.random.default_rng(global_random_seed)
+    sample_weight = rng.integers(0, 5, X.shape[0])
     core1, label1 = dbscan(X, sample_weight=sample_weight)
     assert len(label1) == len(X)
 
     X_repeated = np.repeat(X, sample_weight, axis=0)
-    core_repeated, label_repeated = dbscan(X_repeated)
+    core_repeated, _ = dbscan(X_repeated)
     core_repeated_mask = np.zeros(X_repeated.shape[0], dtype=bool)
     core_repeated_mask[core_repeated] = True
     core_mask = np.zeros(X.shape[0], dtype=bool)
