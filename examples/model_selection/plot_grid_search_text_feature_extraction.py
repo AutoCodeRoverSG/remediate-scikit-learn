@@ -67,9 +67,10 @@ pipeline = Pipeline(
     [
         ("vect", TfidfVectorizer()),
         ("clf", ComplementNB()),
-    ]
+    ],
+    memory=None,
 )
-pipeline
+print(pipeline)
 
 # %%
 # We define a grid of hyperparameters to be explored by the
@@ -191,7 +192,7 @@ fig.update_layout(
         "yanchor": "top",
     }
 )
-fig
+fig.show()
 
 # %%
 # Notice that the cluster of models in the upper-left corner of the plot have
@@ -241,7 +242,7 @@ fig.update_layout(
         "yanchor": "top",
     }
 )
-fig
+fig.show()
 
 # %%
 # The parallel coordinates plot displays the values of the hyperparameters on
