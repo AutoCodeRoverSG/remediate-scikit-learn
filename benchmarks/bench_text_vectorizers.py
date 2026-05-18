@@ -26,9 +26,9 @@ from sklearn.feature_extraction.text import (
 n_repeat = 3
 
 
-def run_vectorizer(Vectorizer, X, **params):
+def run_vectorizer(vectorizer_cls, X, **params):
     def f():
-        vect = Vectorizer(**params)
+        vect = vectorizer_cls(**params)
         vect.fit_transform(X)
 
     return f

@@ -17,6 +17,8 @@ import numpy as np
 from sklearn.datasets import fetch_lfw_people
 from sklearn.decomposition import PCA, IncrementalPCA
 
+LEGEND_LOCATION = "lower left"
+
 
 def plot_results(X, y, label):
     plt.plot(X, y, label=label, marker="o")
@@ -57,7 +59,7 @@ def plot_feature_errors(all_errors, batch_size, all_components, data):
         all_errors["ipca"],
         label="IncrementalPCA, bsize=%i" % batch_size,
     )
-    plt.legend(loc="lower left")
+    plt.legend(loc=LEGEND_LOCATION)
     plt.suptitle("Algorithm error vs. n_components\nLFW, size %i x %i" % data.shape)
     plt.xlabel("Number of components (out of max %i)" % data.shape[1])
     plt.ylabel("Mean absolute error")
@@ -67,7 +69,7 @@ def plot_batch_times(all_times, n_features, all_batch_sizes, data):
     plt.figure()
     plot_results(all_batch_sizes, all_times["pca"], label="PCA")
     plot_results(all_batch_sizes, all_times["ipca"], label="IncrementalPCA")
-    plt.legend(loc="lower left")
+    plt.legend(loc=LEGEND_LOCATION)
     plt.suptitle(
         "Algorithm runtime vs. batch_size for n_components %i\n                  LFW,"
         " size %i x %i" % (n_features, data.shape[0], data.shape[1])
@@ -80,7 +82,7 @@ def plot_batch_errors(all_errors, n_features, all_batch_sizes, data):
     plt.figure()
     plot_results(all_batch_sizes, all_errors["pca"], label="PCA")
     plot_results(all_batch_sizes, all_errors["ipca"], label="IncrementalPCA")
-    plt.legend(loc="lower left")
+    plt.legend(loc=LEGEND_LOCATION)
     plt.suptitle(
         "Algorithm error vs. batch_size for n_components %i\n                  LFW,"
         " size %i x %i" % (n_features, data.shape[0], data.shape[1])

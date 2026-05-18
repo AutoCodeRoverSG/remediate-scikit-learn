@@ -101,7 +101,7 @@ def _nls_subproblem(
     gamma = 1
     for n_iter in range(1, max_iter + 1):
         grad = np.dot(w_t_w, h) - w_t_x
-        if alpha > 0 and l1_ratio == 1.0:
+        if alpha > 0 and np.isclose(l1_ratio, 1.0):
             grad += alpha
         elif alpha > 0:
             grad += alpha * (l1_ratio + (1 - l1_ratio) * h)

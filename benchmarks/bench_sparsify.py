@@ -90,9 +90,9 @@ def benchmark_dense_predict():
 
 
 def benchmark_sparse_predict():
-    X_test_sparse = csr_matrix(X_test)
+    x_test_sparse = csr_matrix(X_test)
     for _ in range(300):
-        clf.predict(X_test_sparse)
+        clf.predict(x_test_sparse)
 
 
 def score(y_test, y_pred, case):

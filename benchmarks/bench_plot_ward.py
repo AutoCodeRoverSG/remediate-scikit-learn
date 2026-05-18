@@ -18,9 +18,10 @@ N_samples, N_features = np.meshgrid(n_samples, n_features)
 scikits_time = np.zeros(N_samples.shape)
 scipy_time = np.zeros(N_samples.shape)
 
+rng = np.random.default_rng(0)
 for i, n in enumerate(n_samples):
     for j, p in enumerate(n_features):
-        X = np.random.normal(size=(n, p))
+        X = rng.normal(size=(n, p))
         t0 = time.time()
         ward.fit(X)
         scikits_time[j, i] = time.time() - t0

@@ -52,8 +52,8 @@ if __name__ == "__main__":
 
             # Shuffle data
             idx = np.arange(n_train)
-            np.random.seed(13)
-            np.random.shuffle(idx)
+            rng = np.random.default_rng(13)
+            rng.shuffle(idx)
             X_train = X_train[idx]
             y_train = y_train[idx]
 

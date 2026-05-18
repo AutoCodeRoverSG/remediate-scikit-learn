@@ -33,7 +33,7 @@ def compute_bench(alpha, n_samples, n_features, precompute):
             print("Iteration %s of %s" % (it, max(len(n_samples), len(n_features))))
             print("==================")
             n_informative = nf // 10
-            X, Y, coef_ = make_regression(
+            X, Y, _ = make_regression(
                 n_samples=ns,
                 n_features=nf,
                 n_informative=n_informative,
