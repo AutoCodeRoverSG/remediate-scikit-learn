@@ -25,7 +25,7 @@ import numpy as np
 from sklearn.datasets import make_regression
 
 alpha = 0.1
-# alpha = 0.01
+
 
 
 def rmse(a, b):
