@@ -512,7 +512,7 @@ def linkage_tree(
     X = np.asarray(X)
     if X.ndim == 1:
         X = np.reshape(X, (-1, 1))
-    n_samples, n_features = X.shape
+    n_samples, _ = X.shape
 
     linkage_choices = {
         "complete": _hierarchical.max_merge,
@@ -633,7 +633,7 @@ def linkage_tree(
         distances = np.empty(n_nodes - n_samples)
     # create inertia heap and connection matrix
     A = np.empty(n_nodes, dtype=object)
-    inertia = list()
+    inertia = []
 
     # LIL seems to the best format to access the rows quickly,
     # without the numpy overhead of slicing CSR indices and data.

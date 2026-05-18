@@ -17,22 +17,22 @@ from sklearn.utils._param_validation import Interval, StrOptions, validate_param
 from sklearn.utils.validation import check_is_fitted, validate_data
 
 
-def _equal_similarities_and_preferences(S, preference):
+def _equal_similarities_and_preferences(s, preference):
     def all_equal_preferences():
         return np.all(preference == preference.flat[0])
 
     def all_equal_similarities():
         # Create mask to ignore diagonal of S
-        mask = np.ones(S.shape, dtype=bool)
+        mask = np.ones(s.shape, dtype=bool)
         np.fill_diagonal(mask, 0)
 
-        return np.all(S[mask].flat == S[mask].flat[0])
+        return np.all(s[mask].flat == s[mask].flat[0])
 
     return all_equal_preferences() and all_equal_similarities()
 
 
 def _affinity_propagation(
-    S,
+    s,
     *,
     preference,
     convergence_iter,
@@ -43,15 +43,15 @@ def _affinity_propagation(
     random_state,
 ):
     """Main affinity propagation algorithm."""
-    n_samples = S.shape[0]
-    if n_samples == 1 or _equal_similarities_and_preferences(S, preference):
+    n_samples = s.shape[0]
+    if n_samples == 1 or _equal_similarities_and_preferences(s, preference):
         # It makes no sense to run the algorithm in this case, so return 1 or
         # n_samples clusters, depending on preferences
         warnings.warn(
             "All samples have mutually equal similarities. "
             "Returning arbitrary cluster center(s)."
         )
-        if preference.flat[0] > S.flat[n_samples - 1]:
+        if preference.flat[0] > s.flat[n_samples - 1]:
             return (
                 (np.arange(n_samples), np.arange(n_samples), 0)
                 if return_n_iter
@@ -65,7 +65,7 @@ def _affinity_propagation(
             )
 
     # Place preference on the diagonal of S
-    S.flat[:: (n_samples + 1)] = preference
+    s.flat[:: (n_samples + 1)] = preference
 
     A = np.zeros((n_samples, n_samples))
     R = np.zeros((n_samples, n_samples))  # Initialize messages
@@ -73,8 +73,8 @@ def _affinity_propagation(
     tmp = np.zeros((n_samples, n_samples))
 
     # Remove degeneracies
-    S += (
-        np.finfo(S.dtype).eps * S + np.finfo(S.dtype).tiny * 100
+    s += (
+        np.finfo(s.dtype).eps * s + np.finfo(s.dtype).tiny * 100
     ) * random_state.standard_normal(size=(n_samples, n_samples))
 
     # Execute parallel affinity propagation updates
@@ -84,15 +84,15 @@ def _affinity_propagation(
 
     for it in range(max_iter):
         # tmp = A + S; compute responsibilities
-        np.add(A, S, tmp)
+        np.add(A, s, tmp)
         I = np.argmax(tmp, axis=1)
         Y = tmp[ind, I]  # np.max(A + S, axis=1)
         tmp[ind, I] = -np.inf
         Y2 = np.max(tmp, axis=1)
 
-        # tmp = Rnew
-        np.subtract(S, Y[:, None], tmp)
-        tmp[ind, I] = S[ind, I] - Y2
+        
+        np.subtract(s, Y[:, None], tmp)
+        tmp[ind, I] = s[ind, I] - Y2
 
         # Damping
         tmp *= 1 - damping
@@ -103,11 +103,11 @@ def _affinity_propagation(
         np.maximum(R, 0, out=tmp)
         tmp.flat[:: n_samples + 1] = R.flat[:: n_samples + 1]
 
-        # tmp = -Anew
+        
         tmp -= np.sum(tmp, axis=0)
-        dA = np.diag(tmp).copy()
+        d_a = np.diag(tmp).copy()
         tmp.clip(0, np.inf, tmp)
-        tmp.flat[:: n_samples + 1] = dA
+        tmp.flat[:: n_samples + 1] = d_a
 
         # Damping
         tmp *= 1 - damping
@@ -144,15 +144,15 @@ def _affinity_propagation(
                 ),
                 ConvergenceWarning,
             )
-        c = np.argmax(S[:, I], axis=1)
+        c = np.argmax(s[:, I], axis=1)
         c[I] = np.arange(K)  # Identify clusters
         # Refine the final set of exemplars and clusters and return results
         for k in range(K):
             ii = np.asarray(c == k).nonzero()[0]
-            j = np.argmax(np.sum(S[ii[:, np.newaxis], ii], axis=0))
+            j = np.argmax(np.sum(s[ii[:, np.newaxis], ii], axis=0))
             I[k] = ii[j]
 
-        c = np.argmax(S[:, I], axis=1)
+        c = np.argmax(s[:, I], axis=1)
         c[I] = np.arange(K)
         labels = I[c]
         # Reduce labels to a sorted, gapless, list
@@ -181,13 +181,13 @@ def _affinity_propagation(
 
 @validate_params(
     {
-        "S": ["array-like"],
+        "s": ["array-like"],
         "return_n_iter": ["boolean"],
     },
     prefer_skip_nested_validation=False,
 )
 def affinity_propagation(
-    S,
+    s,
     *,
     preference=None,
     convergence_iter=15,
@@ -302,7 +302,7 @@ def affinity_propagation(
         affinity="precomputed",
         verbose=verbose,
         random_state=random_state,
-    ).fit(S)
+    ).fit(s)
 
     if return_n_iter:
         return estimator.cluster_centers_indices_, estimator.labels_, estimator.n_iter_
