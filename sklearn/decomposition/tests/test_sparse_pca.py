@@ -79,8 +79,9 @@ def test_fit_transform(global_random_seed):
 @if_safe_multiprocessing_with_blas
 def test_fit_transform_parallel(global_random_seed):
     alpha = 1
-    rng = np.random.RandomState(global_random_seed)
-    Y, _, _ = generate_toy_data(3, 10, (8, 8), random_state=rng)  # wide array
+    Y, _, _ = generate_toy_data(
+        3, 10, (8, 8), random_state=global_random_seed
+    )  # wide array
     spca_lars = SparsePCA(
         n_components=3, method="lars", alpha=alpha, random_state=global_random_seed
     )
@@ -102,31 +103,37 @@ def test_fit_transform_parallel(global_random_seed):
 def test_transform_nan(global_random_seed):
     # Test that SparsePCA won't return NaN when there is 0 feature in all
     # samples.
-    rng = np.random.RandomState(global_random_seed)
-    Y, _, _ = generate_toy_data(3, 10, (8, 8), random_state=rng)  # wide array
+    Y, _, _ = generate_toy_data(
+        3, 10, (8, 8), random_state=global_random_seed
+    )  # wide array
     Y[:, 0] = 0
     estimator = SparsePCA(n_components=8, random_state=global_random_seed)
     assert not np.any(np.isnan(estimator.fit_transform(Y)))
 
 
 def test_fit_transform_tall(global_random_seed):
-    rng = np.random.RandomState(global_random_seed)
-    Y, _, _ = generate_toy_data(3, 65, (8, 8), random_state=rng)  # tall array
-    spca_lars = SparsePCA(n_components=3, method="lars", random_state=rng)
+    rng = np.random.default_rng(global_random_seed)
+    seeds = rng.integers(0, 2**31, size=3)
+    Y, _, _ = generate_toy_data(3, 65, (8, 8), random_state=seeds[0])  # tall array
+    spca_lars = SparsePCA(n_components=3, method="lars", random_state=seeds[1])
     U1 = spca_lars.fit_transform(Y)
-    spca_lasso = SparsePCA(n_components=3, method="cd", random_state=rng)
+    spca_lasso = SparsePCA(n_components=3, method="cd", random_state=seeds[2])
     U2 = spca_lasso.fit(Y).transform(Y)
     assert_allclose(U1, U2, rtol=1e-4, atol=2e-5)
 
 
 def test_initialization(global_random_seed):
-    rng = np.random.RandomState(global_random_seed)
-    u_init = rng.randn(5, 3)
-    v_init = rng.randn(3, 4)
+    rng = np.random.default_rng(global_random_seed)
+    u_init = rng.standard_normal((5, 3))
+    v_init = rng.standard_normal((3, 4))
     model = SparsePCA(
-        n_components=3, u_init=u_init, v_init=v_init, max_iter=0, random_state=rng
+        n_components=3,
+        u_init=u_init,
+        v_init=v_init,
+        max_iter=0,
+        random_state=global_random_seed,
     )
-    model.fit(rng.randn(5, 4))
+    model.fit(rng.standard_normal((5, 4)))
 
     expected_components = v_init / np.linalg.norm(v_init, axis=1, keepdims=True)
     expected_components = svd_flip(u=expected_components.T, v=None)[0].T
@@ -134,14 +141,14 @@ def test_initialization(global_random_seed):
 
 
 def test_mini_batch_correct_shapes():
-    rng = np.random.RandomState(0)
-    X = rng.randn(12, 10)
-    pca = MiniBatchSparsePCA(n_components=8, max_iter=1, random_state=rng)
+    rng = np.random.default_rng(0)
+    X = rng.standard_normal((12, 10))
+    pca = MiniBatchSparsePCA(n_components=8, max_iter=1, random_state=0)
     U = pca.fit_transform(X)
     assert pca.components_.shape == (8, 10)
     assert U.shape == (12, 8)
     # test overcomplete decomposition
-    pca = MiniBatchSparsePCA(n_components=13, max_iter=1, random_state=rng)
+    pca = MiniBatchSparsePCA(n_components=13, max_iter=1, random_state=1)
     U = pca.fit_transform(X)
     assert pca.components_.shape == (13, 10)
     assert U.shape == (12, 13)
@@ -149,20 +156,22 @@ def test_mini_batch_correct_shapes():
 
 def test_scaling_fit_transform(global_random_seed):
     alpha = 1
-    rng = np.random.RandomState(global_random_seed)
-    Y, _, _ = generate_toy_data(3, 1000, (8, 8), random_state=rng)
-    spca_lars = SparsePCA(n_components=3, method="lars", alpha=alpha, random_state=rng)
+    rng = np.random.default_rng(global_random_seed)
+    seed1, seed2 = rng.integers(0, 2**31, size=2)
+    Y, _, _ = generate_toy_data(3, 1000, (8, 8), random_state=seed1)
+    spca_lars = SparsePCA(n_components=3, method="lars", alpha=alpha, random_state=seed2)
     results_train = spca_lars.fit_transform(Y)
     results_test = spca_lars.transform(Y[:10])
     assert_allclose(results_train[0], results_test[0])
 
 
 def test_pca_vs_spca(global_random_seed):
-    rng = np.random.RandomState(global_random_seed)
-    Y, _, _ = generate_toy_data(3, 1000, (8, 8), random_state=rng)
-    Z, _, _ = generate_toy_data(3, 10, (8, 8), random_state=rng)
-    spca = SparsePCA(alpha=0, ridge_alpha=0, n_components=2, random_state=rng)
-    pca = PCA(n_components=2, random_state=rng)
+    rng = np.random.default_rng(global_random_seed)
+    seeds = rng.integers(0, 2**31, size=4)
+    Y, _, _ = generate_toy_data(3, 1000, (8, 8), random_state=seeds[0])
+    Z, _, _ = generate_toy_data(3, 10, (8, 8), random_state=seeds[1])
+    spca = SparsePCA(alpha=0, ridge_alpha=0, n_components=2, random_state=seeds[2])
+    pca = PCA(n_components=2, random_state=seeds[3])
     pca.fit(Y)
     spca.fit(Y)
     results_test_pca = pca.transform(Z)
@@ -178,9 +187,9 @@ def test_pca_vs_spca(global_random_seed):
 @pytest.mark.parametrize("spca_cls", [SparsePCA, MiniBatchSparsePCA])
 @pytest.mark.parametrize("n_components", [None, 3])
 def test_spca_n_components_(spca_cls, n_components):
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
     n_samples, n_features = 12, 10
-    X = rng.randn(n_samples, n_features)
+    X = rng.standard_normal((n_samples, n_features))
 
     model = spca_cls(n_components=n_components).fit(X)
 
@@ -204,8 +213,8 @@ def test_spca_n_components_(spca_cls, n_components):
 def test_sparse_pca_dtype_match(spca, method, data_type, expected_type):
     # Verify output matrix dtype
     n_samples, n_features, n_components = 12, 10, 3
-    rng = np.random.RandomState(0)
-    input_array = rng.randn(n_samples, n_features).astype(data_type)
+    rng = np.random.default_rng(0)
+    input_array = rng.standard_normal((n_samples, n_features)).astype(data_type)
     model = spca(n_components=n_components, method=method)
     transformed = model.fit_transform(input_array)
 
@@ -245,9 +254,9 @@ def test_sparse_pca_numerical_consistency(spca_estimator, method, global_random_
 @pytest.mark.parametrize("spca_model", [SparsePCA, MiniBatchSparsePCA])
 def test_spca_feature_names_out(spca_model):
     """Check feature names out for *SparsePCA."""
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
     n_samples, n_features = 12, 10
-    X = rng.randn(n_samples, n_features)
+    X = rng.standard_normal((n_samples, n_features))
 
     model = spca_model(n_components=4).fit(X)
     names = model.get_feature_names_out()
