@@ -260,10 +260,10 @@ class BaseHistGradientBoosting(BaseEstimator, ABC):
         """
         # If there is a preprocessor, we let the preprocessor handle the validation.
         # Otherwise, we validate the data ourselves.
-        check_X_kwargs = dict(dtype=[X_DTYPE], ensure_all_finite=False)
+        check_x_kwargs = {"dtype": [X_DTYPE], "ensure_all_finite": False}
         if not reset:
             if self._preprocessor is None:
-                return validate_data(self, X, reset=False, **check_X_kwargs)
+                return validate_data(self, X, reset=False, **check_x_kwargs)
             return self._preprocessor.transform(X)
 
         # At this point, reset is False, which runs during `fit`.
@@ -273,7 +273,7 @@ class BaseHistGradientBoosting(BaseEstimator, ABC):
             self._preprocessor = None
             self._is_categorical_remapped = None
 
-            X = validate_data(self, X, **check_X_kwargs)
+            X = validate_data(self, X, **check_x_kwargs)
             return X, None
 
         n_features = X.shape[1]
@@ -285,8 +285,8 @@ class BaseHistGradientBoosting(BaseEstimator, ABC):
             dtype=X_DTYPE,
         )
 
-        check_X = partial(check_array, **check_X_kwargs)
-        numerical_preprocessor = FunctionTransformer(check_X)
+        check_x = partial(check_array, **check_x_kwargs)
+        numerical_preprocessor = FunctionTransformer(check_x)
         self._preprocessor = ColumnTransformer(
             [
                 ("encoder", ordinal_encoder, self.is_categorical_),
@@ -397,7 +397,7 @@ class BaseHistGradientBoosting(BaseEstimator, ABC):
         y,
         sample_weight=None,
         *,
-        X_val=None,
+        x_val=None,
         y_val=None,
         sample_weight_val=None,
     ):
@@ -457,19 +457,19 @@ class BaseHistGradientBoosting(BaseEstimator, ABC):
 
         sample_weight = self._finalize_sample_weight(sample_weight, y)
 
-        validation_data_provided = X_val is not None or y_val is not None
+        validation_data_provided = x_val is not None or y_val is not None
         if validation_data_provided:
             if y_val is None:
                 raise ValueError("X_val is provided, but y_val was not provided.")
-            if X_val is None:
+            if x_val is None:
                 raise ValueError("y_val is provided, but X_val was not provided.")
-            X_val = self._preprocess_X(X_val, reset=False)
+            x_val = self._preprocess_X(x_val, reset=False)
             y_val = _check_y(y_val, estimator=self)
             y_val = self._encode_y_val(y_val)
-            check_consistent_length(X_val, y_val)
+            check_consistent_length(x_val, y_val)
             if sample_weight_val is not None:
                 sample_weight_val = _check_sample_weight(
-                    sample_weight_val, X_val, dtype=np.float64
+                    sample_weight_val, x_val, dtype=np.float64
                 )
             if self.early_stopping is False:
                 raise ValueError(
@@ -553,7 +553,7 @@ class BaseHistGradientBoosting(BaseEstimator, ABC):
             # warm starting.
 
             if sample_weight is None:
-                X_train, X_val, y_train, y_val = train_test_split(
+                x_train, x_val, y_train, y_val = train_test_split(
                     X,
                     y,
                     test_size=self.validation_fraction,
@@ -565,8 +565,8 @@ class BaseHistGradientBoosting(BaseEstimator, ABC):
                 # TODO: incorporate sample_weight in sampling here, as well as
                 # stratify
                 (
-                    X_train,
-                    X_val,
+                    x_train,
+                    x_val,
                     y_train,
                     y_val,
                     sample_weight_train,
@@ -580,9 +580,9 @@ class BaseHistGradientBoosting(BaseEstimator, ABC):
                     random_state=self._random_seed,
                 )
         else:
-            X_train, y_train, sample_weight_train = X, y, sample_weight
+            x_train, y_train, sample_weight_train = X, y, sample_weight
             if not validation_data_provided:
-                X_val = y_val = sample_weight_val = None
+                x_val = y_val = sample_weight_val = None
 
         # Bin the data
         # For ease of use of the API, the user-facing GBDT classes accept the
@@ -600,19 +600,19 @@ class BaseHistGradientBoosting(BaseEstimator, ABC):
             random_state=self._random_seed,
             n_threads=n_threads,
         )
-        X_binned_train = self._bin_data(
-            X_train, sample_weight_train, is_training_data=True
+        x_binned_train = self._bin_data(
+            x_train, sample_weight_train, is_training_data=True
         )
-        if X_val is not None:
-            X_binned_val = self._bin_data(
-                X_val, sample_weight_val, is_training_data=False
+        if x_val is not None:
+            x_binned_val = self._bin_data(
+                x_val, sample_weight_val, is_training_data=False
             )
         else:
-            X_binned_val = None
+            x_binned_val = None
 
         # Uses binned data to check for missing values
         has_missing_values = (
-            (X_binned_train == self._bin_mapper.missing_values_bin_idx_)
+            (x_binned_train == self._bin_mapper.missing_values_bin_idx_)
             .any(axis=0)
             .astype(np.uint8)
         )
@@ -620,9 +620,9 @@ class BaseHistGradientBoosting(BaseEstimator, ABC):
         if self.verbose:
             print("Fitting gradient boosted rounds:")
 
-        n_samples = X_binned_train.shape[0]
+        n_samples = x_binned_train.shape[0]
         scoring_is_predefined_string = self.scoring in _SCORERS
-        need_raw_predictions_val = X_binned_val is not None and (
+        need_raw_predictions_val = x_binned_val is not None and (
             scoring_is_predefined_string or self.scoring == "loss"
         )
         # First time calling fit, or no warm start
@@ -664,7 +664,7 @@ class BaseHistGradientBoosting(BaseEstimator, ABC):
                 # the validation data.
                 if need_raw_predictions_val:
                     raw_predictions_val = np.zeros(
-                        shape=(X_binned_val.shape[0], self.n_trees_per_iteration_),
+                        shape=(x_binned_val.shape[0], self.n_trees_per_iteration_),
                         dtype=self._baseline_prediction.dtype,
                         order="F",
                     )
@@ -699,12 +699,12 @@ class BaseHistGradientBoosting(BaseEstimator, ABC):
 
                     # Compute the subsample set
                     (
-                        X_binned_small_train,
+                        x_binned_small_train,
                         y_small_train,
                         sample_weight_small_train,
                         indices_small_train,
                     ) = self._get_small_trainset(
-                        X_binned_train,
+                        x_binned_train,
                         y_train,
                         sample_weight_train,
                         self._random_seed,
@@ -721,10 +721,10 @@ class BaseHistGradientBoosting(BaseEstimator, ABC):
                         raw_predictions_small_train = None
 
                     self._check_early_stopping_scorer(
-                        X_binned_small_train,
+                        x_binned_small_train,
                         y_small_train,
                         sample_weight_small_train,
-                        X_binned_val,
+                        x_binned_val,
                         y_val,
                         sample_weight_val,
                         raw_predictions_small_train=raw_predictions_small_train,
@@ -747,10 +747,10 @@ class BaseHistGradientBoosting(BaseEstimator, ABC):
             self.validation_score_ = self.validation_score_.tolist()
 
             # Compute raw predictions
-            raw_predictions = self._raw_predict(X_binned_train, n_threads=n_threads)
+            raw_predictions = self._raw_predict(x_binned_train, n_threads=n_threads)
             if self.do_early_stopping_ and need_raw_predictions_val:
                 raw_predictions_val = self._raw_predict(
-                    X_binned_val, n_threads=n_threads
+                    x_binned_val, n_threads=n_threads
                 )
             else:
                 raw_predictions_val = None
@@ -758,12 +758,12 @@ class BaseHistGradientBoosting(BaseEstimator, ABC):
             if self.do_early_stopping_ and self.scoring != "loss":
                 # Compute the subsample set
                 (
-                    X_binned_small_train,
+                    x_binned_small_train,
                     y_small_train,
                     sample_weight_small_train,
                     indices_small_train,
                 ) = self._get_small_trainset(
-                    X_binned_train, y_train, sample_weight_train, self._random_seed
+                    x_binned_train, y_train, sample_weight_train, self._random_seed
                 )
 
             # Get the predictors from the previous fit
@@ -820,7 +820,7 @@ class BaseHistGradientBoosting(BaseEstimator, ABC):
             # Build `n_trees_per_iteration` trees.
             for k in range(self.n_trees_per_iteration_):
                 grower = TreeGrower(
-                    X_binned=X_binned_train,
+                    X_binned=x_binned_train,
                     gradients=g_view[:, k],
                     hessians=h_view[:, k],
                     n_bins=n_bins,
@@ -871,7 +871,7 @@ class BaseHistGradientBoosting(BaseEstimator, ABC):
                 if need_raw_predictions_val:
                     for k, pred in enumerate(self._predictors[-1]):
                         raw_predictions_val[:, k] += pred.predict_binned(
-                            X_binned_val,
+                            x_binned_val,
                             self._bin_mapper.missing_values_bin_idx_,
                             n_threads,
                         )
@@ -898,10 +898,10 @@ class BaseHistGradientBoosting(BaseEstimator, ABC):
                         raw_predictions_small_train = None
 
                     should_early_stop = self._check_early_stopping_scorer(
-                        X_binned_small_train,
+                        x_binned_small_train,
                         y_small_train,
                         sample_weight_small_train,
-                        X_binned_val,
+                        x_binned_val,
                         y_val,
                         sample_weight_val,
                         raw_predictions_small_train=raw_predictions_small_train,
@@ -964,7 +964,7 @@ class BaseHistGradientBoosting(BaseEstimator, ABC):
             if hasattr(self, var):
                 delattr(self, var)
 
-    def _get_small_trainset(self, X_binned_train, y_train, sample_weight_train, seed):
+    def _get_small_trainset(self, x_binned_train, y_train, sample_weight_train, seed):
         """Compute the indices of the subsample set and return this set.
 
         For efficiency, we need to subsample the training set to compute scores
@@ -972,8 +972,8 @@ class BaseHistGradientBoosting(BaseEstimator, ABC):
         """
         # TODO: incorporate sample_weights here in `resample`
         subsample_size = 10000
-        if X_binned_train.shape[0] > subsample_size:
-            indices = np.arange(X_binned_train.shape[0])
+        if x_binned_train.shape[0] > subsample_size:
+            indices = np.arange(x_binned_train.shape[0])
             stratify = y_train if is_classifier(self) else None
             indices = resample(
                 indices,
@@ -982,28 +982,28 @@ class BaseHistGradientBoosting(BaseEstimator, ABC):
                 random_state=seed,
                 stratify=stratify,
             )
-            X_binned_small_train = X_binned_train[indices]
+            x_binned_small_train = x_binned_train[indices]
             y_small_train = y_train[indices]
             if sample_weight_train is not None:
                 sample_weight_small_train = sample_weight_train[indices]
             else:
                 sample_weight_small_train = None
-            X_binned_small_train = np.ascontiguousarray(X_binned_small_train)
+            x_binned_small_train = np.ascontiguousarray(x_binned_small_train)
             return (
-                X_binned_small_train,
+                x_binned_small_train,
                 y_small_train,
                 sample_weight_small_train,
                 indices,
             )
         else:
-            return X_binned_train, y_train, sample_weight_train, slice(None)
+            return x_binned_train, y_train, sample_weight_train, slice(None)
 
     def _check_early_stopping_scorer(
         self,
-        X_binned_small_train,
+        x_binned_small_train,
         y_small_train,
         sample_weight_small_train,
-        X_binned_val,
+        x_binned_val,
         y_val,
         sample_weight_val,
         raw_predictions_small_train=None,
@@ -1018,7 +1018,7 @@ class BaseHistGradientBoosting(BaseEstimator, ABC):
 
         self.train_score_.append(
             self._score_with_raw_predictions(
-                X_binned_small_train,
+                x_binned_small_train,
                 y_small_train,
                 sample_weight_small_train,
                 raw_predictions_small_train,
@@ -1030,7 +1030,7 @@ class BaseHistGradientBoosting(BaseEstimator, ABC):
                 y_val = self.classes_[y_val.astype(int)]
             self.validation_score_.append(
                 self._score_with_raw_predictions(
-                    X_binned_val, y_val, sample_weight_val, raw_predictions_val
+                    x_binned_val, y_val, sample_weight_val, raw_predictions_val
                 )
             )
             return self._should_stop(self.validation_score_)
