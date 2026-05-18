@@ -105,7 +105,7 @@ def test_load_svmlight_pathlib():
 
 
 def test_load_svmlight_file_multilabel():
-    X, y = _load_svmlight_local_test_file(multifile, multilabel=True)
+    _, y = _load_svmlight_local_test_file(multifile, multilabel=True)
     assert y == [(0, 1), (2,), (), (1, 2)]
 
 
@@ -119,14 +119,14 @@ def test_load_svmlight_files():
     assert X_train.dtype == np.float32
     assert X_test.dtype == np.float32
 
-    X1, y1, X2, y2, X3, y3 = load_svmlight_files([str(data_path)] * 3, dtype=np.float64)
+    X1, _, X2, _, X3, _ = load_svmlight_files([str(data_path)] * 3, dtype=np.float64)
     assert X1.dtype == X2.dtype
     assert X2.dtype == X3.dtype
     assert X3.dtype == np.float64
 
 
 def test_load_svmlight_file_n_features():
-    X, y = _load_svmlight_local_test_file(datafile, n_features=22)
+    X, _ = _load_svmlight_local_test_file(datafile, n_features=22)
 
     # test X'shape
     assert X.indptr.shape[0] == 7
@@ -150,11 +150,11 @@ def test_load_compressed():
         with _svmlight_local_test_file_path(datafile).open("rb") as f:
             with gzip.open(tmp.name, "wb") as fh_out:
                 shutil.copyfileobj(f, fh_out)
-        Xgz, ygz = load_svmlight_file(tmp.name)
+        x_gz, ygz = load_svmlight_file(tmp.name)
         # because we "close" it manually and write to it,
         # we need to remove it manually.
         os.remove(tmp.name)
-    assert_array_almost_equal(X.toarray(), Xgz.toarray())
+    assert_array_almost_equal(X.toarray(), x_gz.toarray())
     assert_array_almost_equal(y, ygz)
 
     with NamedTemporaryFile(prefix="sklearn-test", suffix=".bz2") as tmp:
@@ -162,11 +162,11 @@ def test_load_compressed():
         with _svmlight_local_test_file_path(datafile).open("rb") as f:
             with BZ2File(tmp.name, "wb") as fh_out:
                 shutil.copyfileobj(f, fh_out)
-        Xbz, ybz = load_svmlight_file(tmp.name)
+        x_bz, ybz = load_svmlight_file(tmp.name)
         # because we "close" it manually and write to it,
         # we need to remove it manually.
         os.remove(tmp.name)
-    assert_array_almost_equal(X.toarray(), Xbz.toarray())
+    assert_array_almost_equal(X.toarray(), x_bz.toarray())
     assert_array_almost_equal(y, ybz)
 
 
@@ -191,12 +191,12 @@ def test_load_zero_based_auto():
     data2 = b"-1 0:0 1:1\n"
 
     f1 = BytesIO(data1)
-    X, y = load_svmlight_file(f1, zero_based="auto")
+    X, _ = load_svmlight_file(f1, zero_based="auto")
     assert X.shape == (1, 3)
 
     f1 = BytesIO(data1)
     f2 = BytesIO(data2)
-    X1, y1, X2, y2 = load_svmlight_files([f1, f2], zero_based="auto")
+    X1, _, X2, _ = load_svmlight_files([f1, f2], zero_based="auto")
     assert X1.shape == (1, 4)
     assert X2.shape == (1, 4)
 
