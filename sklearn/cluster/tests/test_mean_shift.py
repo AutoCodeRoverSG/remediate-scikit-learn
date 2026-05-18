@@ -59,9 +59,9 @@ def test_mean_shift(
     global_dtype, bandwidth, cluster_all, expected, first_cluster_label
 ):
     # Test MeanShift algorithm
-    X_with_global_dtype = X.astype(global_dtype, copy=False)
+    x_with_global_dtype = X.astype(global_dtype, copy=False)
     ms = MeanShift(bandwidth=bandwidth, cluster_all=cluster_all)
-    labels = ms.fit(X_with_global_dtype).labels_
+    labels = ms.fit(x_with_global_dtype).labels_
     labels_unique = np.unique(labels)
     n_clusters_ = len(labels_unique)
     assert n_clusters_ == expected
@@ -69,7 +69,7 @@ def test_mean_shift(
     assert ms.cluster_centers_.dtype == global_dtype
 
     cluster_centers, labels_mean_shift = mean_shift(
-        X_with_global_dtype, cluster_all=cluster_all
+        x_with_global_dtype, cluster_all=cluster_all
     )
     labels_mean_shift_unique = np.unique(labels_mean_shift)
     n_clusters_mean_shift = len(labels_mean_shift_unique)
@@ -108,9 +108,9 @@ def test_parallel(global_dtype, global_random_seed):
 def test_meanshift_predict(global_dtype):
     # Test MeanShift.predict
     ms = MeanShift(bandwidth=1.2)
-    X_with_global_dtype = X.astype(global_dtype, copy=False)
-    labels = ms.fit_predict(X_with_global_dtype)
-    labels2 = ms.predict(X_with_global_dtype)
+    x_with_global_dtype = X.astype(global_dtype, copy=False)
+    labels = ms.fit_predict(x_with_global_dtype)
+    labels2 = ms.predict(x_with_global_dtype)
     assert_array_equal(labels, labels2)
 
 
@@ -154,14 +154,14 @@ def test_bin_seeds(global_dtype):
     # found
     ground_truth = {(1.0, 1.0), (2.0, 1.0), (0.0, 0.0)}
     test_bins = get_bin_seeds(X, 1, 1)
-    test_result = set(tuple(p) for p in test_bins)
+    test_result = {tuple(p) for p in test_bins}
     assert len(ground_truth.symmetric_difference(test_result)) == 0
 
     # With a bin coarseness of 1.0 and min_bin_freq of 2, 2 bins should be
     # found
     ground_truth = {(1.0, 1.0), (2.0, 1.0)}
     test_bins = get_bin_seeds(X, 1, 2)
-    test_result = set(tuple(p) for p in test_bins)
+    test_result = {tuple(p) for p in test_bins}
     assert len(ground_truth.symmetric_difference(test_result)) == 0
 
     # With a bin size of 0.01 and min_bin_freq of 1, 6 bins should be found
