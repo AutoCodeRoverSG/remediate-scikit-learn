@@ -129,8 +129,8 @@ def get_adjacency_matrix(redirects_filename, page_links_filename, limit=None):
     redirects = get_redirects(redirects_filename)
 
     print("Computing the integer index map")
-    index_map = dict()
-    links = list()
+    index_map = {}
+    links = []
     for l, line in enumerate(BZ2File(page_links_filename)):
         split = line.split()
         if len(split) != 4:
@@ -211,7 +211,7 @@ def centrality_scores(X, alpha=0.85, max_iter=100, tol=1e-10):
         )
         # check convergence: normalized l_inf norm
         scores_max = np.abs(scores).max()
-        if scores_max == 0.0:
+        if np.isclose(scores_max, 0.0):
             scores_max = 1.0
         err = np.abs(scores - prev_scores).max() / scores_max
         print("error: %0.6f" % err)
