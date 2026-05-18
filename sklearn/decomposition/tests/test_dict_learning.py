@@ -737,8 +737,8 @@ def test_sparse_encode_numerical_consistency(algorithm):
     # verify numerical consistency among np.float32 and np.float64
     rtol = 1e-4
     n_components = 6
-    rng = np.random.RandomState(0)
-    dictionary = rng.randn(n_components, n_features)
+    rng = np.random.default_rng(0)
+    dictionary = rng.standard_normal((n_components, n_features))
     code_32 = sparse_encode(
         X.astype(np.float32), dictionary.astype(np.float32), algorithm=algorithm
     )
@@ -757,8 +757,8 @@ def test_sparse_encode_numerical_consistency(algorithm):
 def test_sparse_coder_dtype_match(data_type, transform_algorithm):
     # Verify preserving dtype for transform in sparse coder
     n_components = 6
-    rng = np.random.RandomState(0)
-    dictionary = rng.randn(n_components, n_features)
+    rng = np.random.default_rng(0)
+    dictionary = rng.standard_normal((n_components, n_features))
     coder = SparseCoder(
         dictionary.astype(data_type), transform_algorithm=transform_algorithm
     )
@@ -846,13 +846,12 @@ def test_minibatch_dictionary_learning_dtype_match(
 )
 def test_dict_learning_dtype_match(data_type, expected_type, method):
     # Verify output matrix dtype
-    rng = np.random.RandomState(0)
     n_components = 8
     code, dictionary, _ = dict_learning(
         X.astype(data_type),
         n_components=n_components,
         alpha=1,
-        random_state=rng,
+        random_state=0,
         method_params=(method, 1000),
     )
     assert code.dtype == expected_type
@@ -891,8 +890,8 @@ def test_dict_learning_numerical_consistency(method):
     assert_allclose(np.sum(np.abs(U_64)), np.sum(np.abs(U_32)), rtol=rtol)
     assert_allclose(np.sum(V_64**2), np.sum(V_32**2), rtol=rtol)
     # verify an obtained solution is not degenerate
-    assert np.mean(U_64 != 0.0) > 0.05
-    assert np.count_nonzero(U_64 != 0.0) == np.count_nonzero(U_32 != 0.0)
+    assert np.count_nonzero(U_64) / U_64.size > 0.05
+    assert np.count_nonzero(U_64) == np.count_nonzero(U_32)
 
 
 @pytest.mark.parametrize("method", ("lars", "cd"))
@@ -907,14 +906,13 @@ def test_dict_learning_numerical_consistency(method):
 )
 def test_dict_learning_online_dtype_match(data_type, expected_type, method):
     # Verify output matrix dtype
-    rng = np.random.RandomState(0)
     n_components = 8
     code, dictionary = dict_learning_online(
         X.astype(data_type),
         n_components=n_components,
         alpha=1,
         batch_size=10,
-        random_state=rng,
+        random_state=0,
         method=method,
     )
     assert code.dtype == expected_type
@@ -961,8 +959,8 @@ def test_dict_learning_online_numerical_consistency(method):
     assert_allclose(np.sum(np.abs(U_64)), np.sum(np.abs(U_32)), rtol=rtol)
     assert_allclose(np.sum(V_64**2), np.sum(V_32**2), rtol=rtol)
     # verify an obtained solution is not degenerate
-    assert np.mean(U_64 != 0.0) > 0.05
-    assert np.count_nonzero(U_64 != 0.0) == np.count_nonzero(U_32 != 0.0)
+    assert np.count_nonzero(U_64) / U_64.size > 0.05
+    assert np.count_nonzero(U_64) == np.count_nonzero(U_32)
 
 
 @pytest.mark.parametrize(
