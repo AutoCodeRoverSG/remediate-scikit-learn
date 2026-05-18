@@ -224,13 +224,14 @@ def test_minibatch_update_consistency(X_csr, global_random_seed):
     sample_weight_mb = sample_weight[:10]
 
     # step 1: compute the dense minibatch update
+    rng_dense = np.random.default_rng(global_random_seed)
     old_inertia = _mini_batch_step(
         X_mb,
         sample_weight_mb,
         centers_old,
         centers_new,
         weight_sums,
-        np.random.default_rng(global_random_seed),
+        rng_dense,
         random_reassign=False,
     )
     assert old_inertia > 0.0
@@ -241,13 +242,14 @@ def test_minibatch_update_consistency(X_csr, global_random_seed):
     assert new_inertia < old_inertia
 
     # step 2: compute the sparse minibatch update
+    rng_csr = np.random.default_rng(global_random_seed)
     old_inertia_csr = _mini_batch_step(
         X_mb_csr,
         sample_weight_mb,
         centers_old_csr,
         centers_new_csr,
         weight_sums_csr,
-        np.random.default_rng(global_random_seed),
+        rng_csr,
         random_reassign=False,
     )
     assert old_inertia_csr > 0.0
@@ -342,9 +344,10 @@ def test_kmeans_init_auto_with_initial_centroids(Estimator, init, expected_n_ini
     https://github.com/scikit-learn/scikit-learn/pull/26657
     """
     n_sample, n_features, n_clusters = 100, 10, 5
-    X = np.random.randn(n_sample, n_features)
+    rng = np.random.default_rng(42)
+    X = rng.standard_normal((n_sample, n_features))
     if init == "array-like":
-        init = np.random.randn(n_clusters, n_features)
+        init = rng.standard_normal((n_clusters, n_features))
     if expected_n_init == "default":
         expected_n_init = 3 if Estimator is MiniBatchKMeans else 10
 
@@ -386,7 +389,7 @@ def test_minibatch_kmeans_verbose():
 @pytest.mark.parametrize("tol", [1e-2, 0])
 def test_kmeans_verbose(algorithm, tol, capsys):
     # Check verbose mode of KMeans for better coverage.
-    X = np.random.RandomState(0).normal(size=(5000, 10))
+    X = np.random.default_rng(0).standard_normal(size=(5000, 10))
 
     KMeans(
         algorithm=algorithm,
@@ -475,7 +478,7 @@ def test_minibatch_reassign(input_data, global_random_seed):
 
     sample_weight = np.ones(n_samples)
     centers_new = np.empty_like(perfect_centers)
-    random_state = np.random.RandomState(global_random_seed)
+    random_state = np.random.default_rng(global_random_seed)
 
     # Give a perfect initialization, but a large reassignment_ratio, as a
     # result many centers should be reassigned and the model should no longer
