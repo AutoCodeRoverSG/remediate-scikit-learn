@@ -37,8 +37,8 @@ def test_graphical_lassos(global_random_seed):
     emp_cov = empirical_covariance(X)
 
     for alpha in (0.0, 0.1, 0.25):
-        covs = dict()
-        icovs = dict()
+        covs = {}
+        icovs = {}
         for method in ("cd", "lars"):
             cov_, icov_, costs = graphical_lasso(
                 emp_cov,
@@ -51,9 +51,9 @@ def test_graphical_lassos(global_random_seed):
             )
             covs[method] = cov_
             icovs[method] = icov_
-            costs, dual_gap = np.array(costs).T
+            costs, _ = np.array(costs).T
             # Check that the costs always decrease (doesn't hold if alpha == 0)
-            if not alpha == 0:
+            if alpha != 0:
                 # use 1e-10 since the cost can be exactly 0
                 assert_array_less(np.diff(costs), 1e-10)
         # Check that the 2 approaches give similar results
@@ -68,7 +68,7 @@ def test_graphical_lassos(global_random_seed):
     # For a centered matrix, assume_centered could be chosen True or False
     # Check that this returns indeed the same result for centered data
     Z = X - X.mean(0)
-    precs = list()
+    precs = []
     for assume_centered in (False, True):
         prec_ = GraphicalLasso(assume_centered=assume_centered).fit(Z).precision_
         precs.append(prec_)
@@ -77,7 +77,7 @@ def test_graphical_lassos(global_random_seed):
 
 def test_graphical_lasso_when_alpha_equals_0(global_random_seed):
     """Test graphical_lasso's early return condition when alpha=0."""
-    X = np.random.RandomState(global_random_seed).randn(100, 10)
+    X = np.random.default_rng(global_random_seed).standard_normal((100, 10))
     emp_cov = empirical_covariance(X, assume_centered=True)
 
     model = GraphicalLasso(alpha=0, covariance="precomputed").fit(emp_cov)
@@ -102,7 +102,7 @@ def test_graphical_lasso_n_iter(mode):
 def test_graphical_lasso_iris():
     # Hard-coded solution from R glasso package for alpha=1.0
     # (need to set penalize.diagonal to FALSE)
-    cov_R = np.array(
+    cov_r = np.array(
         [
             [0.68112222, 0.0000000, 0.265820, 0.02464314],
             [0.00000000, 0.1887129, 0.000000, 0.00000000],
@@ -110,7 +110,7 @@ def test_graphical_lasso_iris():
             [0.02464314, 0.0000000, 0.286972, 0.57713289],
         ]
     )
-    icov_R = np.array(
+    icov_r = np.array(
         [
             [1.5190747, 0.000000, -0.1304475, 0.0000000],
             [0.0000000, 5.299055, 0.0000000, 0.0000000],
@@ -122,8 +122,8 @@ def test_graphical_lasso_iris():
     emp_cov = empirical_covariance(X)
     for method in ("cd", "lars"):
         cov, icov = graphical_lasso(emp_cov, alpha=1.0, return_costs=False, mode=method)
-        assert_array_almost_equal(cov, cov_R)
-        assert_array_almost_equal(icov, icov_R)
+        assert_array_almost_equal(cov, cov_r)
+        assert_array_almost_equal(icov, icov_r)
 
 
 def test_graph_lasso_2D():
@@ -159,7 +159,7 @@ def test_graphical_lasso_iris_singular(method):
     # sol = glasso(emp_cov, 0.01, penalize.diagonal = FALSE)
     # # print cov_R
     # print(noquote(format(sol$w, scientific=FALSE, digits = 10)))
-    cov_R = np.array(
+    cov_r = np.array(
         [
             [0.08, 0.056666662595, 0.00229729713223, 0.00153153142149],
             [0.056666662595, 0.082222222222, 0.00333333333333, 0.00222222222222],
@@ -167,7 +167,7 @@ def test_graphical_lasso_iris_singular(method):
             [0.001531531421, 0.002222222222, 0.00009009009009, 0.00222222222222],
         ]
     )
-    icov_R = np.array(
+    icov_r = np.array(
         [
             [24.42244057, -16.831679593, 0.0, 0.0],
             [-16.83168201, 24.351841681, -6.206896552, -12.5],
@@ -178,8 +178,8 @@ def test_graphical_lasso_iris_singular(method):
     X = datasets.load_iris().data[indices, :]
     emp_cov = empirical_covariance(X)
     cov, icov = graphical_lasso(emp_cov, alpha=0.01, return_costs=False, mode=method)
-    assert_allclose(cov, cov_R, atol=1e-6)
-    assert_allclose(icov, icov_R, atol=1e-5)
+    assert_allclose(cov, cov_r, atol=1e-6)
+    assert_allclose(icov, icov_r, atol=1e-5)
 
 
 def test_graphical_lasso_cv(global_random_seed):
