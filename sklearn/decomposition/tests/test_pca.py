@@ -145,7 +145,7 @@ def test_pca_sparse_fit_transform(global_random_seed, sparse_container):
 @pytest.mark.parametrize("svd_solver", ["randomized", "full"])
 @pytest.mark.parametrize("sparse_container", CSR_CONTAINERS + CSC_CONTAINERS)
 def test_sparse_pca_solver_error(global_random_seed, svd_solver, sparse_container):
-    rng = np.random.RandomState(global_random_seed)
+    rng = np.random.default_rng(global_random_seed)
     X = sparse_container(_sparse_random_array((SPARSE_M, SPARSE_N), rng=rng))
     pca = PCA(n_components=30, svd_solver=svd_solver)
     error_msg_pattern = (
@@ -161,7 +161,7 @@ def test_sparse_pca_auto_arpack_singular_values_consistency(
     global_random_seed, sparse_container
 ):
     """Check that "auto" and "arpack" solvers are equivalent for sparse inputs."""
-    rng = np.random.RandomState(global_random_seed)
+    rng = np.random.default_rng(global_random_seed)
     X = sparse_container(_sparse_random_array((SPARSE_M, SPARSE_N), rng=rng))
     pca_arpack = PCA(n_components=10, svd_solver="arpack").fit(X)
     pca_auto = PCA(n_components=10, svd_solver="auto").fit(X)
@@ -172,7 +172,7 @@ def test_no_empty_slice_warning():
     # test if we avoid numpy warnings for computing over empty arrays
     n_components = 10
     n_features = n_components + 2  # anything > n_comps triggered it in 0.16
-    X = np.random.uniform(-1, 1, size=(n_components, n_features))
+    X = np.random.default_rng(42).uniform(-1, 1, size=(n_components, n_features))
     pca = PCA(n_components=n_components)
     with warnings.catch_warnings():
         warnings.simplefilter("error", RuntimeWarning)
@@ -183,7 +183,7 @@ def test_no_empty_slice_warning():
 @pytest.mark.parametrize("solver", PCA_SOLVERS)
 def test_whitening(solver, copy):
     # Check that PCA output has unit-variance
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
     n_samples = 100
     n_features = 80
     n_components = 30
@@ -191,8 +191,11 @@ def test_whitening(solver, copy):
 
     # some low rank data with correlated features
     X = np.dot(
-        rng.randn(n_samples, rank),
-        np.dot(np.diag(np.linspace(10.0, 1.0, rank)), rng.randn(rank, n_features)),
+        rng.standard_normal((n_samples, rank)),
+        np.dot(
+            np.diag(np.linspace(10.0, 1.0, rank)),
+            rng.standard_normal((rank, n_features)),
+        ),
     )
     # the component-wise variance of the first 50 features is 3 times the
     # mean component-wise variance of the remaining 30 features
@@ -377,9 +380,9 @@ def test_pca_solver_equivalence(
 @pytest.mark.parametrize(
     "X",
     [
-        np.random.RandomState(0).randn(100, 80),
+        np.random.default_rng(0).standard_normal((100, 80)),
         datasets.make_classification(100, 80, n_informative=78, random_state=0)[0],
-        np.random.RandomState(0).randn(10, 100),
+        np.random.default_rng(0).standard_normal((10, 100)),
     ],
     ids=["random-tall", "correlated-tall", "random-wide"],
 )
@@ -396,12 +399,12 @@ def test_pca_explained_variance_empirical(X, svd_solver):
 
 @pytest.mark.parametrize("svd_solver", ["arpack", "randomized"])
 def test_pca_singular_values_consistency(svd_solver):
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
     n_samples, n_features = 100, 80
-    X = rng.randn(n_samples, n_features)
+    X = rng.standard_normal((n_samples, n_features))
 
-    pca_full = PCA(n_components=2, svd_solver="full", random_state=rng)
-    pca_other = PCA(n_components=2, svd_solver=svd_solver, random_state=rng)
+    pca_full = PCA(n_components=2, svd_solver="full", random_state=0)
+    pca_other = PCA(n_components=2, svd_solver=svd_solver, random_state=0)
 
     pca_full.fit(X)
     pca_other.fit(X)
@@ -411,11 +414,11 @@ def test_pca_singular_values_consistency(svd_solver):
 
 @pytest.mark.parametrize("svd_solver", PCA_SOLVERS)
 def test_pca_singular_values(svd_solver):
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
     n_samples, n_features = 100, 80
-    X = rng.randn(n_samples, n_features)
+    X = rng.standard_normal((n_samples, n_features))
 
-    pca = PCA(n_components=2, svd_solver=svd_solver, random_state=rng)
+    pca = PCA(n_components=2, svd_solver=svd_solver, random_state=0)
     x_trans = pca.fit_transform(X)
 
     # compare to the Frobenius norm
@@ -427,9 +430,9 @@ def test_pca_singular_values(svd_solver):
 
     # set the singular values and see what er get back
     n_samples, n_features = 100, 110
-    X = rng.randn(n_samples, n_features)
+    X = rng.standard_normal((n_samples, n_features))
 
-    pca = PCA(n_components=3, svd_solver=svd_solver, random_state=rng)
+    pca = PCA(n_components=3, svd_solver=svd_solver, random_state=0)
     x_trans = pca.fit_transform(X)
     x_trans /= np.sqrt(np.sum(x_trans**2, axis=0))
     x_trans[:, 0] *= 3.142
@@ -789,17 +792,17 @@ def check_pca_float_dtype_preservation(svd_solver, seed):
 
 def check_pca_int_dtype_upcast_to_double(svd_solver):
     # Ensure that all int types will be upcast to float64
-    x_i64 = np.random.RandomState(0).randint(0, 1000, (1000, 4))
-    x_i64 = x_i64.astype(np.int64, copy=False)
-    x_i32 = x_i64.astype(np.int32, copy=False)
+    x_int64 = np.random.default_rng(0).integers(0, 1000, (1000, 4))
+    x_int64 = x_int64.astype(np.int64, copy=False)
+    x_int32 = x_int64.astype(np.int32, copy=False)
 
-    pca_64 = PCA(n_components=3, svd_solver=svd_solver, random_state=0).fit(x_i64)
-    pca_32 = PCA(n_components=3, svd_solver=svd_solver, random_state=0).fit(x_i32)
+    pca_64 = PCA(n_components=3, svd_solver=svd_solver, random_state=0).fit(x_int64)
+    pca_32 = PCA(n_components=3, svd_solver=svd_solver, random_state=0).fit(x_int32)
 
     assert pca_64.components_.dtype == np.float64
     assert pca_32.components_.dtype == np.float64
-    assert pca_64.transform(x_i64).dtype == np.float64
-    assert pca_32.transform(x_i32).dtype == np.float64
+    assert pca_64.transform(x_int64).dtype == np.float64
+    assert pca_32.transform(x_int32).dtype == np.float64
 
     assert_allclose(pca_64.components_, pca_32.components_, rtol=1e-4)
 
@@ -1054,7 +1057,7 @@ def test_pca_mle_array_api_compliance(
 
     est = clone(estimator)
 
-    X_xp = xp.asarray(X, device=device)
+    x_xp = xp.asarray(X, device=device)
     y_xp = xp.asarray(y, device=device)
 
     est.fit(X, y)
@@ -1064,13 +1067,13 @@ def test_pca_mle_array_api_compliance(
 
     est_xp = clone(est)
     with config_context(array_api_dispatch=True):
-        est_xp.fit(X_xp, y_xp)
+        est_xp.fit(x_xp, y_xp)
         components_xp = est_xp.components_
-        assert array_device(components_xp) == array_device(X_xp)
+        assert array_device(components_xp) == array_device(x_xp)
         components_xp_np = move_to(components_xp, xp=np, device="cpu")
 
         explained_variance_xp = est_xp.explained_variance_
-        assert array_device(explained_variance_xp) == array_device(X_xp)
+        assert array_device(explained_variance_xp) == array_device(x_xp)
         explained_variance_xp_np = move_to(explained_variance_xp, xp=np, device="cpu")
 
     assert components_xp_np.dtype == components_np.dtype
