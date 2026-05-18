@@ -77,7 +77,7 @@ n_repeat = 50  # Number of iterations for computing expectations
 n_train = 50  # Size of the training set
 n_test = 1000  # Size of the test set
 noise = 0.1  # Standard deviation of the noise
-np.random.seed(0)
+rng = np.random.default_rng(0)
 
 # Change this for exploring the bias-variance decomposition of other
 # estimators. This should work well for estimators with high variance (e.g.,
@@ -99,16 +99,16 @@ def f(x):
 
 
 def generate(n_samples, noise, n_repeat=1):
-    X = np.random.rand(n_samples) * 10 - 5
+    X = rng.random(n_samples) * 10 - 5
     X = np.sort(X)
 
     if n_repeat == 1:
-        y = f(X) + np.random.normal(0.0, noise, n_samples)
+        y = f(X) + rng.normal(0.0, noise, n_samples)
     else:
         y = np.zeros((n_samples, n_repeat))
 
         for i in range(n_repeat):
-            y[:, i] = f(X) + np.random.normal(0.0, noise, n_samples)
+            y[:, i] = f(X) + rng.normal(0.0, noise, n_samples)
 
     X = X.reshape((n_samples, 1))
 
