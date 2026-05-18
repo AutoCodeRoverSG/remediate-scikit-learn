@@ -27,9 +27,9 @@ def test_incremental_pca():
     pca = PCA(n_components=2)
     pca.fit_transform(X)
 
-    X_transformed = ipca.fit_transform(X)
+    x_transformed = ipca.fit_transform(X)
 
-    assert X_transformed.shape == (X.shape[0], 2)
+    assert x_transformed.shape == (X.shape[0], 2)
     np.testing.assert_allclose(
         ipca.explained_variance_ratio_.sum(),
         pca.explained_variance_ratio_.sum(),
@@ -54,13 +54,13 @@ def test_incremental_pca_sparse(sparse_container):
     X = iris.data
     pca = PCA(n_components=2)
     pca.fit_transform(X)
-    X_sparse = sparse_container(X)
-    batch_size = X_sparse.shape[0] // 3
+    x_sparse = sparse_container(X)
+    batch_size = x_sparse.shape[0] // 3
     ipca = IncrementalPCA(n_components=2, batch_size=batch_size)
 
-    X_transformed = ipca.fit_transform(X_sparse)
+    x_transformed = ipca.fit_transform(x_sparse)
 
-    assert X_transformed.shape == (X_sparse.shape[0], 2)
+    assert x_transformed.shape == (x_sparse.shape[0], 2)
     np.testing.assert_allclose(
         ipca.explained_variance_ratio_.sum(),
         pca.explained_variance_ratio_.sum(),
@@ -69,11 +69,11 @@ def test_incremental_pca_sparse(sparse_container):
 
     for n_components in [1, 2, X.shape[1]]:
         ipca = IncrementalPCA(n_components, batch_size=batch_size)
-        ipca.fit(X_sparse)
+        ipca.fit(x_sparse)
         cov = ipca.get_covariance()
         precision = ipca.get_precision()
         np.testing.assert_allclose(
-            np.dot(cov, precision), np.eye(X_sparse.shape[1]), atol=1e-13
+            np.dot(cov, precision), np.eye(x_sparse.shape[1]), atol=1e-13
         )
 
     with pytest.raises(
@@ -84,7 +84,7 @@ def test_incremental_pca_sparse(sparse_container):
             "or use IncrementalPCA.fit to do so in batches."
         ),
     ):
-        ipca.partial_fit(X_sparse)
+        ipca.partial_fit(x_sparse)
 
 
 def test_incremental_pca_check_projection(global_random_seed):
@@ -93,19 +93,19 @@ def test_incremental_pca_check_projection(global_random_seed):
     n, p = 100, 3
     X = rng.randn(n, p) * 0.1
     X[:10] += np.array([3, 4, 5])
-    Xt = 0.1 * rng.randn(1, p) + np.array([3, 4, 5])
+    x_t = 0.1 * rng.randn(1, p) + np.array([3, 4, 5])
 
     # Get the reconstruction of the generated data X
     # Note that Xt has the same "components" as X, just separated
     # This is what we want to ensure is recreated correctly
-    Yt = IncrementalPCA(n_components=2).fit(X).transform(Xt)
+    y_t = IncrementalPCA(n_components=2).fit(X).transform(x_t)
 
     # Normalize
-    Yt /= np.sqrt((Yt**2).sum())
+    y_t /= np.sqrt((y_t**2).sum())
 
     # Make sure that the first element of Yt is ~1, this means
     # the reconstruction worked as expected
-    assert_almost_equal(np.abs(Yt[0][0]), 1.0, 1)
+    assert_almost_equal(np.abs(y_t[0][0]), 1.0, 1)
 
 
 def test_incremental_pca_inverse(global_random_seed):
@@ -120,8 +120,8 @@ def test_incremental_pca_inverse(global_random_seed):
     # signal (since the data is almost of rank n_components)
     ipca = IncrementalPCA(n_components=2, batch_size=10).fit(X)
     Y = ipca.transform(X)
-    Y_inverse = ipca.inverse_transform(Y)
-    assert_almost_equal(X, Y_inverse, decimal=3)
+    y_inverse = ipca.inverse_transform(Y)
+    assert_almost_equal(X, y_inverse, decimal=3)
 
 
 def test_incremental_pca_validation():
@@ -310,10 +310,10 @@ def test_incremental_pca_against_pca_iris():
     # Test that IncrementalPCA and PCA are approximate (to a sign flip).
     X = iris.data
 
-    Y_pca = PCA(n_components=2).fit_transform(X)
-    Y_ipca = IncrementalPCA(n_components=2, batch_size=25).fit_transform(X)
+    y_pca = PCA(n_components=2).fit_transform(X)
+    y_ipca = IncrementalPCA(n_components=2, batch_size=25).fit_transform(X)
 
-    assert_almost_equal(np.abs(Y_pca), np.abs(Y_ipca), 1)
+    assert_almost_equal(np.abs(y_pca), np.abs(y_ipca), 1)
 
 
 def test_incremental_pca_against_pca_random_data(global_random_seed):
@@ -323,10 +323,10 @@ def test_incremental_pca_against_pca_random_data(global_random_seed):
     n_features = 3
     X = rng.randn(n_samples, n_features) + 5 * rng.rand(1, n_features)
 
-    Y_pca = PCA(n_components=3).fit_transform(X)
-    Y_ipca = IncrementalPCA(n_components=3, batch_size=25).fit_transform(X)
+    y_pca = PCA(n_components=3).fit_transform(X)
+    y_ipca = IncrementalPCA(n_components=3, batch_size=25).fit_transform(X)
 
-    assert_almost_equal(np.abs(Y_pca), np.abs(Y_ipca), 1)
+    assert_almost_equal(np.abs(y_pca), np.abs(y_ipca), 1)
 
 
 def test_explained_variances():
