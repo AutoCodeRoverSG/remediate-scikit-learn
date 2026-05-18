@@ -29,9 +29,11 @@ def test_base():
     ensemble.estimators_ = []  # empty the list and create estimators manually
 
     ensemble._make_estimator()
-    random_state = np.random.RandomState(3)
-    ensemble._make_estimator(random_state=random_state)
-    ensemble._make_estimator(random_state=random_state)
+    rng = np.random.default_rng(3)
+    seed1 = int(rng.integers(np.iinfo(np.int32).max))
+    seed2 = int(rng.integers(np.iinfo(np.int32).max))
+    ensemble._make_estimator(random_state=seed1)
+    ensemble._make_estimator(random_state=seed2)
     ensemble._make_estimator(append=False)
 
     assert 3 == len(ensemble)
@@ -63,7 +65,7 @@ def test_set_random_states():
     # check random_state fixes results in consistent initialisation
     _set_random_states(clf1, random_state=3)
     assert isinstance(clf1.random_state, int)
-    clf2 = Perceptron(random_state=None)
+    clf2 = Perceptron(random_state=0)
     _set_random_states(clf2, random_state=3)
     assert clf1.random_state == clf2.random_state
 
@@ -71,11 +73,11 @@ def test_set_random_states():
 
     def make_steps():
         return [
-            ("sel", SelectFromModel(Perceptron(random_state=None))),
-            ("clf", Perceptron(random_state=None)),
+            ("sel", SelectFromModel(Perceptron(random_state=0))),
+            ("clf", Perceptron(random_state=0)),
         ]
 
-    est1 = Pipeline(make_steps())
+    est1 = Pipeline(make_steps(), memory=None)
     _set_random_states(est1, 3)
     assert isinstance(est1.steps[0][1].estimator.random_state, int)
     assert isinstance(est1.steps[1][1].random_state, int)
@@ -98,7 +100,7 @@ def test_set_random_states():
             return OrderedDict(sorted(params, reverse=True))
 
     for cls in [AlphaParamPipeline, RevParamPipeline]:
-        est2 = cls(make_steps())
+        est2 = cls(make_steps(), memory=None)
         _set_random_states(est2, 3)
         assert (
             est1.get_params()["sel__estimator__random_state"]

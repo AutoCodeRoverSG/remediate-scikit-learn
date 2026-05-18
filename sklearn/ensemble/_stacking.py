@@ -273,8 +273,8 @@ class _BaseStacking(TransformerMixin, _BaseHeterogeneousEnsemble, metaclass=ABCM
             if est != "drop"
         ]
 
-        X_meta = self._concatenate_predictions(X, predictions)
-        _fit_single_estimator(self.final_estimator_, X_meta, y, fit_params=fit_params)
+        x_meta = self._concatenate_predictions(X, predictions)
+        _fit_single_estimator(self.final_estimator_, x_meta, y, fit_params=fit_params)
 
         return self
 

@@ -302,7 +302,7 @@ class DummyClassifier(MultiOutputMixin, ClassifierMixin, BaseEstimator):
             elif self._strategy == "constant":
                 classes_ = [np.array([c]) for c in constant]
 
-            y = _random_choice_csc(n_samples, classes_, class_prob, self.random_state)
+            y = _random_choice_csc(n_samples, classes_, class_prob, rs)
         else:
             if self._strategy in ("most_frequent", "prior"):
                 y = np.tile(
@@ -388,7 +388,7 @@ class DummyClassifier(MultiOutputMixin, ClassifierMixin, BaseEstimator):
                 out /= n_classes_[k]
 
             elif self._strategy == "constant":
-                ind = np.where(classes_[k] == constant[k])
+                ind = np.nonzero(classes_[k] == constant[k])
                 out = np.zeros((n_samples, n_classes_[k]), dtype=np.float64)
                 out[:, ind] = 1.0
 
