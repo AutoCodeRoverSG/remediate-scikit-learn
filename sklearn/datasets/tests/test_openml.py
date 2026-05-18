@@ -431,13 +431,13 @@ def test_fetch_openml_equivalence_array_dataframe(monkeypatch, parser):
 def test_fetch_openml_iris_pandas(monkeypatch, parser):
     """Check fetching on a numerical only dataset with string labels."""
     pd = pytest.importorskip("pandas")
-    CategoricalDtype = pd.api.types.CategoricalDtype
+    categorical_dtype = pd.api.types.CategoricalDtype
     data_id = 61
     data_shape = (150, 4)
     target_shape = (150,)
     frame_shape = (150, 5)
 
-    target_dtype = CategoricalDtype(
+    target_dtype = categorical_dtype(
         ["Iris-setosa", "Iris-versicolor", "Iris-virginica"]
     )
     data_dtypes = [np.float64] * 4
@@ -510,7 +510,7 @@ def test_fetch_openml_forcing_targets(monkeypatch, parser, target_column):
 
 @pytest.mark.parametrize("data_id", [61, 2, 561, 40589, 1119])
 @pytest.mark.parametrize("parser", ["liac-arff", "pandas"])
-def test_fetch_openml_equivalence_frame_return_X_y(monkeypatch, data_id, parser):
+def test_fetch_openml_equivalence_frame_return_x_y(monkeypatch, data_id, parser):
     """Check the behaviour of `return_X_y=True` when `as_frame=True`."""
     pd = pytest.importorskip("pandas")
 
@@ -539,7 +539,7 @@ def test_fetch_openml_equivalence_frame_return_X_y(monkeypatch, data_id, parser)
 
 @pytest.mark.parametrize("data_id", [61, 561, 40589, 1119])
 @pytest.mark.parametrize("parser", ["liac-arff", "pandas"])
-def test_fetch_openml_equivalence_array_return_X_y(monkeypatch, data_id, parser):
+def test_fetch_openml_equivalence_array_return_x_y(monkeypatch, data_id, parser):
     """Check the behaviour of `return_X_y=True` when `as_frame=False`."""
     pytest.importorskip("pandas")
 
@@ -927,7 +927,7 @@ def test_fetch_openml_types_inference(
     """Check that `fetch_openml` infer the right number of categories, integers, and
     floats."""
     pd = pytest.importorskip("pandas")
-    CategoricalDtype = pd.api.types.CategoricalDtype
+    categorical_dtype = pd.api.types.CategoricalDtype
 
     _monkey_patch_webbased_functions(monkeypatch, data_id, gzip_response=gzip_response)
 
@@ -940,7 +940,7 @@ def test_fetch_openml_types_inference(
     frame = bunch.frame
 
     n_categories = len(
-        [dtype for dtype in frame.dtypes if isinstance(dtype, CategoricalDtype)]
+        [dtype for dtype in frame.dtypes if isinstance(dtype, categorical_dtype)]
     )
     n_floats = len([dtype for dtype in frame.dtypes if dtype.kind == "f"])
     n_ints = len([dtype for dtype in frame.dtypes if dtype.kind == "i"])
@@ -1406,7 +1406,7 @@ def test_retry_with_clean_cache(tmpdir):
     def _load_data():
         # The first call will raise an error since location exists
         if os.path.exists(location):
-            raise Exception("File exist!")
+            raise ValueError("File exist!")
         return 1
 
     warn_msg = "Invalid cache, redownloading file"
@@ -1443,7 +1443,7 @@ def test_fetch_openml_cache(monkeypatch, gzip_response, tmpdir):
     data_id = 61
     cache_directory = str(tmpdir.mkdir("scikit_learn_data"))
     _monkey_patch_webbased_functions(monkeypatch, data_id, gzip_response)
-    X_fetched, y_fetched = fetch_openml(
+    x_fetched, y_fetched = fetch_openml(
         data_id=data_id,
         cache=True,
         data_home=cache_directory,
@@ -1454,7 +1454,7 @@ def test_fetch_openml_cache(monkeypatch, gzip_response, tmpdir):
 
     monkeypatch.setattr(sklearn.datasets._openml, "urlopen", _mock_urlopen_raise)
 
-    X_cached, y_cached = fetch_openml(
+    x_cached, y_cached = fetch_openml(
         data_id=data_id,
         cache=True,
         data_home=cache_directory,
@@ -1462,7 +1462,7 @@ def test_fetch_openml_cache(monkeypatch, gzip_response, tmpdir):
         as_frame=False,
         parser="liac-arff",
     )
-    np.testing.assert_array_equal(X_fetched, X_cached)
+    np.testing.assert_array_equal(x_fetched, x_cached)
     np.testing.assert_array_equal(y_fetched, y_cached)
 
 
