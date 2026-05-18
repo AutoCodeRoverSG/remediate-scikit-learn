@@ -216,7 +216,6 @@ def _sparse_encode_precomputed(
         "init": ["array-like", None],
         "max_iter": [Interval(Integral, 0, None, closed="left")],
         "n_jobs": [Integral, None],
-        "check_input": ["boolean"],
         "verbose": ["verbose"],
         "positive": ["boolean"],
     },
@@ -236,7 +235,6 @@ def sparse_encode(
     init=None,
     max_iter=1000,
     n_jobs=None,
-    check_input=True,
     verbose=0,
     positive=False,
 ):
@@ -356,12 +354,11 @@ def sparse_encode(
     array([[ 0.,  0., -1.,  0.,  0.],
            [ 0.,  1.,  1.,  0.,  0.]])
     """
-    if check_input:
-        order = "C" if algorithm == "lasso_cd" else None
-        dictionary = check_array(
-            dictionary, order=order, dtype=[np.float64, np.float32]
-        )
-        X = check_array(X, order=order, dtype=[np.float64, np.float32])
+    order = "C" if algorithm == "lasso_cd" else None
+    dictionary = check_array(
+        dictionary, order=order, dtype=[np.float64, np.float32]
+    )
+    X = check_array(X, order=order, dtype=[np.float64, np.float32])
 
     if dictionary.shape[1] != X.shape[1]:
         raise ValueError(
@@ -555,19 +552,20 @@ def _dict_learning(
     alpha,
     max_iter,
     tol,
-    method,
+    method_params,
     n_jobs,
-    dict_init,
-    code_init,
+    init,
     callback,
     verbose,
     random_state,
     return_n_iter,
-    positive_dict,
-    positive_code,
-    method_max_iter,
+    positive,
 ):
     """Main dictionary learning algorithm"""
+    positive_dict, positive_code = positive
+    dict_init, code_init = init
+    method, method_max_iter = method_params
+
     t0 = time.time()
     # Init the code and the dictionary with SVD of Y
     if code_init is not None and dict_init is not None:
@@ -644,7 +642,7 @@ def _dict_learning(
 
         if ii > 0:
             d_e = errors[-2] - errors[-1]
-            # assert(dE >= -tol * errors[-1])
+            
             if d_e < tol * errors[-1]:
                 if verbose == 1:
                     # A line return
@@ -666,7 +664,6 @@ def _dict_learning(
         "X": ["array-like"],
         "return_code": ["boolean"],
         "method": [StrOptions({"cd", "lars"})],
-        "method_max_iter": [Interval(Integral, 0, None, closed="left")],
     },
     prefer_skip_nested_validation=False,
 )
@@ -678,18 +675,13 @@ def dict_learning_online(
     max_iter=100,
     return_code=True,
     dict_init=None,
-    callback=None,
     batch_size=256,
     verbose=False,
     shuffle=True,
     n_jobs=None,
     method="lars",
     random_state=None,
-    positive_dict=False,
-    positive_code=False,
-    method_max_iter=1000,
-    tol=1e-3,
-    max_no_improvement=10,
+    **kwargs,
 ):
     """Solve a dictionary learning matrix factorization problem online.
 
@@ -850,6 +842,19 @@ def dict_learning_online(
     >>> np.mean(np.sum((X_hat - X) ** 2, axis=1) / np.sum(X ** 2, axis=1))
     np.float64(0.053)
     """
+    callback = kwargs.pop("callback", None)
+    positive_dict = kwargs.pop("positive_dict", False)
+    positive_code = kwargs.pop("positive_code", False)
+    method_max_iter = kwargs.pop("method_max_iter", 1000)
+    tol = kwargs.pop("tol", 1e-3)
+    max_no_improvement = kwargs.pop("max_no_improvement", 10)
+
+    if kwargs:
+        raise TypeError(
+            "dict_learning_online() got unexpected keyword argument(s): "
+            + ", ".join(sorted(kwargs))
+        )
+
     transform_algorithm = "lasso_" + method
 
     est = MiniBatchDictionaryLearning(
@@ -883,9 +888,7 @@ def dict_learning_online(
 @validate_params(
     {
         "X": ["array-like"],
-        "method": [StrOptions({"lars", "cd"})],
         "return_n_iter": ["boolean"],
-        "method_max_iter": [Interval(Integral, 0, None, closed="left")],
     },
     prefer_skip_nested_validation=False,
 )
@@ -896,17 +899,14 @@ def dict_learning(
     alpha,
     max_iter=100,
     tol=1e-8,
-    method="lars",
+    method_params=("lars", 1000),
     n_jobs=None,
-    dict_init=None,
-    code_init=None,
+    init=(None, None),
     callback=None,
     verbose=False,
     random_state=None,
     return_n_iter=False,
-    positive_dict=False,
-    positive_code=False,
-    method_max_iter=1000,
+    positive=(False, False),
 ):
     """Solve a dictionary learning matrix factorization problem.
 
@@ -1041,6 +1041,9 @@ def dict_learning(
     >>> np.mean(np.sum((X_hat - X) ** 2, axis=1) / np.sum(X ** 2, axis=1))
     np.float64(0.0192)
     """
+    method, method_max_iter = method_params
+    dict_init, code_init = init
+    positive_dict, positive_code = positive
     estimator = DictionaryLearning(
         n_components=n_components,
         alpha=alpha,
@@ -1729,17 +1732,14 @@ class DictionaryLearning(_BaseSparseCoding, BaseEstimator):
             alpha=self.alpha,
             tol=self.tol,
             max_iter=self.max_iter,
-            method=method,
-            method_max_iter=self.transform_max_iter,
+            method_params=(method, self.transform_max_iter),
             n_jobs=self.n_jobs,
-            code_init=self.code_init,
-            dict_init=self.dict_init,
+            init=(self.dict_init, self.code_init),
             callback=self.callback,
             verbose=self.verbose,
             random_state=random_state,
             return_n_iter=True,
-            positive_dict=self.positive_dict,
-            positive_code=self.positive_code,
+            positive=(self.positive_dict, self.positive_code),
         )
         self.components_ = U
         self.error_ = E

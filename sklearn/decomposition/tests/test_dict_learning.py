@@ -130,7 +130,7 @@ def test_dict_learning_lars_positive_parameter():
     alpha = 1
     err_msg = "Positive constraint not supported for 'lars' coding method."
     with pytest.raises(ValueError, match=err_msg):
-        dict_learning(X, n_components, alpha=alpha, positive_code=True)
+        dict_learning(X, n_components, alpha=alpha, positive=(False, True))
 
 
 @pytest.mark.parametrize(
@@ -855,7 +855,7 @@ def test_dict_learning_dtype_match(data_type, expected_type, method):
         n_components=n_components,
         alpha=1,
         random_state=rng,
-        method=method,
+        method_params=(method, 1000),
     )
     assert code.dtype == expected_type
     assert dictionary.dtype == expected_type
@@ -873,14 +873,14 @@ def test_dict_learning_numerical_consistency(method):
         n_components=n_components,
         alpha=alpha,
         random_state=0,
-        method=method,
+        method_params=(method, 1000),
     )
     U_32, V_32, _ = dict_learning(
         X.astype(np.float32),
         n_components=n_components,
         alpha=alpha,
         random_state=0,
-        method=method,
+        method_params=(method, 1000),
     )
 
     # Optimal solution (U*, V*) is not unique.
