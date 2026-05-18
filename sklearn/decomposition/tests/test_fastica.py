@@ -35,20 +35,20 @@ def center_and_norm(x, axis=-1):
 def test_gs(global_random_seed):
     # Test gram schmidt orthonormalization
     # generate a random orthogonal  matrix
-    rng = np.random.RandomState(global_random_seed)
-    W, _, _ = np.linalg.svd(rng.randn(10, 10))
-    w = rng.randn(10)
+    rng = np.random.default_rng(global_random_seed)
+    W, _, _ = np.linalg.svd(rng.standard_normal((10, 10)))
+    w = rng.standard_normal(10)
     _gs_decorrelation(w, W, 10)
     assert (w**2).sum() < 1.0e-10
-    w = rng.randn(10)
+    w = rng.standard_normal(10)
     u = _gs_decorrelation(w, W, 5)
     tmp = np.dot(u, W.T)
     assert (tmp[:5] ** 2).sum() < 1.0e-10
 
 
 def test_fastica_attributes_dtypes(global_dtype):
-    rng = np.random.RandomState(0)
-    X = rng.random_sample((100, 10)).astype(global_dtype, copy=False)
+    rng = np.random.default_rng(0)
+    X = rng.random((100, 10)).astype(global_dtype, copy=False)
     fica = FastICA(
         n_components=5, max_iter=1000, whiten="unit-variance", random_state=0
     ).fit(X)
@@ -59,10 +59,10 @@ def test_fastica_attributes_dtypes(global_dtype):
 
 
 def test_fastica_return_dtypes(global_dtype):
-    rng = np.random.RandomState(0)
-    X = rng.random_sample((100, 10)).astype(global_dtype, copy=False)
+    rng = np.random.default_rng(0)
+    X = rng.random((100, 10)).astype(global_dtype, copy=False)
     k_, mixing_, s_ = fastica(
-        X, max_iter=1000, whiten="unit-variance", random_state=rng
+        X, max_iter=1000, whiten="unit-variance", random_state=0
     )
     assert k_.dtype == global_dtype
     assert mixing_.dtype == global_dtype
@@ -84,7 +84,7 @@ def test_fastica_simple(add_noise, global_random_seed, global_dtype):
         )
 
     # Test the FastICA algorithm on very simple data.
-    rng = np.random.RandomState(global_random_seed)
+    rng = np.random.default_rng(global_random_seed)
     n_samples = 1000
     # Generate two sources:
     s1 = (2 * np.sin(np.linspace(0, 100, n_samples)) > 0) - 1
@@ -101,7 +101,7 @@ def test_fastica_simple(add_noise, global_random_seed, global_dtype):
     m = np.dot(mixing, s)
 
     if add_noise:
-        m += 0.1 * rng.randn(2, 1000)
+        m += 0.1 * rng.standard_normal((2, 1000))
 
     center_and_norm(m)
 
@@ -115,15 +115,17 @@ def test_fastica_simple(add_noise, global_random_seed, global_dtype):
     for algo, nl, whiten in itertools.product(algos, nls, whitening):
         if whiten:
             k_, mixing_, s_ = fastica(
-                m.T, fun=nl, whiten=whiten, algorithm=algo, random_state=rng
+                m.T, fun=nl, whiten=whiten, algorithm=algo,
+                random_state=global_random_seed,
             )
             with pytest.raises(ValueError):
                 fastica(m.T, fun=np.tanh, whiten=whiten, algorithm=algo)
         else:
-            pca = PCA(n_components=2, whiten=True, random_state=rng)
+            pca = PCA(n_components=2, whiten=True, random_state=global_random_seed)
             X = pca.fit_transform(m.T)
             k_, mixing_, s_ = fastica(
-                X, fun=nl, algorithm=algo, whiten=False, random_state=rng
+                X, fun=nl, algorithm=algo, whiten=False,
+                random_state=global_random_seed,
             )
             with pytest.raises(ValueError):
                 fastica(X, fun=np.tanh, algorithm=algo)
@@ -192,7 +194,7 @@ def test_fastica_convergence_fail(global_random_seed):
     # Test the FastICA algorithm on very simple data
     # (see test_non_square_fastica).
     # Ensure a ConvergenceWarning raised if the tolerance is sufficiently low.
-    rng = np.random.RandomState(global_random_seed)
+    rng = np.random.default_rng(global_random_seed)
 
     n_samples = 1000
     # Generate two sources:
@@ -203,7 +205,7 @@ def test_fastica_convergence_fail(global_random_seed):
     center_and_norm(s)
 
     # Mixing matrix
-    mixing = rng.randn(6, 2)
+    mixing = rng.standard_normal((6, 2))
     m = np.dot(mixing, s)
 
     # Do fastICA with tolerance 0. to ensure failing convergence
@@ -213,7 +215,11 @@ def test_fastica_convergence_fail(global_random_seed):
     )
     with pytest.warns(ConvergenceWarning, match=warn_msg):
         ica = FastICA(
-            algorithm="parallel", n_components=2, random_state=rng, max_iter=2, tol=0.0
+            algorithm="parallel",
+            n_components=2,
+            random_state=global_random_seed,
+            max_iter=2,
+            tol=0.0,
         )
         ica.fit(m.T)
 
@@ -221,7 +227,7 @@ def test_fastica_convergence_fail(global_random_seed):
 @pytest.mark.parametrize("add_noise", [True, False])
 def test_non_square_fastica(global_random_seed, add_noise):
     # Test the FastICA algorithm on very simple data.
-    rng = np.random.RandomState(global_random_seed)
+    rng = np.random.default_rng(global_random_seed)
 
     n_samples = 1000
     # Generate two sources:
@@ -233,16 +239,16 @@ def test_non_square_fastica(global_random_seed, add_noise):
     s1, s2 = s
 
     # Mixing matrix
-    mixing = rng.randn(6, 2)
+    mixing = rng.standard_normal((6, 2))
     m = np.dot(mixing, s)
 
     if add_noise:
-        m += 0.1 * rng.randn(6, n_samples)
+        m += 0.1 * rng.standard_normal((6, n_samples))
 
     center_and_norm(m)
 
     k_, mixing_, s_ = fastica(
-        m.T, n_components=2, whiten="unit-variance", random_state=rng
+        m.T, n_components=2, whiten="unit-variance", random_state=global_random_seed
     )
     s_ = s_.T
 
@@ -289,9 +295,9 @@ def test_fit_transform(global_random_seed, global_dtype):
             # XXX: for some seeds, the model does not converge.
             # However this is not what we test here.
             warnings.simplefilter("ignore", ConvergenceWarning)
-            Xt = ica.fit_transform(X)
+            xt = ica.fit_transform(X)
         assert ica.components_.shape == (n_components_, 10)
-        assert Xt.shape == (X.shape[0], n_components_)
+        assert xt.shape == (X.shape[0], n_components_)
 
         ica2 = FastICA(
             n_components=n_components, max_iter=max_iter, whiten=whiten, random_state=0
@@ -303,15 +309,15 @@ def test_fit_transform(global_random_seed, global_dtype):
             warnings.simplefilter("ignore", ConvergenceWarning)
             ica2.fit(X)
         assert ica2.components_.shape == (n_components_, 10)
-        Xt2 = ica2.transform(X)
+        xt2 = ica2.transform(X)
 
         # XXX: we have to set atol for this test to pass for all seeds when
         # fitting with float32 data. Is this revealing a bug?
         if global_dtype:
-            atol = np.abs(Xt2).mean() / 1e6
+            atol = np.abs(xt2).mean() / 1e6
         else:
             atol = 0.0  # the default rtol is enough for float64 data
-        assert_allclose(Xt, Xt2, atol=atol)
+        assert_allclose(xt, xt2, atol=atol)
 
 
 @pytest.mark.filterwarnings("ignore:Ignoring n_components with whiten=False.")
@@ -340,9 +346,9 @@ def test_inverse_transform(
         # can fail to converge but this should not impact the definition of
         # a valid inverse transform.
         warnings.simplefilter("ignore", ConvergenceWarning)
-        Xt = ica.fit_transform(X)
+        x_transformed = ica.fit_transform(X)
     assert ica.mixing_.shape == expected_mixing_shape
-    X2 = ica.inverse_transform(Xt)
+    X2 = ica.inverse_transform(x_transformed)
     assert X.shape == X2.shape
 
     # reversibility test in non-reduction case
@@ -381,9 +387,9 @@ def test_fastica_whiten_unit_variance(global_random_seed):
     X = rng.random_sample((100, 10))
     n_components = X.shape[1]
     ica = FastICA(n_components=n_components, whiten="unit-variance", random_state=0)
-    Xt = ica.fit_transform(X)
+    x_t = ica.fit_transform(X)
 
-    assert np.var(Xt) == pytest.approx(1.0)
+    assert np.var(x_t) == pytest.approx(1.0)
 
 
 @pytest.mark.parametrize("whiten", ["arbitrary-variance", "unit-variance", False])
