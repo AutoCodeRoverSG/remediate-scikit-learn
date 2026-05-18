@@ -44,16 +44,16 @@ class AgglomerationTransform(TransformerMixin):
             size = np.bincount(self.labels_)
             n_samples = X.shape[0]
             # a fast way to compute the mean of grouped features
-            nX = np.array(
+            n_x = np.array(
                 [np.bincount(self.labels_, X[i, :]) / size for i in range(n_samples)]
             )
         else:
-            nX = [
+            n_x = [
                 self.pooling_func(X[:, self.labels_ == l], axis=1)
                 for l in np.unique(self.labels_)
             ]
-            nX = np.array(nX).T
-        return nX
+            n_x = np.array(n_x).T
+        return n_x
 
     def inverse_transform(self, X):
         """
@@ -72,5 +72,5 @@ class AgglomerationTransform(TransformerMixin):
         """
         check_is_fitted(self)
 
-        unil, inverse = np.unique(self.labels_, return_inverse=True)
+        _, inverse = np.unique(self.labels_, return_inverse=True)
         return X[..., inverse]

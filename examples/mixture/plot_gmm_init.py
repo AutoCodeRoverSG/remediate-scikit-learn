@@ -74,7 +74,7 @@ plt.subplots_adjust(
 )
 
 for n, method in enumerate(methods):
-    r = np.random.RandomState(seed=1234)
+    r = 1234
     plt.subplot(2, len(methods) // 2, n + 1)
 
     start = timer()

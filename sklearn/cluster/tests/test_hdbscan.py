@@ -63,7 +63,7 @@ def test_outlier_data(outlier_type):
     X_outlier = X.copy()
     X_outlier[0] = [outlier, 1]
     X_outlier[5] = [outlier, outlier]
-    model = HDBSCAN(copy=False).fit(X_outlier)
+    model = HDBSCAN().set_params(copy=False).fit(X_outlier)
 
     (missing_labels_idx,) = (model.labels_ == label).nonzero()
     assert_array_equal(missing_labels_idx, [0, 5])
@@ -72,7 +72,7 @@ def test_outlier_data(outlier_type):
     assert_array_equal(missing_probs_idx, [0, 5])
 
     clean_indices = list(range(1, 5)) + list(range(6, 200))
-    clean_model = HDBSCAN(copy=False).fit(X_outlier[clean_indices])
+    clean_model = HDBSCAN().set_params(copy=False).fit(X_outlier[clean_indices])
     assert_array_equal(clean_model.labels_, model.labels_[clean_indices])
 
 
@@ -83,21 +83,21 @@ def test_hdbscan_distance_matrix():
     """
     D = euclidean_distances(X)
     D_original = D.copy()
-    labels = HDBSCAN(metric="precomputed", copy=True).fit_predict(D)
+    labels = HDBSCAN(metric="precomputed").set_params(copy=True).fit_predict(D)
 
     assert_allclose(D, D_original)
     check_label_quality(labels)
 
     msg = r"The precomputed distance matrix.*has shape"
     with pytest.raises(ValueError, match=msg):
-        HDBSCAN(metric="precomputed", copy=True).fit_predict(X)
+        HDBSCAN(metric="precomputed").set_params(copy=True).fit_predict(X)
 
     msg = r"The precomputed distance matrix.*values"
     # Ensure the matrix is not symmetric
     D[0, 1] = 10
     D[1, 0] = 1
     with pytest.raises(ValueError, match=msg):
-        HDBSCAN(metric="precomputed", copy=False).fit_predict(D)
+        HDBSCAN(metric="precomputed").set_params(copy=False).fit_predict(D)
 
 
 @pytest.mark.parametrize("sparse_constructor", [*CSR_CONTAINERS, *CSC_CONTAINERS])
@@ -114,7 +114,7 @@ def test_hdbscan_sparse_distance_matrix(sparse_constructor):
     D = sparse_constructor(D)
     D.eliminate_zeros()
 
-    labels = HDBSCAN(metric="precomputed", copy=False).fit_predict(D)
+    labels = HDBSCAN(metric="precomputed").set_params(copy=False).fit_predict(D)
     check_label_quality(labels)
 
 
@@ -123,7 +123,7 @@ def test_hdbscan_feature_array():
     Tests that HDBSCAN works with feature array, including an arbitrary
     goodness of fit check. Note that the check is a simple heuristic.
     """
-    labels = HDBSCAN(copy=False).fit_predict(X)
+    labels = HDBSCAN().set_params(copy=False).fit_predict(X)
 
     # Check that clustering is arbitrarily good
     # This is a heuristic to guard against regression
@@ -137,7 +137,7 @@ def test_hdbscan_algorithms(algo, metric):
     Tests that HDBSCAN works with the expected combinations of algorithms and
     metrics, or raises the expected errors.
     """
-    labels = HDBSCAN(algorithm=algo, copy=False).fit_predict(X)
+    labels = HDBSCAN(algorithm=algo).set_params(copy=False).fit_predict(X)
     check_label_quality(labels)
 
     # Validation for brute is handled by `pairwise_distances`
@@ -159,8 +159,8 @@ def test_hdbscan_algorithms(algo, metric):
         algorithm=algo,
         metric=metric,
         metric_params=metric_params,
-        copy=False,
     )
+    hdb.copy = False
 
     if metric not in ALGOS_TREES[algo].valid_metrics:
         with pytest.raises(ValueError):
@@ -177,7 +177,7 @@ def test_dbscan_clustering():
     Tests that HDBSCAN can generate a sufficiently accurate dbscan clustering.
     This test is more of a sanity check than a rigorous evaluation.
     """
-    clusterer = HDBSCAN(copy=False).fit(X)
+    clusterer = HDBSCAN().set_params(copy=False).fit(X)
     labels = clusterer.dbscan_clustering(0.3)
 
     # We use a looser threshold due to dbscan producing a more constrained
@@ -197,7 +197,7 @@ def test_dbscan_clustering_outlier_data(cut_distance):
     X_outlier[0] = [np.inf, 1]
     X_outlier[2] = [1, np.nan]
     X_outlier[5] = [np.inf, np.nan]
-    model = HDBSCAN(copy=False).fit(X_outlier)
+    model = HDBSCAN().set_params(copy=False).fit(X_outlier)
     labels = model.dbscan_clustering(cut_distance=cut_distance)
 
     missing_labels_idx = np.flatnonzero(labels == missing_label)
@@ -207,7 +207,7 @@ def test_dbscan_clustering_outlier_data(cut_distance):
     assert_array_equal(infinite_labels_idx, [0])
 
     clean_idx = list(set(range(200)) - set(missing_labels_idx + infinite_labels_idx))
-    clean_model = HDBSCAN(copy=False).fit(X_outlier[clean_idx])
+    clean_model = HDBSCAN().set_params(copy=False).fit(X_outlier[clean_idx])
     clean_labels = clean_model.dbscan_clustering(cut_distance=cut_distance)
     assert_array_equal(clean_labels, labels[clean_idx])
 

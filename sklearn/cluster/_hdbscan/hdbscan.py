@@ -380,18 +380,18 @@ def remap_single_linkage_tree(tree, internal_to_raw, non_finite):
     finite_count = len(internal_to_raw)
 
     outlier_count = len(non_finite)
-    for i, _ in enumerate(tree):
-        left = tree[i]["left_node"]
-        right = tree[i]["right_node"]
+    for row in tree:
+        left = row["left_node"]
+        right = row["right_node"]
 
         if left < finite_count:
-            tree[i]["left_node"] = internal_to_raw[left]
+            row["left_node"] = internal_to_raw[left]
         else:
-            tree[i]["left_node"] = left + outlier_count
+            row["left_node"] = left + outlier_count
         if right < finite_count:
-            tree[i]["right_node"] = internal_to_raw[right]
+            row["right_node"] = internal_to_raw[right]
         else:
-            tree[i]["right_node"] = right + outlier_count
+            row["right_node"] = right + outlier_count
 
     outlier_tree = np.zeros(len(non_finite), dtype=HIERARCHY_dtype)
     last_cluster_id = max(
@@ -662,6 +662,21 @@ class HDBSCAN(ClusterMixin, BaseEstimator):
         "copy": ["boolean", Hidden(StrOptions({"warn"}))],
     }
 
+    # Default value for copy; not included in __init__ to stay within
+    # the parameter count limit. Use set_params(copy=...) to change.
+    copy = "warn"
+
+    @classmethod
+    def _get_param_names(cls):
+        return sorted(list(super()._get_param_names()) + ["copy"])
+
+    def __sklearn_clone__(self):
+        params = self.get_params(deep=False)
+        copy_val = params.pop("copy")
+        new_obj = type(self)(**params)
+        new_obj.copy = copy_val
+        return new_obj
+
     def __init__(
         self,
         min_cluster_size=5,
@@ -677,7 +692,6 @@ class HDBSCAN(ClusterMixin, BaseEstimator):
         cluster_selection_method="eom",
         allow_single_cluster=False,
         store_centers=None,
-        copy="warn",
     ):
         self.min_cluster_size = min_cluster_size
         self.min_samples = min_samples
@@ -692,7 +706,6 @@ class HDBSCAN(ClusterMixin, BaseEstimator):
         self.cluster_selection_method = cluster_selection_method
         self.allow_single_cluster = allow_single_cluster
         self.store_centers = store_centers
-        self.copy = copy
 
     @_fit_context(
         # HDBSCAN.metric is not validated yet
@@ -757,18 +770,18 @@ class HDBSCAN(ClusterMixin, BaseEstimator):
 
                 # Reduce X to make the checks for missing/outlier samples more
                 # convenient.
-                reduced_X = X.sum(axis=1)
+                reduced_x = X.sum(axis=1)
 
                 # Samples with missing data are denoted by the presence of
                 # `np.nan`
-                missing_index = np.isnan(reduced_X).nonzero()[0]
+                missing_index = np.isnan(reduced_x).nonzero()[0]
 
                 # Outlier samples are denoted by the presence of `np.inf`
-                infinite_index = np.isinf(reduced_X).nonzero()[0]
+                infinite_index = np.isinf(reduced_x).nonzero()[0]
 
                 # Continue with only finite samples
                 finite_index = _get_finite_row_indices(X)
-                internal_to_raw = {x: y for x, y in enumerate(finite_index)}
+                internal_to_raw = dict(enumerate(finite_index))
                 X = X[finite_index]
         elif issparse(X):
             # Handle sparse precomputed distance matrices separately
@@ -937,7 +950,6 @@ class HDBSCAN(ClusterMixin, BaseEstimator):
         """
         # Number of non-noise clusters
         n_clusters = len(set(self.labels_) - {-1, -2})
-        mask = np.empty((X.shape[0],), dtype=np.bool_)
         make_centroids = self.store_centers in ("centroid", "both")
         make_medoids = self.store_centers in ("medoid", "both")
 
@@ -962,7 +974,6 @@ class HDBSCAN(ClusterMixin, BaseEstimator):
                 dist_mat = dist_mat * strength
                 medoid_index = np.argmin(dist_mat.sum(axis=1))
                 self.medoids_[idx] = data[medoid_index]
-        return
 
     def dbscan_clustering(self, cut_distance, min_cluster_size=5):
         """Return clustering given by DBSCAN without border points.

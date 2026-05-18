@@ -97,6 +97,8 @@ grid_search.fit(X)
 
 import pandas as pd
 
+BIC_SCORE_LABEL = "BIC score"
+
 df = pd.DataFrame(grid_search.cv_results_)[
     ["param_n_components", "param_covariance_type", "mean_test_score"]
 ]
@@ -105,10 +107,10 @@ df = df.rename(
     columns={
         "param_n_components": "Number of components",
         "param_covariance_type": "Type of covariance",
-        "mean_test_score": "BIC score",
+        "mean_test_score": BIC_SCORE_LABEL,
     }
 )
-df.sort_values(by="BIC score").head()
+df.sort_values(by=BIC_SCORE_LABEL).head()
 
 # %%
 import seaborn as sns
@@ -117,7 +119,7 @@ sns.catplot(
     data=df,
     kind="bar",
     x="Number of components",
-    y="BIC score",
+    y=BIC_SCORE_LABEL,
     hue="Type of covariance",
 )
 plt.show()
