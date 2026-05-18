@@ -61,7 +61,7 @@ X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.2, random_st
 # performance. It also calculates the training time and the `n_estimators_`
 # used by both models.
 
-params = dict(n_estimators=1000, max_depth=5, learning_rate=0.1, random_state=42)
+params = {"n_estimators": 1000, "max_depth": 5, "learning_rate": 0.1, "random_state": 42}
 
 gbm_full = GradientBoostingRegressor(**params)
 gbm_early_stopping = GradientBoostingRegressor(

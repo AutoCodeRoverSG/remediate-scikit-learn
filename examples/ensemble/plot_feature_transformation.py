@@ -136,6 +136,7 @@ gbdt_model = make_pipeline(
     gbdt_leaves_yielder,
     OneHotEncoder(handle_unknown="ignore"),
     LogisticRegression(max_iter=1000),
+    memory=None,
 )
 gbdt_model.fit(X_train_linear, y_train_linear)
 
