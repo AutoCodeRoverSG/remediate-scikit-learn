@@ -49,12 +49,12 @@ def load_data(dtype=np.float32, order="C", shuffle=True, seed=0):
     return X, y
 
 
-def nn_accuracy(X, X_embedded, k=1):
+def nn_accuracy(X, x_embedded, k=1):
     """Accuracy of the first nearest neighbor"""
     knn = NearestNeighbors(n_neighbors=1, n_jobs=-1)
-    _, neighbors_X = knn.fit(X).kneighbors()
-    _, neighbors_X_embedded = knn.fit(X_embedded).kneighbors()
-    return np.mean(neighbors_X == neighbors_X_embedded)
+    _, neighbors_x = knn.fit(X).kneighbors()
+    _, neighbors_x_embedded = knn.fit(x_embedded).kneighbors()
+    return np.mean(neighbors_x == neighbors_x_embedded)
 
 
 def tsne_fit_transform(model, data):
