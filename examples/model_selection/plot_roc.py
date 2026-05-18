@@ -56,10 +56,12 @@ target_names = iris.target_names
 X, y = iris.data, iris.target
 y = iris.target_names[y]
 
-random_state = np.random.RandomState(0)
+random_state = np.random.default_rng(0)
 n_samples, n_features = X.shape
 n_classes = len(np.unique(y))
-X = np.concatenate([X, random_state.randn(n_samples, 200 * n_features)], axis=1)
+X = np.concatenate(
+    [X, random_state.standard_normal((n_samples, 200 * n_features))], axis=1
+)
 (
     X_train,
     X_test,
@@ -118,7 +120,6 @@ label_binarizer.transform(["virginica"])
 
 class_of_interest = "virginica"
 class_id = np.flatnonzero(label_binarizer.classes_ == class_of_interest)[0]
-class_id
 
 # %%
 import matplotlib.pyplot as plt
@@ -129,7 +130,7 @@ display = RocCurveDisplay.from_predictions(
     y_onehot_test[:, class_id],
     y_score[:, class_id],
     name=f"{class_of_interest} vs the rest",
-    curve_kwargs=dict(color="darkorange"),
+    curve_kwargs={"color": "darkorange"},
     plot_chance_level=True,
     despine=True,
 )
@@ -165,7 +166,7 @@ display = RocCurveDisplay.from_predictions(
     y_onehot_test.ravel(),
     y_score.ravel(),
     name="micro-average OvR",
-    curve_kwargs=dict(color="darkorange"),
+    curve_kwargs={"color": "darkorange"},
     plot_chance_level=True,
     despine=True,
 )
@@ -199,7 +200,7 @@ print(f"Micro-averaged One-vs-Rest ROC AUC score:\n{micro_roc_auc_ovr:.2f}")
 from sklearn.metrics import auc, roc_curve
 
 # store the fpr, tpr, and roc_auc for all averaging strategies
-fpr, tpr, roc_auc = dict(), dict(), dict()
+fpr, tpr, roc_auc = {}, {}, {}
 # Compute micro-average ROC curve and ROC area
 fpr["micro"], tpr["micro"], _ = roc_curve(y_onehot_test.ravel(), y_score.ravel())
 roc_auc["micro"] = auc(fpr["micro"], tpr["micro"])
@@ -290,7 +291,7 @@ for class_id, color in zip(range(n_classes), colors):
         y_onehot_test[:, class_id],
         y_score[:, class_id],
         name=f"ROC curve for {target_names[class_id]}",
-        curve_kwargs=dict(color=color),
+        curve_kwargs={"color": color},
         ax=ax,
         plot_chance_level=(class_id == 2),
         despine=True,
@@ -332,7 +333,7 @@ print(pair_list)
 
 # %%
 pair_scores = []
-mean_tpr = dict()
+mean_tpr = {}
 
 for ix, (label_a, label_b) in enumerate(pair_list):
     a_mask = y_test == label_a
@@ -414,7 +415,7 @@ for ix, (label_a, label_b) in enumerate(pair_list):
         label=f"Mean {label_a} vs {label_b} (AUC = {pair_scores[ix]:.2f})",
     )
 
-ovo_tpr /= sum(1 for pair in enumerate(pair_list))
+ovo_tpr /= sum(1 for _ in enumerate(pair_list))
 
 ax.plot(
     fpr_grid,
