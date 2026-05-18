@@ -57,7 +57,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.experimental import enable_halving_search_cv  # noqa: F401
 from sklearn.model_selection import HalvingRandomSearchCV
 
-rng = np.random.RandomState(0)
+rng = np.random.default_rng(0)
 
 X, y = make_classification(n_samples=700, random_state=rng)
 
@@ -124,9 +124,9 @@ from sklearn import datasets
 from sklearn.linear_model import LogisticRegression
 from sklearn.semi_supervised import SelfTrainingClassifier
 
-rng = np.random.RandomState(42)
+rng = np.random.default_rng(42)
 iris = datasets.load_iris()
-random_unlabeled_points = rng.rand(iris.target.shape[0]) < 0.3
+random_unlabeled_points = rng.random(iris.target.shape[0]) < 0.3
 iris.target[random_unlabeled_points] = -1
 clf = LogisticRegression()
 self_training_model = SelfTrainingClassifier(clf)
@@ -174,8 +174,9 @@ from sklearn.preprocessing import MinMaxScaler
 X, y = fetch_covtype(return_X_y=True)
 pipe = make_pipeline(
     MinMaxScaler(),
-    PolynomialCountSketch(degree=2, n_components=300),
+    PolynomialCountSketch(degree=2, n_components=300, random_state=42),
     LogisticRegression(max_iter=1000),
+    memory=None,
 )
 X_train, X_test, y_train, y_test = train_test_split(
     X, y, train_size=5000, test_size=10000, random_state=42
@@ -185,7 +186,9 @@ pipe.fit(X_train, y_train).score(X_test, y_test)
 ##############################################################################
 # For comparison, here is the score of a linear baseline for the same data:
 
-linear_baseline = make_pipeline(MinMaxScaler(), LogisticRegression(max_iter=1000))
+linear_baseline = make_pipeline(
+    MinMaxScaler(), LogisticRegression(max_iter=1000), memory=None
+)
 linear_baseline.fit(X_train, y_train).score(X_test, y_test)
 
 ##############################################################################
@@ -199,7 +202,7 @@ linear_baseline.fit(X_train, y_train).score(X_test, y_test)
 from sklearn.datasets import fetch_california_housing
 from sklearn.ensemble import RandomForestRegressor
 
-# from sklearn.inspection import plot_partial_dependence
+
 from sklearn.inspection import PartialDependenceDisplay
 
 X, y = fetch_california_housing(return_X_y=True, as_frame=True)
@@ -240,8 +243,8 @@ from sklearn.model_selection import train_test_split
 from sklearn.tree import DecisionTreeRegressor
 
 n_samples, n_features = 1000, 20
-rng = np.random.RandomState(0)
-X = rng.randn(n_samples, n_features)
+rng = np.random.default_rng(0)
+X = rng.standard_normal((n_samples, n_features))
 # positive integer target correlated with X[:, 5] with many zeros:
 y = rng.poisson(lam=np.exp(X[:, 5]) / 2)
 X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=rng)

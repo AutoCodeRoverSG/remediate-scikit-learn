@@ -34,13 +34,13 @@ import numpy as np
 from sklearn.ensemble import HistGradientBoostingRegressor
 
 # Simple regression function for X * cos(X)
-rng = np.random.RandomState(42)
+rng = np.random.default_rng(42)
 X_1d = np.linspace(0, 10, num=2000)
 X = X_1d.reshape(-1, 1)
 y = X_1d * np.cos(X_1d) + rng.normal(scale=X_1d / 3)
 
 quantiles = [0.95, 0.5, 0.05]
-parameters = dict(loss="quantile", max_bins=32, max_iter=50)
+parameters = {"loss": "quantile", "max_bins": 32, "max_iter": 50}
 hist_quantiles = {
     f"quantile={quantile:.2f}": HistGradientBoostingRegressor(
         **parameters, quantile=quantile
@@ -94,7 +94,7 @@ preprocessor = ColumnTransformer(
     ],
     verbose_feature_names_out=False,
 )
-log_reg = make_pipeline(preprocessor, SelectKBest(k=7), LogisticRegression())
+log_reg = make_pipeline(preprocessor, SelectKBest(k=7), LogisticRegression(), memory=None)
 log_reg.fit(X, y)
 
 
