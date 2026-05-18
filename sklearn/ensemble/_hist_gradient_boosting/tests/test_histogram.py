@@ -53,16 +53,16 @@ def test_build_histogram(build_func):
 def test_histogram_sample_order_independence():
     # Make sure the order of the samples has no impact on the histogram
     # computations
-    rng = np.random.RandomState(42)
+    rng = np.random.default_rng(42)
     n_sub_samples = 100
     n_samples = 1000
     n_bins = 256
 
-    binned_feature = rng.randint(0, n_bins - 1, size=n_samples, dtype=X_BINNED_DTYPE)
+    binned_feature = rng.integers(0, n_bins - 1, size=n_samples, dtype=X_BINNED_DTYPE)
     sample_indices = rng.choice(
         np.arange(n_samples, dtype=np.uint32), n_sub_samples, replace=False
     )
-    ordered_gradients = rng.randn(n_sub_samples).astype(G_H_DTYPE)
+    ordered_gradients = rng.standard_normal(n_sub_samples).astype(G_H_DTYPE)
     hist_gc = np.zeros((1, n_bins), dtype=HISTOGRAM_DTYPE)
     _build_histogram_no_hessian(
         0, sample_indices, binned_feature, ordered_gradients, hist_gc
@@ -111,12 +111,12 @@ def test_histogram_sample_order_independence():
 def test_unrolled_equivalent_to_naive(constant_hessian):
     # Make sure the different unrolled histogram computations give the same
     # results as the naive one.
-    rng = np.random.RandomState(42)
+    rng = np.random.default_rng(42)
     n_samples = 10
     n_bins = 5
     sample_indices = np.arange(n_samples).astype(np.uint32)
-    binned_feature = rng.randint(0, n_bins - 1, size=n_samples, dtype=np.uint8)
-    ordered_gradients = rng.randn(n_samples).astype(G_H_DTYPE)
+    binned_feature = rng.integers(0, n_bins - 1, size=n_samples, dtype=np.uint8)
+    ordered_gradients = rng.standard_normal(n_samples).astype(G_H_DTYPE)
     if constant_hessian:
         ordered_hessians = np.ones(n_samples, dtype=G_H_DTYPE)
     else:
@@ -165,12 +165,12 @@ def test_unrolled_equivalent_to_naive(constant_hessian):
 def test_hist_subtraction(constant_hessian):
     # Make sure the histogram subtraction trick gives the same result as the
     # classical method.
-    rng = np.random.RandomState(42)
+    rng = np.random.default_rng(42)
     n_samples = 10
     n_bins = 5
     sample_indices = np.arange(n_samples).astype(np.uint32)
-    binned_feature = rng.randint(0, n_bins - 1, size=n_samples, dtype=np.uint8)
-    ordered_gradients = rng.randn(n_samples).astype(G_H_DTYPE)
+    binned_feature = rng.integers(0, n_bins - 1, size=n_samples, dtype=np.uint8)
+    ordered_gradients = rng.standard_normal(n_samples).astype(G_H_DTYPE)
     if constant_hessian:
         ordered_hessians = np.ones(n_samples, dtype=G_H_DTYPE)
     else:
@@ -191,7 +191,7 @@ def test_hist_subtraction(constant_hessian):
             hist_parent,
         )
 
-    mask = rng.randint(0, 2, n_samples).astype(bool)
+    mask = rng.integers(0, 2, n_samples).astype(bool)
 
     sample_indices_left = sample_indices[mask]
     ordered_gradients_left = ordered_gradients[mask]

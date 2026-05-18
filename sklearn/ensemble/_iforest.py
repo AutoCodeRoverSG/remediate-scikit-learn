@@ -37,14 +37,14 @@ def _parallel_compute_tree_depths(
 ):
     """Parallel computation of isolation tree depth."""
     if features is None:
-        X_subset = X
+        x_subset = X
     else:
-        X_subset = X[:, features]
+        x_subset = X[:, features]
 
-    leaves_index = tree.apply(X_subset, check_input=False)
+    leaves_index = tree.apply(x_subset, check_input=False)
 
     with lock:
-        depths += (
+        depths[:] += (
             tree_decision_path_lengths[leaves_index]
             + tree_avg_path_lengths[leaves_index]
             - 1.0
@@ -330,7 +330,7 @@ class IsolationForest(OutlierMixin, BaseBagging):
             X.sort_indices()
 
         rnd = check_random_state(self.random_state)
-        y = rnd.uniform(size=X.shape[0])
+        y_random = rnd.uniform(size=X.shape[0])
 
         # ensure that max_sample is in [1, n_samples]:
         n_samples = X.shape[0]
@@ -356,7 +356,7 @@ class IsolationForest(OutlierMixin, BaseBagging):
         max_depth = int(np.ceil(np.log2(max(max_samples, 2))))
         super()._fit(
             X,
-            y,
+            y_random,
             max_samples=max_samples,
             max_depth=max_depth,
             sample_weight=sample_weight,
