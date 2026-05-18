@@ -29,7 +29,7 @@ def test_dbscan_similarity():
     D = distance.squareform(distance.pdist(X))
     D /= np.max(D)
     # Compute DBSCAN
-    core_samples, labels = dbscan(
+    _, labels = dbscan(
         D, metric="precomputed", eps=eps, min_samples=min_samples
     )
     # number of clusters, ignoring noise if present
@@ -53,7 +53,7 @@ def test_dbscan_feature():
     metric = "euclidean"
     # Compute DBSCAN
     # parameters chosen for task
-    core_samples, labels = dbscan(X, metric=metric, eps=eps, min_samples=min_samples)
+    _, labels = dbscan(X, metric=metric, eps=eps, min_samples=min_samples)
 
     # number of clusters, ignoring noise if present
     n_clusters_1 = len(set(labels)) - int(-1 in labels)
@@ -77,13 +77,13 @@ def test_dbscan_sparse(lil_container):
 @pytest.mark.parametrize("include_self", [False, True])
 def test_dbscan_sparse_precomputed(include_self):
     D = pairwise_distances(X)
-    nn = NearestNeighbors(radius=0.9).fit(X)
+    nn = NearestNeighbors(n_neighbors=5, radius=0.9).fit(X)
     X_ = X if include_self else None
-    D_sparse = nn.radius_neighbors_graph(X=X_, mode="distance")
+    d_sparse = nn.radius_neighbors_graph(X=X_, mode="distance")
     # Ensure it is sparse not merely on diagonals:
-    assert D_sparse.nnz < D.shape[0] * (D.shape[0] - 1)
+    assert d_sparse.nnz < D.shape[0] * (D.shape[0] - 1)
     core_sparse, labels_sparse = dbscan(
-        D_sparse, eps=0.8, min_samples=10, metric="precomputed"
+        d_sparse, eps=0.8, min_samples=10, metric="precomputed"
     )
     core_dense, labels_dense = dbscan(D, eps=0.8, min_samples=10, metric="precomputed")
     assert_array_equal(core_dense, core_sparse)
@@ -94,14 +94,14 @@ def test_dbscan_sparse_precomputed_different_eps():
     # test that precomputed neighbors graph is filtered if computed with
     # a radius larger than DBSCAN's eps.
     lower_eps = 0.2
-    nn = NearestNeighbors(radius=lower_eps).fit(X)
-    D_sparse = nn.radius_neighbors_graph(X, mode="distance")
-    dbscan_lower = dbscan(D_sparse, eps=lower_eps, metric="precomputed")
+    nn = NearestNeighbors(n_neighbors=5, radius=lower_eps).fit(X)
+    d_sparse = nn.radius_neighbors_graph(X, mode="distance")
+    dbscan_lower = dbscan(d_sparse, eps=lower_eps, metric="precomputed")
 
     higher_eps = lower_eps + 0.7
-    nn = NearestNeighbors(radius=higher_eps).fit(X)
-    D_sparse = nn.radius_neighbors_graph(X, mode="distance")
-    dbscan_higher = dbscan(D_sparse, eps=lower_eps, metric="precomputed")
+    nn = NearestNeighbors(n_neighbors=5, radius=higher_eps).fit(X)
+    d_sparse = nn.radius_neighbors_graph(X, mode="distance")
+    dbscan_higher = dbscan(d_sparse, eps=lower_eps, metric="precomputed")
 
     assert_array_equal(dbscan_lower[0], dbscan_higher[0])
     assert_array_equal(dbscan_lower[1], dbscan_higher[1])
@@ -113,13 +113,13 @@ def test_dbscan_input_not_modified(metric, csr_container):
     # test that the input is not modified by dbscan
     X = np.random.RandomState(0).rand(10, 10)
     X = csr_container(X) if csr_container is not None else X
-    X_copy = X.copy()
+    x_copy = X.copy()
     dbscan(X, metric=metric)
 
     if csr_container is not None:
-        assert_array_equal(X.toarray(), X_copy.toarray())
+        assert_array_equal(X.toarray(), x_copy.toarray())
     else:
-        assert_array_equal(X, X_copy)
+        assert_array_equal(X, x_copy)
 
 
 @pytest.mark.parametrize("csr_container", CSR_CONTAINERS)
@@ -136,12 +136,12 @@ def test_dbscan_input_not_modified_precomputed_sparse_nodiag(csr_container):
     np.fill_diagonal(X, 0)
     X = csr_container(X)
     assert all(row != col for row, col in zip(*X.nonzero()))
-    X_copy = X.copy()
+    x_copy = X.copy()
     dbscan(X, metric="precomputed")
     # Make sure that we did not modify `X` in-place even by creating
     # explicit 0s values.
-    assert X.nnz == X_copy.nnz
-    assert_array_equal(X.toarray(), X_copy.toarray())
+    assert X.nnz == x_copy.nnz
+    assert_array_equal(X.toarray(), x_copy.toarray())
 
 
 @pytest.mark.parametrize("csr_container", CSR_CONTAINERS)
@@ -150,9 +150,9 @@ def test_dbscan_no_core_samples(csr_container):
     X = rng.rand(40, 10)
     X[X < 0.8] = 0
 
-    for X_ in [X, csr_container(X)]:
-        db = DBSCAN(min_samples=6).fit(X_)
-        assert_array_equal(db.components_, np.empty((0, X_.shape[1])))
+    for x_ in [X, csr_container(X)]:
+        db = DBSCAN(min_samples=6).fit(x_)
+        assert_array_equal(db.components_, np.empty((0, x_.shape[1])))
         assert_array_equal(db.labels_, -1)
         assert db.core_sample_indices_.shape == (0,)
 
@@ -167,7 +167,7 @@ def test_dbscan_callable():
     metric = distance.euclidean
     # Compute DBSCAN
     # parameters chosen for task
-    core_samples, labels = dbscan(
+    _, labels = dbscan(
         X, metric=metric, eps=eps, min_samples=min_samples, algorithm="ball_tree"
     )
 
@@ -249,7 +249,7 @@ def test_dbscan_balltree():
     min_samples = 10
 
     D = pairwise_distances(X)
-    core_samples, labels = dbscan(
+    _, labels = dbscan(
         D, metric="precomputed", eps=eps, min_samples=min_samples
     )
 
@@ -344,9 +344,9 @@ def test_weighted_dbscan(global_random_seed):
     core1, label1 = dbscan(X, sample_weight=sample_weight)
     assert len(label1) == len(X)
 
-    X_repeated = np.repeat(X, sample_weight, axis=0)
-    core_repeated, label_repeated = dbscan(X_repeated)
-    core_repeated_mask = np.zeros(X_repeated.shape[0], dtype=bool)
+    x_repeated = np.repeat(X, sample_weight, axis=0)
+    core_repeated, label_repeated = dbscan(x_repeated)
+    core_repeated_mask = np.zeros(x_repeated.shape[0], dtype=bool)
     core_repeated_mask[core_repeated] = True
     core_mask = np.zeros(X.shape[0], dtype=bool)
     core_mask[core1] = True
