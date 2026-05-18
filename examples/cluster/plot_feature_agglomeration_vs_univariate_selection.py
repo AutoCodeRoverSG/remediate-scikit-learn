@@ -39,7 +39,7 @@ n_samples = 200
 size = 40  # image size
 roi_size = 15
 snr = 5.0
-np.random.seed(0)
+rng = np.random.default_rng(0)
 
 # %%
 # Generate data
@@ -47,7 +47,7 @@ coef = np.zeros((size, size))
 coef[0:roi_size, 0:roi_size] = -1.0
 coef[-roi_size:, -roi_size:] = 1.0
 
-X = np.random.randn(n_samples, size**2)
+X = rng.standard_normal((n_samples, size**2))
 for x in X:  # smooth data
     x[:] = ndimage.gaussian_filter(x.reshape(size, size), sigma=1.0).ravel()
 X -= X.mean(axis=0)
@@ -57,7 +57,7 @@ y = np.dot(X, coef.ravel())
 
 # %%
 # add noise
-noise = np.random.randn(y.shape[0])
+noise = rng.standard_normal(y.shape[0])
 noise_coef = (linalg.norm(y, 2) / np.exp(snr / 20.0)) / linalg.norm(noise, 2)
 y += noise_coef * noise
 
@@ -84,7 +84,7 @@ coef_agglomeration_ = coef_.reshape(size, size)
 # Anova univariate feature selection followed by BayesianRidge
 f_regression = mem.cache(feature_selection.f_regression)  # caching function
 anova = feature_selection.SelectPercentile(f_regression)
-clf = Pipeline([("anova", anova), ("ridge", ridge)])
+clf = Pipeline([("anova", anova), ("ridge", ridge)], memory=None)
 # Select the optimal percentage of features with grid search
 clf = GridSearchCV(clf, {"anova__percentile": [5, 10, 20]}, cv=cv)
 clf.fit(X, y)  # set the best parameters
