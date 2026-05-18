@@ -33,7 +33,7 @@ y = iris.target
 import numpy as np
 
 n_uncorrelated_features = 20
-rng = np.random.RandomState(seed=0)
+rng = np.random.default_rng(seed=0)
 # Use same number of samples as in iris and 20 features
 X_rand = rng.normal(size=(X.shape[0], n_uncorrelated_features))
 

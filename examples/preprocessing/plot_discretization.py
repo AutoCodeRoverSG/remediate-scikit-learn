@@ -38,7 +38,7 @@ from sklearn.preprocessing import KBinsDiscretizer
 from sklearn.tree import DecisionTreeRegressor
 
 # construct the dataset
-rnd = np.random.RandomState(42)
+rnd = np.random.default_rng(42)
 X = rnd.uniform(-3, 3, size=100)
 y = np.sin(X) + rnd.normal(size=len(X)) / 3
 X = X.reshape(-1, 1)

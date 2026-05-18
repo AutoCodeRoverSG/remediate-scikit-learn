@@ -74,7 +74,9 @@ from sklearn.pipeline import Pipeline
 logistic = linear_model.LogisticRegression(solver="newton-cg", tol=1)
 rbm = BernoulliRBM(random_state=0, verbose=True)
 
-rbm_features_classifier = Pipeline(steps=[("rbm", rbm), ("logistic", logistic)])
+rbm_features_classifier = Pipeline(
+    steps=[("rbm", rbm), ("logistic", logistic)], memory=None
+)
 
 # %%
 # Training

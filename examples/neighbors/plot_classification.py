@@ -43,7 +43,8 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
 clf = Pipeline(
-    steps=[("scaler", StandardScaler()), ("knn", KNeighborsClassifier(n_neighbors=11))]
+    steps=[("scaler", StandardScaler()), ("knn", KNeighborsClassifier(n_neighbors=11))],
+    memory=None,
 )
 
 # %%
