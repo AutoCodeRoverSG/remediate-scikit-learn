@@ -468,7 +468,7 @@ def test_lda_dtype_match(learning_method, global_dtype):
 @pytest.mark.parametrize("learning_method", ("batch", "online"))
 def test_lda_numerical_consistency(learning_method, global_random_seed):
     """Check numerical consistency between np.float32 and np.float64."""
-    rng = np.random.RandomState(global_random_seed)
+    rng = np.random.default_rng(global_random_seed)
     X64 = rng.uniform(size=(20, 10))
     X32 = X64.astype(np.float32)
 
