@@ -70,12 +70,13 @@ def get_estimator_and_data():
 
 
 X, y, Estimator = get_estimator_and_data()
+rng = np.random.default_rng(0)
 if args.missing_fraction:
-    mask = np.random.binomial(1, args.missing_fraction, size=X.shape).astype(bool)
+    mask = rng.binomial(1, args.missing_fraction, size=X.shape).astype(bool)
     X[mask] = np.nan
 
 if args.random_sample_weights:
-    sample_weight = np.random.rand(len(X)) * 10
+    sample_weight = rng.random(len(X)) * 10
 else:
     sample_weight = None
 
