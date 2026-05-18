@@ -131,7 +131,7 @@ estimators = [
 ]
 
 # Generate data
-rng = np.random.RandomState(random_state)
+rng = np.random.default_rng(random_state)
 X = np.vstack(
     [
         rng.multivariate_normal(means[j], covars[j], samples[j])

@@ -37,6 +37,7 @@ from sklearn import datasets, manifold
 
 n_samples = 150
 n_components = 2
+PERPLEXITY_TITLE_FMT = "Perplexity=%d"
 (fig, subplots) = plt.subplots(3, 5, figsize=(15, 8))
 perplexities = [5, 30, 50, 100]
 
@@ -68,7 +69,7 @@ for i, perplexity in enumerate(perplexities):
     Y = tsne.fit_transform(X)
     t1 = time()
     print("circles, perplexity=%d in %.2g sec" % (perplexity, t1 - t0))
-    ax.set_title("Perplexity=%d" % perplexity)
+    ax.set_title(PERPLEXITY_TITLE_FMT % perplexity)
     ax.scatter(Y[red, 0], Y[red, 1], c="r")
     ax.scatter(Y[green, 0], Y[green, 1], c="g")
     ax.xaxis.set_major_formatter(NullFormatter())
@@ -99,7 +100,7 @@ for i, perplexity in enumerate(perplexities):
     t1 = time()
     print("S-curve, perplexity=%d in %.2g sec" % (perplexity, t1 - t0))
 
-    ax.set_title("Perplexity=%d" % perplexity)
+    ax.set_title(PERPLEXITY_TITLE_FMT % perplexity)
     ax.scatter(Y[:, 0], Y[:, 1], c=color)
     ax.xaxis.set_major_formatter(NullFormatter())
     ax.yaxis.set_major_formatter(NullFormatter())
@@ -136,7 +137,7 @@ for i, perplexity in enumerate(perplexities):
     t1 = time()
     print("uniform grid, perplexity=%d in %.2g sec" % (perplexity, t1 - t0))
 
-    ax.set_title("Perplexity=%d" % perplexity)
+    ax.set_title(PERPLEXITY_TITLE_FMT % perplexity)
     ax.scatter(Y[:, 0], Y[:, 1], c=color)
     ax.xaxis.set_major_formatter(NullFormatter())
     ax.yaxis.set_major_formatter(NullFormatter())
