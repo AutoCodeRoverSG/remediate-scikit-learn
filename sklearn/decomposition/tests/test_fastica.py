@@ -279,8 +279,8 @@ def test_fit_transform(global_random_seed, global_dtype):
     Bug #13056
     """
     # multivariate uniform data in [0, 1]
-    rng = np.random.RandomState(global_random_seed)
-    X = rng.random_sample((100, 10)).astype(global_dtype)
+    rng = np.random.default_rng(global_random_seed)
+    X = rng.random((100, 10)).astype(global_dtype)
     max_iter = 300
     for whiten, n_components in [["unit-variance", 5], [False, None]]:
         n_components_ = n_components if n_components is not None else X.shape[1]
@@ -337,10 +337,10 @@ def test_inverse_transform(
 ):
     # Test FastICA.inverse_transform
     n_samples = 100
-    rng = np.random.RandomState(global_random_seed)
-    X = rng.random_sample((n_samples, 10)).astype(global_dtype)
+    rng = np.random.default_rng(global_random_seed)
+    X = rng.random((n_samples, 10)).astype(global_dtype)
 
-    ica = FastICA(n_components=n_components, random_state=rng, whiten=whiten)
+    ica = FastICA(n_components=n_components, random_state=global_random_seed, whiten=whiten)
     with warnings.catch_warnings():
         # For some dataset (depending on the value of global_dtype) the model
         # can fail to converge but this should not impact the definition of
