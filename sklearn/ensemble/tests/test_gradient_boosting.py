@@ -780,14 +780,14 @@ def test_warm_start(estimator_cls, global_random_seed):
         assert_allclose(est_ws.predict_proba(X), est.predict_proba(X))
 
 
-@pytest.mark.parametrize("Cls", GRADIENT_BOOSTING_ESTIMATORS)
-def test_warm_start_n_estimators(Cls, global_random_seed):
+@pytest.mark.parametrize("estimator_cls", GRADIENT_BOOSTING_ESTIMATORS)
+def test_warm_start_n_estimators(estimator_cls, global_random_seed):
     # Test if warm start equals fit - set n_estimators.
     X, y = datasets.make_hastie_10_2(n_samples=100, random_state=global_random_seed)
-    est = Cls(n_estimators=300, max_depth=1, random_state=global_random_seed)
+    est = estimator_cls(n_estimators=300, max_depth=1, random_state=global_random_seed)
     est.fit(X, y)
 
-    est_ws = Cls(
+    est_ws = estimator_cls(
         n_estimators=100, max_depth=1, warm_start=True, random_state=global_random_seed
     )
     est_ws.fit(X, y)
@@ -797,11 +797,11 @@ def test_warm_start_n_estimators(Cls, global_random_seed):
     assert_allclose(est_ws.predict(X), est.predict(X))
 
 
-@pytest.mark.parametrize("Cls", GRADIENT_BOOSTING_ESTIMATORS)
-def test_warm_start_max_depth(Cls):
+@pytest.mark.parametrize("estimator_cls", GRADIENT_BOOSTING_ESTIMATORS)
+def test_warm_start_max_depth(estimator_cls):
     # Test if possible to fit trees of different depth in ensemble.
     X, y = datasets.make_hastie_10_2(n_samples=100, random_state=1)
-    est = Cls(n_estimators=100, max_depth=1, warm_start=True)
+    est = estimator_cls(n_estimators=100, max_depth=1, warm_start=True)
     est.fit(X, y)
     est.set_params(n_estimators=110, max_depth=2)
     est.fit(X, y)
@@ -812,14 +812,14 @@ def test_warm_start_max_depth(Cls):
         assert est.estimators_[-i, 0].max_depth == 2
 
 
-@pytest.mark.parametrize("Cls", GRADIENT_BOOSTING_ESTIMATORS)
-def test_warm_start_clear(Cls):
+@pytest.mark.parametrize("estimator_cls", GRADIENT_BOOSTING_ESTIMATORS)
+def test_warm_start_clear(estimator_cls):
     # Test if fit clears state.
     X, y = datasets.make_hastie_10_2(n_samples=100, random_state=1)
-    est = Cls(n_estimators=100, max_depth=1)
+    est = estimator_cls(n_estimators=100, max_depth=1)
     est.fit(X, y)
 
-    est_2 = Cls(n_estimators=100, max_depth=1, warm_start=True)
+    est_2 = estimator_cls(n_estimators=100, max_depth=1, warm_start=True)
     est_2.fit(X, y)  # inits state
     est_2.set_params(warm_start=False)
     est_2.fit(X, y)  # clears old state and equals est
@@ -827,14 +827,14 @@ def test_warm_start_clear(Cls):
     assert_array_almost_equal(est_2.predict(X), est.predict(X))
 
 
-@pytest.mark.parametrize("GradientBoosting", GRADIENT_BOOSTING_ESTIMATORS)
-def test_warm_start_state_oob_scores(GradientBoosting):
+@pytest.mark.parametrize("gradient_boosting", GRADIENT_BOOSTING_ESTIMATORS)
+def test_warm_start_state_oob_scores(gradient_boosting):
     """
     Check that the states of the OOB scores are cleared when used with `warm_start`.
     """
     X, y = datasets.make_hastie_10_2(n_samples=100, random_state=1)
     n_estimators = 100
-    estimator = GradientBoosting(
+    estimator = gradient_boosting(
         n_estimators=n_estimators,
         max_depth=1,
         subsample=0.5,
@@ -859,22 +859,22 @@ def test_warm_start_state_oob_scores(GradientBoosting):
     assert oob_scores[-1] == pytest.approx(oob_score)
 
 
-@pytest.mark.parametrize("Cls", GRADIENT_BOOSTING_ESTIMATORS)
-def test_warm_start_smaller_n_estimators(Cls):
+@pytest.mark.parametrize("estimator_cls", GRADIENT_BOOSTING_ESTIMATORS)
+def test_warm_start_smaller_n_estimators(estimator_cls):
     # Test if warm start with smaller n_estimators raises error
     X, y = datasets.make_hastie_10_2(n_samples=100, random_state=1)
-    est = Cls(n_estimators=100, max_depth=1, warm_start=True)
+    est = estimator_cls(n_estimators=100, max_depth=1, warm_start=True)
     est.fit(X, y)
     est.set_params(n_estimators=99)
     with pytest.raises(ValueError):
         est.fit(X, y)
 
 
-@pytest.mark.parametrize("Cls", GRADIENT_BOOSTING_ESTIMATORS)
-def test_warm_start_equal_n_estimators(Cls):
+@pytest.mark.parametrize("estimator_cls", GRADIENT_BOOSTING_ESTIMATORS)
+def test_warm_start_equal_n_estimators(estimator_cls):
     # Test if warm start with equal n_estimators does nothing
     X, y = datasets.make_hastie_10_2(n_samples=100, random_state=1)
-    est = Cls(n_estimators=100, max_depth=1)
+    est = estimator_cls(n_estimators=100, max_depth=1)
     est.fit(X, y)
 
     est2 = clone(est)
@@ -884,11 +884,11 @@ def test_warm_start_equal_n_estimators(Cls):
     assert_array_almost_equal(est2.predict(X), est.predict(X))
 
 
-@pytest.mark.parametrize("Cls", GRADIENT_BOOSTING_ESTIMATORS)
-def test_warm_start_oob_switch(Cls):
+@pytest.mark.parametrize("estimator_cls", GRADIENT_BOOSTING_ESTIMATORS)
+def test_warm_start_oob_switch(estimator_cls):
     # Test if oob can be turned on during warm start.
     X, y = datasets.make_hastie_10_2(n_samples=100, random_state=1)
-    est = Cls(n_estimators=100, max_depth=1, warm_start=True)
+    est = estimator_cls(n_estimators=100, max_depth=1, warm_start=True)
     est.fit(X, y)
     est.set_params(n_estimators=110, subsample=0.5)
     est.fit(X, y)
@@ -903,14 +903,14 @@ def test_warm_start_oob_switch(Cls):
     assert est.oob_scores_[-1] == pytest.approx(est.oob_score_)
 
 
-@pytest.mark.parametrize("Cls", GRADIENT_BOOSTING_ESTIMATORS)
-def test_warm_start_oob(Cls):
+@pytest.mark.parametrize("estimator_cls", GRADIENT_BOOSTING_ESTIMATORS)
+def test_warm_start_oob(estimator_cls):
     # Test if warm start OOB equals fit.
     X, y = datasets.make_hastie_10_2(n_samples=100, random_state=1)
-    est = Cls(n_estimators=200, max_depth=1, subsample=0.5, random_state=1)
+    est = estimator_cls(n_estimators=200, max_depth=1, subsample=0.5, random_state=1)
     est.fit(X, y)
 
-    est_ws = Cls(
+    est_ws = estimator_cls(
         n_estimators=100, max_depth=1, subsample=0.5, random_state=1, warm_start=True
     )
     est_ws.fit(X, y)
@@ -923,14 +923,14 @@ def test_warm_start_oob(Cls):
     assert est_ws.oob_scores_[-1] == pytest.approx(est_ws.oob_score_)
 
 
-@pytest.mark.parametrize("Cls", GRADIENT_BOOSTING_ESTIMATORS)
+@pytest.mark.parametrize("estimator_cls", GRADIENT_BOOSTING_ESTIMATORS)
 @pytest.mark.parametrize(
     "sparse_container", COO_CONTAINERS + CSC_CONTAINERS + CSR_CONTAINERS
 )
-def test_warm_start_sparse(Cls, sparse_container):
+def test_warm_start_sparse(estimator_cls, sparse_container):
     # Test that all sparse matrix types are supported
     X, y = datasets.make_hastie_10_2(n_samples=100, random_state=1)
-    est_dense = Cls(
+    est_dense = estimator_cls(
         n_estimators=100, max_depth=1, subsample=0.5, random_state=1, warm_start=True
     )
     est_dense.fit(X, y)
@@ -939,19 +939,19 @@ def test_warm_start_sparse(Cls, sparse_container):
     est_dense.fit(X, y)
     y_pred_dense = est_dense.predict(X)
 
-    X_sparse = sparse_container(X)
+    x_sparse = sparse_container(X)
 
-    est_sparse = Cls(
+    est_sparse = estimator_cls(
         n_estimators=100,
         max_depth=1,
         subsample=0.5,
         random_state=1,
         warm_start=True,
     )
-    est_sparse.fit(X_sparse, y)
+    est_sparse.fit(x_sparse, y)
     est_sparse.predict(X)
     est_sparse.set_params(n_estimators=200)
-    est_sparse.fit(X_sparse, y)
+    est_sparse.fit(x_sparse, y)
     y_pred_sparse = est_sparse.predict(X)
 
     assert_array_almost_equal(
