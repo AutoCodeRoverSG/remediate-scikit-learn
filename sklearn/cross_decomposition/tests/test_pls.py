@@ -424,13 +424,13 @@ def test_copy(estimator):
 def _generate_test_scale_and_stability_datasets():
     """Generate dataset for test_scale_and_stability"""
     # dataset for non-regression 7818
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
     n_samples = 1000
     n_targets = 5
     n_features = 10
-    Q = rng.randn(n_targets, n_features)
-    y = rng.randn(n_samples, n_targets)
-    X = np.dot(y, Q) + 2 * rng.randn(n_samples, n_features) + 1
+    Q = rng.standard_normal((n_targets, n_features))
+    y = rng.standard_normal((n_samples, n_targets))
+    X = np.dot(y, Q) + 2 * rng.standard_normal((n_samples, n_features)) + 1
     X *= 1000
     yield X, y
 
@@ -447,9 +447,9 @@ def _generate_test_scale_and_stability_datasets():
     # Seeds that provide a non-regression test for #18746, where CCA fails
     seeds = [530, 741]
     for seed in seeds:
-        rng = np.random.RandomState(seed)
-        X = rng.randn(4, 3)
-        y = rng.randn(4, 2)
+        rng = np.random.default_rng(seed)
+        X = rng.standard_normal((4, 3))
+        y = rng.standard_normal((4, 2))
         yield X, y
 
 
@@ -472,20 +472,20 @@ def test_scale_and_stability(est, X, y):
 @pytest.mark.parametrize("estimator", (PLSSVD, PLSRegression, PLSCanonical, CCA))
 def test_n_components_upper_bounds(estimator):
     """Check the validation of `n_components` upper bounds for `PLS` regressors."""
-    rng = np.random.RandomState(0)
-    X = rng.randn(10, 5)
-    y = rng.randn(10, 3)
+    rng = np.random.default_rng(0)
+    X = rng.standard_normal((10, 5))
+    y = rng.standard_normal((10, 3))
     est = estimator(n_components=10)
     err_msg = "`n_components` upper bound is .*. Got 10 instead. Reduce `n_components`."
     with pytest.raises(ValueError, match=err_msg):
         est.fit(X, y)
 
 
-def test_n_components_upper_PLSRegression():
+def test_n_components_upper_pls_regression():
     """Check the validation of `n_components` upper bounds for PLSRegression."""
-    rng = np.random.RandomState(0)
-    X = rng.randn(20, 64)
-    y = rng.randn(20, 3)
+    rng = np.random.default_rng(0)
+    X = rng.standard_normal((20, 64))
+    y = rng.standard_normal((20, 3))
     est = PLSRegression(n_components=30)
     err_msg = "`n_components` upper bound is 20. Got 30 instead. Reduce `n_components`."
     with pytest.raises(ValueError, match=err_msg):
@@ -558,8 +558,8 @@ def test_loadings_converges(global_random_seed):
 
 def test_pls_constant_y():
     """Checks warning when y is constant. Non-regression test for #19831"""
-    rng = np.random.RandomState(42)
-    x = rng.rand(100, 3)
+    rng = np.random.default_rng(42)
+    x = rng.random((100, 3))
     y = np.zeros(100)
 
     pls = PLSRegression()
@@ -600,21 +600,21 @@ def test_pls_prediction(pls_estimator, scale):
     y_pred = pls.predict(X, copy=True)
 
     y_mean = y.mean(axis=0)
-    X_trans = X - X.mean(axis=0)
+    x_trans = X - X.mean(axis=0)
 
     assert_allclose(pls.intercept_, y_mean)
-    assert_allclose(y_pred, X_trans @ pls.coef_.T + pls.intercept_)
+    assert_allclose(y_pred, x_trans @ pls.coef_.T + pls.intercept_)
 
 
-@pytest.mark.parametrize("Klass", [CCA, PLSSVD, PLSRegression, PLSCanonical])
-def test_pls_feature_names_out(Klass):
+@pytest.mark.parametrize("klass", [CCA, PLSSVD, PLSRegression, PLSCanonical])
+def test_pls_feature_names_out(klass):
     """Check `get_feature_names_out` cross_decomposition module."""
     X, y = load_linnerud(return_X_y=True)
 
-    est = Klass().fit(X, y)
+    est = klass().fit(X, y)
     names_out = est.get_feature_names_out()
 
-    class_name_lower = Klass.__name__.lower()
+    class_name_lower = klass.__name__.lower()
     expected_names_out = np.array(
         [f"{class_name_lower}{i}" for i in range(est.x_weights_.shape[1])],
         dtype=object,
@@ -622,17 +622,17 @@ def test_pls_feature_names_out(Klass):
     assert_array_equal(names_out, expected_names_out)
 
 
-@pytest.mark.parametrize("Klass", [CCA, PLSSVD, PLSRegression, PLSCanonical])
-def test_pls_set_output(Klass):
+@pytest.mark.parametrize("klass", [CCA, PLSSVD, PLSRegression, PLSCanonical])
+def test_pls_set_output(klass):
     """Check `set_output` in cross_decomposition module."""
     pd = pytest.importorskip("pandas")
     X, y = load_linnerud(return_X_y=True, as_frame=True)
 
-    est = Klass().set_output(transform="pandas").fit(X, y)
-    X_trans, y_trans = est.transform(X, y)
+    est = klass().set_output(transform="pandas").fit(X, y)
+    x_trans, y_trans = est.transform(X, y)
     assert isinstance(y_trans, np.ndarray)
-    assert isinstance(X_trans, pd.DataFrame)
-    assert_array_equal(X_trans.columns, est.get_feature_names_out())
+    assert isinstance(x_trans, pd.DataFrame)
+    assert_array_equal(x_trans.columns, est.get_feature_names_out())
 
 
 def test_pls_regression_fit_1d_y():
