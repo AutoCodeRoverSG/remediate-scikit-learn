@@ -101,8 +101,8 @@ def test_structured_linkage_tree():
 
 def test_unstructured_linkage_tree():
     # Check that we obtain the correct solution for unstructured linkage trees.
-    rng = np.random.RandomState(0)
-    X = rng.randn(50, 100)
+    rng = np.random.default_rng(0)
+    X = rng.standard_normal((50, 100))
     for this_X in (X, X[0]):
         # With specified a number of clusters just for the sake of
         # raising a warning and testing the warning code
@@ -125,9 +125,9 @@ def test_unstructured_linkage_tree():
 
 def test_height_linkage_tree():
     # Check that the height of the results of linkage tree is sorted.
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
     mask = np.ones([10, 10], dtype=bool)
-    X = rng.randn(50, 100)
+    X = rng.standard_normal((50, 100))
     connectivity = grid_to_graph(*mask.shape)
     for linkage_func in _TREE_BUILDERS.values():
         children, n_nodes, n_leaves, parent = linkage_func(
@@ -154,10 +154,10 @@ def test_agglomerative_clustering_distances(
 ):
     # Check that when `compute_distances` is True or `distance_threshold` is
     # given, the fitted model has an attribute `distances_`.
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
     mask = np.ones([10, 10], dtype=bool)
     n_samples = 100
-    X = rng.randn(n_samples, 50)
+    X = rng.standard_normal((n_samples, 50))
     connectivity = grid_to_graph(*mask.shape)
 
     clustering = AgglomerativeClustering(
@@ -182,10 +182,10 @@ def test_agglomerative_clustering_distances(
 def test_agglomerative_clustering(global_random_seed, lil_container):
     # Check that we obtain the correct number of clusters with
     # agglomerative clustering.
-    rng = np.random.RandomState(global_random_seed)
+    rng = np.random.default_rng(global_random_seed)
     mask = np.ones([10, 10], dtype=bool)
     n_samples = 100
-    X = rng.randn(n_samples, 50)
+    X = rng.standard_normal((n_samples, 50))
     connectivity = grid_to_graph(*mask.shape)
     for linkage in ("ward", "complete", "average", "single"):
         clustering = AgglomerativeClustering(
@@ -267,16 +267,16 @@ def test_agglomerative_clustering_memory_mapped():
 
     Non-regression test for issue #19875.
     """
-    rng = np.random.RandomState(0)
-    Xmm = create_memmap_backed_data(rng.randn(50, 100))
+    rng = np.random.default_rng(0)
+    Xmm = create_memmap_backed_data(rng.standard_normal((50, 100)))
     AgglomerativeClustering(metric="euclidean", linkage="single").fit(Xmm)
 
 
 def test_ward_agglomeration(global_random_seed):
     # Check that we obtain the correct solution in a simplistic case
-    rng = np.random.RandomState(global_random_seed)
+    rng = np.random.default_rng(global_random_seed)
     mask = np.ones([10, 10], dtype=bool)
-    X = rng.randn(50, 100)
+    X = rng.standard_normal((50, 100))
     connectivity = grid_to_graph(*mask.shape)
     agglo = FeatureAgglomeration(n_clusters=5, connectivity=connectivity)
     agglo.fit(X)
@@ -325,7 +325,7 @@ def assess_same_labelling(cut1, cut2):
 def test_sparse_scikit_vs_scipy(global_random_seed):
     # Test scikit linkage with full connectivity (i.e. unstructured) vs scipy
     n, p, k = 10, 5, 3
-    rng = np.random.RandomState(global_random_seed)
+    rng = np.random.default_rng(global_random_seed)
 
     # Not using a lil_matrix here, just to check that non sparse
     # matrices are well handled
@@ -364,7 +364,7 @@ def test_sparse_scikit_vs_scipy(global_random_seed):
 # the same results as scipy's builtin
 def test_vector_scikit_single_vs_scipy_single(global_random_seed):
     n_samples, n_features, n_clusters = 10, 5, 3
-    rng = np.random.RandomState(global_random_seed)
+    rng = np.random.default_rng(global_random_seed)
     X = 0.1 * rng.normal(size=(n_samples, n_features))
     X -= 4.0 * np.arange(n_samples)[:, np.newaxis]
     X -= X.mean(axis=1)[:, np.newaxis]
@@ -393,7 +393,7 @@ def test_mst_linkage_core_memory_mapped(metric_param_grid):
 
     Non-regression test for issue #19875.
     """
-    rng = np.random.RandomState(seed=1)
+    rng = np.random.default_rng(seed=1)
     X = rng.normal(size=(20, 4))
     Xmm = create_memmap_backed_data(X)
     metric, param_grid = metric_param_grid
@@ -463,7 +463,7 @@ def test_ward_tree_children_order(global_random_seed):
 
     # test on five random datasets
     n, p = 10, 5
-    rng = np.random.RandomState(global_random_seed)
+    rng = np.random.default_rng(global_random_seed)
 
     connectivity = np.ones((n, n))
     for i in range(5):
