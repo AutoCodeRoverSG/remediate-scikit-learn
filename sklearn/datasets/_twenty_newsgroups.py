@@ -88,10 +88,10 @@ def _download_20newsgroups(target_dir, cache_path, n_retries, delay):
         os.remove(archive_path)
 
     # Store a zipped pickle
-    cache = dict(
-        train=load_files(train_path, encoding="latin1"),
-        test=load_files(test_path, encoding="latin1"),
-    )
+    cache = {
+        "train": load_files(train_path, encoding="latin1"),
+        "test": load_files(test_path, encoding="latin1"),
+    }
     compressed_content = codecs.encode(pickle.dumps(cache), "zlib_codec")
     with open(cache_path, "wb") as f:
         f.write(compressed_content)
@@ -168,7 +168,7 @@ def strip_newsgroup_footer(text):
         "random_state": ["random_state"],
         "remove": [tuple],
         "download_if_missing": ["boolean"],
-        "return_X_y": ["boolean"],
+        "return_x_y": ["boolean"],
         "n_retries": [Interval(Integral, 1, None, closed="left")],
         "delay": [Interval(Real, 0.0, None, closed="neither")],
     },
@@ -183,7 +183,7 @@ def fetch_20newsgroups(
     random_state=42,
     remove=(),
     download_if_missing=True,
-    return_X_y=False,
+    return_x_y=False,
     n_retries=3,
     delay=1.0,
 ):
@@ -329,9 +329,9 @@ def fetch_20newsgroups(
     if subset in ("train", "test"):
         data = cache[subset]
     elif subset == "all":
-        data_lst = list()
-        target = list()
-        filenames = list()
+        data_lst = []
+        target = []
+        filenames = []
         for subset in ("train", "test"):
             data = cache[subset]
             data_lst.extend(data.data)
@@ -380,7 +380,7 @@ def fetch_20newsgroups(
         data_lst = data_lst[indices]
         data.data = data_lst.tolist()
 
-    if return_X_y:
+    if return_x_y:
         return data.data, data.target
 
     return data
@@ -392,7 +392,7 @@ def fetch_20newsgroups(
         "remove": [tuple],
         "data_home": [str, os.PathLike, None],
         "download_if_missing": ["boolean"],
-        "return_X_y": ["boolean"],
+        "return_x_y": ["boolean"],
         "normalize": ["boolean"],
         "as_frame": ["boolean"],
         "n_retries": [Interval(Integral, 1, None, closed="left")],
@@ -406,7 +406,7 @@ def fetch_20newsgroups_vectorized(
     remove=(),
     data_home=None,
     download_if_missing=True,
-    return_X_y=False,
+    return_x_y=False,
     normalize=True,
     as_frame=False,
     n_retries=3,
@@ -612,7 +612,7 @@ def fetch_20newsgroups_vectorized(
             sparse_data=True,
         )
 
-    if return_X_y:
+    if return_x_y:
         return data, target
 
     return Bunch(
