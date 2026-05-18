@@ -963,22 +963,26 @@ def test_warm_start_sparse(estimator_cls, sparse_container):
     assert_array_almost_equal(y_pred_dense, y_pred_sparse)
 
 
-@pytest.mark.parametrize("Cls", GRADIENT_BOOSTING_ESTIMATORS)
-def test_warm_start_fortran(Cls, global_random_seed):
+@pytest.mark.parametrize("estimator_cls", GRADIENT_BOOSTING_ESTIMATORS)
+def test_warm_start_fortran(estimator_cls, global_random_seed):
     # Test that feeding an X in Fortran-ordered is giving the same results as
     # in C-ordered
     X, y = datasets.make_hastie_10_2(n_samples=100, random_state=global_random_seed)
-    est_c = Cls(n_estimators=1, random_state=global_random_seed, warm_start=True)
-    est_fortran = Cls(n_estimators=1, random_state=global_random_seed, warm_start=True)
+    est_c = estimator_cls(
+        n_estimators=1, random_state=global_random_seed, warm_start=True
+    )
+    est_fortran = estimator_cls(
+        n_estimators=1, random_state=global_random_seed, warm_start=True
+    )
 
     est_c.fit(X, y)
     est_c.set_params(n_estimators=11)
     est_c.fit(X, y)
 
-    X_fortran = np.asfortranarray(X)
-    est_fortran.fit(X_fortran, y)
+    x_fortran = np.asfortranarray(X)
+    est_fortran.fit(x_fortran, y)
     est_fortran.set_params(n_estimators=11)
-    est_fortran.fit(X_fortran, y)
+    est_fortran.fit(x_fortran, y)
 
     assert_allclose(est_c.predict(X), est_fortran.predict(X))
 
@@ -991,12 +995,12 @@ def early_stopping_monitor(i, est, locals):
         return False
 
 
-@pytest.mark.parametrize("Cls", GRADIENT_BOOSTING_ESTIMATORS)
-def test_monitor_early_stopping(Cls):
+@pytest.mark.parametrize("gb_cls", GRADIENT_BOOSTING_ESTIMATORS)
+def test_monitor_early_stopping(gb_cls):
     # Test if monitor return value works.
     X, y = datasets.make_hastie_10_2(n_samples=100, random_state=1)
 
-    est = Cls(n_estimators=20, max_depth=1, random_state=1, subsample=0.5)
+    est = gb_cls(n_estimators=20, max_depth=1, random_state=1, subsample=0.5)
     est.fit(X, y, monitor=early_stopping_monitor)
     assert est.n_estimators == 20  # this is not altered
     assert est.estimators_.shape[0] == 10
@@ -1015,7 +1019,7 @@ def test_monitor_early_stopping(Cls):
     assert est.oob_scores_.shape[0] == 30
     assert est.oob_scores_[-1] == pytest.approx(est.oob_score_)
 
-    est = Cls(
+    est = gb_cls(
         n_estimators=20, max_depth=1, random_state=1, subsample=0.5, warm_start=True
     )
     est.fit(X, y, monitor=early_stopping_monitor)
@@ -1111,27 +1115,27 @@ def test_zero_estimator_clf(global_random_seed):
     assert est.score(X, y) > 0.96
 
 
-@pytest.mark.parametrize("GBEstimator", GRADIENT_BOOSTING_ESTIMATORS)
-def test_max_leaf_nodes_max_depth(GBEstimator):
+@pytest.mark.parametrize("gb_estimator", GRADIENT_BOOSTING_ESTIMATORS)
+def test_max_leaf_nodes_max_depth(gb_estimator):
     # Test precedence of max_leaf_nodes over max_depth.
     X, y = datasets.make_hastie_10_2(n_samples=100, random_state=1)
 
     k = 4
 
-    est = GBEstimator(max_depth=1, max_leaf_nodes=k).fit(X, y)
+    est = gb_estimator(max_depth=1, max_leaf_nodes=k).fit(X, y)
     tree = est.estimators_[0, 0].tree_
     assert tree.max_depth == 1
 
-    est = GBEstimator(max_depth=1).fit(X, y)
+    est = gb_estimator(max_depth=1).fit(X, y)
     tree = est.estimators_[0, 0].tree_
     assert tree.max_depth == 1
 
 
-@pytest.mark.parametrize("GBEstimator", GRADIENT_BOOSTING_ESTIMATORS)
-def test_min_impurity_decrease(GBEstimator):
+@pytest.mark.parametrize("gb_estimator", GRADIENT_BOOSTING_ESTIMATORS)
+def test_min_impurity_decrease(gb_estimator):
     X, y = datasets.make_hastie_10_2(n_samples=100, random_state=1)
 
-    est = GBEstimator(min_impurity_decrease=0.1)
+    est = gb_estimator(min_impurity_decrease=0.1)
     est.fit(X, y)
     for tree in est.estimators_.flat:
         # Simply check if the parameter is passed on correctly. Tree tests
@@ -1181,62 +1185,63 @@ def test_non_uniform_weights_toy_edge_case_clf():
 
 @skip_if_32bit
 @pytest.mark.parametrize(
-    "EstimatorClass", (GradientBoostingClassifier, GradientBoostingRegressor)
+    "estimator_class", (GradientBoostingClassifier, GradientBoostingRegressor)
 )
 @pytest.mark.parametrize(
     "sparse_container", COO_CONTAINERS + CSC_CONTAINERS + CSR_CONTAINERS
 )
-def test_sparse_input(EstimatorClass, sparse_container):
+def test_sparse_input(estimator_class, sparse_container):
     y, X = datasets.make_multilabel_classification(
         random_state=0, n_samples=50, n_features=1, n_classes=20
     )
     y = y[:, 0]
-    X_sparse = sparse_container(X)
+    x_sparse = sparse_container(X)
 
-    dense = EstimatorClass(
+    dense = estimator_class(
         n_estimators=10, random_state=0, max_depth=2, min_impurity_decrease=1e-7
     ).fit(X, y)
-    sparse = EstimatorClass(
+    sparse = estimator_class(
         n_estimators=10, random_state=0, max_depth=2, min_impurity_decrease=1e-7
-    ).fit(X_sparse, y)
+    ).fit(x_sparse, y)
 
     assert_array_almost_equal(sparse.apply(X), dense.apply(X))
     assert_array_almost_equal(sparse.predict(X), dense.predict(X))
     assert_array_almost_equal(sparse.feature_importances_, dense.feature_importances_)
 
-    assert_array_almost_equal(sparse.predict(X_sparse), dense.predict(X))
-    assert_array_almost_equal(dense.predict(X_sparse), sparse.predict(X))
+    assert_array_almost_equal(sparse.predict(x_sparse), dense.predict(X))
+    assert_array_almost_equal(dense.predict(x_sparse), sparse.predict(X))
 
-    if issubclass(EstimatorClass, GradientBoostingClassifier):
+    if issubclass(estimator_class, GradientBoostingClassifier):
         assert_array_almost_equal(sparse.predict_proba(X), dense.predict_proba(X))
         assert_array_almost_equal(
             sparse.predict_log_proba(X), dense.predict_log_proba(X)
         )
 
         assert_array_almost_equal(
-            sparse.decision_function(X_sparse), sparse.decision_function(X)
+            sparse.decision_function(x_sparse), sparse.decision_function(X)
         )
         assert_array_almost_equal(
-            dense.decision_function(X_sparse), sparse.decision_function(X)
+            dense.decision_function(x_sparse), sparse.decision_function(X)
         )
         for res_sparse, res in zip(
-            sparse.staged_decision_function(X_sparse),
+            sparse.staged_decision_function(x_sparse),
             sparse.staged_decision_function(X),
         ):
             assert_array_almost_equal(res_sparse, res)
 
 
 @pytest.mark.parametrize(
-    "GradientBoostingEstimator", [GradientBoostingClassifier, GradientBoostingRegressor]
+    "gradient_boosting_estimator",
+    [GradientBoostingClassifier, GradientBoostingRegressor],
 )
-def test_gradient_boosting_early_stopping(GradientBoostingEstimator):
+def test_gradient_boosting_early_stopping(gradient_boosting_estimator):
     # Check if early stopping works as expected, that is empirically check that the
     # number of trained estimators is increasing when the tolerance decreases.
 
     X, y = make_classification(n_samples=1000, random_state=0)
     n_estimators = 1000
 
-    gb_large_tol = GradientBoostingEstimator(
+    gb_large_tol = gradient_boosting_estimator(
         n_estimators=n_estimators,
         n_iter_no_change=10,
         learning_rate=0.1,
@@ -1245,7 +1250,7 @@ def test_gradient_boosting_early_stopping(GradientBoostingEstimator):
         tol=1e-1,
     )
 
-    gb_small_tol = GradientBoostingEstimator(
+    gb_small_tol = gradient_boosting_estimator(
         n_estimators=n_estimators,
         n_iter_no_change=10,
         learning_rate=0.1,
@@ -1308,7 +1313,7 @@ def test_gradient_boosting_validation_fraction():
     gbr2 = clone(gbr).set_params(validation_fraction=0.3)
     gbr3 = clone(gbr).set_params(n_iter_no_change=20)
 
-    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+    X_train, _, y_train, _ = train_test_split(X, y, random_state=42)
     # Check if validation_fraction has an effect
     gbc.fit(X_train, y_train)
     gbc2.fit(X_train, y_train)
