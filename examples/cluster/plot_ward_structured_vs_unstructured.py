@@ -167,7 +167,7 @@ for subfig, (connectivity, n_clusters) in zip(subfigs, params):
         )
         axs[index].set_title(
             "linkage=%s\n(time %.2fs)" % (linkage, elapsed_time),
-            fontdict=dict(verticalalignment="top"),
+            fontdict={"verticalalignment": "top"},
         )
         axs[index].set_aspect("equal")
         axs[index].axis("off")

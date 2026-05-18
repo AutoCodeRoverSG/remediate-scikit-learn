@@ -93,7 +93,8 @@ preprocessor = ColumnTransformer(
 # Append classifier to preprocessing pipeline.
 # Now we have a full prediction pipeline.
 clf = Pipeline(
-    steps=[("preprocessor", preprocessor), ("classifier", LogisticRegression())]
+    steps=[("preprocessor", preprocessor), ("classifier", LogisticRegression())],
+    memory=None,
 ).set_output(transform="pandas")
 
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=0)
@@ -106,7 +107,7 @@ print("model score: %.3f" % clf.score(X_test, y_test))
 #
 # When the ``Pipeline`` is printed out in a jupyter notebook an HTML
 # representation of the estimator is displayed:
-clf
+print(clf)
 
 # %%
 # Use ``ColumnTransformer`` by selecting column by data types
@@ -149,13 +150,14 @@ preprocessor = ColumnTransformer(
     ]
 )
 clf = Pipeline(
-    steps=[("preprocessor", preprocessor), ("classifier", LogisticRegression())]
+    steps=[("preprocessor", preprocessor), ("classifier", LogisticRegression())],
+    memory=None,
 )
 
 
 clf.fit(X_train, y_train)
 print("model score: %.3f" % clf.score(X_test, y_test))
-clf
+print(clf)
 
 # %%
 # The resulting score is not exactly the same as the one from the previous
@@ -189,7 +191,7 @@ param_grid = {
 }
 
 search_cv = RandomizedSearchCV(clf, param_grid, n_iter=10, random_state=0)
-search_cv
+print(search_cv)
 
 # %%
 # Calling 'fit' triggers the cross-validated search for the best
@@ -199,7 +201,7 @@ search_cv.fit(X_train, y_train)
 
 print("Best params:")
 print(search_cv.best_params_)
-search_cv
+print(search_cv)
 
 # %%
 # The internal cross-validation scores obtained by those parameters is:
