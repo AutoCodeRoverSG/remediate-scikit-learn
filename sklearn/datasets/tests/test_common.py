@@ -79,7 +79,11 @@ def check_as_frame(
         assert np.all(frame_bunch.target.dtypes == expected_target_dtype)
 
     # Test for return_X_y and as_frame=True
-    frame_X, frame_y = dataset_func(as_frame=True, return_X_y=True)
+    params = inspect.signature(dataset_func).parameters
+    if "return_x_y" in params:
+        frame_X, frame_y = dataset_func(as_frame=True, return_x_y=True)
+    else:
+        frame_X, frame_y = dataset_func(as_frame=True, return_X_y=True)
     assert isinstance(frame_X, pd.DataFrame)
     if frame_y.ndim > 1:
         assert isinstance(frame_y, pd.DataFrame)

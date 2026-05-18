@@ -57,7 +57,7 @@ logger = logging.getLogger(__name__)
     {
         "data_home": [str, PathLike, None],
         "download_if_missing": ["boolean"],
-        "return_X_y": ["boolean"],
+        "return_x_y": ["boolean"],
         "as_frame": ["boolean"],
         "n_retries": [Interval(Integral, 1, None, closed="left")],
         "delay": [Interval(Real, 0.0, None, closed="neither")],
@@ -68,7 +68,7 @@ def fetch_california_housing(
     *,
     data_home=None,
     download_if_missing=True,
-    return_X_y=False,
+    return_x_y=False,
     as_frame=False,
     n_retries=3,
     delay=1.0,
@@ -233,7 +233,7 @@ def fetch_california_housing(
             "fetch_california_housing", data, target, feature_names, target_names
         )
 
-    if return_X_y:
+    if return_x_y:
         return X, y
 
     return Bunch(

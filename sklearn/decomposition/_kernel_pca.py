@@ -25,7 +25,6 @@ from sklearn.utils.extmath import _randomized_eigsh, svd_flip
 from sklearn.utils.validation import (
     _check_psd_eigenvalues,
     check_is_fitted,
-    check_random_state,
     validate_data,
 )
 
@@ -352,8 +351,7 @@ class KernelPCA(ClassNamePrefixFeaturesOutMixin, TransformerMixin, BaseEstimator
                 K, subset_by_index=(K.shape[0] - n_components, K.shape[0] - 1)
             )
         elif eigen_solver == "arpack":
-            random_state = check_random_state(self.random_state)
-            v0 = _init_arpack_v0(K.shape[0], random_state)
+            v0 = _init_arpack_v0(K.shape[0], self.random_state)
             self.eigenvalues_, self.eigenvectors_ = eigsh(
                 K, n_components, which="LA", tol=self.tol, maxiter=self.max_iter, v0=v0
             )
@@ -478,12 +476,12 @@ class KernelPCA(ClassNamePrefixFeaturesOutMixin, TransformerMixin, BaseEstimator
         self.fit(X, **params)
 
         # no need to use the kernel to transform X, use shortcut expression
-        X_transformed = self.eigenvectors_ * np.sqrt(self.eigenvalues_)
+        x_transformed = self.eigenvectors_ * np.sqrt(self.eigenvalues_)
 
         if self.fit_inverse_transform:
-            self._fit_inverse_transform(X_transformed, X)
+            self._fit_inverse_transform(x_transformed, X)
 
-        return X_transformed
+        return x_transformed
 
     def transform(self, X):
         """Transform X.

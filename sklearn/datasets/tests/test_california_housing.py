@@ -6,9 +6,6 @@ from functools import partial
 
 import pytest
 
-from sklearn.datasets.tests.test_common import check_return_X_y
-
-
 def test_fetch(fetch_california_housing_fxt):
     data = fetch_california_housing_fxt()
     assert (20640, 8) == data.data.shape
@@ -17,7 +14,10 @@ def test_fetch(fetch_california_housing_fxt):
 
     # test return_X_y option
     fetch_func = partial(fetch_california_housing_fxt)
-    check_return_X_y(data, fetch_func)
+    x_y_tuple = fetch_func(return_x_y=True)
+    assert isinstance(x_y_tuple, tuple)
+    assert x_y_tuple[0].shape == data.data.shape
+    assert x_y_tuple[1].shape == data.target.shape
 
 
 def test_fetch_asframe(fetch_california_housing_fxt):

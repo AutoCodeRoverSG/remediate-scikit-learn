@@ -41,7 +41,7 @@ def test_20news(fetch_20newsgroups_fxt):
     entry1 = data2cats.data[0]
     category = data2cats.target_names[data2cats.target[0]]
     label = data.target_names.index(category)
-    entry2 = data.data[np.where(data.target == label)[0][0]]
+    entry2 = data.data[np.nonzero(data.target == label)[0][0]]
     assert entry1 == entry2
 
     # check that return_X_y option
@@ -110,7 +110,7 @@ def test_20news_as_frame(fetch_20newsgroups_vectorized_fxt):
 
     frame = bunch.frame
     assert frame.shape == (11314, 130108)
-    assert all([isinstance(col, pd.SparseDtype) for col in bunch.data.dtypes])
+    assert all(isinstance(col, pd.SparseDtype) for col in bunch.data.dtypes)
 
     # Check a small subset of features
     for expected_feature in [

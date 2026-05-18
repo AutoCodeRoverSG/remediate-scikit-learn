@@ -291,10 +291,10 @@ def test_graphical_lasso_cv_scores_with_routing(global_random_seed):
             [0.0, 0.0, 0.1, 0.7],
         ]
     )
-    rng = np.random.RandomState(global_random_seed)
+    rng = np.random.default_rng(global_random_seed)
     X = rng.multivariate_normal(mean=[0, 0, 0, 0], cov=true_cov, size=300)
     n_samples = X.shape[0]
-    groups = rng.randint(0, 5, n_samples)
+    groups = rng.integers(0, 5, n_samples)
     params = {"groups": groups}
     cv = GroupKFold(n_splits=splits)
     cv.set_split_request(groups=True)

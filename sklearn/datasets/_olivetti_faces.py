@@ -46,7 +46,7 @@ FACES = RemoteFileMetadata(
         "shuffle": ["boolean"],
         "random_state": ["random_state"],
         "download_if_missing": ["boolean"],
-        "return_X_y": ["boolean"],
+        "return_x_y": ["boolean"],
         "n_retries": [Interval(Integral, 1, None, closed="left")],
         "delay": [Interval(Real, 0.0, None, closed="neither")],
     },
@@ -58,7 +58,7 @@ def fetch_olivetti_faces(
     shuffle=False,
     random_state=0,
     download_if_missing=True,
-    return_X_y=False,
+    return_x_y=False,
     n_retries=3,
     delay=1.0,
 ):
@@ -181,7 +181,7 @@ def fetch_olivetti_faces(
 
     fdescr = load_descr("olivetti_faces.rst")
 
-    if return_X_y:
+    if return_x_y:
         return faces_vectorized, target
 
     return Bunch(data=faces_vectorized, images=faces, target=target, DESCR=fdescr)

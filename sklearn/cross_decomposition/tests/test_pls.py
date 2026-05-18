@@ -664,7 +664,7 @@ def test_pls_regression_scaling_coef():
     https://github.com/scikit-learn/scikit-learn/issues/27964
     """
     # handcrafted data where we can predict y from X with an additional scaling factor
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
     coef = rng.uniform(size=(3, 5))
     X = rng.normal(scale=10, size=(30, 5))  # add a std of 10
     y = X @ coef.T

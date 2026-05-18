@@ -38,7 +38,7 @@ def test_fetch_kddcup99_percent10(
     assert data.DESCR.startswith(".. _kddcup99_dataset:")
 
 
-def test_fetch_kddcup99_return_X_y(fetch_kddcup99_fxt):
+def test_fetch_kddcup99_return_x_y(fetch_kddcup99_fxt):
     fetch_func = partial(fetch_kddcup99_fxt, subset="smtp")
     data = fetch_func()
     x_y_tuple = fetch_func(return_x_y=True)
