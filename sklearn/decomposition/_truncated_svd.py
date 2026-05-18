@@ -228,10 +228,10 @@ class TruncatedSVD(ClassNamePrefixFeaturesOutMixin, TransformerMixin, BaseEstima
 
         if self.algorithm == "arpack":
             v0 = _init_arpack_v0(min(X.shape), random_state)
-            U, Sigma, VT = svds(X, k=self.n_components, tol=self.tol, v0=v0)
+            U, sigma, VT = svds(X, k=self.n_components, tol=self.tol, v0=v0)
             # svds doesn't abide by scipy.linalg.svd/randomized_svd
             # conventions, so reverse its outputs.
-            Sigma = Sigma[::-1]
+            sigma = sigma[::-1]
             # u_based_decision=False is needed to be consistent with PCA.
             U, VT = svd_flip(U[:, ::-1], VT[::-1], u_based_decision=False)
 
@@ -241,7 +241,7 @@ class TruncatedSVD(ClassNamePrefixFeaturesOutMixin, TransformerMixin, BaseEstima
                     f"n_components({self.n_components}) must be <="
                     f" n_features({X.shape[1]})."
                 )
-            U, Sigma, VT = _randomized_svd(
+            U, sigma, VT = _randomized_svd(
                 X,
                 self.n_components,
                 n_iter=self.n_iter,
@@ -259,21 +259,21 @@ class TruncatedSVD(ClassNamePrefixFeaturesOutMixin, TransformerMixin, BaseEstima
         if self.algorithm == "randomized" or (
             self.algorithm == "arpack" and self.tol > 0
         ):
-            X_transformed = safe_sparse_dot(X, self.components_.T)
+            x_transformed = safe_sparse_dot(X, self.components_.T)
         else:
-            X_transformed = U * Sigma
+            x_transformed = U * sigma
 
         # Calculate explained variance & explained variance ratio
-        self.explained_variance_ = exp_var = np.var(X_transformed, axis=0)
+        self.explained_variance_ = exp_var = np.var(x_transformed, axis=0)
         if sp.issparse(X):
             _, full_var = mean_variance_axis(X, axis=0)
             full_var = full_var.sum()
         else:
             full_var = np.var(X, axis=0).sum()
         self.explained_variance_ratio_ = exp_var / full_var
-        self.singular_values_ = Sigma  # Store the singular values.
+        self.singular_values_ = sigma  # Store the singular values.
 
-        return X_transformed
+        return x_transformed
 
     def transform(self, X):
         """Perform dimensionality reduction on X.
