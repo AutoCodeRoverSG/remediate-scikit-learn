@@ -24,10 +24,10 @@ def test_fetch(fetch_covtype_fxt, global_random_seed):
     assert data2.DESCR.startswith(descr_prefix)
 
     # test return_X_y option
-    X_y_tuple = fetch_covtype_fxt(return_x_y=True)
-    assert isinstance(X_y_tuple, tuple)
-    assert X_y_tuple[0].shape == data1.data.shape
-    assert X_y_tuple[1].shape == data1.target.shape
+    x_y_tuple = fetch_covtype_fxt(return_x_y=True)
+    assert isinstance(x_y_tuple, tuple)
+    assert x_y_tuple[0].shape == data1.data.shape
+    assert x_y_tuple[1].shape == data1.target.shape
 
 
 def test_fetch_asframe(fetch_covtype_fxt):
