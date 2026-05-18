@@ -74,7 +74,7 @@ X["year"].value_counts()
 # %%
 # We see that we have data from two years. We use the first year to train the
 # model and the second year to test the model.
-mask_training = X["year"] == 0.0
+mask_training = X["year"] == 0
 X = X.drop(columns=["year"])
 X_train, y_train = X[mask_training], y[mask_training]
 X_test, y_test = X[~mask_training], y[~mask_training]
@@ -136,7 +136,7 @@ for ax, (idx, df) in zip(axs, average_bike_rentals.groupby("year")):
     ax.set_xlabel("")
     ax.set_ylabel("Average number of bike rentals")
     ax.set_title(
-        f"Bike rental for {'2010 (train set)' if idx == 0.0 else '2011 (test set)'}"
+        f"Bike rental for {'2010 (train set)' if idx == 0 else '2011 (test set)'}"
     )
     ax.set_ylim(0, 1_000)
     ax.set_xlim(0, len(xticklabels))
@@ -174,7 +174,7 @@ mlp_preprocessor = ColumnTransformer(
         ("cat", OneHotEncoder(handle_unknown="ignore"), categorical_features),
     ]
 )
-mlp_preprocessor
+print(mlp_preprocessor)
 
 # %%
 # Preprocessor for the gradient boosting model
@@ -193,7 +193,7 @@ hgbdt_preprocessor = ColumnTransformer(
     sparse_threshold=1,
     verbose_feature_names_out=False,
 ).set_output(transform="pandas")
-hgbdt_preprocessor
+print(hgbdt_preprocessor)
 
 # %%
 # 1-way partial dependence with different models
@@ -215,6 +215,8 @@ from time import time
 from sklearn.neural_network import MLPRegressor
 from sklearn.pipeline import make_pipeline
 
+COMPUTING_PDP_MSG = "Computing partial dependence plots..."
+
 print("Training MLPRegressor...")
 tic = time()
 mlp_model = make_pipeline(
@@ -225,6 +227,7 @@ mlp_model = make_pipeline(
         early_stopping=True,
         random_state=0,
     ),
+    memory=None,
 )
 mlp_model.fit(X_train, y_train)
 print(f"done in {time() - tic:.3f}s")
@@ -261,7 +264,7 @@ common_params = {
     "random_state": 0,
 }
 
-print("Computing partial dependence plots...")
+print(COMPUTING_PDP_MSG)
 features_info = {
     # features of interest
     "features": ["temp", "humidity", "windspeed", "season", "weather", "hour"],
@@ -306,6 +309,7 @@ hgbdt_model = make_pipeline(
         random_state=0,
         max_iter=50,
     ),
+    memory=None,
 )
 hgbdt_model.fit(X_train, y_train)
 print(f"done in {time() - tic:.3f}s")
@@ -323,7 +327,7 @@ print(f"Test R2 score: {hgbdt_model.score(X_test, y_test):.2f}")
 #
 # We will plot the partial dependence for some of the numerical and categorical
 # features.
-print("Computing partial dependence plots...")
+print(COMPUTING_PDP_MSG)
 tic = time()
 _, ax = plt.subplots(ncols=3, nrows=2, figsize=(9, 8), constrained_layout=True)
 display = PartialDependenceDisplay.from_estimator(
@@ -438,7 +442,7 @@ _ = display.figure_.suptitle("ICE and PDP representations", fontsize=16)
 # the representation of available in
 # :meth:`~sklearn.inspection.PartialDependenceDisplay.from_estimator` that is a 2D
 # heatmap.
-print("Computing partial dependence plots...")
+print(COMPUTING_PDP_MSG)
 features_info = {
     "features": ["temp", "humidity", ("temp", "humidity")],
     "kind": "average",
@@ -474,7 +478,7 @@ _ = display.figure_.suptitle(
 # We now contrast those results with the same plots computed for the model
 # constrained to learn a prediction function that does not depend on such
 # non-linear feature interactions.
-print("Computing partial dependence plots...")
+print(COMPUTING_PDP_MSG)
 features_info = {
     "features": ["temp", "humidity", ("temp", "humidity")],
     "kind": "average",
@@ -515,7 +519,7 @@ _ = display.figure_.suptitle(
 # The partial dependence between categorical features will provide a discrete
 # representation that can be shown as a heatmap. For instance the interaction between
 # the season, the weather, and the target would be as follow:
-print("Computing partial dependence plots...")
+print(COMPUTING_PDP_MSG)
 features_info = {
     "features": ["season", "weather", ("season", "weather")],
     "kind": "average",

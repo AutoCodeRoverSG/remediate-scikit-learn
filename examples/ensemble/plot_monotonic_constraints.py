@@ -30,11 +30,11 @@ import numpy as np
 from sklearn.ensemble import HistGradientBoostingRegressor
 from sklearn.inspection import PartialDependenceDisplay
 
-rng = np.random.RandomState(0)
+rng = np.random.default_rng(0)
 
 n_samples = 1000
-f_0 = rng.rand(n_samples)
-f_1 = rng.rand(n_samples)
+f_0 = rng.random(n_samples)
+f_1 = rng.random(n_samples)
 X = np.c_[f_0, f_1]
 noise = rng.normal(loc=0.0, scale=0.01, size=n_samples)
 
