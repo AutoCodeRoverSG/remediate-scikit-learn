@@ -387,18 +387,17 @@ def test_fastica_whiten_unit_variance(global_random_seed):
 
 
 @pytest.mark.parametrize("whiten", ["arbitrary-variance", "unit-variance", False])
-@pytest.mark.parametrize("return_X_mean", [True, False])
-@pytest.mark.parametrize("return_n_iter", [True, False])
-def test_fastica_output_shape(whiten, return_X_mean, return_n_iter):
+@pytest.mark.parametrize("return_x_mean", [True, False])
+def test_fastica_output_shape(whiten, return_x_mean):
     n_features = 3
     n_samples = 10
     rng = np.random.RandomState(0)
     X = rng.random_sample((n_samples, n_features))
 
-    expected_len = 3 + return_X_mean + return_n_iter
+    expected_len = 3 + return_x_mean
 
     out = fastica(
-        X, whiten=whiten, return_n_iter=return_n_iter, return_X_mean=return_X_mean
+        X, whiten=whiten, return_x_mean=return_x_mean
     )
 
     assert len(out) == expected_len

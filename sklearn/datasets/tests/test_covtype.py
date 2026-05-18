@@ -2,11 +2,7 @@
 or if specifically requested via environment variable
 (e.g. for CI jobs)."""
 
-from functools import partial
-
 import pytest
-
-from sklearn.datasets.tests.test_common import check_return_X_y
 
 
 def test_fetch(fetch_covtype_fxt, global_random_seed):
@@ -28,8 +24,10 @@ def test_fetch(fetch_covtype_fxt, global_random_seed):
     assert data2.DESCR.startswith(descr_prefix)
 
     # test return_X_y option
-    fetch_func = partial(fetch_covtype_fxt)
-    check_return_X_y(data1, fetch_func)
+    X_y_tuple = fetch_covtype_fxt(return_x_y=True)
+    assert isinstance(X_y_tuple, tuple)
+    assert X_y_tuple[0].shape == data1.data.shape
+    assert X_y_tuple[1].shape == data1.target.shape
 
 
 def test_fetch_asframe(fetch_covtype_fxt):
