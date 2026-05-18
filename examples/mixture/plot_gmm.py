@@ -71,11 +71,11 @@ def plot_results(X, y_, means, covariances, index, title):
 n_samples = 500
 
 # Generate random sample, two components
-np.random.seed(0)
+rng = np.random.default_rng(0)
 C = np.array([[0.0, -0.1], [1.7, 0.4]])
 X = np.r_[
-    np.dot(np.random.randn(n_samples, 2), C),
-    0.7 * np.random.randn(n_samples, 2) + np.array([-6, 3]),
+    np.dot(rng.standard_normal((n_samples, 2)), C),
+    0.7 * rng.standard_normal((n_samples, 2)) + np.array([-6, 3]),
 ]
 
 # Fit a Gaussian mixture with EM using five components
