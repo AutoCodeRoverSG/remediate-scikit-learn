@@ -595,17 +595,17 @@ def test_sparse_encode_error():
 
 
 def test_sparse_encode_error_default_sparsity():
-    rng = np.random.RandomState(0)
-    X = rng.randn(100, 64)
-    D = rng.randn(2, 64)
+    rng = np.random.default_rng(0)
+    X = rng.standard_normal((100, 64))
+    D = rng.standard_normal((2, 64))
     code = ignore_warnings(sparse_encode)(X, D, algorithm="omp", n_nonzero_coefs=None)
     assert code.shape == (100, 2)
 
 
 def test_sparse_coder_estimator():
     n_components = 12
-    rng = np.random.RandomState(0)
-    V = rng.randn(n_components, n_features)  # random init
+    rng = np.random.default_rng(0)
+    V = rng.standard_normal((n_components, n_features))  # random init
     V /= np.sum(V**2, axis=1)[:, np.newaxis]
     coder = SparseCoder(
         dictionary=V, transform_algorithm="lasso_lars", transform_alpha=0.001
@@ -619,7 +619,7 @@ def test_sparse_coder_estimator():
 
 def test_sparse_coder_estimator_clone():
     n_components = 12
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
     V = rng.normal(size=(n_components, n_features))  # random init
     V /= np.sum(V**2, axis=1)[:, np.newaxis]
     coder = SparseCoder(
@@ -629,7 +629,7 @@ def test_sparse_coder_estimator_clone():
     assert id(cloned) != id(coder)
     np.testing.assert_allclose(cloned.dictionary, coder.dictionary)
     assert id(cloned.dictionary) != id(coder.dictionary)
-    data = np.random.rand(n_samples, n_features).astype(np.float32)
+    data = rng.random((n_samples, n_features)).astype(np.float32)
     np.testing.assert_allclose(cloned.transform(data), coder.transform(data))
 
 
@@ -642,23 +642,23 @@ def test_sparse_coder_parallel_mmap():
     # Test that SparseCoder does not error by passing reading only
     # arrays to child processes
 
-    rng = np.random.RandomState(777)
+    rng = np.random.default_rng(777)
     n_components, n_features = 40, 64
-    init_dict = rng.rand(n_components, n_features)
+    init_dict = rng.random((n_components, n_features))
     # Ensure that `data` is >2M. Joblib memory maps arrays
     # if they are larger than 1MB. The 4 accounts for float32
     # data type
     n_samples = int(2e6) // (4 * n_features)
-    data = np.random.rand(n_samples, n_features).astype(np.float32)
+    data = rng.random((n_samples, n_features)).astype(np.float32)
 
     sc = SparseCoder(init_dict, transform_algorithm="omp", n_jobs=2)
     sc.fit_transform(data)
 
 
 def test_sparse_coder_common_transformer():
-    rng = np.random.RandomState(777)
+    rng = np.random.default_rng(777)
     n_components, n_features = 40, 3
-    init_dict = rng.rand(n_components, n_features)
+    init_dict = rng.random((n_components, n_features))
 
     sc = SparseCoder(init_dict)
 
@@ -681,7 +681,7 @@ def test_sparse_coder_n_features_in():
 
 def test_sparse_encoder_feature_number_error():
     n_components = 10
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
     D = rng.uniform(size=(n_components, n_features))
     X = rng.uniform(size=(n_samples, n_features + 1))
     coder = SparseCoder(D)
@@ -694,22 +694,22 @@ def test_sparse_encoder_feature_number_error():
 def test_update_dict():
     # Check the dict update in batch mode vs online mode
     # Non-regression test for #4866
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
 
     code = np.array([[0.5, -0.5], [0.1, 0.9]])
     dictionary = np.array([[1.0, 0.0], [0.6, 0.8]])
 
-    X = np.dot(code, dictionary) + rng.randn(2, 2)
+    X = np.dot(code, dictionary) + rng.standard_normal((2, 2))
 
     # full batch update
     newd_batch = dictionary.copy()
-    _update_dict(newd_batch, X, code, random_state=rng)
+    _update_dict(newd_batch, X, code, random_state=0)
 
     # online update
     A = np.dot(code.T, code)
     B = np.dot(X.T, code)
     newd_online = dictionary.copy()
-    _update_dict(newd_online, X, code, A, B, random_state=rng)
+    _update_dict(newd_online, X, code, A, B, random_state=0)
 
     assert_allclose(newd_batch, newd_online)
 
@@ -722,8 +722,8 @@ def test_update_dict():
 # `ValueError` in `_lars_path_solver`
 def test_sparse_encode_dtype_match(data_type, algorithm):
     n_components = 6
-    rng = np.random.RandomState(0)
-    dictionary = rng.randn(n_components, n_features)
+    rng = np.random.default_rng(0)
+    dictionary = rng.standard_normal((n_components, n_features))
     code = sparse_encode(
         X.astype(data_type), dictionary.astype(data_type), algorithm=algorithm
     )
