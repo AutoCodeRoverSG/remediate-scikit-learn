@@ -483,7 +483,7 @@ def test_ward_linkage_tree_return_distance(global_random_seed):
     # test that return_distance when set true, gives same
     # output on both structured and unstructured clustering.
     n, p = 10, 5
-    rng = np.random.RandomState(global_random_seed)
+    rng = np.random.default_rng(global_random_seed)
 
     connectivity = np.ones((n, n))
     for i in range(5):
@@ -609,9 +609,9 @@ def test_connectivity_fixing_non_lil():
 
 
 def test_int_float_dict():
-    rng = np.random.RandomState(0)
-    keys = np.unique(rng.randint(100, size=10).astype(np.intp, copy=False))
-    values = rng.rand(len(keys))
+    rng = np.random.default_rng(0)
+    keys = np.unique(rng.integers(100, size=10).astype(np.intp, copy=False))
+    values = rng.random(len(keys))
 
     d = IntFloatDict(keys, values)
     for key, value in zip(keys, values):
@@ -626,8 +626,8 @@ def test_int_float_dict():
 
 
 def test_connectivity_callable():
-    rng = np.random.RandomState(0)
-    X = rng.rand(20, 5)
+    rng = np.random.default_rng(0)
+    X = rng.random((20, 5))
     connectivity = kneighbors_graph(X, 3, include_self=False)
     aglc1 = AgglomerativeClustering(connectivity=connectivity)
     aglc2 = AgglomerativeClustering(
@@ -639,8 +639,8 @@ def test_connectivity_callable():
 
 
 def test_connectivity_ignores_diagonal():
-    rng = np.random.RandomState(0)
-    X = rng.rand(20, 5)
+    rng = np.random.default_rng(0)
+    X = rng.random((20, 5))
     connectivity = kneighbors_graph(X, 3, include_self=False)
     connectivity_include_self = kneighbors_graph(X, 3, include_self=True)
     aglc1 = AgglomerativeClustering(connectivity=connectivity)
@@ -652,8 +652,8 @@ def test_connectivity_ignores_diagonal():
 
 def test_compute_full_tree():
     # Test that the full tree is computed if n_clusters is small
-    rng = np.random.RandomState(0)
-    X = rng.randn(10, 2)
+    rng = np.random.default_rng(0)
+    X = rng.standard_normal((10, 2))
     connectivity = kneighbors_graph(X, 5, include_self=False)
 
     # When n_clusters is less, the full tree should be built
@@ -667,7 +667,7 @@ def test_compute_full_tree():
     # When n_clusters is large, greater than max of 100 and 0.02 * n_samples.
     # we should stop when there are n_clusters.
     n_clusters = 101
-    X = rng.randn(200, 2)
+    X = rng.standard_normal((200, 2))
     connectivity = kneighbors_graph(X, 10, include_self=False)
     agc = AgglomerativeClustering(n_clusters=n_clusters, connectivity=connectivity)
     agc.fit(X)
@@ -678,8 +678,8 @@ def test_compute_full_tree():
 
 def test_n_components():
     # Test n_components returned by linkage, average and ward tree
-    rng = np.random.RandomState(0)
-    X = rng.rand(5, 5)
+    rng = np.random.default_rng(0)
+    X = rng.random((5, 5))
 
     # Connectivity matrix having five components.
     connectivity = np.eye(5)
@@ -693,8 +693,8 @@ def test_affinity_passed_to_fix_connectivity():
     # function
 
     size = 2
-    rng = np.random.RandomState(0)
-    X = rng.randn(size, size)
+    rng = np.random.default_rng(0)
+    X = rng.standard_normal((size, size))
     mask = np.array([True, False, False, True])
 
     connectivity = grid_to_graph(n_x=size, n_y=size, mask=mask, return_as=np.ndarray)
@@ -718,10 +718,10 @@ def test_affinity_passed_to_fix_connectivity():
 def test_agglomerative_clustering_with_distance_threshold(linkage, global_random_seed):
     # Check that we obtain the correct number of clusters with
     # agglomerative clustering with distance_threshold.
-    rng = np.random.RandomState(global_random_seed)
+    rng = np.random.default_rng(global_random_seed)
     mask = np.ones([10, 10], dtype=bool)
     n_samples = 100
-    X = rng.randn(n_samples, 50)
+    X = rng.standard_normal((n_samples, 50))
     connectivity = grid_to_graph(*mask.shape)
     # test when distance threshold is set to 10
     distance_threshold = 10
@@ -754,9 +754,9 @@ def test_agglomerative_clustering_with_distance_threshold(linkage, global_random
 
 
 def test_small_distance_threshold(global_random_seed):
-    rng = np.random.RandomState(global_random_seed)
+    rng = np.random.default_rng(global_random_seed)
     n_samples = 10
-    X = rng.randint(-300, 300, size=(n_samples, 3))
+    X = rng.integers(-300, 300, size=(n_samples, 3))
     # this should result in all data in their own clusters, given that
     # their pairwise distances are bigger than .1 (which may not be the case
     # with a different random seed).
@@ -771,9 +771,9 @@ def test_small_distance_threshold(global_random_seed):
 
 
 def test_cluster_distances_with_distance_threshold(global_random_seed):
-    rng = np.random.RandomState(global_random_seed)
+    rng = np.random.default_rng(global_random_seed)
     n_samples = 100
-    X = rng.randint(-10, 10, size=(n_samples, 3))
+    X = rng.integers(-10, 10, size=(n_samples, 3))
     # check the distances within the clusters and with other clusters
     distance_threshold = 4
     clustering = AgglomerativeClustering(
