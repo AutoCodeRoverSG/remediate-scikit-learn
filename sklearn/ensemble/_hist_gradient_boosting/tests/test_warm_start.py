@@ -26,18 +26,18 @@ def _assert_predictor_equal(gb_1, gb_2, X):
 
 
 @pytest.mark.parametrize(
-    "GradientBoosting, X, y",
+    "gradient_boosting, X, y",
     [
         (HistGradientBoostingClassifier, X_classification, y_classification),
         (HistGradientBoostingRegressor, X_regression, y_regression),
     ],
 )
-def test_max_iter_with_warm_start_validation(GradientBoosting, X, y):
+def test_max_iter_with_warm_start_validation(gradient_boosting, X, y):
     # Check that a ValueError is raised when the maximum number of iterations
     # is smaller than the number of iterations from the previous fit when warm
     # start is True.
 
-    estimator = GradientBoosting(max_iter=10, early_stopping=False, warm_start=True)
+    estimator = gradient_boosting(max_iter=10, early_stopping=False, warm_start=True)
     estimator.fit(X, y)
     estimator.set_params(max_iter=5)
     err_msg = (
@@ -48,23 +48,23 @@ def test_max_iter_with_warm_start_validation(GradientBoosting, X, y):
 
 
 @pytest.mark.parametrize(
-    "GradientBoosting, X, y",
+    "gradient_boosting, X, y",
     [
         (HistGradientBoostingClassifier, X_classification, y_classification),
         (HistGradientBoostingRegressor, X_regression, y_regression),
     ],
 )
-def test_warm_start_yields_identical_results(GradientBoosting, X, y):
+def test_warm_start_yields_identical_results(gradient_boosting, X, y):
     # Make sure that fitting 50 iterations and then 25 with warm start is
     # equivalent to fitting 75 iterations.
 
     rng = 42
-    gb_warm_start = GradientBoosting(
+    gb_warm_start = gradient_boosting(
         n_iter_no_change=100, max_iter=50, random_state=rng, warm_start=True
     )
     gb_warm_start.fit(X, y).set_params(max_iter=75).fit(X, y)
 
-    gb_no_warm_start = GradientBoosting(
+    gb_no_warm_start = gradient_boosting(
         n_iter_no_change=100, max_iter=75, random_state=rng, warm_start=False
     )
     gb_no_warm_start.fit(X, y)
@@ -74,15 +74,15 @@ def test_warm_start_yields_identical_results(GradientBoosting, X, y):
 
 
 @pytest.mark.parametrize(
-    "GradientBoosting, X, y",
+    "gradient_boosting, X, y",
     [
         (HistGradientBoostingClassifier, X_classification, y_classification),
         (HistGradientBoostingRegressor, X_regression, y_regression),
     ],
 )
-def test_warm_start_max_depth(GradientBoosting, X, y):
+def test_warm_start_max_depth(gradient_boosting, X, y):
     # Test if possible to fit trees of different depth in ensemble.
-    gb = GradientBoosting(
+    gb = gradient_boosting(
         max_iter=20,
         min_samples_leaf=1,
         warm_start=True,
@@ -102,19 +102,19 @@ def test_warm_start_max_depth(GradientBoosting, X, y):
 
 
 @pytest.mark.parametrize(
-    "GradientBoosting, X, y",
+    "gradient_boosting, X, y",
     [
         (HistGradientBoostingClassifier, X_classification, y_classification),
         (HistGradientBoostingRegressor, X_regression, y_regression),
     ],
 )
 @pytest.mark.parametrize("scoring", (None, "loss"))
-def test_warm_start_early_stopping(GradientBoosting, X, y, scoring):
+def test_warm_start_early_stopping(gradient_boosting, X, y, scoring):
     # Make sure that early stopping occurs after a small number of iterations
     # when fitting a second time with warm starting.
 
     n_iter_no_change = 5
-    gb = GradientBoosting(
+    gb = gradient_boosting(
         n_iter_no_change=n_iter_no_change,
         max_iter=10000,
         early_stopping=True,
@@ -131,15 +131,15 @@ def test_warm_start_early_stopping(GradientBoosting, X, y, scoring):
 
 
 @pytest.mark.parametrize(
-    "GradientBoosting, X, y",
+    "gradient_boosting, X, y",
     [
         (HistGradientBoostingClassifier, X_classification, y_classification),
         (HistGradientBoostingRegressor, X_regression, y_regression),
     ],
 )
-def test_warm_start_equal_n_estimators(GradientBoosting, X, y):
+def test_warm_start_equal_n_estimators(gradient_boosting, X, y):
     # Test if warm start with equal n_estimators does nothing
-    gb_1 = GradientBoosting(max_depth=2, early_stopping=False)
+    gb_1 = gradient_boosting(max_depth=2, early_stopping=False)
     gb_1.fit(X, y)
 
     gb_2 = clone(gb_1)
@@ -151,18 +151,18 @@ def test_warm_start_equal_n_estimators(GradientBoosting, X, y):
 
 
 @pytest.mark.parametrize(
-    "GradientBoosting, X, y",
+    "gradient_boosting, X, y",
     [
         (HistGradientBoostingClassifier, X_classification, y_classification),
         (HistGradientBoostingRegressor, X_regression, y_regression),
     ],
 )
-def test_warm_start_clear(GradientBoosting, X, y):
+def test_warm_start_clear(gradient_boosting, X, y):
     # Test if fit clears state.
-    gb_1 = GradientBoosting(n_iter_no_change=5, random_state=42)
+    gb_1 = gradient_boosting(n_iter_no_change=5, random_state=42)
     gb_1.fit(X, y)
 
-    gb_2 = GradientBoosting(n_iter_no_change=5, random_state=42, warm_start=True)
+    gb_2 = gradient_boosting(n_iter_no_change=5, random_state=42, warm_start=True)
     gb_2.fit(X, y)  # inits state
     gb_2.set_params(warm_start=False)
     gb_2.fit(X, y)  # clears old state and equals est
@@ -177,14 +177,14 @@ def test_warm_start_clear(GradientBoosting, X, y):
 
 
 @pytest.mark.parametrize(
-    "GradientBoosting, X, y",
+    "gradient_boosting, X, y",
     [
         (HistGradientBoostingClassifier, X_classification, y_classification),
         (HistGradientBoostingRegressor, X_regression, y_regression),
     ],
 )
 @pytest.mark.parametrize("rng_type", ("none", "int", "instance"))
-def test_random_seeds_warm_start(GradientBoosting, X, y, rng_type):
+def test_random_seeds_warm_start(gradient_boosting, X, y, rng_type):
     # Make sure the seeds for train/val split and small trainset subsampling
     # are correctly set in a warm start context.
     def _get_rng(rng_type):
@@ -194,10 +194,10 @@ def test_random_seeds_warm_start(GradientBoosting, X, y, rng_type):
         elif rng_type == "int":
             return 42
         else:
-            return np.random.RandomState(0)
+            return check_random_state(0)
 
     random_state = _get_rng(rng_type)
-    gb_1 = GradientBoosting(early_stopping=True, max_iter=2, random_state=random_state)
+    gb_1 = gradient_boosting(early_stopping=True, max_iter=2, random_state=random_state)
     gb_1.set_params(scoring=check_scoring(gb_1))
     gb_1.fit(X, y)
     random_seed_1_1 = gb_1._random_seed
@@ -206,7 +206,7 @@ def test_random_seeds_warm_start(GradientBoosting, X, y, rng_type):
     random_seed_1_2 = gb_1._random_seed  # clear the old state, different seed
 
     random_state = _get_rng(rng_type)
-    gb_2 = GradientBoosting(
+    gb_2 = gradient_boosting(
         early_stopping=True, max_iter=2, random_state=random_state, warm_start=True
     )
     gb_2.set_params(scoring=check_scoring(gb_2))
