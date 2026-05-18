@@ -89,11 +89,11 @@ def test_incremental_pca_sparse(sparse_container):
 
 def test_incremental_pca_check_projection(global_random_seed):
     # Test that the projection of data is correct.
-    rng = np.random.RandomState(global_random_seed)
+    rng = np.random.default_rng(global_random_seed)
     n, p = 100, 3
-    X = rng.randn(n, p) * 0.1
+    X = rng.standard_normal((n, p)) * 0.1
     X[:10] += np.array([3, 4, 5])
-    x_t = 0.1 * rng.randn(1, p) + np.array([3, 4, 5])
+    x_t = 0.1 * rng.standard_normal((1, p)) + np.array([3, 4, 5])
 
     # Get the reconstruction of the generated data X
     # Note that Xt has the same "components" as X, just separated
@@ -335,7 +335,6 @@ def test_explained_variances():
         1000, 100, tail_strength=0.0, effective_rank=10, random_state=1999
     )
     prec = 3
-    n_samples, n_features = X.shape
     for nc in [None, 99]:
         pca = PCA(n_components=nc).fit(X)
         ipca = IncrementalPCA(n_components=nc, batch_size=100).fit(X)
@@ -364,21 +363,21 @@ def test_singular_values(global_random_seed):
     assert_array_almost_equal(pca.singular_values_, ipca.singular_values_, 2)
 
     # Compare to the Frobenius norm
-    X_pca = pca.transform(X)
-    X_ipca = ipca.transform(X)
+    x_pca = pca.transform(X)
+    x_ipca = ipca.transform(X)
     assert_array_almost_equal(
-        np.sum(pca.singular_values_**2.0), np.linalg.norm(X_pca, "fro") ** 2.0, 12
+        np.sum(pca.singular_values_**2.0), np.linalg.norm(x_pca, "fro") ** 2.0, 12
     )
     assert_array_almost_equal(
-        np.sum(ipca.singular_values_**2.0), np.linalg.norm(X_ipca, "fro") ** 2.0, 2
+        np.sum(ipca.singular_values_**2.0), np.linalg.norm(x_ipca, "fro") ** 2.0, 2
     )
 
     # Compare to the 2-norms of the score vectors
     assert_array_almost_equal(
-        pca.singular_values_, np.sqrt(np.sum(X_pca**2.0, axis=0)), 12
+        pca.singular_values_, np.sqrt(np.sum(x_pca**2.0, axis=0)), 12
     )
     assert_array_almost_equal(
-        ipca.singular_values_, np.sqrt(np.sum(X_ipca**2.0, axis=0)), 2
+        ipca.singular_values_, np.sqrt(np.sum(x_ipca**2.0, axis=0)), 2
     )
 
     # Set the singular values and see what we get back
@@ -393,14 +392,14 @@ def test_singular_values(global_random_seed):
     pca = PCA(n_components=3, svd_solver="full", random_state=rng)
     ipca = IncrementalPCA(n_components=3, batch_size=100)
 
-    X_pca = pca.fit_transform(X)
-    X_pca /= np.sqrt(np.sum(X_pca**2.0, axis=0))
-    X_pca[:, 0] *= 3.142
-    X_pca[:, 1] *= 2.718
+    x_pca = pca.fit_transform(X)
+    x_pca /= np.sqrt(np.sum(x_pca**2.0, axis=0))
+    x_pca[:, 0] *= 3.142
+    x_pca[:, 1] *= 2.718
 
-    X_hat = np.dot(X_pca, pca.components_)
-    pca.fit(X_hat)
-    ipca.fit(X_hat)
+    x_hat = np.dot(x_pca, pca.components_)
+    pca.fit(x_hat)
+    ipca.fit(x_hat)
     assert_array_almost_equal(pca.singular_values_, [3.142, 2.718, 1.0], 14)
     assert_array_almost_equal(ipca.singular_values_, [3.142, 2.718, 1.0], 14)
 
@@ -421,22 +420,22 @@ def test_whitening(global_random_seed):
         # internal SVD solver. We therefore filter them out before comparison.
         stable_mask = pca.explained_variance_ratio_ > 1e-12
 
-        Xt_pca = pca.transform(X)
-        Xt_ipca = ipca.transform(X)
+        xt_pca = pca.transform(X)
+        xt_ipca = ipca.transform(X)
         assert_allclose(
-            np.abs(Xt_pca)[:, stable_mask],
-            np.abs(Xt_ipca)[:, stable_mask],
+            np.abs(xt_pca)[:, stable_mask],
+            np.abs(xt_ipca)[:, stable_mask],
             atol=atol,
         )
 
         # The noisy dimensions are in the null space of the inverse transform,
         # so they are not influencing the reconstruction. We therefore don't
         # need to apply the mask here.
-        Xinv_ipca = ipca.inverse_transform(Xt_ipca)
-        Xinv_pca = pca.inverse_transform(Xt_pca)
-        assert_allclose(X, Xinv_ipca, atol=atol)
-        assert_allclose(X, Xinv_pca, atol=atol)
-        assert_allclose(Xinv_pca, Xinv_ipca, atol=atol)
+        xinv_ipca = ipca.inverse_transform(xt_ipca)
+        xinv_pca = pca.inverse_transform(xt_pca)
+        assert_allclose(X, xinv_ipca, atol=atol)
+        assert_allclose(X, xinv_pca, atol=atol)
+        assert_allclose(xinv_pca, xinv_ipca, atol=atol)
 
 
 def test_incremental_pca_partial_fit_float_division():
