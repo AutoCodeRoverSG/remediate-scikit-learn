@@ -1149,7 +1149,7 @@ def fetch_openml(
         read_csv_kwargs=read_csv_kwargs,
     )
 
-    if return_X_y:
+    if return_x_y:
         return bunch.data, bunch.target
 
     description = "{}\n\nDownloaded from openml.org.".format(
