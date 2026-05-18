@@ -364,14 +364,14 @@ def test_column_transformer_dataframe(constructor_name):
 def test_column_transformer_empty_columns(pandas, column_selection, callable_column):
     # test case that ensures that the column transformer does also work when
     # a given transformer doesn't have any columns to work on
-    X_array = np.array([[0, 1, 2], [2, 4, 6]]).T
-    X_res_both = X_array
+    x_array = np.array([[0, 1, 2], [2, 4, 6]]).T
+    x_res_both = x_array
 
     if pandas:
         pd = pytest.importorskip("pandas")
-        X = pd.DataFrame(X_array, columns=["first", "second"])
+        X = pd.DataFrame(x_array, columns=["first", "second"])
     else:
-        X = X_array
+        X = x_array
 
     if callable_column:
         column = lambda X: column_selection
@@ -381,22 +381,22 @@ def test_column_transformer_empty_columns(pandas, column_selection, callable_col
     ct = ColumnTransformer(
         [("trans1", Trans(), [0, 1]), ("trans2", TransRaise(), column)]
     )
-    assert_array_equal(ct.fit_transform(X), X_res_both)
-    assert_array_equal(ct.fit(X).transform(X), X_res_both)
+    assert_array_equal(ct.fit_transform(X), x_res_both)
+    assert_array_equal(ct.fit(X).transform(X), x_res_both)
     assert len(ct.transformers_) == 2
     assert isinstance(ct.transformers_[1][1], TransRaise)
 
     ct = ColumnTransformer(
         [("trans1", TransRaise(), column), ("trans2", Trans(), [0, 1])]
     )
-    assert_array_equal(ct.fit_transform(X), X_res_both)
-    assert_array_equal(ct.fit(X).transform(X), X_res_both)
+    assert_array_equal(ct.fit_transform(X), x_res_both)
+    assert_array_equal(ct.fit(X).transform(X), x_res_both)
     assert len(ct.transformers_) == 2
     assert isinstance(ct.transformers_[0][1], TransRaise)
 
     ct = ColumnTransformer([("trans", TransRaise(), column)], remainder="passthrough")
-    assert_array_equal(ct.fit_transform(X), X_res_both)
-    assert_array_equal(ct.fit(X).transform(X), X_res_both)
+    assert_array_equal(ct.fit_transform(X), x_res_both)
+    assert_array_equal(ct.fit(X).transform(X), x_res_both)
     assert len(ct.transformers_) == 2  # including remainder
     assert isinstance(ct.transformers_[0][1], TransRaise)
 
@@ -410,104 +410,104 @@ def test_column_transformer_empty_columns(pandas, column_selection, callable_col
 
 def test_column_transformer_output_indices():
     # Checks for the output_indices_ attribute
-    X_array = np.arange(6).reshape(3, 2)
+    x_array = np.arange(6).reshape(3, 2)
 
     ct = ColumnTransformer([("trans1", Trans(), [0]), ("trans2", Trans(), [1])])
-    X_trans = ct.fit_transform(X_array)
+    x_trans = ct.fit_transform(x_array)
     assert ct.output_indices_ == {
         "trans1": slice(0, 1),
         "trans2": slice(1, 2),
         "remainder": slice(0, 0),
     }
-    assert_array_equal(X_trans[:, [0]], X_trans[:, ct.output_indices_["trans1"]])
-    assert_array_equal(X_trans[:, [1]], X_trans[:, ct.output_indices_["trans2"]])
+    assert_array_equal(x_trans[:, [0]], x_trans[:, ct.output_indices_["trans1"]])
+    assert_array_equal(x_trans[:, [1]], x_trans[:, ct.output_indices_["trans2"]])
 
     # test with transformer_weights and multiple columns
     ct = ColumnTransformer(
         [("trans", Trans(), [0, 1])], transformer_weights={"trans": 0.1}
     )
-    X_trans = ct.fit_transform(X_array)
+    x_trans = ct.fit_transform(x_array)
     assert ct.output_indices_ == {"trans": slice(0, 2), "remainder": slice(0, 0)}
-    assert_array_equal(X_trans[:, [0, 1]], X_trans[:, ct.output_indices_["trans"]])
-    assert_array_equal(X_trans[:, []], X_trans[:, ct.output_indices_["remainder"]])
+    assert_array_equal(x_trans[:, [0, 1]], x_trans[:, ct.output_indices_["trans"]])
+    assert_array_equal(x_trans[:, []], x_trans[:, ct.output_indices_["remainder"]])
 
     # test case that ensures that the attribute does also work when
     # a given transformer doesn't have any columns to work on
     ct = ColumnTransformer([("trans1", Trans(), [0, 1]), ("trans2", TransRaise(), [])])
-    X_trans = ct.fit_transform(X_array)
+    x_trans = ct.fit_transform(x_array)
     assert ct.output_indices_ == {
         "trans1": slice(0, 2),
         "trans2": slice(0, 0),
         "remainder": slice(0, 0),
     }
-    assert_array_equal(X_trans[:, [0, 1]], X_trans[:, ct.output_indices_["trans1"]])
-    assert_array_equal(X_trans[:, []], X_trans[:, ct.output_indices_["trans2"]])
-    assert_array_equal(X_trans[:, []], X_trans[:, ct.output_indices_["remainder"]])
+    assert_array_equal(x_trans[:, [0, 1]], x_trans[:, ct.output_indices_["trans1"]])
+    assert_array_equal(x_trans[:, []], x_trans[:, ct.output_indices_["trans2"]])
+    assert_array_equal(x_trans[:, []], x_trans[:, ct.output_indices_["remainder"]])
 
     ct = ColumnTransformer([("trans", TransRaise(), [])], remainder="passthrough")
-    X_trans = ct.fit_transform(X_array)
+    x_trans = ct.fit_transform(x_array)
     assert ct.output_indices_ == {"trans": slice(0, 0), "remainder": slice(0, 2)}
-    assert_array_equal(X_trans[:, []], X_trans[:, ct.output_indices_["trans"]])
-    assert_array_equal(X_trans[:, [0, 1]], X_trans[:, ct.output_indices_["remainder"]])
+    assert_array_equal(x_trans[:, []], x_trans[:, ct.output_indices_["trans"]])
+    assert_array_equal(x_trans[:, [0, 1]], x_trans[:, ct.output_indices_["remainder"]])
 
 
 def test_column_transformer_output_indices_df():
     # Checks for the output_indices_ attribute with data frames
     pd = pytest.importorskip("pandas")
 
-    X_df = pd.DataFrame(np.arange(6).reshape(3, 2), columns=["first", "second"])
+    x_df = pd.DataFrame(np.arange(6).reshape(3, 2), columns=["first", "second"])
 
     ct = ColumnTransformer(
         [("trans1", Trans(), ["first"]), ("trans2", Trans(), ["second"])]
     )
-    X_trans = ct.fit_transform(X_df)
+    x_trans = ct.fit_transform(x_df)
     assert ct.output_indices_ == {
         "trans1": slice(0, 1),
         "trans2": slice(1, 2),
         "remainder": slice(0, 0),
     }
-    assert_array_equal(X_trans[:, [0]], X_trans[:, ct.output_indices_["trans1"]])
-    assert_array_equal(X_trans[:, [1]], X_trans[:, ct.output_indices_["trans2"]])
-    assert_array_equal(X_trans[:, []], X_trans[:, ct.output_indices_["remainder"]])
+    assert_array_equal(x_trans[:, [0]], x_trans[:, ct.output_indices_["trans1"]])
+    assert_array_equal(x_trans[:, [1]], x_trans[:, ct.output_indices_["trans2"]])
+    assert_array_equal(x_trans[:, []], x_trans[:, ct.output_indices_["remainder"]])
 
     ct = ColumnTransformer([("trans1", Trans(), [0]), ("trans2", Trans(), [1])])
-    X_trans = ct.fit_transform(X_df)
+    x_trans = ct.fit_transform(x_df)
     assert ct.output_indices_ == {
         "trans1": slice(0, 1),
         "trans2": slice(1, 2),
         "remainder": slice(0, 0),
     }
-    assert_array_equal(X_trans[:, [0]], X_trans[:, ct.output_indices_["trans1"]])
-    assert_array_equal(X_trans[:, [1]], X_trans[:, ct.output_indices_["trans2"]])
-    assert_array_equal(X_trans[:, []], X_trans[:, ct.output_indices_["remainder"]])
+    assert_array_equal(x_trans[:, [0]], x_trans[:, ct.output_indices_["trans1"]])
+    assert_array_equal(x_trans[:, [1]], x_trans[:, ct.output_indices_["trans2"]])
+    assert_array_equal(x_trans[:, []], x_trans[:, ct.output_indices_["remainder"]])
 
 
 @pytest.mark.parametrize("csr_container", CSR_CONTAINERS)
 def test_column_transformer_sparse_array(csr_container):
-    X_sparse = csr_container(_sparse_eye_array(3, 2))
+    x_sparse = csr_container(_sparse_eye_array(3, 2))
 
     # no distinction between 1D and 2D
-    X_res_first = X_sparse[:, [0]]
-    X_res_both = X_sparse
+    x_res_first = x_sparse[:, [0]]
+    x_res_both = x_sparse
 
     for col in [(0,), [0], slice(0, 1)]:
-        for remainder, res in [("drop", X_res_first), ("passthrough", X_res_both)]:
+        for remainder, res in [("drop", x_res_first), ("passthrough", x_res_both)]:
             ct = ColumnTransformer(
                 [("trans", Trans(), col)], remainder=remainder, sparse_threshold=0.8
             )
-            assert sparse.issparse(ct.fit_transform(X_sparse))
-            assert_allclose_dense_sparse(ct.fit_transform(X_sparse), res)
-            assert_allclose_dense_sparse(ct.fit(X_sparse).transform(X_sparse), res)
+            assert sparse.issparse(ct.fit_transform(x_sparse))
+            assert_allclose_dense_sparse(ct.fit_transform(x_sparse), res)
+            assert_allclose_dense_sparse(ct.fit(x_sparse).transform(x_sparse), res)
 
     for col in [[0, 1], slice(0, 2)]:
         ct = ColumnTransformer([("trans", Trans(), col)], sparse_threshold=0.8)
-        assert sparse.issparse(ct.fit_transform(X_sparse))
-        assert_allclose_dense_sparse(ct.fit_transform(X_sparse), X_res_both)
-        assert_allclose_dense_sparse(ct.fit(X_sparse).transform(X_sparse), X_res_both)
+        assert sparse.issparse(ct.fit_transform(x_sparse))
+        assert_allclose_dense_sparse(ct.fit_transform(x_sparse), x_res_both)
+        assert_allclose_dense_sparse(ct.fit(x_sparse).transform(x_sparse), x_res_both)
 
 
 def test_column_transformer_list():
-    X_list = [[1, float("nan"), "a"], [0, 0, "b"]]
+    x_list = [[1, float("nan"), "a"], [0, 0, "b"]]
     expected_result = np.array(
         [
             [1, float("nan"), 1, 0],
@@ -522,8 +522,8 @@ def test_column_transformer_list():
         ]
     )
 
-    assert_array_equal(ct.fit_transform(X_list), expected_result)
-    assert_array_equal(ct.fit(X_list).transform(X_list), expected_result)
+    assert_array_equal(ct.fit_transform(x_list), expected_result)
+    assert_array_equal(ct.fit(x_list).transform(x_list), expected_result)
 
 
 @pytest.mark.parametrize("csr_container", CSR_CONTAINERS)
