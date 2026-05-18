@@ -393,7 +393,7 @@ def test_missing_values_support(n_bins, n_bins_non_missing, x_trans_expected):
 
     X = np.array(X)
 
-    mapper = _BinMapper(n_bins=n_bins)
+    mapper = _BinMapper(n_bins=n_bins, random_state=42)
     mapper.fit(X)
 
     assert_array_equal(mapper.n_bins_non_missing_, n_bins_non_missing)
@@ -406,13 +406,13 @@ def test_missing_values_support(n_bins, n_bins_non_missing, x_trans_expected):
 
     assert mapper.missing_values_bin_idx_ == n_bins - 1
 
-    X_trans = mapper.transform(X)
-    assert_array_equal(X_trans, x_trans_expected)
+    x_trans = mapper.transform(X)
+    assert_array_equal(x_trans, x_trans_expected)
 
 
 def test_infinite_values():
     # Make sure infinite values are properly handled.
-    bin_mapper = _BinMapper()
+    bin_mapper = _BinMapper(random_state=42)
 
     X = np.array([-np.inf, 0, 1, np.inf]).reshape(-1, 1)
 
@@ -420,8 +420,8 @@ def test_infinite_values():
     assert_allclose(bin_mapper.bin_thresholds_[0], [-np.inf, 0.5, ALMOST_INF])
     assert bin_mapper.n_bins_non_missing_ == [4]
 
-    expected_binned_X = np.array([0, 1, 2, 3]).reshape(-1, 1)
-    assert_array_equal(bin_mapper.transform(X), expected_binned_X)
+    expected_binned_x = np.array([0, 1, 2, 3]).reshape(-1, 1)
+    assert_array_equal(bin_mapper.transform(X), expected_binned_x)
 
 
 @pytest.mark.parametrize("n_bins", [15, 256])
@@ -439,6 +439,7 @@ def test_categorical_feature(n_bins):
         n_bins=n_bins,
         is_categorical=np.array([True]),
         known_categories=known_categories,
+        random_state=42,
     ).fit(X)
     assert bin_mapper.n_bins_non_missing_ == [6]
     assert_array_equal(bin_mapper.bin_thresholds_[0], [0, 1, 4, 7, 10, 13])
@@ -465,6 +466,7 @@ def test_categorical_feature_negative_missing():
         n_bins=4,
         is_categorical=np.array([True]),
         known_categories=[np.array([1, 4, 5], dtype=X_DTYPE)],
+        random_state=42,
     ).fit(X)
 
     assert bin_mapper.n_bins_non_missing_ == [3]
@@ -492,6 +494,7 @@ def test_categorical_with_numerical_features(n_bins):
         n_bins=n_bins,
         is_categorical=np.array([False, True]),
         known_categories=known_categories,
+        random_state=0,
     ).fit(X)
 
     assert_array_equal(bin_mapper.n_bins_non_missing_, [10, 5])
@@ -500,7 +503,7 @@ def test_categorical_with_numerical_features(n_bins):
     assert len(bin_thresholds) == 2
     assert_array_equal(bin_thresholds[1], np.arange(10, 15))
 
-    expected_X_trans = [
+    expected_x_trans = [
         [0, 0],
         [1, 1],
         [2, 2],
@@ -512,7 +515,7 @@ def test_categorical_with_numerical_features(n_bins):
         [8, 3],
         [9, 4],
     ]
-    assert_array_equal(bin_mapper.transform(X), expected_X_trans)
+    assert_array_equal(bin_mapper.transform(X), expected_x_trans)
 
 
 def test_make_known_categories_bitsets():
@@ -525,6 +528,7 @@ def test_make_known_categories_bitsets():
         n_bins=256,
         is_categorical=np.array([False, True, True]),
         known_categories=[None, X[:, 1], X[:, 2]],
+        random_state=42,
     )
     bin_mapper.fit(X)
 
@@ -570,7 +574,9 @@ def test_categorical_parameters(is_categorical, known_categories, match):
     X = np.array([[1, 2, 3]], dtype=X_DTYPE)
 
     bin_mapper = _BinMapper(
-        is_categorical=is_categorical, known_categories=known_categories
+        is_categorical=is_categorical,
+        known_categories=known_categories,
+        random_state=42,
     )
     with pytest.raises(ValueError, match=match):
         bin_mapper.fit(X)
