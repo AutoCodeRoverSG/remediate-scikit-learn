@@ -78,7 +78,7 @@ class _BasePCA(
         else:
             linalg_inv = linalg.inv
 
-        if self.noise_variance_ == 0.0:
+        if np.isclose(self.noise_variance_, 0.0):
             return linalg_inv(self.get_covariance())
 
         # Get precision using matrix inversion lemma
@@ -149,14 +149,14 @@ class _BasePCA(
         return self._transform(X, xp=xp, x_is_centered=False)
 
     def _transform(self, X, xp, x_is_centered=False):
-        X_transformed = X @ self.components_.T
+        x_transformed = X @ self.components_.T
         if not x_is_centered:
             # Apply the centering after the projection.
             # For dense X this avoids copying or mutating the data passed by
             # the caller.
             # For sparse X it keeps sparsity and avoids having to wrap X into
             # a linear operator.
-            X_transformed -= xp.reshape(self.mean_, (1, -1)) @ self.components_.T
+            x_transformed -= xp.reshape(self.mean_, (1, -1)) @ self.components_.T
         if self.whiten:
             # For some solvers (such as "arpack" and "covariance_eigh"), on
             # rank deficient data, some components can have a variance
@@ -165,8 +165,8 @@ class _BasePCA(
             scale = xp.sqrt(self.explained_variance_)
             min_scale = xp.finfo(scale.dtype).eps
             scale[scale < min_scale] = min_scale
-            X_transformed /= scale
-        return X_transformed
+            x_transformed /= scale
+        return x_transformed
 
     def inverse_transform(self, X):
         """Transform data back to its original space.

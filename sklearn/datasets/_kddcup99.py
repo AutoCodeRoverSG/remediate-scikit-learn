@@ -59,7 +59,7 @@ logger = logging.getLogger(__name__)
         "random_state": ["random_state"],
         "percent10": ["boolean"],
         "download_if_missing": ["boolean"],
-        "return_X_y": ["boolean"],
+        "return_x_y": ["boolean"],
         "as_frame": ["boolean"],
         "n_retries": [Interval(Integral, 1, None, closed="left")],
         "delay": [Interval(Real, 0.0, None, closed="neither")],
@@ -74,7 +74,7 @@ def fetch_kddcup99(
     random_state=None,
     percent10=True,
     download_if_missing=True,
-    return_X_y=False,
+    return_x_y=False,
     as_frame=False,
     n_retries=3,
     delay=1.0,
@@ -250,7 +250,7 @@ def fetch_kddcup99(
             "fetch_kddcup99", data, target, feature_names, target_names
         )
 
-    if return_X_y:
+    if return_x_y:
         return data, target
 
     return Bunch(
@@ -386,22 +386,22 @@ def _fetch_brute_kddcup99(
         DT = np.dtype(dt)
         logger.debug("extracting archive")
         archive_path = join(kddcup_dir, archive.filename)
-        Xy = []
+        xy = []
 
         with GzipFile(filename=archive_path, mode="r") as file_:
             for line in file_.readlines():
                 line = line.decode()
-                Xy.append(line.replace("\n", "").split(","))
+                xy.append(line.replace("\n", "").split(","))
 
         logger.debug("extraction done")
         os.remove(archive_path)
 
-        Xy = np.asarray(Xy, dtype=object)
+        xy = np.asarray(xy, dtype=object)
         for j in range(42):
-            Xy[:, j] = Xy[:, j].astype(DT[j])
+            xy[:, j] = xy[:, j].astype(DT[j])
 
-        X = Xy[:, :-1]
-        y = Xy[:, -1]
+        X = xy[:, :-1]
+        y = xy[:, -1]
         joblib.dump(X, samples_path, compress=3)
         joblib.dump(y, targets_path, compress=3)
     else:
