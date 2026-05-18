@@ -472,8 +472,8 @@ def _update_dict(
     dictionary,
     Y,
     code,
-    A=None,
-    B=None,
+    _gram=None,
+    _cov=None,
     verbose=False,
     random_state=None,
     positive=False,
@@ -515,17 +515,17 @@ def _update_dict(
     n_samples, n_components = code.shape
     random_state = check_random_state(random_state)
 
-    if A is None:
-        A = code.T @ code
-    if B is None:
-        B = Y.T @ code
+    if _gram is None:
+        _gram = code.T @ code
+    if _cov is None:
+        _cov = Y.T @ code
 
     n_unused = 0
 
     for k in range(n_components):
-        if A[k, k] > 1e-6:
+        if _gram[k, k] > 1e-6:
             # 1e-6 is arbitrary but consistent with the spams implementation
-            dictionary[k] += (B[:, k] - A[k] @ dictionary) / A[k, k]
+            dictionary[k] += (_cov[:, k] - _gram[k] @ dictionary) / _gram[k, k]
         else:
             # kth atom is almost never used -> sample a new one from the data
             newd = Y[random_state.choice(n_samples)]
@@ -643,9 +643,9 @@ def _dict_learning(
         errors.append(current_cost)
 
         if ii > 0:
-            dE = errors[-2] - errors[-1]
+            d_e = errors[-2] - errors[-1]
             # assert(dE >= -tol * errors[-1])
-            if dE < tol * errors[-1]:
+            if d_e < tol * errors[-1]:
                 if verbose == 1:
                     # A line return
                     print("")
@@ -1148,14 +1148,14 @@ class _BaseSparseCoding(ClassNamePrefixFeaturesOutMixin, TransformerMixin):
         expected_n_components = dictionary.shape[0]
         if self.split_sign:
             expected_n_components += expected_n_components
-        if not code.shape[1] == expected_n_components:
+        if code.shape[1] != expected_n_components:
             raise ValueError(
                 "The number of components in the code is different from the "
                 "number of components in the dictionary."
                 f"Expected {expected_n_components}, got {code.shape[1]}."
             )
         if self.split_sign:
-            n_samples, n_features = code.shape
+            _, n_features = code.shape
             n_features //= 2
             code = code[:, :n_features] - code[:, n_features:]
 
@@ -2055,14 +2055,14 @@ class MiniBatchDictionaryLearning(_BaseSparseCoding, BaseEstimator):
         # batch_size
         self._batch_size = min(self.batch_size, X.shape[0])
 
-    def _initialize_dict(self, X, random_state):
+    def _initialize_dict(self, X):
         """Initialization of the dictionary."""
         if self.dict_init is not None:
             dictionary = self.dict_init
         else:
             # Init V with SVD of X
             _, S, dictionary = _randomized_svd(
-                X, self._n_components, random_state=random_state
+                X, self._n_components, random_state=self._random_state
             )
             dictionary = S[:, np.newaxis] * dictionary
 
@@ -2097,7 +2097,7 @@ class MiniBatchDictionaryLearning(_BaseSparseCoding, BaseEstimator):
         self._B *= beta
         self._B += X.T @ code / batch_size
 
-    def _minibatch_step(self, X, dictionary, random_state, step):
+    def _minibatch_step(self, X, dictionary, step):
         """Perform the update on the dictionary for one minibatch."""
         batch_size = X.shape[0]
 
@@ -2129,7 +2129,7 @@ class MiniBatchDictionaryLearning(_BaseSparseCoding, BaseEstimator):
             self._A,
             self._B,
             verbose=self.verbose,
-            random_state=random_state,
+            random_state=self._random_state,
             positive=self.positive_dict,
         )
 
@@ -2228,25 +2228,25 @@ class MiniBatchDictionaryLearning(_BaseSparseCoding, BaseEstimator):
         self._check_params(X)
         self._random_state = check_random_state(self.random_state)
 
-        dictionary = self._initialize_dict(X, self._random_state)
+        dictionary = self._initialize_dict(X)
         old_dict = dictionary.copy()
 
         if self.shuffle:
-            X_train = X.copy()
-            self._random_state.shuffle(X_train)
+            x_train = X.copy()
+            self._random_state.shuffle(x_train)
         else:
-            X_train = X
+            x_train = X
 
-        n_samples, n_features = X_train.shape
+        n_samples, n_features = x_train.shape
 
         if self.verbose:
             print("[dict_learning]")
 
         # Inner stats
         self._A = np.zeros(
-            (self._n_components, self._n_components), dtype=X_train.dtype
+            (self._n_components, self._n_components), dtype=x_train.dtype
         )
-        self._B = np.zeros((n_features, self._n_components), dtype=X_train.dtype)
+        self._B = np.zeros((n_features, self._n_components), dtype=x_train.dtype)
 
         # Attributes to monitor the convergence
         self._ewa_cost = None
@@ -2261,14 +2261,14 @@ class MiniBatchDictionaryLearning(_BaseSparseCoding, BaseEstimator):
         i = -1  # to allow max_iter = 0
 
         for i, batch in zip(range(n_steps), batches):
-            X_batch = X_train[batch]
+            x_batch = x_train[batch]
 
             batch_cost = self._minibatch_step(
-                X_batch, dictionary, self._random_state, i
+                x_batch, dictionary, i
             )
 
             if self._check_convergence(
-                X_batch, batch_cost, dictionary, old_dict, n_samples, i, n_steps
+                x_batch, batch_cost, dictionary, old_dict, n_samples, i, n_steps
             ):
                 break
 
@@ -2314,7 +2314,7 @@ class MiniBatchDictionaryLearning(_BaseSparseCoding, BaseEstimator):
             self._check_params(X)
             self._random_state = check_random_state(self.random_state)
 
-            dictionary = self._initialize_dict(X, self._random_state)
+            dictionary = self._initialize_dict(X)
 
             self.n_steps_ = 0
 
@@ -2323,7 +2323,7 @@ class MiniBatchDictionaryLearning(_BaseSparseCoding, BaseEstimator):
         else:
             dictionary = self.components_
 
-        self._minibatch_step(X, dictionary, self._random_state, self.n_steps_)
+        self._minibatch_step(X, dictionary, self.n_steps_)
 
         self.components_ = dictionary
         self.n_steps_ += 1
