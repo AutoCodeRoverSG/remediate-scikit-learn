@@ -663,9 +663,17 @@ def test_pca_score(svd_solver):
 def test_pca_score3():
     # Check that probabilistic PCA selects the right model
     n, p = 200, 3
-    rng = np.random.RandomState(0)
-    x_train = rng.randn(n, p) + rng.randn(n, 1) * np.array([3, 4, 5]) + np.array([1, 0, 7])
-    x_test = rng.randn(n, p) + rng.randn(n, 1) * np.array([3, 4, 5]) + np.array([1, 0, 7])
+    rng = np.random.default_rng(0)
+    x_train = (
+        rng.standard_normal((n, p))
+        + rng.standard_normal((n, 1)) * np.array([3, 4, 5])
+        + np.array([1, 0, 7])
+    )
+    x_test = (
+        rng.standard_normal((n, p))
+        + rng.standard_normal((n, 1)) * np.array([3, 4, 5])
+        + np.array([1, 0, 7])
+    )
     ll = np.zeros(p)
     for k in range(p):
         pca = PCA(n_components=k, svd_solver="full")
@@ -704,8 +712,8 @@ def test_pca_zero_noise_variance_edge_cases(svd_solver):
     # ensure that noise_variance_ is 0 in edge cases
     # when n_components == min(n_samples, n_features)
     n, p = 100, 3
-    rng = np.random.RandomState(0)
-    X = rng.randn(n, p) * 0.1 + np.array([3, 4, 5])
+    rng = np.random.default_rng(0)
+    X = rng.standard_normal((n, p)) * 0.1 + np.array([3, 4, 5])
 
     pca = PCA(n_components=p, svd_solver=svd_solver)
     pca.fit(X)
@@ -737,7 +745,7 @@ def test_pca_zero_noise_variance_edge_cases(svd_solver):
     ],
 )
 def test_pca_svd_solver_auto(n_samples, n_features, n_components, expected_solver):
-    data = np.random.RandomState(0).uniform(size=(n_samples, n_features))
+    data = np.random.default_rng(0).uniform(size=(n_samples, n_features))
     pca_auto = PCA(n_components=n_components, random_state=0)
     pca_test = PCA(
         n_components=n_components, svd_solver=expected_solver, random_state=0
@@ -750,12 +758,12 @@ def test_pca_svd_solver_auto(n_samples, n_features, n_components, expected_solve
 
 @pytest.mark.parametrize("svd_solver", PCA_SOLVERS)
 def test_pca_deterministic_output(svd_solver):
-    rng = np.random.RandomState(0)
-    X = rng.rand(10, 10)
+    rng = np.random.default_rng(0)
+    X = rng.random((10, 10))
 
     transformed_x = np.zeros((20, 2))
     for i in range(20):
-        pca = PCA(n_components=2, svd_solver=svd_solver, random_state=rng)
+        pca = PCA(n_components=2, svd_solver=svd_solver, random_state=0)
         transformed_x[i, :] = pca.fit_transform(X)[0]
     assert_allclose(transformed_x, np.tile(transformed_x[0, :], 20).reshape(20, 2))
 
@@ -768,7 +776,7 @@ def test_pca_dtype_preservation(svd_solver, global_random_seed):
 
 def check_pca_float_dtype_preservation(svd_solver, seed):
     # Ensure that PCA does not upscale the dtype when input is float32
-    X = np.random.RandomState(seed).rand(1000, 4)
+    X = np.random.default_rng(seed).random((1000, 4))
     x_float64 = X.astype(np.float64, copy=False)
     x_float32 = X.astype(np.float32)
 
@@ -873,7 +881,7 @@ def test_mle_simple_case():
     # non-regression test for issue
     # https://github.com/scikit-learn/scikit-learn/issues/16730
     n_samples, n_dim = 1000, 10
-    X = np.random.RandomState(0).randn(n_samples, n_dim)
+    X = np.random.default_rng(0).standard_normal((n_samples, n_dim))
     X[:, -1] = np.mean(X[:, :-1], axis=-1)  # true X dim is ndim - 1
     pca_skl = PCA("mle", svd_solver="full")
     pca_skl.fit(X)
@@ -900,9 +908,9 @@ def test_pca_randomized_svd_n_oversamples():
     Non-regression test for:
     https://github.com/scikit-learn/scikit-learn/issues/20589
     """
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
     n_features = 100
-    X = rng.randn(1_000, n_features)
+    X = rng.standard_normal((1_000, n_features))
 
     # The default value of `n_oversamples` will lead to inaccurate results
     # We force it to the number of features.
@@ -930,8 +938,8 @@ def test_feature_names_out():
 @pytest.mark.parametrize("copy", [True, False])
 def test_variance_correctness(copy):
     """Check the accuracy of PCA's internal variance calculation"""
-    rng = np.random.RandomState(0)
-    X = rng.randn(1000, 200)
+    rng = np.random.default_rng(0)
+    X = rng.standard_normal((1000, 200))
     pca = PCA().fit(X)
     pca_var = pca.explained_variance_ / pca.explained_variance_ratio_
     true_var = np.var(X, ddof=1, axis=0).sum()
