@@ -190,7 +190,7 @@ from sklearn.ensemble import HistGradientBoostingClassifier
 model = HistGradientBoostingClassifier(
     categorical_features="from_dtype", random_state=0
 ).fit(X_train, y_train)
-model
+print(model)
 
 # %%
 # We evaluate the performance of our predictive model using the ROC and Precision-Recall
@@ -198,6 +198,9 @@ model
 import matplotlib.pyplot as plt
 
 from sklearn.metrics import PrecisionRecallDisplay, RocCurveDisplay
+
+COLOR_BLUE = "tab:blue"
+COLOR_ORANGE = "tab:orange"
 
 fig, axs = plt.subplots(nrows=1, ncols=2, figsize=(14, 6))
 
@@ -209,7 +212,7 @@ axs[0].plot(
     scoring["precision"](model, X_test, y_test),
     marker="o",
     markersize=10,
-    color="tab:blue",
+    color=COLOR_BLUE,
     label="Default cut-off point at a probability of 0.5",
 )
 axs[0].set_title("Precision-Recall curve")
@@ -229,7 +232,7 @@ axs[1].plot(
     scoring["tpr"](model, X_test, y_test),
     marker="o",
     markersize=10,
-    color="tab:blue",
+    color=COLOR_BLUE,
     label="Default cut-off point at a probability of 0.5",
 )
 axs[1].set_title("ROC curve")
@@ -293,7 +296,7 @@ def plot_roc_pr_curves(vanilla_model, tuned_model, *, title):
 
     linestyles = ("dashed", "dotted")
     markerstyles = ("o", ">")
-    colors = ("tab:blue", "tab:orange")
+    colors = (COLOR_BLUE, COLOR_ORANGE)
     names = ("Vanilla GBDT", "Tuned GBDT")
     for idx, (est, linestyle, marker, color, name) in enumerate(
         zip((vanilla_model, tuned_model), linestyles, markerstyles, colors, names)
@@ -343,14 +346,14 @@ def plot_roc_pr_curves(vanilla_model, tuned_model, *, title):
     axs[2].plot(
         tuned_model.cv_results_["thresholds"],
         tuned_model.cv_results_["scores"],
-        color="tab:orange",
+        color=COLOR_ORANGE,
     )
     axs[2].plot(
         tuned_model.best_threshold_,
         tuned_model.best_score_,
         "o",
         markersize=10,
-        color="tab:orange",
+        color=COLOR_ORANGE,
         label="Optimal cut-off point for the business metric",
     )
     axs[2].legend()
@@ -553,7 +556,7 @@ data_train, data_test, target_train, target_test, amount_train, amount_test = (
 # class "0" is the legitimate class and class "1" is the fraudulent class.
 from sklearn.dummy import DummyClassifier
 
-always_accept_policy = DummyClassifier(strategy="constant", constant=0)
+always_accept_policy = DummyClassifier(strategy="constant", constant=0, random_state=42)
 always_accept_policy.fit(data_train, target_train)
 benefit = business_scorer(
     always_accept_policy, data_test, target_test, amount=amount_test
@@ -564,7 +567,7 @@ print(f"Benefit of the 'always accept' policy: {benefit:,.2f}€")
 # A policy that considers all transactions as legitimate would create a profit of
 # around 220,000€. We make the same evaluation for a classifier that predicts all
 # transactions as fraudulent.
-always_reject_policy = DummyClassifier(strategy="constant", constant=1)
+always_reject_policy = DummyClassifier(strategy="constant", constant=1, random_state=42)
 always_reject_policy.fit(data_train, target_train)
 benefit = business_scorer(
     always_reject_policy, data_test, target_test, amount=amount_test
