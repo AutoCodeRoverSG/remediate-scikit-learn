@@ -255,7 +255,7 @@ def test_make_classification_return_x_y():
             "Weights specified but incompatible with number of classes.",
         ),
         (
-            np.random.random(3),
+            np.random.default_rng(0).random(3),
             ValueError,
             "Weights specified but incompatible with number of classes.",
         ),
@@ -362,13 +362,13 @@ def test_make_regression(global_random_seed):
     assert X.shape == (200, 10), "X shape mismatch"
     assert y.shape == (200,), "y shape mismatch"
     assert c.shape == (10,), "coef shape mismatch"
-    assert sum(c != 0.0) == 3, "Unexpected number of informative features"
+    assert np.count_nonzero(c) == 3, "Unexpected number of informative features"
 
     # Test that y ~= np.dot(X, c) + bias + N(0, 1.0).
     assert_almost_equal(np.std(y - np.dot(X, c)), 1.0, decimal=1)
 
     # Test with small number of features.
-    X, y = make_regression(n_samples=100, n_features=1)  # n_informative=3
+    X, y = make_regression(n_samples=100, n_features=1)  
     assert X.shape == (100, 1)
 
 
@@ -386,7 +386,9 @@ def test_make_regression_multitarget(global_random_seed):
     assert X.shape == (100, 10), "X shape mismatch"
     assert y.shape == (100, 3), "y shape mismatch"
     assert c.shape == (10, 3), "coef shape mismatch"
-    assert_array_equal(sum(c != 0.0), 3, "Unexpected number of informative features")
+    assert_array_equal(
+        np.count_nonzero(c, axis=0), 3, "Unexpected number of informative features"
+    )
 
     # Test that y ~= np.dot(X, c) + bias + N(0, 1.0)
     assert_almost_equal(np.std(y - np.dot(X, c)), 1.0, decimal=1)
@@ -440,7 +442,7 @@ def test_make_blobs_n_samples_list_with_centers(global_random_seed):
 
 
 @pytest.mark.parametrize(
-    "n_samples", [[5, 3, 0], np.array([5, 3, 0]), tuple([5, 3, 0])]
+    "n_samples", [[5, 3, 0], np.array([5, 3, 0]), (5, 3, 0)]
 )
 def test_make_blobs_n_samples_centers_none(n_samples):
     centers = None
@@ -455,7 +457,7 @@ def test_make_blobs_n_samples_centers_none(n_samples):
 def test_make_blobs_return_centers():
     n_samples = [10, 20]
     n_features = 3
-    X, y, centers = make_blobs(
+    _, _, centers = make_blobs(
         n_samples=n_samples, n_features=n_features, return_centers=True, random_state=0
     )
 
@@ -537,7 +539,7 @@ def test_make_low_rank_matrix():
 
     from numpy.linalg import svd
 
-    u, s, v = svd(X)
+    _, s, _ = svd(X)
     assert sum(s) - 5 < 0.1, "X rank is not approximately 5"
 
 
@@ -594,21 +596,21 @@ def test_make_sparse_spd_matrix(norm_diag, sparse_format, global_random_seed):
     if sparse_format is None:
         assert not sp.issparse(X)
         assert_allclose(X, X.T)
-        Xarr = X
+        x_arr = X
     else:
         assert sp.issparse(X) and X.format == sparse_format
         assert_allclose_dense_sparse(X, X.T)
-        Xarr = X.toarray()
+        x_arr = X.toarray()
 
     from numpy.linalg import eig
 
     # Do not use scipy.sparse.linalg.eigs because it cannot find all eigenvalues
-    eigenvalues, _ = eig(Xarr)
+    eigenvalues, _ = eig(x_arr)
     assert np.all(eigenvalues > 0), "X is not positive-definite"
 
     if norm_diag:
         # Check that leading diagonal elements are 1
-        assert_array_almost_equal(Xarr.diagonal(), np.ones(n_dim))
+        assert_array_almost_equal(x_arr.diagonal(), np.ones(n_dim))
 
 
 @pytest.mark.parametrize("hole", [False, True])
