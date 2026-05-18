@@ -222,20 +222,20 @@ def test_binmapper_weighted_vs_repeated_equivalence(global_random_seed, n_bins):
     rng = np.random.RandomState(global_random_seed)
 
     n_samples = 200
-    X = rng.randn(n_samples, 3)
+    x = rng.randn(n_samples, 3)
     sw = rng.randint(0, 5, size=n_samples)
-    x_repeated = np.repeat(X, sw, axis=0)
+    x_repeated = np.repeat(x, sw, axis=0)
 
     est_weighted = _BinMapper(
         n_bins=n_bins, random_state=global_random_seed
-    ).fit(X, sample_weight=sw)
+    ).fit(x, sample_weight=sw)
     est_repeated = _BinMapper(
         n_bins=n_bins, random_state=global_random_seed
     ).fit(x_repeated, sample_weight=None)
     assert_allclose(est_weighted.bin_thresholds_, est_repeated.bin_thresholds_)
 
-    x_trans_weighted = est_weighted.transform(X)
-    x_trans_repeated = est_repeated.transform(X)
+    x_trans_weighted = est_weighted.transform(x)
+    x_trans_repeated = est_repeated.transform(x)
     assert_array_equal(x_trans_weighted, x_trans_repeated)
 
 
@@ -253,7 +253,7 @@ def test_subsampled_weighted_vs_repeated_equivalence(seed, n_bins):
     X = rng.randn(n_samples, 3)
 
     sw = rng.randint(0, 5, size=n_samples)
-    X_repeated = np.repeat(X, sw, axis=0)
+    x_repeated = np.repeat(X, sw, axis=0)
 
     # Collect estimated bins thresholds on the weighted/repeated datasets for
     # `n_resampling_iterations` subsampling. `n_resampling_iterations` is large
@@ -261,10 +261,11 @@ def test_subsampled_weighted_vs_repeated_equivalence(seed, n_bins):
     n_resampling_iterations = 500
     bins_weighted = []
     bins_repeated = []
-    for _ in range(n_resampling_iterations):
-        params = dict(n_bins=n_bins, subsample=300, random_state=rng)
+    iteration_seeds = rng.randint(0, 2**31, size=n_resampling_iterations)
+    for i in range(n_resampling_iterations):
+        params = {"n_bins": n_bins, "subsample": 300, "random_state": int(iteration_seeds[i])}
         est_weighted = _BinMapper(**params).fit(X, sample_weight=sw)
-        est_repeated = _BinMapper(**params).fit(X_repeated, sample_weight=None)
+        est_repeated = _BinMapper(**params).fit(x_repeated, sample_weight=None)
         bins_weighted.append(np.hstack(est_weighted.bin_thresholds_))
         bins_repeated.append(np.hstack(est_repeated.bin_thresholds_))
 
@@ -296,7 +297,7 @@ def test_bin_mapper_identity_small(max_bins, scale, offset):
     data = np.arange(max_bins).reshape(-1, 1) * scale + offset
     # max_bins is the number of bins for non-missing values
     n_bins = max_bins + 1
-    binned = _BinMapper(n_bins=n_bins).fit_transform(data)
+    binned = _BinMapper(n_bins=n_bins, random_state=42).fit_transform(data)
     assert_array_equal(binned, np.arange(max_bins).reshape(-1, 1))
 
 
@@ -315,8 +316,8 @@ def test_bin_mapper_identity_small(max_bins, scale, offset):
 def test_bin_mapper_idempotence(max_bins_small, max_bins_large):
     assert max_bins_large >= max_bins_small
     data = np.random.RandomState(42).normal(size=30000).reshape(-1, 1)
-    mapper_small = _BinMapper(n_bins=max_bins_small + 1)
-    mapper_large = _BinMapper(n_bins=max_bins_small + 1)
+    mapper_small = _BinMapper(n_bins=max_bins_small + 1, random_state=42)
+    mapper_large = _BinMapper(n_bins=max_bins_small + 1, random_state=42)
     binned_small = mapper_small.fit_transform(data)
     binned_large = mapper_large.fit_transform(binned_small)
     assert_array_equal(binned_small, binned_large)
@@ -331,7 +332,7 @@ def test_n_bins_non_missing(n_bins, diff):
     n_unique_values = n_bins + diff
     X = list(range(n_unique_values)) * 2
     X = np.array(X).reshape(-1, 1)
-    mapper = _BinMapper(n_bins=n_bins).fit(X)
+    mapper = _BinMapper(n_bins=n_bins, random_state=42).fit(X)
     assert np.all(mapper.n_bins_non_missing_ == min(n_bins - 1, n_unique_values))
 
 
@@ -349,7 +350,7 @@ def test_subsample():
 
 
 @pytest.mark.parametrize(
-    "n_bins, n_bins_non_missing, X_trans_expected",
+    "n_bins, n_bins_non_missing, x_trans_expected",
     [
         (
             256,
@@ -377,7 +378,7 @@ def test_subsample():
         ),
     ],
 )
-def test_missing_values_support(n_bins, n_bins_non_missing, X_trans_expected):
+def test_missing_values_support(n_bins, n_bins_non_missing, x_trans_expected):
     # check for missing values: make sure nans are mapped to the last bin
     # and that the _BinMapper attributes are correct
 
@@ -406,7 +407,7 @@ def test_missing_values_support(n_bins, n_bins_non_missing, X_trans_expected):
     assert mapper.missing_values_bin_idx_ == n_bins - 1
 
     X_trans = mapper.transform(X)
-    assert_array_equal(X_trans, X_trans_expected)
+    assert_array_equal(X_trans, x_trans_expected)
 
 
 def test_infinite_values():
