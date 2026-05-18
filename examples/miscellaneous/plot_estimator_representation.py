@@ -48,5 +48,5 @@ preprocessor = make_column_transformer(
     (num_proc, ("feat1", "feat3")), (cat_proc, ("feat0", "feat2"))
 )
 
-clf = make_pipeline(preprocessor, LogisticRegression())
-clf
+clf = make_pipeline(preprocessor, LogisticRegression(), memory=None)
+print(clf)

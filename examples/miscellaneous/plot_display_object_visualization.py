@@ -35,7 +35,7 @@ from sklearn.preprocessing import StandardScaler
 X, y = fetch_openml(data_id=1464, return_X_y=True)
 X_train, X_test, y_train, y_test = train_test_split(X, y, stratify=y)
 
-clf = make_pipeline(StandardScaler(), LogisticRegression(random_state=0))
+clf = make_pipeline(StandardScaler(), LogisticRegression(random_state=0), memory=None)
 clf.fit(X_train, y_train)
 
 # %%
@@ -83,7 +83,7 @@ pr_display = PrecisionRecallDisplay(precision=prec, recall=recall).plot()
 # API. In the following example, we place the displays next to each other in a
 # row.
 
-# sphinx_gallery_thumbnail_number = 4
+
 import matplotlib.pyplot as plt
 
 fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 8))
