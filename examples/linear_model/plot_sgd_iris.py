@@ -30,8 +30,8 @@ colors = "byr"
 
 # shuffle
 idx = np.arange(X.shape[0])
-np.random.seed(13)
-np.random.shuffle(idx)
+rng = np.random.default_rng(13)
+rng.shuffle(idx)
 X = X[idx]
 y = y[idx]
 

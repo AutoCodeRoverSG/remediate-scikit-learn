@@ -139,6 +139,7 @@ embeddings = {
     "Random Trees embedding": make_pipeline(
         RandomTreesEmbedding(n_estimators=200, max_depth=5, random_state=0),
         TruncatedSVD(n_components=2),
+        memory=None,
     ),
     "Spectral embedding": SpectralEmbedding(
         n_components=2, random_state=0, eigen_solver="arpack"

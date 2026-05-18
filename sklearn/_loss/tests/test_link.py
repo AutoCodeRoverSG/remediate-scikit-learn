@@ -67,7 +67,7 @@ def test_is_in_range(interval):
 @pytest.mark.parametrize("link", LINK_FUNCTIONS)
 def test_link_inverse_identity(link, global_random_seed):
     """Test that link of inverse gives identity."""
-    rng = np.random.RandomState(global_random_seed)
+    rng = np.random.default_rng(global_random_seed)
     link = link()
     n_samples, n_classes = 100, None
     # The values for `raw_prediction` are limited from -20 to 20 because in the
@@ -97,7 +97,7 @@ def test_link_inverse_array_api(
     namespace, device_name, dtype_name, link, global_random_seed
 ):
     """Test that link and inverse link give same result for array API inputs."""
-    rng = np.random.RandomState(global_random_seed)
+    rng = np.random.default_rng(global_random_seed)
     link = link()
     n_samples, n_classes = 100, None
     # The values for `raw_prediction` are limited from -20 to 20 because in the

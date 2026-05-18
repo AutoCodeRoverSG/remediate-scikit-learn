@@ -28,10 +28,10 @@ task and once on a multi-output regression task.
 # --------------------------
 import numpy as np
 
-rng = np.random.RandomState(1)
-X = np.sort(5 * rng.rand(80, 1), axis=0)
+rng = np.random.default_rng(1)
+X = np.sort(5 * rng.random((80, 1)), axis=0)
 y = np.sin(X).ravel()
-y[::5] += 3 * (0.5 - rng.rand(16))
+y[::5] += 3 * (0.5 - rng.random(16))
 
 # %%
 # Fit regression model
@@ -90,10 +90,10 @@ plt.show()
 # %%
 # Create a random dataset
 # -----------------------
-rng = np.random.RandomState(1)
-X = np.sort(200 * rng.rand(100, 1) - 100, axis=0)
+rng = np.random.default_rng(1)
+X = np.sort(200 * rng.random((100, 1)) - 100, axis=0)
 y = np.array([np.pi * np.sin(X).ravel(), np.pi * np.cos(X).ravel()]).T
-y[::5, :] += 0.5 - rng.rand(20, 2)
+y[::5, :] += 0.5 - rng.random((20, 2))
 
 # %%
 # Fit regression model
