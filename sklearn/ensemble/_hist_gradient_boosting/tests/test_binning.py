@@ -82,7 +82,7 @@ def test_invalid_n_bins(n_bins):
         n_bins
     )
     with pytest.raises(ValueError, match=err_msg):
-        _BinMapper(n_bins=n_bins).fit(DATA)
+        _BinMapper(n_bins=n_bins, random_state=0).fit(DATA)
 
 
 def test_bin_mapper_n_features_transform():
@@ -125,8 +125,10 @@ def test_unique_bins_repeated_weighted():
     sample_weight = np.asarray([1000, 1, 1, 1, 1, 1])
     col_data_repeated = np.asarray(([1] * 1000) + [2, 3, 4, 5, 6]).reshape(-1, 1)
 
-    binmapper = _BinMapper(n_bins=4).fit(col_data, sample_weight=sample_weight)
-    binmapper_repeated = _BinMapper(n_bins=4).fit(col_data_repeated)
+    binmapper = _BinMapper(n_bins=4, random_state=42).fit(
+        col_data, sample_weight=sample_weight
+    )
+    binmapper_repeated = _BinMapper(n_bins=4, random_state=42).fit(col_data_repeated)
     assert_array_equal(binmapper.bin_thresholds_, binmapper_repeated.bin_thresholds_)
 
 
@@ -186,7 +188,7 @@ def test_bin_mapper_identity_repeated_values(max_bins, n_distinct, multiplier):
     data = np.array(list(range(n_distinct)) * multiplier).reshape(-1, 1)
     # max_bins is the number of bins for non-missing values
     n_bins = max_bins + 1
-    binned = _BinMapper(n_bins=n_bins).fit_transform(data)
+    binned = _BinMapper(n_bins=n_bins, random_state=42).fit_transform(data)
     assert_array_equal(data, binned)
 
 
@@ -203,12 +205,12 @@ def test_bin_mapper_repeated_values_invariance(n_distinct):
 
     data = data.reshape(-1, 1)
 
-    mapper_1 = _BinMapper(n_bins=n_distinct + 1)
+    mapper_1 = _BinMapper(n_bins=n_distinct + 1, random_state=42)
     binned_1 = mapper_1.fit_transform(data)
     assert_array_equal(np.unique(binned_1[:, 0]), np.arange(n_distinct))
 
     # Adding more bins to the mapper yields the same results (same thresholds)
-    mapper_2 = _BinMapper(n_bins=min(256, n_distinct * 3) + 1)
+    mapper_2 = _BinMapper(n_bins=min(256, n_distinct * 3) + 1, random_state=42)
     binned_2 = mapper_2.fit_transform(data)
 
     assert_allclose(mapper_1.bin_thresholds_[0], mapper_2.bin_thresholds_[0])
@@ -222,15 +224,19 @@ def test_binmapper_weighted_vs_repeated_equivalence(global_random_seed, n_bins):
     n_samples = 200
     X = rng.randn(n_samples, 3)
     sw = rng.randint(0, 5, size=n_samples)
-    X_repeated = np.repeat(X, sw, axis=0)
+    x_repeated = np.repeat(X, sw, axis=0)
 
-    est_weighted = _BinMapper(n_bins=n_bins).fit(X, sample_weight=sw)
-    est_repeated = _BinMapper(n_bins=n_bins).fit(X_repeated, sample_weight=None)
+    est_weighted = _BinMapper(
+        n_bins=n_bins, random_state=global_random_seed
+    ).fit(X, sample_weight=sw)
+    est_repeated = _BinMapper(
+        n_bins=n_bins, random_state=global_random_seed
+    ).fit(x_repeated, sample_weight=None)
     assert_allclose(est_weighted.bin_thresholds_, est_repeated.bin_thresholds_)
 
-    X_trans_weighted = est_weighted.transform(X)
-    X_trans_repeated = est_repeated.transform(X)
-    assert_array_equal(X_trans_weighted, X_trans_repeated)
+    x_trans_weighted = est_weighted.transform(X)
+    x_trans_repeated = est_repeated.transform(X)
+    assert_array_equal(x_trans_weighted, x_trans_repeated)
 
 
 # Note: we use a small number of RNG seeds to check that the tests is not seed
