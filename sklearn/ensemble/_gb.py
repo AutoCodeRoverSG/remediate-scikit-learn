@@ -82,7 +82,6 @@ def _safe_divide(numerator, denominator):
     else:
         # Cast to Python float to trigger Python errors, e.g. ZeroDivisionError,
         # without relying on `np.errstate` that is not supported by Pyodide.
-        result = float(numerator) / float(denominator)
         # Cast to Python float to trigger a ZeroDivisionError without relying
         # on `np.errstate` that is not supported by Pyodide.
         result = float(numerator) / float(denominator)
@@ -198,6 +197,8 @@ def _update_terminal_regions(
         if isinstance(loss, HalfBinomialLoss):
 
             def compute_update(y_, indices, neg_gradient, raw_prediction, k):
+                # raw_prediction and k are unused but kept for a uniform
+                # interface across loss functions.
                 # Make a single Newton-Raphson step, see "Additive Logistic Regression:
                 # A Statistical View of Boosting" FHT00 and note that we use a slightly
                 # different version (factor 2) of "F" with proba=expit(raw_prediction).
@@ -208,13 +209,15 @@ def _update_terminal_regions(
                 prob = y_ - neg_g
                 # numerator = negative gradient = y - prob
                 numerator = np.average(neg_g, weights=sw)
-                # denominator = hessian = prob * (1 - prob)
+                
                 denominator = np.average(prob * (1 - prob), weights=sw)
                 return _safe_divide(numerator, denominator)
 
         elif isinstance(loss, HalfMultinomialLoss):
 
             def compute_update(y_, indices, neg_gradient, raw_prediction, k):
+                # raw_prediction is unused but kept for a uniform interface
+                # across loss functions.
                 # we take advantage that: y - prob = neg_gradient
                 neg_g = neg_gradient.take(indices, axis=0)
                 prob = y_ - neg_g
@@ -234,6 +237,8 @@ def _update_terminal_regions(
         elif isinstance(loss, ExponentialLoss):
 
             def compute_update(y_, indices, neg_gradient, raw_prediction, k):
+                # raw_prediction and k are unused but kept for a uniform
+                # interface across loss functions.
                 neg_g = neg_gradient.take(indices, axis=0)
                 # numerator = negative gradient = y * exp(-raw) - (1-y) * exp(raw)
                 numerator = np.average(neg_g, weights=sw)
@@ -248,6 +253,8 @@ def _update_terminal_regions(
         else:
 
             def compute_update(y_, indices, neg_gradient, raw_prediction, k):
+                # neg_gradient is unused but kept for a uniform interface
+                # across loss functions.
                 return loss.fit_intercept_only(
                     y_true=y_ - raw_prediction[indices, k],
                     sample_weight=sw,
@@ -394,21 +401,13 @@ class BaseGradientBoosting(BaseEnsemble, metaclass=ABCMeta):
         init,
         subsample,
         max_features,
-        ccp_alpha,
         random_state,
-        alpha=0.9,
-        verbose=0,
-        max_leaf_nodes=None,
-        warm_start=False,
-        validation_fraction=0.1,
-        n_iter_no_change=None,
-        tol=1e-4,
-        criterion="deprecated",
+        **kwargs,
     ):
         self.n_estimators = n_estimators
         self.learning_rate = learning_rate
         self.loss = loss
-        self.criterion = criterion
+        self.criterion = kwargs.get("criterion", "deprecated")
         self.min_samples_split = min_samples_split
         self.min_samples_leaf = min_samples_leaf
         self.min_weight_fraction_leaf = min_weight_fraction_leaf
@@ -416,16 +415,16 @@ class BaseGradientBoosting(BaseEnsemble, metaclass=ABCMeta):
         self.max_features = max_features
         self.max_depth = max_depth
         self.min_impurity_decrease = min_impurity_decrease
-        self.ccp_alpha = ccp_alpha
+        self.ccp_alpha = kwargs.get("ccp_alpha", 0.0)
         self.init = init
         self.random_state = random_state
-        self.alpha = alpha
-        self.verbose = verbose
-        self.max_leaf_nodes = max_leaf_nodes
-        self.warm_start = warm_start
-        self.validation_fraction = validation_fraction
-        self.n_iter_no_change = n_iter_no_change
-        self.tol = tol
+        self.alpha = kwargs.get("alpha", 0.9)
+        self.verbose = kwargs.get("verbose", 0)
+        self.max_leaf_nodes = kwargs.get("max_leaf_nodes", None)
+        self.warm_start = kwargs.get("warm_start", False)
+        self.validation_fraction = kwargs.get("validation_fraction", 0.1)
+        self.n_iter_no_change = kwargs.get("n_iter_no_change", None)
+        self.tol = kwargs.get("tol", 1e-4)
 
     @abstractmethod
     def _encode_y(self, y=None, sample_weight=None):
@@ -884,7 +883,6 @@ class BaseGradientBoosting(BaseEnsemble, metaclass=ABCMeta):
             factor = 1
 
         # perform boosting iterations
-        i = begin_at_stage
         for i in range(begin_at_stage, self.n_estimators):
             # subsampling
             if do_oob:
@@ -958,7 +956,7 @@ class BaseGradientBoosting(BaseEnsemble, metaclass=ABCMeta):
                 else:
                     break
 
-        return i + 1
+        return i + 1 if begin_at_stage < self.n_estimators else begin_at_stage
 
     def _make_estimator(self, append=True):
         # we don't need _make_estimator
