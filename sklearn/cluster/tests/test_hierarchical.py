@@ -85,7 +85,7 @@ def test_structured_linkage_tree():
     X = rng.randn(50, 100)
     connectivity = grid_to_graph(*mask.shape)
     for tree_builder in _TREE_BUILDERS.values():
-        children, _, n_leaves, _ = tree_builder(
+        children, n_components, n_leaves, parent = tree_builder(
             X.T, connectivity=connectivity
         )
         n_nodes = 2 * X.shape[1] - 1
@@ -103,21 +103,21 @@ def test_unstructured_linkage_tree():
     # Check that we obtain the correct solution for unstructured linkage trees.
     rng = np.random.RandomState(0)
     X = rng.randn(50, 100)
-    for this_x in (X, X[0]):
+    for this_X in (X, X[0]):
         # With specified a number of clusters just for the sake of
         # raising a warning and testing the warning code
         with ignore_warnings():
             with pytest.warns(UserWarning):
-                children, n_nodes, n_leaves, _ = ward_tree(this_x.T, n_clusters=10)
+                children, n_nodes, n_leaves, parent = ward_tree(this_X.T, n_clusters=10)
         n_nodes = 2 * X.shape[1] - 1
         assert len(children) + n_leaves == n_nodes
 
     for tree_builder in _TREE_BUILDERS.values():
-        for this_x in (X, X[0]):
+        for this_X in (X, X[0]):
             with ignore_warnings():
                 with pytest.warns(UserWarning):
-                    children, n_nodes, n_leaves, _ = tree_builder(
-                        this_x.T, n_clusters=10
+                    children, n_nodes, n_leaves, parent = tree_builder(
+                        this_X.T, n_clusters=10
                     )
             n_nodes = 2 * X.shape[1] - 1
             assert len(children) + n_leaves == n_nodes
