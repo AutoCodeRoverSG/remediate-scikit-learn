@@ -116,7 +116,7 @@ from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import TargetEncoder
 
 model_with_cf = make_pipeline(
-    TargetEncoder(cv=KFold(shuffle=True, random_state=0)), ridge
+    TargetEncoder(cv=KFold(shuffle=True, random_state=0)), ridge, memory=None
 )
 model_with_cf.fit(X_train, y_train)
 print("Model with CF on train set: ", model_with_cf.score(X_train, y_train))
