@@ -114,45 +114,45 @@ def test_column_transformer_raises_class_not_instance_error(transformers, class_
 
 
 def test_column_transformer():
-    X_array = np.array([[0, 1, 2], [2, 4, 6]]).T
+    x_array = np.array([[0, 1, 2], [2, 4, 6]]).T
 
-    X_res_first1D = np.array([0, 1, 2])
-    X_res_second1D = np.array([2, 4, 6])
-    X_res_first = X_res_first1D.reshape(-1, 1)
-    X_res_both = X_array
+    x_res_first_1d = np.array([0, 1, 2])
+    x_res_second_1d = np.array([2, 4, 6])
+    x_res_first = x_res_first_1d.reshape(-1, 1)
+    x_res_both = x_array
 
     cases = [
         # single column 1D / 2D
-        (0, X_res_first),
-        ([0], X_res_first),
+        (0, x_res_first),
+        ([0], x_res_first),
         # list-like
-        ([0, 1], X_res_both),
-        (np.array([0, 1]), X_res_both),
+        ([0, 1], x_res_both),
+        (np.array([0, 1]), x_res_both),
         # slice
-        (slice(0, 1), X_res_first),
-        (slice(0, 2), X_res_both),
+        (slice(0, 1), x_res_first),
+        (slice(0, 2), x_res_both),
         # boolean mask
-        (np.array([True, False]), X_res_first),
-        ([True, False], X_res_first),
-        (np.array([True, True]), X_res_both),
-        ([True, True], X_res_both),
+        (np.array([True, False]), x_res_first),
+        ([True, False], x_res_first),
+        (np.array([True, True]), x_res_both),
+        ([True, True], x_res_both),
     ]
 
     for selection, res in cases:
         ct = ColumnTransformer([("trans", Trans(), selection)], remainder="drop")
-        assert_array_equal(ct.fit_transform(X_array), res)
-        assert_array_equal(ct.fit(X_array).transform(X_array), res)
+        assert_array_equal(ct.fit_transform(x_array), res)
+        assert_array_equal(ct.fit(x_array).transform(x_array), res)
 
         # callable that returns any of the allowed specifiers
         ct = ColumnTransformer(
             [("trans", Trans(), lambda x: selection)], remainder="drop"
         )
-        assert_array_equal(ct.fit_transform(X_array), res)
-        assert_array_equal(ct.fit(X_array).transform(X_array), res)
+        assert_array_equal(ct.fit_transform(x_array), res)
+        assert_array_equal(ct.fit(x_array).transform(x_array), res)
 
     ct = ColumnTransformer([("trans1", Trans(), [0]), ("trans2", Trans(), [1])])
-    assert_array_equal(ct.fit_transform(X_array), X_res_both)
-    assert_array_equal(ct.fit(X_array).transform(X_array), X_res_both)
+    assert_array_equal(ct.fit_transform(x_array), x_res_both)
+    assert_array_equal(ct.fit(x_array).transform(x_array), x_res_both)
     assert len(ct.transformers_) == 2
 
     # test with transformer_weights
@@ -163,24 +163,24 @@ def test_column_transformer():
     )
     res = np.vstack(
         [
-            transformer_weights["trans1"] * X_res_first1D,
-            transformer_weights["trans2"] * X_res_second1D,
+            transformer_weights["trans1"] * x_res_first_1d,
+            transformer_weights["trans2"] * x_res_second_1d,
         ]
     ).T
-    assert_array_equal(both.fit_transform(X_array), res)
-    assert_array_equal(both.fit(X_array).transform(X_array), res)
+    assert_array_equal(both.fit_transform(x_array), res)
+    assert_array_equal(both.fit(x_array).transform(x_array), res)
     assert len(both.transformers_) == 2
 
     both = ColumnTransformer(
         [("trans", Trans(), [0, 1])], transformer_weights={"trans": 0.1}
     )
-    assert_array_equal(both.fit_transform(X_array), 0.1 * X_res_both)
-    assert_array_equal(both.fit(X_array).transform(X_array), 0.1 * X_res_both)
+    assert_array_equal(both.fit_transform(x_array), 0.1 * x_res_both)
+    assert_array_equal(both.fit(x_array).transform(x_array), 0.1 * x_res_both)
     assert len(both.transformers_) == 1
 
 
 def test_column_transformer_tuple_transformers_parameter():
-    X_array = np.array([[0, 1, 2], [2, 4, 6]]).T
+    x_array = np.array([[0, 1, 2], [2, 4, 6]]).T
 
     transformers = [("trans1", Trans(), [0]), ("trans2", Trans(), [1])]
 
@@ -188,11 +188,11 @@ def test_column_transformer_tuple_transformers_parameter():
     ct_with_tuple = ColumnTransformer(tuple(transformers))
 
     assert_array_equal(
-        ct_with_list.fit_transform(X_array), ct_with_tuple.fit_transform(X_array)
+        ct_with_list.fit_transform(x_array), ct_with_tuple.fit_transform(x_array)
     )
     assert_array_equal(
-        ct_with_list.fit(X_array).transform(X_array),
-        ct_with_tuple.fit(X_array).transform(X_array),
+        ct_with_list.fit(x_array).transform(x_array),
+        ct_with_tuple.fit(x_array).transform(x_array),
     )
 
 
@@ -200,69 +200,69 @@ def test_column_transformer_tuple_transformers_parameter():
 def test_column_transformer_dataframe(constructor_name):
     df_lib = pytest.importorskip(constructor_name)
 
-    X_array = np.array([[0, 1, 2], [2, 4, 6]]).T
-    X_df = _convert_container(
-        X_array, constructor_name, column_names=["first", "second"]
+    x_array = np.array([[0, 1, 2], [2, 4, 6]]).T
+    x_df = _convert_container(
+        x_array, constructor_name, column_names=["first", "second"]
     )
 
-    X_res_first = np.array([0, 1, 2]).reshape(-1, 1)
-    X_res_both = X_array
+    x_res_first = np.array([0, 1, 2]).reshape(-1, 1)
+    x_res_both = x_array
 
     cases = [
         # String keys: label based
         # list
-        (["first"], X_res_first),
-        (["first", "second"], X_res_both),
+        (["first"], x_res_first),
+        (["first", "second"], x_res_both),
         # slice
-        (slice("first", "second"), X_res_both),
+        (slice("first", "second"), x_res_both),
         # int keys: positional
         # list
-        ([0], X_res_first),
-        ([0, 1], X_res_both),
-        (np.array([0, 1]), X_res_both),
+        ([0], x_res_first),
+        ([0, 1], x_res_both),
+        (np.array([0, 1]), x_res_both),
         # slice
-        (slice(0, 1), X_res_first),
-        (slice(0, 2), X_res_both),
+        (slice(0, 1), x_res_first),
+        (slice(0, 2), x_res_both),
         # boolean mask
-        (np.array([True, False]), X_res_first),
-        ([True, False], X_res_first),
+        (np.array([True, False]), x_res_first),
+        ([True, False], x_res_first),
         # scalar
-        (0, X_res_first),
-        ("first", X_res_first),
+        (0, x_res_first),
+        ("first", x_res_first),
     ]
     if constructor_name == "pandas":
         cases.extend(
             [
                 (
                     df_lib.Series([True, False], index=["first", "second"]),
-                    X_res_first,
+                    x_res_first,
                 ),
             ]
         )
 
     for selection, res in cases:
         ct = ColumnTransformer([("trans", Trans(), selection)], remainder="drop")
-        assert_array_equal(ct.fit_transform(X_df), res)
-        assert_array_equal(ct.fit(X_df).transform(X_df), res)
+        assert_array_equal(ct.fit_transform(x_df), res)
+        assert_array_equal(ct.fit(x_df).transform(x_df), res)
 
         # callable that returns any of the allowed specifiers
         ct = ColumnTransformer(
             [("trans", Trans(), lambda X: selection)], remainder="drop"
         )
-        assert_array_equal(ct.fit_transform(X_df), res)
-        assert_array_equal(ct.fit(X_df).transform(X_df), res)
+        assert_array_equal(ct.fit_transform(x_df), res)
+        assert_array_equal(ct.fit(x_df).transform(x_df), res)
 
     ct = ColumnTransformer(
         [("trans1", Trans(), ["first"]), ("trans2", Trans(), ["second"])]
     )
-    assert_array_equal(ct.fit_transform(X_df), X_res_both)
-    assert_array_equal(ct.fit(X_df).transform(X_df), X_res_both)
+    assert_array_equal(ct.fit_transform(x_df), x_res_both)
+    assert_array_equal(ct.fit(x_df).transform(x_df), x_res_both)
     assert len(ct.transformers_) == 2
     assert ct.transformers_[-1][0] != "remainder"
 
     ct = ColumnTransformer([("trans1", Trans(), [0]), ("trans2", Trans(), [1])])
-    assert_array_equal(ct.fit_transform(X_df), X_res_both)
-    assert_array_equal(ct.fit(X_df).transform(X_df), X_res_both)
+    assert_array_equal(ct.fit_transform(x_df), x_res_both)
+    assert_array_equal(ct.fit(x_df).transform(x_df), x_res_both)
     assert len(ct.transformers_) == 2
     assert ct.transformers_[-1][0] != "remainder"
 
@@ -274,12 +274,12 @@ def test_column_transformer_dataframe(constructor_name):
     )
     res = np.vstack(
         [
-            transformer_weights["trans1"] * X_df["first"],
-            transformer_weights["trans2"] * X_df["second"],
+            transformer_weights["trans1"] * x_df["first"],
+            transformer_weights["trans2"] * x_df["second"],
         ]
     ).T
-    assert_array_equal(both.fit_transform(X_df), res)
-    assert_array_equal(both.fit(X_df).transform(X_df), res)
+    assert_array_equal(both.fit_transform(x_df), res)
+    assert_array_equal(both.fit(x_df).transform(x_df), res)
     assert len(both.transformers_) == 2
     assert both.transformers_[-1][0] != "remainder"
 
@@ -287,16 +287,16 @@ def test_column_transformer_dataframe(constructor_name):
     both = ColumnTransformer(
         [("trans", Trans(), ["first", "second"])], transformer_weights={"trans": 0.1}
     )
-    assert_array_equal(both.fit_transform(X_df), 0.1 * X_res_both)
-    assert_array_equal(both.fit(X_df).transform(X_df), 0.1 * X_res_both)
+    assert_array_equal(both.fit_transform(x_df), 0.1 * x_res_both)
+    assert_array_equal(both.fit(x_df).transform(x_df), 0.1 * x_res_both)
     assert len(both.transformers_) == 1
     assert both.transformers_[-1][0] != "remainder"
 
     both = ColumnTransformer(
         [("trans", Trans(), [0, 1])], transformer_weights={"trans": 0.1}
     )
-    assert_array_equal(both.fit_transform(X_df), 0.1 * X_res_both)
-    assert_array_equal(both.fit(X_df).transform(X_df), 0.1 * X_res_both)
+    assert_array_equal(both.fit_transform(x_df), 0.1 * x_res_both)
+    assert_array_equal(both.fit(x_df).transform(x_df), 0.1 * x_res_both)
     assert len(both.transformers_) == 1
     assert both.transformers_[-1][0] != "remainder"
 
@@ -324,7 +324,7 @@ def test_column_transformer_dataframe(constructor_name):
             )
         ]
     )
-    ct.fit_transform(X_df)
+    ct.fit_transform(x_df)
 
     ct = ColumnTransformer(
         [
@@ -336,17 +336,17 @@ def test_column_transformer_dataframe(constructor_name):
         ],
         remainder="drop",
     )
-    ct.fit_transform(X_df)
+    ct.fit_transform(x_df)
 
     if constructor_name == "pandas":
         # Only pandas (but not polars, nor pyarrow) allows for column names that are
         # not strings.
         # integer column spec + integer column names -> still use positional
-        X_df2 = X_df.copy()
-        X_df2.columns = [1, 0]
+        x_df2 = x_df.copy()
+        x_df2.columns = [1, 0]
         ct = ColumnTransformer([("trans", Trans(), 0)], remainder="drop")
-        assert_array_equal(ct.fit_transform(X_df2), X_res_first)
-        assert_array_equal(ct.fit(X_df2).transform(X_df2), X_res_first)
+        assert_array_equal(ct.fit_transform(x_df2), x_res_first)
+        assert_array_equal(ct.fit(x_df2).transform(x_df2), x_res_first)
 
         assert len(ct.transformers_) == 2
         assert ct.transformers_[-1][0] == "remainder"
