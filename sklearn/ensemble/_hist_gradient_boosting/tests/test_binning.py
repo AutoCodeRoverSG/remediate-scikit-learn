@@ -19,7 +19,7 @@ n_threads = _openmp_effective_n_threads()
 
 
 DATA = (
-    np.random.RandomState(42)
+    np.random.default_rng(42)
     .normal(loc=[0, 10], scale=[1, 0.01], size=(int(1e6), 2))
     .astype(X_DTYPE)
 )
@@ -163,7 +163,7 @@ def test_bin_mapper_random_data(max_bins):
 
 @pytest.mark.parametrize("n_samples, max_bins", [(5, 5), (5, 10), (5, 11), (42, 255)])
 def test_bin_mapper_small_random_data(n_samples, max_bins):
-    data = np.random.RandomState(42).normal(size=n_samples).reshape(-1, 1)
+    data = np.random.default_rng(42).normal(size=n_samples).reshape(-1, 1)
     assert len(np.unique(data)) == n_samples
 
     # max_bins is the number of bins for non-missing values
@@ -194,11 +194,11 @@ def test_bin_mapper_identity_repeated_values(max_bins, n_distinct, multiplier):
 
 @pytest.mark.parametrize("n_distinct", [2, 7, 42])
 def test_bin_mapper_repeated_values_invariance(n_distinct):
-    rng = np.random.RandomState(42)
+    rng = np.random.default_rng(42)
     distinct_values = rng.normal(size=n_distinct)
     assert len(np.unique(distinct_values)) == n_distinct
 
-    repeated_indices = rng.randint(low=0, high=n_distinct, size=1000)
+    repeated_indices = rng.integers(low=0, high=n_distinct, size=1000)
     data = distinct_values[repeated_indices]
     rng.shuffle(data)
     assert_array_equal(np.unique(data), np.sort(distinct_values))
@@ -219,11 +219,11 @@ def test_bin_mapper_repeated_values_invariance(n_distinct):
 
 @pytest.mark.parametrize("n_bins", [50, 250])
 def test_binmapper_weighted_vs_repeated_equivalence(global_random_seed, n_bins):
-    rng = np.random.RandomState(global_random_seed)
+    rng = np.random.default_rng(global_random_seed)
 
     n_samples = 200
-    x = rng.randn(n_samples, 3)
-    sw = rng.randint(0, 5, size=n_samples)
+    x = rng.standard_normal((n_samples, 3))
+    sw = rng.integers(0, 5, size=n_samples)
     x_repeated = np.repeat(x, sw, axis=0)
 
     est_weighted = _BinMapper(
@@ -247,12 +247,12 @@ def test_binmapper_weighted_vs_repeated_equivalence(global_random_seed, n_bins):
 @pytest.mark.parametrize("seed", [0, 1, 42])
 @pytest.mark.parametrize("n_bins", [3, 5])
 def test_subsampled_weighted_vs_repeated_equivalence(seed, n_bins):
-    rng = np.random.RandomState(seed)
+    rng = np.random.default_rng(seed)
 
     n_samples = 500
-    X = rng.randn(n_samples, 3)
+    X = rng.standard_normal((n_samples, 3))
 
-    sw = rng.randint(0, 5, size=n_samples)
+    sw = rng.integers(0, 5, size=n_samples)
     x_repeated = np.repeat(X, sw, axis=0)
 
     # Collect estimated bins thresholds on the weighted/repeated datasets for
@@ -261,7 +261,7 @@ def test_subsampled_weighted_vs_repeated_equivalence(seed, n_bins):
     n_resampling_iterations = 500
     bins_weighted = []
     bins_repeated = []
-    iteration_seeds = rng.randint(0, 2**31, size=n_resampling_iterations)
+    iteration_seeds = rng.integers(0, 2**31, size=n_resampling_iterations)
     for i in range(n_resampling_iterations):
         params = {"n_bins": n_bins, "subsample": 300, "random_state": int(iteration_seeds[i])}
         est_weighted = _BinMapper(**params).fit(X, sample_weight=sw)
@@ -315,7 +315,7 @@ def test_bin_mapper_identity_small(max_bins, scale, offset):
 )
 def test_bin_mapper_idempotence(max_bins_small, max_bins_large):
     assert max_bins_large >= max_bins_small
-    data = np.random.RandomState(42).normal(size=30000).reshape(-1, 1)
+    data = np.random.default_rng(42).normal(size=30000).reshape(-1, 1)
     mapper_small = _BinMapper(n_bins=max_bins_small + 1, random_state=42)
     mapper_large = _BinMapper(n_bins=max_bins_small + 1, random_state=42)
     binned_small = mapper_small.fit_transform(data)

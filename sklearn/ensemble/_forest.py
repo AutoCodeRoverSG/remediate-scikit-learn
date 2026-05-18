@@ -1520,6 +1520,17 @@ class RandomForestClassifier(ForestClassifier):
     }
     _parameter_constraints.pop("splitter")
 
+    _ensemble_param_defaults = {
+        "bootstrap": True,
+        "oob_score": False,
+        "n_jobs": None,
+        "random_state": None,
+        "verbose": 0,
+        "warm_start": False,
+        "class_weight": None,
+        "max_samples": None,
+    }
+
     def __init__(
         self,
         n_estimators=100,
@@ -1532,17 +1543,19 @@ class RandomForestClassifier(ForestClassifier):
         max_features="sqrt",
         max_leaf_nodes=None,
         min_impurity_decrease=0.0,
-        bootstrap=True,
-        oob_score=False,
-        n_jobs=None,
-        random_state=None,
-        verbose=0,
-        warm_start=False,
-        class_weight=None,
         ccp_alpha=0.0,
-        max_samples=None,
         monotonic_cst=None,
+        **kwargs,
     ):
+        ensemble_params = {
+            key: kwargs.pop(key, default)
+            for key, default in self._ensemble_param_defaults.items()
+        }
+        if kwargs:
+            raise TypeError(
+                f"__init__() got unexpected keyword arguments: "
+                f"{', '.join(sorted(kwargs))}"
+            )
         super().__init__(
             estimator=DecisionTreeClassifier(),
             n_estimators=n_estimators,
@@ -1559,14 +1572,7 @@ class RandomForestClassifier(ForestClassifier):
                 "ccp_alpha",
                 "monotonic_cst",
             ),
-            bootstrap=bootstrap,
-            oob_score=oob_score,
-            n_jobs=n_jobs,
-            random_state=random_state,
-            verbose=verbose,
-            warm_start=warm_start,
-            class_weight=class_weight,
-            max_samples=max_samples,
+            **ensemble_params,
         )
 
         self.criterion = criterion
@@ -1579,6 +1585,11 @@ class RandomForestClassifier(ForestClassifier):
         self.min_impurity_decrease = min_impurity_decrease
         self.monotonic_cst = monotonic_cst
         self.ccp_alpha = ccp_alpha
+
+    @classmethod
+    def _get_param_names(cls):
+        own_params = super()._get_param_names()
+        return sorted(set(own_params) | set(cls._ensemble_param_defaults))
 
 
 class RandomForestRegressor(ForestRegressor):
@@ -1897,6 +1908,16 @@ class RandomForestRegressor(ForestRegressor):
     }
     _parameter_constraints.pop("splitter")
 
+    _ensemble_param_defaults = {
+        "bootstrap": True,
+        "oob_score": False,
+        "n_jobs": None,
+        "random_state": None,
+        "verbose": 0,
+        "warm_start": False,
+        "max_samples": None,
+    }
+
     def __init__(
         self,
         n_estimators=100,
@@ -1909,16 +1930,19 @@ class RandomForestRegressor(ForestRegressor):
         max_features=1.0,
         max_leaf_nodes=None,
         min_impurity_decrease=0.0,
-        bootstrap=True,
-        oob_score=False,
-        n_jobs=None,
-        random_state=None,
-        verbose=0,
-        warm_start=False,
         ccp_alpha=0.0,
-        max_samples=None,
         monotonic_cst=None,
+        **kwargs,
     ):
+        ensemble_params = {
+            key: kwargs.pop(key, default)
+            for key, default in self._ensemble_param_defaults.items()
+        }
+        if kwargs:
+            raise TypeError(
+                f"__init__() got unexpected keyword arguments: "
+                f"{', '.join(sorted(kwargs))}"
+            )
         super().__init__(
             estimator=DecisionTreeRegressor(),
             n_estimators=n_estimators,
@@ -1935,13 +1959,7 @@ class RandomForestRegressor(ForestRegressor):
                 "ccp_alpha",
                 "monotonic_cst",
             ),
-            bootstrap=bootstrap,
-            oob_score=oob_score,
-            n_jobs=n_jobs,
-            random_state=random_state,
-            verbose=verbose,
-            warm_start=warm_start,
-            max_samples=max_samples,
+            **ensemble_params,
         )
 
         if isinstance(criterion, str) and criterion == "friedman_mse":
@@ -1964,6 +1982,11 @@ class RandomForestRegressor(ForestRegressor):
         self.min_impurity_decrease = min_impurity_decrease
         self.ccp_alpha = ccp_alpha
         self.monotonic_cst = monotonic_cst
+
+    @classmethod
+    def _get_param_names(cls):
+        own_params = super()._get_param_names()
+        return sorted(set(own_params) | set(cls._ensemble_param_defaults))
 
 
 class ExtraTreesClassifier(ForestClassifier):
@@ -3024,8 +3047,8 @@ class RandomTreesEmbedding(TransformerMixin, BaseForest):
             Transformed dataset.
         """
         rnd = check_random_state(self.random_state)
-        y = rnd.uniform(size=_num_samples(X))
-        super().fit(X, y, sample_weight=sample_weight)
+        y_random = rnd.uniform(size=_num_samples(X))
+        super().fit(X, y_random, sample_weight=sample_weight)
 
         self.one_hot_encoder_ = OneHotEncoder(sparse_output=self.sparse_output)
         output = self.one_hot_encoder_.fit_transform(self.apply(X))
