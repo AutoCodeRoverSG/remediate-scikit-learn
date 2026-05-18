@@ -886,15 +886,15 @@ def test_split_interaction_constraints():
     # The loop is to ensure that we split at least once on each allowed feature (0, 3).
     # This is tracked by split_features and checked at the end.
     for i in range(10):
-        rng = np.random.RandomState(919 + i)
+        rng = np.random.default_rng(919 + i)
         x_binned = np.asfortranarray(
-            rng.randint(0, n_bins - 1, size=(n_samples, n_features)),
+            rng.integers(0, n_bins - 1, size=(n_samples, n_features)),
             dtype=X_BINNED_DTYPE,
         )
         x_binned = np.asfortranarray(x_binned, dtype=X_BINNED_DTYPE)
 
         # Make feature 1 very important
-        all_gradients = (10 * x_binned[:, 1] + rng.randn(n_samples)).astype(G_H_DTYPE)
+        all_gradients = (10 * x_binned[:, 1] + rng.standard_normal(n_samples)).astype(G_H_DTYPE)
         sum_gradients = all_gradients.sum()
 
         builder = HistogramBuilder(
