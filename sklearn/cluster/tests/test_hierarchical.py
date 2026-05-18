@@ -85,7 +85,7 @@ def test_structured_linkage_tree():
     X = rng.randn(50, 100)
     connectivity = grid_to_graph(*mask.shape)
     for tree_builder in _TREE_BUILDERS.values():
-        children, n_components, n_leaves, parent = tree_builder(
+        children, _, n_leaves, _ = tree_builder(
             X.T, connectivity=connectivity
         )
         n_nodes = 2 * X.shape[1] - 1
@@ -103,21 +103,21 @@ def test_unstructured_linkage_tree():
     # Check that we obtain the correct solution for unstructured linkage trees.
     rng = np.random.RandomState(0)
     X = rng.randn(50, 100)
-    for this_X in (X, X[0]):
+    for this_x in (X, X[0]):
         # With specified a number of clusters just for the sake of
         # raising a warning and testing the warning code
         with ignore_warnings():
             with pytest.warns(UserWarning):
-                children, n_nodes, n_leaves, parent = ward_tree(this_X.T, n_clusters=10)
+                children, n_nodes, n_leaves, _ = ward_tree(this_x.T, n_clusters=10)
         n_nodes = 2 * X.shape[1] - 1
         assert len(children) + n_leaves == n_nodes
 
     for tree_builder in _TREE_BUILDERS.values():
-        for this_X in (X, X[0]):
+        for this_x in (X, X[0]):
             with ignore_warnings():
                 with pytest.warns(UserWarning):
-                    children, n_nodes, n_leaves, parent = tree_builder(
-                        this_X.T, n_clusters=10
+                    children, n_nodes, n_leaves, _ = tree_builder(
+                        this_x.T, n_clusters=10
                     )
             n_nodes = 2 * X.shape[1] - 1
             assert len(children) + n_leaves == n_nodes
@@ -130,7 +130,7 @@ def test_height_linkage_tree():
     X = rng.randn(50, 100)
     connectivity = grid_to_graph(*mask.shape)
     for linkage_func in _TREE_BUILDERS.values():
-        children, n_nodes, n_leaves, parent = linkage_func(
+        children, n_nodes, n_leaves, _ = linkage_func(
             X.T, connectivity=connectivity
         )
         n_nodes = 2 * X.shape[1] - 1
@@ -251,14 +251,14 @@ def test_agglomerative_clustering(global_random_seed, lil_container):
         n_clusters=10, connectivity=connectivity, linkage="complete"
     )
     clustering.fit(X)
-    X_dist = pairwise_distances(X)
+    x_dist = pairwise_distances(X)
     clustering2 = AgglomerativeClustering(
         n_clusters=10,
         connectivity=connectivity,
         metric="precomputed",
         linkage="complete",
     )
-    clustering2.fit(X_dist)
+    clustering2.fit(x_dist)
     assert_array_equal(clustering.labels_, clustering2.labels_)
 
 
@@ -268,8 +268,8 @@ def test_agglomerative_clustering_memory_mapped():
     Non-regression test for issue #19875.
     """
     rng = np.random.RandomState(0)
-    Xmm = create_memmap_backed_data(rng.randn(50, 100))
-    AgglomerativeClustering(metric="euclidean", linkage="single").fit(Xmm)
+    x_mm = create_memmap_backed_data(rng.randn(50, 100))
+    AgglomerativeClustering(metric="euclidean", linkage="single").fit(x_mm)
 
 
 def test_ward_agglomeration(global_random_seed):
@@ -282,11 +282,11 @@ def test_ward_agglomeration(global_random_seed):
     agglo.fit(X)
     assert np.size(np.unique(agglo.labels_)) == 5
 
-    X_red = agglo.transform(X)
-    assert X_red.shape[1] == 5
-    X_full = agglo.inverse_transform(X_red)
-    assert np.unique(X_full[0]).size == 5
-    assert_array_almost_equal(agglo.transform(X_full), X_red)
+    x_red = agglo.transform(X)
+    assert x_red.shape[1] == 5
+    x_full = agglo.inverse_transform(x_red)
+    assert np.unique(x_full[0]).size == 5
+    assert_array_almost_equal(agglo.transform(x_full), x_red)
 
     # Check that fitting with no samples raises a ValueError
     with pytest.raises(ValueError):
@@ -331,7 +331,7 @@ def test_sparse_scikit_vs_scipy(global_random_seed):
     # matrices are well handled
     connectivity = np.ones((n, n))
     for linkage in _TREE_BUILDERS.keys():
-        for i in range(5):
+        for _ in range(5):
             X = 0.1 * rng.normal(size=(n, p))
             X -= 4.0 * np.arange(n)[:, np.newaxis]
             X -= X.mean(axis=1)[:, np.newaxis]
