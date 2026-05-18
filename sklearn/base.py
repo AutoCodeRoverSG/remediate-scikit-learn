@@ -253,7 +253,7 @@ class BaseEstimator(ReprHTMLMixin, _HTMLDocumentationLinkMixin, _MetadataRequest
         params : dict
             Parameter names mapped to their values.
         """
-        out = dict()
+        out = {}
         for key in self._get_param_names():
             value = getattr(self, key)
             if deep and hasattr(value, "get_params") and not isinstance(value, type):
@@ -431,7 +431,7 @@ class BaseEstimator(ReprHTMLMixin, _HTMLDocumentationLinkMixin, _MetadataRequest
     def __sklearn_clone__(self):
         return _clone_parametrized(self)
 
-    def __repr__(self, N_CHAR_MAX=700):
+    def __repr__(self, n_char_max=700):
         # N_CHAR_MAX is the (approximate) maximum number of non-blank
         # characters to render. We pass it as an optional parameter to ease
         # the tests.
@@ -452,8 +452,8 @@ class BaseEstimator(ReprHTMLMixin, _HTMLDocumentationLinkMixin, _MetadataRequest
 
         # Use bruteforce ellipsis when there are a lot of non-blank characters
         n_nonblank = len("".join(repr_.split()))
-        if n_nonblank > N_CHAR_MAX:
-            lim = N_CHAR_MAX // 2  # apprx number of chars to keep on both ends
+        if n_nonblank > n_char_max:
+            lim = n_char_max // 2  # apprx number of chars to keep on both ends
             regex = r"^(\s*\S){%d}" % lim
             # The regex '^(\s*\S){%d}' % n
             # matches from the start of the string until the nth non-blank

@@ -172,10 +172,8 @@ def _single_linkage_tree(
         if right < n_nodes:
             parent[right] = i
 
-    if return_distance:
-        distances = single_linkage_tree[:, 2]
-        return children_, n_connected_components, n_samples, parent, distances
-    return children_, n_connected_components, n_samples, parent
+    distances = single_linkage_tree[:, 2] if return_distance else None
+    return children_, n_connected_components, n_samples, parent, distances
 
 
 ###############################################################################
@@ -315,11 +313,8 @@ def ward_tree(X, *, connectivity=None, n_clusters=None, return_distance=False):
         out = hierarchy.ward(X)
         children_ = out[:, :2].astype(np.intp)
 
-        if return_distance:
-            distances = out[:, 2]
-            return children_, 1, n_samples, None, distances
-        else:
-            return children_, 1, n_samples, None
+        distances = out[:, 2] if return_distance else None
+        return children_, 1, n_samples, None, distances
 
     connectivity, n_connected_components = _fix_connectivity(
         X, connectivity, affinity="euclidean"
@@ -420,9 +415,9 @@ def ward_tree(X, *, connectivity=None, n_clusters=None, return_distance=False):
     if return_distance:
         # 2 is scaling factor to compare w/ unstructured version
         distances = np.sqrt(2.0 * distances)
-        return children, n_connected_components, n_leaves, parent, distances
     else:
-        return children, n_connected_components, n_leaves, parent
+        distances = None
+    return children, n_connected_components, n_leaves, parent, distances
 
 
 # single average and complete linkage
@@ -587,10 +582,8 @@ def linkage_tree(
             out = hierarchy.linkage(X, method=linkage, metric=affinity)
         children_ = out[:, :2].astype(int, copy=False)
 
-        if return_distance:
-            distances = out[:, 2]
-            return children_, 1, n_samples, None, distances
-        return children_, 1, n_samples, None
+        distances = out[:, 2] if return_distance else None
+        return children_, 1, n_samples, None, distances
 
     connectivity, n_connected_components = _fix_connectivity(
         X, connectivity, affinity=affinity
@@ -697,9 +690,9 @@ def linkage_tree(
     # # return numpy array for efficient caching
     children = np.array(children)[:, ::-1]
 
-    if return_distance:
-        return children, n_connected_components, n_leaves, parent, distances
-    return children, n_connected_components, n_leaves, parent
+    if not return_distance:
+        distances = None
+    return children, n_connected_components, n_leaves, parent, distances
 
 
 # Matching names to tree-building strategies
@@ -718,12 +711,12 @@ def _single_linkage(*args, **kwargs):
     return linkage_tree(*args, **kwargs)
 
 
-_TREE_BUILDERS = dict(
-    ward=ward_tree,
-    complete=_complete_linkage,
-    average=_average_linkage,
-    single=_single_linkage,
-)
+_TREE_BUILDERS = {
+    "ward": ward_tree,
+    "complete": _complete_linkage,
+    "average": _average_linkage,
+    "single": _single_linkage,
+}
 
 ###############################################################################
 # Functions for cutting hierarchical clustering tree

@@ -912,12 +912,12 @@ def _sigmoid_calibration(
 
     bin_loss = HalfBinomialLoss()
 
-    def loss_grad(AB):
+    def loss_grad(ab):
         # .astype below is needed to ensure y_true and raw_prediction have the
         # same dtype. With result = np.float64(0) * np.array([1, 2], dtype=np.float32)
         # - in Numpy 2, result.dtype is float64
         # - in Numpy<2, result.dtype is float32
-        raw_prediction = -(AB[0] * F + AB[1]).astype(dtype=predictions.dtype)
+        raw_prediction = -(ab[0] * F + ab[1]).astype(dtype=predictions.dtype)
         l, g = bin_loss.loss_gradient(
             y_true=T,
             raw_prediction=raw_prediction,

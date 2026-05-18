@@ -566,7 +566,7 @@ LogisticRegression(C=1.0, class_weight=None, dual=False, fit_intercept=True,
                    solver='warn', tol=0.0001, verbose=0, warm_start=False)"""
 
     expected = expected[1:]  # remove first \n
-    assert lr.__repr__(N_CHAR_MAX=150) == expected
+    assert lr.__repr__(n_char_max=150) == expected
 
     # test with very small N_CHAR_MAX
     # Note that N_CHAR_MAX is not strictly enforced, but it's normal: to avoid
@@ -577,11 +577,11 @@ Lo...
                    solver='warn', tol=0.0001, verbose=0, warm_start=False)"""
 
     expected = expected[1:]  # remove first \n
-    assert lr.__repr__(N_CHAR_MAX=4) == expected
+    assert lr.__repr__(n_char_max=4) == expected
 
     # test with N_CHAR_MAX == number of non-blank characters: In this case we
     # don't want ellipsis
-    full_repr = lr.__repr__(N_CHAR_MAX=float("inf"))
+    full_repr = lr.__repr__(n_char_max=float("inf"))
     n_nonblank = len("".join(full_repr.split()))
     assert lr.__repr__(N_CHAR_MAX=n_nonblank) == full_repr
     assert "..." not in full_repr

@@ -20,6 +20,8 @@ from sklearn.utils.validation import assert_all_finite, validate_data
 
 __all__ = ["SpectralBiclustering", "SpectralCoclustering"]
 
+_KMEANS_PLUS_PLUS = "k-means++"
+
 
 def _scale_normalize(X):
     """Normalize ``X`` by scaling rows and columns independently.
@@ -50,17 +52,17 @@ def _bistochastic_normalize(X, max_iter=1000, tol=1e-5):
     # According to paper, this can also be done more efficiently with
     # deviation reduction and balancing algorithms.
     X = make_nonnegative(X)
-    X_scaled = X
+    x_scaled = X
     for _ in range(max_iter):
-        X_new, _, _ = _scale_normalize(X_scaled)
+        x_new, _, _ = _scale_normalize(x_scaled)
         if issparse(X):
-            dist = norm(X_scaled.data - X.data)
+            dist = norm(x_scaled.data - X.data)
         else:
-            dist = norm(X_scaled - X_new)
-        X_scaled = X_new
+            dist = norm(x_scaled - x_new)
+        x_scaled = x_new
         if dist is not None and dist < tol:
             break
-    return X_scaled
+    return x_scaled
 
 
 def _log_normalize(X):
@@ -86,7 +88,7 @@ class BaseSpectral(BiclusterMixin, BaseEstimator, metaclass=ABCMeta):
         "svd_method": [StrOptions({"randomized", "arpack"})],
         "n_svd_vecs": [Interval(Integral, 0, None, closed="left"), None],
         "mini_batch": ["boolean"],
-        "init": [StrOptions({"k-means++", "random"}), np.ndarray],
+        "init": [StrOptions({_KMEANS_PLUS_PLUS, "random"}), np.ndarray],
         "n_init": [Interval(Integral, 1, None, closed="left")],
         "random_state": ["random_state"],
     }
@@ -98,7 +100,7 @@ class BaseSpectral(BiclusterMixin, BaseEstimator, metaclass=ABCMeta):
         svd_method="randomized",
         n_svd_vecs=None,
         mini_batch=False,
-        init="k-means++",
+        init=_KMEANS_PLUS_PLUS,
         n_init=10,
         random_state=None,
     ):
@@ -324,7 +326,7 @@ class SpectralCoclustering(BaseSpectral):
         svd_method="randomized",
         n_svd_vecs=None,
         mini_batch=False,
-        init="k-means++",
+        init=_KMEANS_PLUS_PLUS,
         n_init=10,
         random_state=None,
     ):
@@ -504,7 +506,7 @@ class SpectralBiclustering(BaseSpectral):
         svd_method="randomized",
         n_svd_vecs=None,
         mini_batch=False,
-        init="k-means++",
+        init=_KMEANS_PLUS_PLUS,
         n_init=10,
         random_state=None,
     ):
