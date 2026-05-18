@@ -86,7 +86,7 @@ logger = logging.getLogger(__name__)
         "download_if_missing": ["boolean"],
         "random_state": ["random_state"],
         "shuffle": ["boolean"],
-        "return_X_y": ["boolean"],
+        "return_x_y": ["boolean"],
         "n_retries": [Interval(Integral, 1, None, closed="left")],
         "delay": [Interval(Real, 0.0, None, closed="neither")],
     },
@@ -99,7 +99,7 @@ def fetch_rcv1(
     download_if_missing=True,
     random_state=None,
     shuffle=False,
-    return_X_y=False,
+    return_x_y=False,
     n_retries=3,
     delay=1.0,
 ):
@@ -201,9 +201,8 @@ def fetch_rcv1(
 
     data_home = get_data_home(data_home=data_home)
     rcv1_dir = join(data_home, "RCV1")
-    if download_if_missing:
-        if not exists(rcv1_dir):
-            makedirs(rcv1_dir)
+    if download_if_missing and not exists(rcv1_dir):
+        makedirs(rcv1_dir)
 
     samples_path = _pkl_filepath(rcv1_dir, "samples.pkl")
     sample_id_path = _pkl_filepath(rcv1_dir, "sample_id.pkl")
@@ -220,11 +219,11 @@ def fetch_rcv1(
             )
             files.append(GzipFile(filename=file_path))
 
-        Xy = load_svmlight_files(files, n_features=N_FEATURES)
+        xy = load_svmlight_files(files, n_features=N_FEATURES)
 
         # Training data is before testing data
-        X = sp.vstack([Xy[8], Xy[0], Xy[2], Xy[4], Xy[6]]).tocsr()
-        sample_id = np.hstack((Xy[9], Xy[1], Xy[3], Xy[5], Xy[7]))
+        X = sp.vstack([xy[8], xy[0], xy[2], xy[4], xy[6]]).tocsr()
+        sample_id = np.hstack((xy[9], xy[1], xy[3], xy[5], xy[7]))
         sample_id = sample_id.astype(np.uint32, copy=False)
 
         joblib.dump(X, samples_path, compress=9)
@@ -294,9 +293,7 @@ def fetch_rcv1(
         y = joblib.load(sample_topics_path)
         categories = joblib.load(topics_path)
 
-    if subset == "all":
-        pass
-    elif subset == "train":
+    if subset == "train":
         X = X[:N_TRAIN, :]
         y = y[:N_TRAIN, :]
         sample_id = sample_id[:N_TRAIN]
@@ -304,7 +301,7 @@ def fetch_rcv1(
         X = X[N_TRAIN:, :]
         y = y[N_TRAIN:, :]
         sample_id = sample_id[N_TRAIN:]
-    else:
+    elif subset != "all":
         raise ValueError(
             "Unknown subset parameter. Got '%s' instead of one"
             " of ('all', 'train', test')" % subset
@@ -316,7 +313,7 @@ def fetch_rcv1(
     fdescr = load_descr("rcv1.rst")
 
     X = _align_api_if_sparse(X)
-    if return_X_y:
+    if return_x_y:
         return X, y
 
     return Bunch(
@@ -329,7 +326,7 @@ def _inverse_permutation(p):
     n = p.size
     s = np.zeros(n, dtype=np.int32)
     i = np.arange(n, dtype=np.int32)
-    np.put(s, p, i)  # s[p] = i
+    np.put(s, p, i)  
     return s
 
 

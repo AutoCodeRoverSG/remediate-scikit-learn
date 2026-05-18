@@ -7,7 +7,6 @@ from functools import partial
 import numpy as np
 import scipy.sparse as sp
 
-from sklearn.datasets.tests.test_common import check_return_X_y
 from sklearn.utils._testing import assert_almost_equal, assert_array_equal
 
 
@@ -51,7 +50,10 @@ def test_fetch_rcv1(fetch_rcv1_fxt, global_random_seed):
 
     # test return_X_y option
     fetch_func = partial(fetch_rcv1_fxt, shuffle=False, subset="train")
-    check_return_X_y(data2, fetch_func)
+    x_y_tuple = fetch_func(return_x_y=True)
+    assert isinstance(x_y_tuple, tuple)
+    assert x_y_tuple[0].shape == data2.data.shape
+    assert x_y_tuple[1].shape == data2.target.shape
 
     # The first 23149 samples are the training samples
     assert_array_equal(np.sort(s1[:23149]), np.sort(s2))
