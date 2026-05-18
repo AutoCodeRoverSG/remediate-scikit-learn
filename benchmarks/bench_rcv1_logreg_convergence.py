@@ -21,12 +21,12 @@ m = Memory(cachedir=".", verbose=0)
 
 
 # compute logistic loss
-def get_loss(w, intercept, myX, myy, C):
-    n_samples = myX.shape[0]
+def get_loss(w, intercept, my_x, my_y, regularization):
+    n_samples = my_x.shape[0]
     w = w.ravel()
-    p = np.mean(np.log(1.0 + np.exp(-myy * (myX.dot(w) + intercept))))
-    print("%f + %f" % (p, w.dot(w) / 2.0 / C / n_samples))
-    p += w.dot(w) / 2.0 / C / n_samples
+    p = np.mean(np.log(1.0 + np.exp(-my_y * (my_x.dot(w) + intercept))))
+    print("%f + %f" % (p, w.dot(w) / 2.0 / regularization / n_samples))
+    p += w.dot(w) / 2.0 / regularization / n_samples
     return p
 
 

@@ -43,7 +43,7 @@ bike_sharing_data_file = fetch_file(
     "https://data.openml.org/datasets/0004/44063/dataset_44063.pq",
     sha256="d120af76829af0d256338dc6dd4be5df4fd1f35bf3a283cab66a51c1c6abd06a",
 )
-bike_sharing_data_file
+print(bike_sharing_data_file)
 
 # %%
 # We load the parquet file with Polars for feature engineering. Polars
@@ -59,7 +59,7 @@ df = pl.read_parquet(bike_sharing_data_file)
 import polars.selectors as cs
 
 summary = df.select(cs.numeric()).describe()
-summary
+print(summary)
 
 # %%
 # Let us look at the count of the seasons `"fall"`, `"spring"`, `"summer"`
@@ -172,7 +172,7 @@ from sklearn.model_selection import cross_val_score
 cv_mape_scores = -cross_val_score(
     model, X, y, cv=ts_cv, scoring="neg_mean_absolute_percentage_error"
 )
-cv_mape_scores
+print(cv_mape_scores)
 
 # %%
 # The variability across splits is quite large! In a real life setting

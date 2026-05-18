@@ -28,6 +28,8 @@ LOG_DIR = "mnist_tsne_output"
 if not os.path.exists(LOG_DIR):
     os.mkdir(LOG_DIR)
 
+MNIST_FILE_TEMPLATE = "mnist_{}_{}.npy"
+
 
 memory = Memory(os.path.join(LOG_DIR, "mnist_tsne_benchmark_data"), mmap_mode="r")
 
@@ -51,7 +53,7 @@ def load_data(dtype=np.float32, order="C", shuffle=True, seed=0):
 
 def nn_accuracy(X, x_embedded, k=1):
     """Accuracy of the first nearest neighbor"""
-    knn = NearestNeighbors(n_neighbors=1, n_jobs=-1)
+    knn = NearestNeighbors(n_neighbors=k, n_jobs=-1)
     _, neighbors_x = knn.fit(X).kneighbors()
     _, neighbors_x_embedded = knn.fit(x_embedded).kneighbors()
     return np.mean(neighbors_x == neighbors_x_embedded)
@@ -186,10 +188,10 @@ $ cd ..
             print("Fitting {} on {} samples...".format(name, n))
             t0 = time()
             np.save(
-                os.path.join(LOG_DIR, "mnist_{}_{}.npy".format("original", n)), X_train
+                os.path.join(LOG_DIR, MNIST_FILE_TEMPLATE.format("original", n)), X_train
             )
             np.save(
-                os.path.join(LOG_DIR, "mnist_{}_{}.npy".format("original_labels", n)),
+                os.path.join(LOG_DIR, MNIST_FILE_TEMPLATE.format("original_labels", n)),
                 y_train,
             )
             X_embedded, n_iter = method(X_train)
@@ -204,5 +206,5 @@ $ cd ..
                 json.dump(results, f)
             method_name = sanitize(name)
             np.save(
-                op.join(LOG_DIR, "mnist_{}_{}.npy".format(method_name, n)), X_embedded
+                op.join(LOG_DIR, MNIST_FILE_TEMPLATE.format(method_name, n)), X_embedded
             )
