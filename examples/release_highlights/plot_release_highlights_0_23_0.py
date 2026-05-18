@@ -41,11 +41,11 @@ from sklearn.linear_model import PoissonRegressor
 from sklearn.model_selection import train_test_split
 
 n_samples, n_features = 1000, 20
-rng = np.random.RandomState(0)
-X = rng.randn(n_samples, n_features)
+rng = np.random.default_rng(0)
+X = rng.standard_normal((n_samples, n_features))
 # positive integer target correlated with X[:, 5] with many zeros:
 y = rng.poisson(lam=np.exp(X[:, 5]) / 2)
-X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=rng)
+X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
 glm = PoissonRegressor()
 gbdt = HistGradientBoostingRegressor(loss="poisson", learning_rate=0.01)
 glm.fit(X_train, y_train)
@@ -83,8 +83,8 @@ preprocessor = make_column_transformer(
     (num_proc, ("feat1", "feat3")), (cat_proc, ("feat0", "feat2"))
 )
 
-clf = make_pipeline(preprocessor, LogisticRegression())
-clf
+clf = make_pipeline(preprocessor, LogisticRegression(), memory=None)
+print(clf)
 
 ##############################################################################
 # Scalability and stability improvements to KMeans
@@ -103,10 +103,10 @@ from sklearn.datasets import make_blobs
 from sklearn.metrics import completeness_score
 from sklearn.model_selection import train_test_split
 
-rng = np.random.RandomState(0)
-X, y = make_blobs(random_state=rng)
+rng = np.random.default_rng(0)
+X, y = make_blobs(random_state=0)
 X = scipy.sparse.csr_matrix(X)
-X_train, X_test, _, y_test = train_test_split(X, y, random_state=rng)
+X_train, X_test, _, y_test = train_test_split(X, y, random_state=0)
 kmeans = KMeans(n_init="auto").fit(X_train)
 print(completeness_score(kmeans.predict(X_test), y_test))
 
@@ -131,13 +131,13 @@ from matplotlib import pyplot as plt
 
 from sklearn.ensemble import HistGradientBoostingRegressor
 
-# from sklearn.inspection import plot_partial_dependence
+
 from sklearn.inspection import PartialDependenceDisplay
 from sklearn.model_selection import train_test_split
 
 n_samples = 500
-rng = np.random.RandomState(0)
-X = rng.randn(n_samples, 2)
+rng = np.random.default_rng(0)
+X = rng.standard_normal((n_samples, 2))
 noise = rng.normal(loc=0.0, scale=0.01, size=n_samples)
 y = 5 * X[:, 0] + np.sin(10 * np.pi * X[:, 0]) - noise
 
@@ -183,11 +183,11 @@ from sklearn.linear_model import Lasso
 from sklearn.model_selection import train_test_split
 
 n_samples, n_features = 1000, 20
-rng = np.random.RandomState(0)
-X, y = make_regression(n_samples, n_features, random_state=rng)
-sample_weight = rng.rand(n_samples)
+rng = np.random.default_rng(0)
+X, y = make_regression(n_samples, n_features, random_state=0)
+sample_weight = rng.random(n_samples)
 X_train, X_test, y_train, y_test, sw_train, sw_test = train_test_split(
-    X, y, sample_weight, random_state=rng
+    X, y, sample_weight, random_state=0
 )
 reg = Lasso()
 reg.fit(X_train, y_train, sample_weight=sw_train)
