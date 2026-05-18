@@ -6,5 +6,5 @@
 // finished loading so that they resize themselves.
 
 document.addEventListener("DOMContentLoaded", () => {
-  window.dispatchEvent(new Event("resize"));
+  globalThis.dispatchEvent(new Event("resize"));
 });
