@@ -49,7 +49,7 @@ import numpy as np
 
 from sklearn.decomposition import PCA
 
-rng = np.random.RandomState(0)
+rng = np.random.default_rng(0)
 n_samples = 500
 cov = [[3, 3], [3, 4]]
 X = rng.multivariate_normal(mean=[0, 0], cov=cov, size=n_samples)
@@ -110,9 +110,9 @@ from sklearn.model_selection import train_test_split
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
 
-X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=rng)
+X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
 
-pcr = make_pipeline(StandardScaler(), PCA(n_components=1), LinearRegression())
+pcr = make_pipeline(StandardScaler(), PCA(n_components=1), LinearRegression(), memory=None)
 pcr.fit(X_train, y_train)
 pca = pcr.named_steps["pca"]  # retrieve the PCA step of the pipeline
 
@@ -164,6 +164,6 @@ print(f"PLS r-squared {pls.score(X_test, y_test):.3f}")
 # PLS: this is because in this case, PCR was able to leverage the second
 # component which has the most preditive power on the target.
 
-pca_2 = make_pipeline(PCA(n_components=2), LinearRegression())
+pca_2 = make_pipeline(PCA(n_components=2), LinearRegression(), memory=None)
 pca_2.fit(X_train, y_train)
 print(f"PCR r-squared with 2 components {pca_2.score(X_test, y_test):.3f}")
