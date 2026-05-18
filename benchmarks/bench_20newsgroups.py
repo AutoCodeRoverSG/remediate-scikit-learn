@@ -16,7 +16,7 @@ from sklearn.naive_bayes import MultinomialNB
 from sklearn.utils.validation import check_array
 
 ESTIMATORS = {
-    "dummy": DummyClassifier(),
+    "dummy": DummyClassifier(random_state=0),
     "random_forest": RandomForestClassifier(max_features="sqrt", min_samples_split=10),
     "extra_trees": ExtraTreesClassifier(max_features="sqrt", min_samples_split=10),
     "logistic_regression": LogisticRegression(),

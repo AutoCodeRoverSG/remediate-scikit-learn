@@ -17,7 +17,7 @@ class KMeansBenchmark(Predictor, Transformer, Estimator, Benchmark):
         super().setup_cache()
 
     def make_data(self, params):
-        representation, algorithm, _ = params
+        representation, _, _ = params
 
         if representation == "sparse":
             data = _20newsgroups_highdim_dataset(n_samples=8000)

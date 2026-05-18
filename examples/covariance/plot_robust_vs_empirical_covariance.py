@@ -85,14 +85,14 @@ err_cov_emp_pure = np.zeros((range_n_outliers.size, repeat))
 # computation
 for i, n_outliers in enumerate(range_n_outliers):
     for j in range(repeat):
-        rng = np.random.RandomState(i * j)
+        rng = np.random.default_rng(i * j)
 
         # generate data
-        X = rng.randn(n_samples, n_features)
+        X = rng.standard_normal((n_samples, n_features))
         # add some outliers
         outliers_index = rng.permutation(n_samples)[:n_outliers]
         outliers_offset = 10.0 * (
-            np.random.randint(2, size=(n_outliers, n_features)) - 0.5
+            rng.integers(2, size=(n_outliers, n_features)) - 0.5
         )
         X[outliers_index] += outliers_offset
         inliers_mask = np.ones(n_samples).astype(bool)
