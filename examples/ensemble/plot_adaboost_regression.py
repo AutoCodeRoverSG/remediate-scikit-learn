@@ -28,7 +28,7 @@ as :class:`~ensemble.HistGradientBoostingRegressor`.
 
 import numpy as np
 
-rng = np.random.RandomState(1)
+rng = np.random.default_rng(1)
 X = np.linspace(0, 6, 100)[:, np.newaxis]
 y = np.sin(X).ravel() + np.sin(6 * X).ravel() + rng.normal(0, 0.1, X.shape[0])
 
@@ -48,7 +48,7 @@ from sklearn.tree import DecisionTreeRegressor
 regr_1 = DecisionTreeRegressor(max_depth=4)
 
 regr_2 = AdaBoostRegressor(
-    DecisionTreeRegressor(max_depth=4), n_estimators=300, random_state=rng
+    DecisionTreeRegressor(max_depth=4), n_estimators=300, random_state=1
 )
 
 regr_1.fit(X, y)

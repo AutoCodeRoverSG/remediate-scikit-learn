@@ -58,7 +58,7 @@ COLORS = np.array(
 
 # Use same random seed for multiple calls to make_multilabel_classification to
 # ensure same distributions
-RANDOM_SEED = np.random.randint(2**10)
+RANDOM_SEED = np.random.default_rng(42).integers(2**10)
 
 
 def plot_2d(ax, n_labels=1, n_classes=3, length=50):
