@@ -138,21 +138,21 @@ def test_kernel_pca_sparse(csr_container, global_random_seed):
                 fit_inverse_transform=False,
                 random_state=0,
             )
-            x_fit_transformed = kpca.fit_transform(x_fit)
-            x_fit_transformed2 = kpca.fit(x_fit).transform(x_fit)
+            fit_transformed = kpca.fit_transform(x_fit)
+            fit_transformed2 = kpca.fit(x_fit).transform(x_fit)
             assert_array_almost_equal(
-                np.abs(x_fit_transformed), np.abs(x_fit_transformed2)
+                np.abs(fit_transformed), np.abs(fit_transformed2)
             )
 
             # transform new data
-            x_pred_transformed = kpca.transform(x_pred)
-            assert x_pred_transformed.shape[1] == x_fit_transformed.shape[1]
+            pred_transformed = kpca.transform(x_pred)
+            assert pred_transformed.shape[1] == fit_transformed.shape[1]
 
             # inverse transform: not available for sparse matrices
             # XXX: should we raise another exception type here? For instance:
             # NotImplementedError.
             with pytest.raises(NotFittedError):
-                kpca.inverse_transform(x_pred_transformed)
+                kpca.inverse_transform(pred_transformed)
 
 
 @pytest.mark.parametrize("solver", ["auto", "dense", "arpack", "randomized"])
@@ -163,8 +163,8 @@ def test_kernel_pca_linear_kernel(solver, n_features, global_random_seed):
     KernelPCA with linear kernel should produce the same output as PCA.
     """
     rng = np.random.RandomState(global_random_seed)
-    X_fit = rng.random_sample((5, n_features))
-    X_pred = rng.random_sample((2, n_features))
+    x_fit = rng.random_sample((5, n_features))
+    x_pred = rng.random_sample((2, n_features))
 
     # for a linear kernel, kernel PCA should find the same projection as PCA
     # modulo the sign (direction)
@@ -172,11 +172,11 @@ def test_kernel_pca_linear_kernel(solver, n_features, global_random_seed):
     # can be trimmed due to roundoff error
     n_comps = 3 if solver == "arpack" else 4
     assert_array_almost_equal(
-        np.abs(KernelPCA(n_comps, eigen_solver=solver).fit(X_fit).transform(X_pred)),
+        np.abs(KernelPCA(n_comps, eigen_solver=solver).fit(x_fit).transform(x_pred)),
         np.abs(
             PCA(n_comps, svd_solver=solver if solver != "dense" else "full")
-            .fit(X_fit)
-            .transform(X_pred)
+            .fit(x_fit)
+            .transform(x_pred)
         ),
     )
 
@@ -188,13 +188,13 @@ def test_kernel_pca_n_components():
     on the selected number of components.
     """
     rng = np.random.RandomState(0)
-    X_fit = rng.random_sample((5, 4))
-    X_pred = rng.random_sample((2, 4))
+    x_fit = rng.random_sample((5, 4))
+    x_pred = rng.random_sample((2, 4))
 
     for eigen_solver in ("dense", "arpack", "randomized"):
         for c in [1, 2, 4]:
             kpca = KernelPCA(n_components=c, eigen_solver=eigen_solver)
-            shape = kpca.fit(X_fit).transform(X_pred).shape
+            shape = kpca.fit(x_fit).transform(x_pred).shape
 
             assert shape == (2, c)
 
@@ -209,16 +209,16 @@ def test_remove_zero_eig():
 
     # n_components=None (default) => remove_zero_eig is True
     kpca = KernelPCA()
-    Xt = kpca.fit_transform(X)
-    assert Xt.shape == (3, 0)
+    x_transformed = kpca.fit_transform(X)
+    assert x_transformed.shape == (3, 0)
 
     kpca = KernelPCA(n_components=2)
-    Xt = kpca.fit_transform(X)
-    assert Xt.shape == (3, 2)
+    x_transformed = kpca.fit_transform(X)
+    assert x_transformed.shape == (3, 2)
 
     kpca = KernelPCA(n_components=2, remove_zero_eig=True)
-    Xt = kpca.fit_transform(X)
-    assert Xt.shape == (3, 0)
+    x_transformed = kpca.fit_transform(X)
+    assert x_transformed.shape == (3, 0)
 
 
 def test_leave_zero_eig():
@@ -227,7 +227,7 @@ def test_leave_zero_eig():
     This test checks that fit().transform() returns the same result as
     fit_transform() in case of non-removed zero eigenvalue.
     """
-    X_fit = np.array([[1, 1], [0, 0]])
+    x_fit = np.array([[1, 1], [0, 0]])
 
     # Assert that even with all np warnings on, there is no div by zero warning
     with warnings.catch_warnings():
@@ -239,9 +239,9 @@ def test_leave_zero_eig():
         with np.errstate(all="warn"):
             k = KernelPCA(n_components=2, remove_zero_eig=False, eigen_solver="dense")
             # Fit, then transform
-            A = k.fit(X_fit).transform(X_fit)
+            A = k.fit(x_fit).transform(x_fit)
             # Do both at once
-            B = k.fit_transform(X_fit)
+            B = k.fit_transform(x_fit)
             # Compare
             assert_array_almost_equal(np.abs(A), np.abs(B))
 
@@ -249,39 +249,39 @@ def test_leave_zero_eig():
 def test_kernel_pca_precomputed(global_random_seed):
     """Test that kPCA works with a precomputed kernel, for all solvers"""
     rng = np.random.RandomState(global_random_seed)
-    X_fit = rng.random_sample((5, 4))
-    X_pred = rng.random_sample((2, 4))
+    x_fit = rng.random_sample((5, 4))
+    x_pred = rng.random_sample((2, 4))
 
     for eigen_solver in ("dense", "arpack", "randomized"):
-        X_kpca = (
+        x_kpca = (
             KernelPCA(4, eigen_solver=eigen_solver, random_state=0)
-            .fit(X_fit)
-            .transform(X_pred)
+            .fit(x_fit)
+            .transform(x_pred)
         )
 
-        X_kpca2 = (
+        x_kpca2 = (
             KernelPCA(
                 4, eigen_solver=eigen_solver, kernel="precomputed", random_state=0
             )
-            .fit(np.dot(X_fit, X_fit.T))
-            .transform(np.dot(X_pred, X_fit.T))
+            .fit(np.dot(x_fit, x_fit.T))
+            .transform(np.dot(x_pred, x_fit.T))
         )
 
-        X_kpca_train = KernelPCA(
+        x_kpca_train = KernelPCA(
             4, eigen_solver=eigen_solver, kernel="precomputed", random_state=0
-        ).fit_transform(np.dot(X_fit, X_fit.T))
+        ).fit_transform(np.dot(x_fit, x_fit.T))
 
-        X_kpca_train2 = (
+        x_kpca_train2 = (
             KernelPCA(
                 4, eigen_solver=eigen_solver, kernel="precomputed", random_state=0
             )
-            .fit(np.dot(X_fit, X_fit.T))
-            .transform(np.dot(X_fit, X_fit.T))
+            .fit(np.dot(x_fit, x_fit.T))
+            .transform(np.dot(x_fit, x_fit.T))
         )
 
-        assert_array_almost_equal(np.abs(X_kpca), np.abs(X_kpca2))
+        assert_array_almost_equal(np.abs(x_kpca), np.abs(x_kpca2))
 
-        assert_array_almost_equal(np.abs(X_kpca_train), np.abs(X_kpca_train2))
+        assert_array_almost_equal(np.abs(x_kpca_train), np.abs(x_kpca_train2))
 
 
 @pytest.mark.parametrize("solver", ["auto", "dense", "arpack", "randomized"])
