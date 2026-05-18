@@ -130,11 +130,11 @@ _ = plt.title("Models log-likelihood")
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import PolynomialFeatures, StandardScaler
 
-rng = np.random.RandomState(0)
+rng = np.random.default_rng(0)
 n_samples = 110
 
 # sort the data to make plotting easier later
-X = np.sort(-10 * rng.rand(n_samples) + 10)
+X = np.sort(-10 * rng.random(n_samples) + 10)
 noise = rng.normal(0, 1, n_samples) * 1.35
 y = np.sqrt(X) * np.sin(X) + noise
 full_data = pd.DataFrame({"input_feature": X, "target": y})
@@ -164,11 +164,13 @@ ard_poly = make_pipeline(
     PolynomialFeatures(degree=10, include_bias=False),
     StandardScaler(),
     ARDRegression(),
+    memory=None,
 ).fit(X, y)
 brr_poly = make_pipeline(
     PolynomialFeatures(degree=10, include_bias=False),
     StandardScaler(),
     BayesianRidge(),
+    memory=None,
 ).fit(X, y)
 
 y_ard, y_ard_std = ard_poly.predict(X_plot, return_std=True)

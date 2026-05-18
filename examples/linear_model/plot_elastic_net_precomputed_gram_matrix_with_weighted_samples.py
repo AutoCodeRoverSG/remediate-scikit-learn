@@ -26,10 +26,10 @@ import numpy as np
 
 from sklearn.datasets import make_regression
 
-rng = np.random.RandomState(0)
+rng = np.random.default_rng(0)
 
 n_samples = int(1e5)
-X, y = make_regression(n_samples=n_samples, noise=0.5, random_state=rng)
+X, y = make_regression(n_samples=n_samples, noise=0.5, random_state=0)
 
 sample_weight = rng.lognormal(size=n_samples)
 # normalize the sample weights

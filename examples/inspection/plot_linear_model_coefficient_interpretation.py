@@ -44,6 +44,10 @@ import pandas as pd
 import scipy as sp
 import seaborn as sns
 
+COEFFICIENT_IMPORTANCE = "Coefficient importance"
+COEFFICIENTS_IMPORTANCE = "Coefficients importance"
+STRIP_PLOT_PALETTE = "dark:k"
+
 # %%
 # The dataset: wages
 # ------------------
@@ -277,7 +281,7 @@ plt.subplots_adjust(left=0.3)
 
 coefs = pd.DataFrame(
     model[-1].regressor_.coef_ * X_train_preprocessed.std(axis=0),
-    columns=["Coefficient importance"],
+    columns=[COEFFICIENT_IMPORTANCE],
     index=feature_names,
 )
 coefs.plot(kind="barh", figsize=(9, 7))
@@ -366,10 +370,10 @@ coefs = pd.DataFrame(
 
 # %%
 plt.figure(figsize=(9, 7))
-sns.stripplot(data=coefs, orient="h", palette="dark:k", alpha=0.5)
+sns.stripplot(data=coefs, orient="h", palette=STRIP_PLOT_PALETTE, alpha=0.5)
 sns.boxplot(data=coefs, orient="h", color="cyan", saturation=0.5, whis=10)
 plt.axvline(x=0, color=".5")
-plt.xlabel("Coefficient importance")
+plt.xlabel(COEFFICIENT_IMPORTANCE)
 plt.title("Coefficient importance and its variability")
 plt.suptitle("Ridge model, small regularization")
 plt.subplots_adjust(left=0.3)
@@ -425,11 +429,11 @@ coefs = pd.DataFrame(
 
 # %%
 plt.figure(figsize=(9, 7))
-sns.stripplot(data=coefs, orient="h", palette="dark:k", alpha=0.5)
+sns.stripplot(data=coefs, orient="h", palette=STRIP_PLOT_PALETTE, alpha=0.5)
 sns.boxplot(data=coefs, orient="h", color="cyan", saturation=0.5)
 plt.axvline(x=0, color=".5")
 plt.title("Coefficient importance and its variability")
-plt.xlabel("Coefficient importance")
+plt.xlabel(COEFFICIENT_IMPORTANCE)
 plt.suptitle("Ridge model, small regularization, AGE dropped")
 plt.subplots_adjust(left=0.3)
 
@@ -496,7 +500,7 @@ plt.tight_layout()
 
 coefs = pd.DataFrame(
     model[-1].regressor_.coef_,
-    columns=["Coefficients importance"],
+    columns=[COEFFICIENTS_IMPORTANCE],
     index=feature_names,
 )
 coefs.plot.barh(figsize=(9, 7))
@@ -522,7 +526,7 @@ coefs = pd.DataFrame(
 
 # %%
 plt.figure(figsize=(9, 7))
-sns.stripplot(data=coefs, orient="h", palette="dark:k", alpha=0.5)
+sns.stripplot(data=coefs, orient="h", palette=STRIP_PLOT_PALETTE, alpha=0.5)
 sns.boxplot(data=coefs, orient="h", color="cyan", saturation=0.5, whis=10)
 plt.axvline(x=0, color=".5")
 plt.title("Coefficient variability")
@@ -587,7 +591,7 @@ plt.tight_layout()
 
 coefs = pd.DataFrame(
     model[-1].regressor_.coef_,
-    columns=["Coefficients importance"],
+    columns=[COEFFICIENTS_IMPORTANCE],
     index=feature_names,
 )
 coefs.plot.barh(figsize=(9, 7))
@@ -690,7 +694,7 @@ plt.tight_layout()
 
 coefs = pd.DataFrame(
     model[-1].regressor_.coef_,
-    columns=["Coefficients importance"],
+    columns=[COEFFICIENTS_IMPORTANCE],
     index=feature_names,
 )
 coefs.plot(kind="barh", figsize=(9, 7))
@@ -724,7 +728,7 @@ coefs = pd.DataFrame(
 
 # %%
 plt.figure(figsize=(9, 7))
-sns.stripplot(data=coefs, orient="h", palette="dark:k", alpha=0.5)
+sns.stripplot(data=coefs, orient="h", palette=STRIP_PLOT_PALETTE, alpha=0.5)
 sns.boxplot(data=coefs, orient="h", color="cyan", saturation=0.5, whis=100)
 plt.axvline(x=0, color=".5")
 plt.title("Coefficient variability")
