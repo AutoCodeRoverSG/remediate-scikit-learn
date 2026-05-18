@@ -57,6 +57,9 @@ try:
 except ImportError:
     basemap = False
 
+DD_LONG = "dd long"
+DD_LAT = "dd lat"
+
 
 def construct_grids(batch):
     """Construct the map grid from the batch object
@@ -93,7 +96,7 @@ def create_species_bunch(species_name, train, test, coverages, xgrid, ygrid):
     """
     bunch = Bunch(name=" ".join(species_name.split("_")[:2]))
     species_name = species_name.encode("ascii")
-    points = dict(test=test, train=train)
+    points = {"test": test, "train": train}
 
     for label, pts in points.items():
         # choose points associated with the desired species
@@ -101,8 +104,8 @@ def create_species_bunch(species_name, train, test, coverages, xgrid, ygrid):
         bunch["pts_%s" % label] = pts
 
         # determine coverage values for each of the training & testing points
-        ix = np.searchsorted(xgrid, pts["dd long"])
-        iy = np.searchsorted(ygrid, pts["dd lat"])
+        ix = np.searchsorted(xgrid, pts[DD_LONG])
+        iy = np.searchsorted(ygrid, pts[DD_LAT])
         bunch["cov_%s" % label] = coverages[:, -iy, ix].T
 
     return bunch
@@ -132,18 +135,18 @@ def plot_species_distribution(
     X, Y = np.meshgrid(xgrid, ygrid[::-1])
 
     # create a bunch for each species
-    BV_bunch = create_species_bunch(
+    bv_bunch = create_species_bunch(
         species[0], data.train, data.test, data.coverages, xgrid, ygrid
     )
-    MM_bunch = create_species_bunch(
+    mm_bunch = create_species_bunch(
         species[1], data.train, data.test, data.coverages, xgrid, ygrid
     )
 
     # background points (grid coordinates) for evaluation
-    np.random.seed(13)
+    rng = np.random.default_rng(13)
     background_points = np.c_[
-        np.random.randint(low=0, high=data.Ny, size=10000),
-        np.random.randint(low=0, high=data.Nx, size=10000),
+        rng.integers(low=0, high=data.Ny, size=10000),
+        rng.integers(low=0, high=data.Nx, size=10000),
     ].T
 
     # We'll make use of the fact that coverages[6] has measurements at all
@@ -151,7 +154,7 @@ def plot_species_distribution(
     land_reference = data.coverages[6]
 
     # Fit, predict, and plot for each species.
-    for i, species in enumerate([BV_bunch, MM_bunch]):
+    for i, species in enumerate([bv_bunch, mm_bunch]):
         print("_" * 80)
         print("Modeling distribution of species '%s'" % species.name)
 
@@ -210,16 +213,16 @@ def plot_species_distribution(
 
         # scatter training/testing points
         plt.scatter(
-            species.pts_train["dd long"],
-            species.pts_train["dd lat"],
+            species.pts_train[DD_LONG],
+            species.pts_train[DD_LAT],
             s=2**2,
             c="black",
             marker="^",
             label="train",
         )
         plt.scatter(
-            species.pts_test["dd long"],
-            species.pts_test["dd lat"],
+            species.pts_test[DD_LONG],
+            species.pts_test[DD_LAT],
             s=2**2,
             c="black",
             marker="x",
@@ -234,7 +237,7 @@ def plot_species_distribution(
         pred_test = clf.decision_function((species.cov_test - mean) / std)
         scores = np.r_[pred_test, pred_background]
         y = np.r_[np.ones(pred_test.shape), np.zeros(pred_background.shape)]
-        fpr, tpr, thresholds = metrics.roc_curve(y, scores)
+        fpr, tpr, _ = metrics.roc_curve(y, scores)
         roc_auc = metrics.auc(fpr, tpr)
         plt.text(-35, -70, "AUC: %.3f" % roc_auc, ha="right")
         print("\n Area under the ROC curve : %f" % roc_auc)
