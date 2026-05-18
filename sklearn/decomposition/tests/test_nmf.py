@@ -236,12 +236,12 @@ def test_minibatch_nmf_transform():
 )
 def test_nmf_transform_custom_init(estimator, solver):
     # Smoke test that checks if NMF.transform works with custom initialization
-    random_state = np.random.RandomState(0)
-    A = np.abs(random_state.randn(6, 5))
+    rng = np.random.default_rng(0)
+    A = np.abs(rng.standard_normal((6, 5)))
     n_components = 4
     avg = np.sqrt(A.mean() / n_components)
-    h_init = np.abs(avg * random_state.randn(n_components, 5))
-    w_init = np.abs(avg * random_state.randn(6, n_components))
+    h_init = np.abs(avg * rng.standard_normal((n_components, 5)))
+    w_init = np.abs(avg * rng.standard_normal((6, n_components)))
 
     m = estimator(
         n_components=n_components, init="custom", random_state=0, tol=1e-3, **solver
@@ -253,8 +253,8 @@ def test_nmf_transform_custom_init(estimator, solver):
 @pytest.mark.parametrize("solver", ("cd", "mu"))
 def test_nmf_inverse_transform(solver):
     # Test that NMF.inverse_transform returns close values
-    random_state = np.random.RandomState(0)
-    A = np.abs(random_state.randn(6, 4))
+    rng = np.random.default_rng(0)
+    A = np.abs(rng.standard_normal((6, 4)))
     m = NMF(
         solver=solver,
         n_components=4,
@@ -270,10 +270,10 @@ def test_nmf_inverse_transform(solver):
 def test_mbnmf_inverse_transform():
     # Test that MiniBatchNMF.transform followed by MiniBatchNMF.inverse_transform
     # is close to the identity
-    rng = np.random.RandomState(0)
-    A = np.abs(rng.randn(6, 4))
+    rng = np.random.default_rng(0)
+    A = np.abs(rng.standard_normal((6, 4)))
     nmf = MiniBatchNMF(
-        random_state=rng,
+        random_state=0,
         max_iter=500,
         init="nndsvdar",
         fresh_restarts=True,
@@ -617,7 +617,7 @@ def test_nmf_negative_beta_loss(csr_container):
 @pytest.mark.parametrize("beta_loss", [-0.5, 0.0])
 def test_minibatch_nmf_negative_beta_loss(beta_loss):
     """Check that an error is raised if beta_loss < 0 and X contains zeros."""
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
     X = rng.normal(size=(6, 5))
     X[X < 0] = 0
 
@@ -757,11 +757,11 @@ def test_nmf_decreasing(solver):
 
 def test_nmf_underflow():
     # Regression test for an underflow issue in _beta_divergence
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
     n_samples, n_features, n_components = 10, 2, 2
-    X = np.abs(rng.randn(n_samples, n_features)) * 10
-    W = np.abs(rng.randn(n_samples, n_components)) * 10
-    H = np.abs(rng.randn(n_components, n_features))
+    X = np.abs(rng.standard_normal((n_samples, n_features))) * 10
+    W = np.abs(rng.standard_normal((n_samples, n_components))) * 10
+    H = np.abs(rng.standard_normal((n_components, n_features)))
 
     X[0, 0] = 0
     ref = nmf._beta_divergence(X, W, H, beta=1.0)
@@ -941,13 +941,13 @@ def test_nmf_non_negative_factorization_n_components_auto():
     # custom initialization.
     rng = np.random.RandomState(0)
     X = rng.random_sample((6, 5))
-    W_init = rng.random_sample((6, 2))
-    H_init = rng.random_sample((2, 5))
+    w_init = rng.random_sample((6, 2))
+    h_init = rng.random_sample((2, 5))
     W, H, _ = non_negative_factorization(
-        X, W=W_init, H=H_init, init="custom", n_components="auto"
+        X, W=w_init, H=h_init, init="custom", n_components="auto"
     )
-    assert H.shape == H_init.shape
-    assert W.shape == W_init.shape
+    assert H.shape == h_init.shape
+    assert W.shape == w_init.shape
 
 
 def test_nmf_n_components_auto_no_h_update():
@@ -956,12 +956,12 @@ def test_nmf_n_components_auto_no_h_update():
     # value is the right one.
     rng = np.random.RandomState(0)
     X = rng.random_sample((6, 5))
-    H_true = rng.random_sample((2, 5))
+    h_true = rng.random_sample((2, 5))
     W, H, _ = non_negative_factorization(
-        X, H=H_true, n_components="auto", update_H=False
+        X, H=h_true, n_components="auto", update_H=False
     )  # should not fail
-    assert_allclose(H, H_true)
-    assert W.shape == (X.shape[0], H_true.shape[0])
+    assert_allclose(H, h_true)
+    assert W.shape == (X.shape[0], h_true.shape[0])
 
 
 def test_nmf_w_h_not_used_warning():
@@ -969,20 +969,20 @@ def test_nmf_w_h_not_used_warning():
     # and initialization overrides value of W or H
     rng = np.random.RandomState(0)
     X = rng.random_sample((6, 5))
-    W_init = rng.random_sample((6, 2))
-    H_init = rng.random_sample((2, 5))
+    w_init = rng.random_sample((6, 2))
+    h_init = rng.random_sample((2, 5))
     with pytest.warns(
         RuntimeWarning,
         match="When init!='custom', provided W or H are ignored",
     ):
-        non_negative_factorization(X, H=H_init, update_H=True, n_components="auto")
+        non_negative_factorization(X, H=h_init, update_H=True, n_components="auto")
 
     with pytest.warns(
         RuntimeWarning,
         match="When init!='custom', provided W or H are ignored",
     ):
         non_negative_factorization(
-            X, W=W_init, H=H_init, update_H=True, n_components="auto"
+            X, W=w_init, H=h_init, update_H=True, n_components="auto"
         )
 
     with pytest.warns(
@@ -991,7 +991,7 @@ def test_nmf_w_h_not_used_warning():
         # When update_H is False, W is ignored regardless of init
         # TODO: use the provided W when init="custom".
         non_negative_factorization(
-            X, W=W_init, H=H_init, update_H=False, n_components="auto"
+            X, W=w_init, H=h_init, update_H=False, n_components="auto"
         )
 
 
