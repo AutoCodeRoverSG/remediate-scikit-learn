@@ -268,8 +268,8 @@ def test_agglomerative_clustering_memory_mapped():
     Non-regression test for issue #19875.
     """
     rng = np.random.RandomState(0)
-    Xmm = create_memmap_backed_data(rng.randn(50, 100))
-    AgglomerativeClustering(metric="euclidean", linkage="single").fit(Xmm)
+    x_mm = create_memmap_backed_data(rng.randn(50, 100))
+    AgglomerativeClustering(metric="euclidean", linkage="single").fit(x_mm)
 
 
 def test_ward_agglomeration(global_random_seed):
@@ -395,14 +395,14 @@ def test_mst_linkage_core_memory_mapped(metric_param_grid):
     """
     rng = np.random.RandomState(seed=1)
     X = rng.normal(size=(20, 4))
-    Xmm = create_memmap_backed_data(X)
+    x_mm = create_memmap_backed_data(X)
     metric, param_grid = metric_param_grid
     keys = param_grid.keys()
     for vals in itertools.product(*param_grid.values()):
         kwargs = dict(zip(keys, vals))
         distance_metric = DistanceMetric.get_metric(metric, **kwargs)
         mst = mst_linkage_core(X, distance_metric)
-        mst_mm = mst_linkage_core(Xmm, distance_metric)
+        mst_mm = mst_linkage_core(x_mm, distance_metric)
         np.testing.assert_equal(mst, mst_mm)
 
 
@@ -413,7 +413,7 @@ def test_identical_points():
     true_labels = np.array([0, 0, 1, 1, 2, 2])
     connectivity = kneighbors_graph(X, n_neighbors=3, include_self=False)
     connectivity = 0.5 * (connectivity + connectivity.T)
-    connectivity, n_components = _fix_connectivity(X, connectivity, "euclidean")
+    connectivity, _ = _fix_connectivity(X, connectivity, "euclidean")
 
     for linkage in ("single", "average", "average", "ward"):
         clustering = AgglomerativeClustering(
@@ -466,7 +466,7 @@ def test_ward_tree_children_order(global_random_seed):
     rng = np.random.RandomState(global_random_seed)
 
     connectivity = np.ones((n, n))
-    for i in range(5):
+    for _ in range(5):
         X = 0.1 * rng.normal(size=(n, p))
         X -= 4.0 * np.arange(n)[:, np.newaxis]
         X -= X.mean(axis=1)[:, np.newaxis]
@@ -486,7 +486,7 @@ def test_ward_linkage_tree_return_distance(global_random_seed):
     rng = np.random.RandomState(global_random_seed)
 
     connectivity = np.ones((n, n))
-    for i in range(5):
+    for _ in range(5):
         X = 0.1 * rng.normal(size=(n, p))
         X -= 4.0 * np.arange(n)[:, np.newaxis]
         X -= X.mean(axis=1)[:, np.newaxis]
@@ -534,7 +534,7 @@ def test_ward_linkage_tree_return_distance(global_random_seed):
         ]
     )
     # truth
-    linkage_X_ward = np.array(
+    linkage_x_ward = np.array(
         [
             [3.0, 4.0, 0.36265956, 2.0],
             [1.0, 5.0, 1.77045373, 2.0],
@@ -544,7 +544,7 @@ def test_ward_linkage_tree_return_distance(global_random_seed):
         ]
     )
 
-    linkage_X_complete = np.array(
+    linkage_x_complete = np.array(
         [
             [3.0, 4.0, 0.36265956, 2.0],
             [1.0, 5.0, 1.77045373, 2.0],
@@ -554,7 +554,7 @@ def test_ward_linkage_tree_return_distance(global_random_seed):
         ]
     )
 
-    linkage_X_average = np.array(
+    linkage_x_average = np.array(
         [
             [3.0, 4.0, 0.36265956, 2.0],
             [1.0, 5.0, 1.77045373, 2.0],
@@ -564,35 +564,35 @@ def test_ward_linkage_tree_return_distance(global_random_seed):
         ]
     )
 
-    n_samples, n_features = np.shape(X)
-    connectivity_X = np.ones((n_samples, n_samples))
+    n_samples, _ = np.shape(X)
+    connectivity_x = np.ones((n_samples, n_samples))
 
-    out_X_unstructured = ward_tree(X, return_distance=True)
-    out_X_structured = ward_tree(X, connectivity=connectivity_X, return_distance=True)
+    out_x_unstructured = ward_tree(X, return_distance=True)
+    out_x_structured = ward_tree(X, connectivity=connectivity_x, return_distance=True)
 
     # check that the labels are the same
-    assert_array_equal(linkage_X_ward[:, :2], out_X_unstructured[0])
-    assert_array_equal(linkage_X_ward[:, :2], out_X_structured[0])
+    assert_array_equal(linkage_x_ward[:, :2], out_x_unstructured[0])
+    assert_array_equal(linkage_x_ward[:, :2], out_x_structured[0])
 
     # check that the distances are correct
-    assert_array_almost_equal(linkage_X_ward[:, 2], out_X_unstructured[4])
-    assert_array_almost_equal(linkage_X_ward[:, 2], out_X_structured[4])
+    assert_array_almost_equal(linkage_x_ward[:, 2], out_x_unstructured[4])
+    assert_array_almost_equal(linkage_x_ward[:, 2], out_x_structured[4])
 
     linkage_options = ["complete", "average", "single"]
-    X_linkage_truth = [linkage_X_complete, linkage_X_average]
-    for linkage, X_truth in zip(linkage_options, X_linkage_truth):
-        out_X_unstructured = linkage_tree(X, return_distance=True, linkage=linkage)
-        out_X_structured = linkage_tree(
-            X, connectivity=connectivity_X, linkage=linkage, return_distance=True
+    x_linkage_truth = [linkage_x_complete, linkage_x_average]
+    for linkage, x_truth in zip(linkage_options, x_linkage_truth):
+        out_x_unstructured = linkage_tree(X, return_distance=True, linkage=linkage)
+        out_x_structured = linkage_tree(
+            X, connectivity=connectivity_x, linkage=linkage, return_distance=True
         )
 
         # check that the labels are the same
-        assert_array_equal(X_truth[:, :2], out_X_unstructured[0])
-        assert_array_equal(X_truth[:, :2], out_X_structured[0])
+        assert_array_equal(x_truth[:, :2], out_x_unstructured[0])
+        assert_array_equal(x_truth[:, :2], out_x_structured[0])
 
         # check that the distances are correct
-        assert_array_almost_equal(X_truth[:, 2], out_X_unstructured[4])
-        assert_array_almost_equal(X_truth[:, 2], out_X_structured[4])
+        assert_array_almost_equal(x_truth[:, 2], out_x_unstructured[4])
+        assert_array_almost_equal(x_truth[:, 2], out_x_structured[4])
 
 
 def test_connectivity_fixing_non_lil():
