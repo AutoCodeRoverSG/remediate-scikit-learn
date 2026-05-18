@@ -66,7 +66,7 @@ class MiniBatchKMeansBenchmark(Predictor, Transformer, Estimator, Benchmark):
         super().setup_cache()
 
     def make_data(self, params):
-        representation, init = params
+        representation, _ = params
 
         if representation == "sparse":
             data = _20newsgroups_highdim_dataset()
