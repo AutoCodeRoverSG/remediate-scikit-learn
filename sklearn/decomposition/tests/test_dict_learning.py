@@ -297,7 +297,6 @@ def test_dict_learning_split():
 
 
 def test_dict_learning_online_shapes():
-    rng = np.random.RandomState(0)
     n_components = 8
 
     code, dictionary = dict_learning_online(
@@ -306,7 +305,7 @@ def test_dict_learning_online_shapes():
         batch_size=4,
         max_iter=10,
         method="cd",
-        random_state=rng,
+        random_state=0,
         return_code=True,
     )
     assert code.shape == (n_samples, n_components)
@@ -319,7 +318,7 @@ def test_dict_learning_online_shapes():
         batch_size=4,
         max_iter=10,
         method="cd",
-        random_state=rng,
+        random_state=0,
         return_code=False,
     )
     assert dictionary.shape == (n_components, n_features)
@@ -390,7 +389,6 @@ def test_minibatch_dictionary_learning_lars(positive_dict):
 @pytest.mark.parametrize("positive_code", [False, True])
 @pytest.mark.parametrize("positive_dict", [False, True])
 def test_dict_learning_online_positivity(positive_code, positive_dict):
-    rng = np.random.RandomState(0)
     n_components = 8
 
     code, dictionary = dict_learning_online(
@@ -399,7 +397,7 @@ def test_dict_learning_online_positivity(positive_code, positive_dict):
         batch_size=4,
         method="cd",
         alpha=1,
-        random_state=rng,
+        random_state=0,
         positive_dict=positive_dict,
         positive_code=positive_code,
     )
@@ -485,8 +483,8 @@ def test_dict_learning_online_overcomplete():
 
 def test_dict_learning_online_initialization():
     n_components = 12
-    rng = np.random.RandomState(0)
-    V = rng.randn(n_components, n_features)
+    rng = np.random.default_rng(0)
+    V = rng.standard_normal((n_components, n_features))
     dico = MiniBatchDictionaryLearning(
         n_components, batch_size=4, max_iter=0, dict_init=V, random_state=0
     ).fit(X)
@@ -495,8 +493,8 @@ def test_dict_learning_online_initialization():
 
 def test_dict_learning_online_readonly_initialization():
     n_components = 12
-    rng = np.random.RandomState(0)
-    V = rng.randn(n_components, n_features)
+    rng = np.random.default_rng(0)
+    V = rng.standard_normal((n_components, n_features))
     V.setflags(write=False)
     MiniBatchDictionaryLearning(
         n_components,
@@ -510,8 +508,8 @@ def test_dict_learning_online_readonly_initialization():
 
 def test_dict_learning_online_partial_fit():
     n_components = 12
-    rng = np.random.RandomState(0)
-    V = rng.randn(n_components, n_features)  # random init
+    rng = np.random.default_rng(0)
+    V = rng.standard_normal((n_components, n_features))  # random init
     V /= np.sum(V**2, axis=1)[:, np.newaxis]
     dict1 = MiniBatchDictionaryLearning(
         n_components,
@@ -540,8 +538,8 @@ def test_dict_learning_online_partial_fit():
 
 def test_sparse_encode_shapes():
     n_components = 12
-    rng = np.random.RandomState(0)
-    V = rng.randn(n_components, n_features)  # random init
+    rng = np.random.default_rng(0)
+    V = rng.standard_normal((n_components, n_features))  # random init
     V /= np.sum(V**2, axis=1)[:, np.newaxis]
     for algo in ("lasso_lars", "lasso_cd", "lars", "omp", "threshold"):
         code = sparse_encode(X, V, algorithm=algo)
@@ -552,8 +550,8 @@ def test_sparse_encode_shapes():
 @pytest.mark.parametrize("positive", [False, True])
 def test_sparse_encode_positivity(algo, positive):
     n_components = 12
-    rng = np.random.RandomState(0)
-    V = rng.randn(n_components, n_features)  # random init
+    rng = np.random.default_rng(0)
+    V = rng.standard_normal((n_components, n_features))  # random init
     V /= np.sum(V**2, axis=1)[:, np.newaxis]
     code = sparse_encode(X, V, algorithm=algo, positive=positive)
     if positive:
@@ -565,8 +563,8 @@ def test_sparse_encode_positivity(algo, positive):
 @pytest.mark.parametrize("algo", ["lars", "omp"])
 def test_sparse_encode_unavailable_positivity(algo):
     n_components = 12
-    rng = np.random.RandomState(0)
-    V = rng.randn(n_components, n_features)  # random init
+    rng = np.random.default_rng(0)
+    V = rng.standard_normal((n_components, n_features))  # random init
     V /= np.sum(V**2, axis=1)[:, np.newaxis]
     err_msg = "Positive constraint not supported for '{}' coding method."
     err_msg = err_msg.format(algo)
@@ -576,8 +574,8 @@ def test_sparse_encode_unavailable_positivity(algo):
 
 def test_sparse_encode_input():
     n_components = 100
-    rng = np.random.RandomState(0)
-    V = rng.randn(n_components, n_features)  # random init
+    rng = np.random.default_rng(0)
+    V = rng.standard_normal((n_components, n_features))  # random init
     V /= np.sum(V**2, axis=1)[:, np.newaxis]
     xf = check_array(X, order="F")
     for algo in ("lasso_lars", "lasso_cd", "lars", "omp", "threshold"):
@@ -588,8 +586,8 @@ def test_sparse_encode_input():
 
 def test_sparse_encode_error():
     n_components = 12
-    rng = np.random.RandomState(0)
-    V = rng.randn(n_components, n_features)  # random init
+    rng = np.random.default_rng(0)
+    V = rng.standard_normal((n_components, n_features))  # random init
     V /= np.sum(V**2, axis=1)[:, np.newaxis]
     code = sparse_encode(X, V, alpha=0.001)
     assert not np.all(code == 0)
