@@ -83,9 +83,10 @@ for k in out_dims:
     for _ in range(n_runs):
         ps_svm = Pipeline(
             [
-                ("PS", PolynomialCountSketch(degree=2, n_components=k)),
+                ("PS", PolynomialCountSketch(degree=2, n_components=k, random_state=42)),
                 ("SVM", LinearSVC()),
-            ]
+            ],
+            memory=None,
         )
         score_avg += ps_svm.fit(X_train, y_train).score(X_test, y_test)
     ps_svm_scores.append(100 * score_avg / n_runs)
@@ -102,11 +103,13 @@ for k in out_dims:
                 (
                     "NY",
                     Nystroem(
-                        kernel="poly", gamma=1.0, degree=2, coef0=0, n_components=k
+                        kernel="poly", gamma=1.0, degree=2, coef0=0, n_components=k,
+                        random_state=42,
                     ),
                 ),
                 ("SVM", LinearSVC()),
-            ]
+            ],
+            memory=None,
         )
         score_avg += ny_svm.fit(X_train, y_train).score(X_test, y_test)
     ny_svm_scores.append(100 * score_avg / n_runs)
@@ -139,15 +142,16 @@ fig.tight_layout()
 # Now let's evaluate the scalability of PolynomialCountSketch vs Nystroem
 # First we generate some fake data with a lot of samples
 
-fakeData = np.random.randn(10000, 100)
-fakeDataY = np.random.randint(0, high=10, size=(10000))
+rng = np.random.default_rng(42)
+fakeData = rng.standard_normal((10000, 100))
+fakeDataY = rng.integers(0, high=10, size=(10000))
 
 out_dims = range(500, 6000, 500)
 
 # Evaluate scalability of PolynomialCountSketch as n_components grows
 ps_svm_times = []
 for k in out_dims:
-    ps = PolynomialCountSketch(degree=2, n_components=k)
+    ps = PolynomialCountSketch(degree=2, n_components=k, random_state=42)
 
     start = time()
     ps.fit_transform(fakeData, None)
@@ -157,7 +161,7 @@ for k in out_dims:
 # This can take a while due to the inefficient training phase
 ny_svm_times = []
 for k in out_dims:
-    ny = Nystroem(kernel="poly", gamma=1.0, degree=2, coef0=0, n_components=k)
+    ny = Nystroem(kernel="poly", gamma=1.0, degree=2, coef0=0, n_components=k, random_state=42)
 
     start = time()
     ny.fit_transform(fakeData, None)
