@@ -279,37 +279,37 @@ def test_mbnmf_inverse_transform():
         fresh_restarts=True,
     )
     ft = nmf.fit_transform(A)
-    A_new = nmf.inverse_transform(ft)
-    assert_allclose(A, A_new, rtol=1e-3, atol=1e-2)
+    a_new = nmf.inverse_transform(ft)
+    assert_allclose(A, a_new, rtol=1e-3, atol=1e-2)
 
 
-@pytest.mark.parametrize("Estimator", [NMF, MiniBatchNMF])
-def test_n_components_greater_n_features(Estimator):
+@pytest.mark.parametrize("estimator", [NMF, MiniBatchNMF])
+def test_n_components_greater_n_features(estimator):
     # Smoke test for the case of more components than features.
     rng = np.random.mtrand.RandomState(42)
     A = np.abs(rng.randn(30, 10))
-    Estimator(n_components=15, random_state=0, tol=1e-2).fit(A)
+    estimator(n_components=15, random_state=0, tol=1e-2).fit(A)
 
 
 @pytest.mark.parametrize(
-    ["Estimator", "solver"],
+    ["estimator_cls", "solver"],
     [[NMF, {"solver": "cd"}], [NMF, {"solver": "mu"}], [MiniBatchNMF, {}]],
 )
 @pytest.mark.parametrize("sparse_container", CSC_CONTAINERS + CSR_CONTAINERS)
-@pytest.mark.parametrize("alpha_W", (0.0, 1.0))
-@pytest.mark.parametrize("alpha_H", (0.0, 1.0, "same"))
-def test_nmf_sparse_input(Estimator, solver, sparse_container, alpha_W, alpha_H):
+@pytest.mark.parametrize("alpha_w", (0.0, 1.0))
+@pytest.mark.parametrize("alpha_h", (0.0, 1.0, "same"))
+def test_nmf_sparse_input(estimator_cls, solver, sparse_container, alpha_w, alpha_h):
     # Test that sparse matrices are accepted as input
     rng = np.random.mtrand.RandomState(42)
     A = np.abs(rng.randn(10, 10))
     A[:, 2 * np.arange(5)] = 0
-    A_sparse = sparse_container(A)
+    a_sparse = sparse_container(A)
 
-    est1 = Estimator(
+    est1 = estimator_cls(
         n_components=5,
         init="random",
-        alpha_W=alpha_W,
-        alpha_H=alpha_H,
+        alpha_W=alpha_w,
+        alpha_H=alpha_h,
         random_state=0,
         tol=0,
         max_iter=100,
@@ -318,7 +318,7 @@ def test_nmf_sparse_input(Estimator, solver, sparse_container, alpha_W, alpha_H)
     est2 = clone(est1)
 
     W1 = est1.fit_transform(A)
-    W2 = est2.fit_transform(A_sparse)
+    W2 = est2.fit_transform(a_sparse)
     H1 = est1.components_
     H2 = est2.components_
 
@@ -327,28 +327,28 @@ def test_nmf_sparse_input(Estimator, solver, sparse_container, alpha_W, alpha_H)
 
 
 @pytest.mark.parametrize(
-    ["Estimator", "solver"],
+    ["estimator", "solver"],
     [[NMF, {"solver": "cd"}], [NMF, {"solver": "mu"}], [MiniBatchNMF, {}]],
 )
 @pytest.mark.parametrize("csc_container", CSC_CONTAINERS)
-def test_nmf_sparse_transform(Estimator, solver, csc_container):
+def test_nmf_sparse_transform(estimator, solver, csc_container):
     # Test that transform works on sparse data.  Issue #2124
     rng = np.random.mtrand.RandomState(42)
     A = np.abs(rng.randn(3, 2))
     A[1, 1] = 0
     A = csc_container(A)
 
-    model = Estimator(random_state=0, n_components=2, max_iter=400, **solver)
-    A_fit_tr = model.fit_transform(A)
-    A_tr = model.transform(A)
-    assert_allclose(A_fit_tr, A_tr, atol=1e-1)
+    model = estimator(random_state=0, n_components=2, max_iter=400, **solver)
+    a_fit_tr = model.fit_transform(A)
+    a_tr = model.transform(A)
+    assert_allclose(a_fit_tr, a_tr, atol=1e-1)
 
 
 @pytest.mark.parametrize("init", ["random", "nndsvd"])
 @pytest.mark.parametrize("solver", ("cd", "mu"))
 @pytest.mark.parametrize("alpha_W", (0.0, 1.0))
-@pytest.mark.parametrize("alpha_H", (0.0, 1.0, "same"))
-def test_non_negative_factorization_consistency(init, solver, alpha_W, alpha_H):
+@pytest.mark.parametrize("alpha_h", (0.0, 1.0, "same"))
+def test_non_negative_factorization_consistency(init, solver, alpha_W, alpha_h):
     # Test that the function is called in the same way, either directly
     # or through the NMF class
     max_iter = 500
@@ -362,7 +362,7 @@ def test_non_negative_factorization_consistency(init, solver, alpha_W, alpha_H):
         solver=solver,
         max_iter=max_iter,
         alpha_W=alpha_W,
-        alpha_H=alpha_H,
+        alpha_H=alpha_h,
         random_state=1,
         tol=1e-2,
     )
@@ -374,7 +374,7 @@ def test_non_negative_factorization_consistency(init, solver, alpha_W, alpha_H):
         solver=solver,
         max_iter=max_iter,
         alpha_W=alpha_W,
-        alpha_H=alpha_H,
+        alpha_H=alpha_h,
         random_state=1,
         tol=1e-2,
     )
@@ -384,7 +384,7 @@ def test_non_negative_factorization_consistency(init, solver, alpha_W, alpha_H):
         solver=solver,
         max_iter=max_iter,
         alpha_W=alpha_W,
-        alpha_H=alpha_H,
+        alpha_H=alpha_h,
         random_state=1,
         tol=1e-2,
     )
