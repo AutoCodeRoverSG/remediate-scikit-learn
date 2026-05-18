@@ -253,10 +253,10 @@ class FactorAnalysis(ClassNamePrefixFeaturesOutMixin, TransformerMixin, BaseEsti
         if self.svd_method == "lapack":
 
             def my_svd(X):
-                _, s, Vt = linalg.svd(X, full_matrices=False, check_finite=False)
+                _, s, vt = linalg.svd(X, full_matrices=False, check_finite=False)
                 return (
                     s[:n_components],
-                    Vt[:n_components],
+                    vt[:n_components],
                     squared_norm(s[n_components:]),
                 )
 
@@ -264,22 +264,22 @@ class FactorAnalysis(ClassNamePrefixFeaturesOutMixin, TransformerMixin, BaseEsti
             random_state = check_random_state(self.random_state)
 
             def my_svd(X):
-                _, s, Vt = _randomized_svd(
+                _, s, vt = _randomized_svd(
                     X,
                     n_components,
                     random_state=random_state,
                     n_iter=self.iterated_power,
                 )
-                return s, Vt, squared_norm(X) - squared_norm(s)
+                return s, vt, squared_norm(X) - squared_norm(s)
 
         for i in range(self.max_iter):
             # SMALL helps numerics
             sqrt_psi = np.sqrt(psi) + SMALL
-            s, Vt, unexp_var = my_svd(X / (sqrt_psi * nsqrt))
+            s, vt, unexp_var = my_svd(X / (sqrt_psi * nsqrt))
             s **= 2
             # Use 'maximum' here to avoid sqrt problems.
-            W = np.sqrt(np.maximum(s - 1.0, 0.0))[:, np.newaxis] * Vt
-            del Vt
+            W = np.sqrt(np.maximum(s - 1.0, 0.0))[:, np.newaxis] * vt
+            del vt
             W *= sqrt_psi
 
             # loglikelihood
@@ -327,12 +327,12 @@ class FactorAnalysis(ClassNamePrefixFeaturesOutMixin, TransformerMixin, BaseEsti
         check_is_fitted(self)
 
         X = validate_data(self, X, reset=False)
-        Ih = np.eye(len(self.components_))
+        identity = np.eye(len(self.components_))
 
         X_transformed = X - self.mean_
 
         Wpsi = self.components_ / self.noise_variance_
-        cov_z = linalg.inv(Ih + np.dot(Wpsi, self.components_.T))
+        cov_z = linalg.inv(identity + np.dot(Wpsi, self.components_.T))
         tmp = np.dot(X_transformed, Wpsi.T)
         X_transformed = np.dot(tmp, cov_z)
 
