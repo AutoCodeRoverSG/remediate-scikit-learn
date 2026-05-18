@@ -21,8 +21,8 @@ from sklearn.gaussian_process import GaussianProcessClassifier
 from sklearn.gaussian_process.kernels import RBF, DotProduct
 
 xx, yy = np.meshgrid(np.linspace(-3, 3, 50), np.linspace(-3, 3, 50))
-rng = np.random.RandomState(0)
-X = rng.randn(200, 2)
+rng = np.random.default_rng(0)
+X = rng.standard_normal((200, 2))
 Y = np.logical_xor(X[:, 0] > 0, X[:, 1] > 0)
 
 # fit the model

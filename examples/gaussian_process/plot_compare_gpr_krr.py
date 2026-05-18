@@ -57,6 +57,8 @@ training_noisy_target = target[training_sample_indices] + 0.5 * rng.randn(
 # Let's plot the true signal and the noisy measurements available for training.
 import matplotlib.pyplot as plt
 
+LEGEND_LOC = "lower right"
+
 plt.plot(data, target, label="True signal", linewidth=2)
 plt.scatter(
     training_data,
@@ -151,7 +153,7 @@ plt.plot(
     linewidth=2,
     linestyle="dashdot",
 )
-plt.legend(loc="lower right")
+plt.legend(loc=LEGEND_LOC)
 plt.xlabel("data")
 plt.ylabel("target")
 _ = plt.title(
@@ -224,7 +226,7 @@ plt.plot(
     linewidth=2,
     linestyle="dashdot",
 )
-plt.legend(loc="lower right")
+plt.legend(loc=LEGEND_LOC)
 plt.xlabel("data")
 plt.ylabel("target")
 _ = plt.title(
@@ -311,7 +313,7 @@ plt.fill_between(
     color="tab:green",
     alpha=0.2,
 )
-plt.legend(loc="lower right")
+plt.legend(loc=LEGEND_LOC)
 plt.xlabel("data")
 plt.ylabel("target")
 _ = plt.title("Comparison between kernel ridge and gaussian process regressor")
@@ -383,7 +385,7 @@ plt.fill_between(
     color="tab:green",
     alpha=0.2,
 )
-plt.legend(loc="lower right")
+plt.legend(loc=LEGEND_LOC)
 plt.xlabel("data")
 plt.ylabel("target")
 _ = plt.title("Effect of using a radial basis function kernel")
