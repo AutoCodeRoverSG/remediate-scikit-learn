@@ -205,7 +205,7 @@ def test_kmeans_convergence(algorithm, global_random_seed):
 @pytest.mark.parametrize("X_csr", X_as_any_csr)
 def test_minibatch_update_consistency(X_csr, global_random_seed):
     # Check that dense and sparse minibatch update give the same results
-    rng = np.random.RandomState(global_random_seed)
+    rng = np.random.default_rng(global_random_seed)
 
     centers_old = centers + rng.normal(size=centers.shape)
     centers_old_csr = centers_old.copy()
@@ -230,7 +230,7 @@ def test_minibatch_update_consistency(X_csr, global_random_seed):
         centers_old,
         centers_new,
         weight_sums,
-        np.random.RandomState(global_random_seed),
+        np.random.default_rng(global_random_seed),
         random_reassign=False,
     )
     assert old_inertia > 0.0
@@ -247,7 +247,7 @@ def test_minibatch_update_consistency(X_csr, global_random_seed):
         centers_old_csr,
         centers_new_csr,
         weight_sums_csr,
-        np.random.RandomState(global_random_seed),
+        np.random.default_rng(global_random_seed),
         random_reassign=False,
     )
     assert old_inertia_csr > 0.0
@@ -352,21 +352,21 @@ def test_kmeans_init_auto_with_initial_centroids(Estimator, init, expected_n_ini
     assert kmeans._n_init == expected_n_init
 
 
-@pytest.mark.parametrize("Estimator", [KMeans, MiniBatchKMeans])
-def test_fortran_aligned_data(Estimator, global_random_seed):
+@pytest.mark.parametrize("estimator", [KMeans, MiniBatchKMeans])
+def test_fortran_aligned_data(estimator, global_random_seed):
     # Check that KMeans works with fortran-aligned data.
-    X_fortran = np.asfortranarray(X)
+    x_fortran = np.asfortranarray(X)
     centers_fortran = np.asfortranarray(centers)
 
-    km_c = Estimator(
+    km_c = estimator(
         n_clusters=n_clusters, init=centers, n_init=1, random_state=global_random_seed
     ).fit(X)
-    km_f = Estimator(
+    km_f = estimator(
         n_clusters=n_clusters,
         init=centers_fortran,
         n_init=1,
         random_state=global_random_seed,
-    ).fit(X_fortran)
+    ).fit(x_fortran)
     assert_allclose(km_c.cluster_centers_, km_f.cluster_centers_)
     assert_array_equal(km_c.labels_, km_f.labels_)
 
@@ -401,7 +401,7 @@ def test_kmeans_verbose(algorithm, tol, capsys):
     captured = capsys.readouterr()
 
     assert re.search(r"Initialization complete", captured.out)
-    assert re.search(r"Iteration [0-9]+, inertia", captured.out)
+    assert re.search(r"Iteration \d+, inertia", captured.out)
 
     if tol == 0:
         assert re.search(r"strict convergence", captured.out)
@@ -417,29 +417,29 @@ def test_minibatch_kmeans_warning_init_size():
         MiniBatchKMeans(init_size=10, n_clusters=20).fit(X)
 
 
-@pytest.mark.parametrize("Estimator", [KMeans, MiniBatchKMeans])
-def test_warning_n_init_precomputed_centers(Estimator):
+@pytest.mark.parametrize("estimator", [KMeans, MiniBatchKMeans])
+def test_warning_n_init_precomputed_centers(estimator):
     # Check that a warning is raised when n_init > 1 and an array is passed for
     # the init parameter.
     with pytest.warns(
         RuntimeWarning,
         match="Explicit initial center position passed: performing only one init",
     ):
-        Estimator(init=centers, n_clusters=n_clusters, n_init=10).fit(X)
+        estimator(init=centers, n_clusters=n_clusters, n_init=10).fit(X)
 
 
 def test_minibatch_sensible_reassign(global_random_seed):
     # check that identical initial clusters are reassigned
     # also a regression test for when there are more desired reassignments than
     # samples.
-    zeroed_X, true_labels = make_blobs(
+    zeroed_x, _ = make_blobs(
         n_samples=100, centers=5, random_state=global_random_seed
     )
-    zeroed_X[::2, :] = 0
+    zeroed_x[::2, :] = 0
 
     km = MiniBatchKMeans(
         n_clusters=20, batch_size=10, random_state=global_random_seed, init="random"
-    ).fit(zeroed_X)
+    ).fit(zeroed_x)
     # there should not be too many exact zero cluster centers
     num_non_zero_clusters = km.cluster_centers_.any(axis=1).sum()
     assert num_non_zero_clusters > 9, f"{num_non_zero_clusters=} is too small"
@@ -447,15 +447,15 @@ def test_minibatch_sensible_reassign(global_random_seed):
     # do the same with batch-size > X.shape[0] (regression test)
     km = MiniBatchKMeans(
         n_clusters=20, batch_size=200, random_state=global_random_seed, init="random"
-    ).fit(zeroed_X)
+    ).fit(zeroed_x)
     # there should not be too many exact zero cluster centers
     num_non_zero_clusters = km.cluster_centers_.any(axis=1).sum()
     assert num_non_zero_clusters > 9, f"{num_non_zero_clusters=} is too small"
 
     # do the same with partial_fit API
     km = MiniBatchKMeans(n_clusters=20, random_state=global_random_seed, init="random")
-    for i in range(100):
-        km.partial_fit(zeroed_X)
+    for _ in range(100):
+        km.partial_fit(zeroed_x)
     # there should not be too many exact zero cluster centers
     num_non_zero_clusters = km.cluster_centers_.any(axis=1).sum()
     assert num_non_zero_clusters > 9, f"{num_non_zero_clusters=} is too small"
@@ -475,6 +475,7 @@ def test_minibatch_reassign(input_data, global_random_seed):
 
     sample_weight = np.ones(n_samples)
     centers_new = np.empty_like(perfect_centers)
+    random_state = np.random.RandomState(global_random_seed)
 
     # Give a perfect initialization, but a large reassignment_ratio, as a
     # result many centers should be reassigned and the model should no longer
@@ -487,7 +488,7 @@ def test_minibatch_reassign(input_data, global_random_seed):
         perfect_centers,
         centers_new,
         np.zeros(n_clusters),
-        np.random.RandomState(global_random_seed),
+        random_state,
         random_reassign=True,
         reassignment_ratio=1,
     )
@@ -504,7 +505,7 @@ def test_minibatch_reassign(input_data, global_random_seed):
         perfect_centers,
         centers_new,
         np.zeros(n_clusters),
-        np.random.RandomState(global_random_seed),
+        random_state,
         random_reassign=True,
         reassignment_ratio=1e-15,
     )
