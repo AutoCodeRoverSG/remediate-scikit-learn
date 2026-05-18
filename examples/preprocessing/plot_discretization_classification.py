@@ -62,11 +62,11 @@ def get_name(estimator):
 # should be used.
 classifiers = [
     (
-        make_pipeline(StandardScaler(), LogisticRegression(random_state=0)),
+        make_pipeline(StandardScaler(), LogisticRegression(random_state=0), memory=None),
         {"logisticregression__C": np.logspace(-1, 1, 3)},
     ),
     (
-        make_pipeline(StandardScaler(), LinearSVC(random_state=0)),
+        make_pipeline(StandardScaler(), LinearSVC(random_state=0), memory=None),
         {"linearsvc__C": np.logspace(-1, 1, 3)},
     ),
     (
@@ -76,6 +76,7 @@ classifiers = [
                 encode="onehot", quantile_method="averaged_inverted_cdf", random_state=0
             ),
             LogisticRegression(random_state=0),
+            memory=None,
         ),
         {
             "kbinsdiscretizer__n_bins": np.arange(5, 8),
@@ -89,6 +90,7 @@ classifiers = [
                 encode="onehot", quantile_method="averaged_inverted_cdf", random_state=0
             ),
             LinearSVC(random_state=0),
+            memory=None,
         ),
         {
             "kbinsdiscretizer__n_bins": np.arange(5, 8),
@@ -97,12 +99,14 @@ classifiers = [
     ),
     (
         make_pipeline(
-            StandardScaler(), GradientBoostingClassifier(n_estimators=5, random_state=0)
+            StandardScaler(),
+            GradientBoostingClassifier(n_estimators=5, random_state=0),
+            memory=None,
         ),
         {"gradientboostingclassifier__learning_rate": np.logspace(-2, 0, 5)},
     ),
     (
-        make_pipeline(StandardScaler(), SVC(random_state=0)),
+        make_pipeline(StandardScaler(), SVC(random_state=0), memory=None),
         {"svc__C": np.logspace(-1, 1, 3)},
     ),
 ]
@@ -205,7 +209,7 @@ for ds_cnt, (X, y) in enumerate(datasets):
             0.06,
             (f"{score:.2f}").lstrip("0"),
             size=15,
-            bbox=dict(boxstyle="round", alpha=0.8, facecolor="white"),
+            bbox={"boxstyle": "round", "alpha": 0.8, "facecolor": "white"},
             transform=ax.transAxes,
             horizontalalignment="right",
         )
