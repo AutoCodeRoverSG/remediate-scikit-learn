@@ -277,7 +277,7 @@ from sklearn.decomposition import TruncatedSVD
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import Normalizer
 
-lsa = make_pipeline(TruncatedSVD(n_components=100), Normalizer(copy=False))
+lsa = make_pipeline(TruncatedSVD(n_components=100), Normalizer(copy=False), memory=None)
 t0 = time()
 X_lsa = lsa.fit_transform(X_tfidf)
 explained_variance = lsa[0].explained_variance_ratio_.sum()
@@ -359,6 +359,7 @@ lsa_vectorizer = make_pipeline(
     TfidfTransformer(),
     TruncatedSVD(n_components=100, random_state=0),
     Normalizer(copy=False),
+    memory=None,
 )
 
 t0 = time()

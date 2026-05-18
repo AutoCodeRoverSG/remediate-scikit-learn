@@ -43,7 +43,7 @@ import matplotlib.pyplot as plt
 from sklearn.datasets import make_classification
 from sklearn.ensemble import RandomForestClassifier
 
-# from sklearn.metrics import plot_roc_curve
+
 from sklearn.metrics import RocCurveDisplay
 from sklearn.model_selection import train_test_split
 from sklearn.svm import SVC
@@ -94,7 +94,7 @@ from sklearn.svm import LinearSVC
 X, y = load_iris(return_X_y=True)
 estimators = [
     ("rf", RandomForestClassifier(n_estimators=10, random_state=42)),
-    ("svr", make_pipeline(StandardScaler(), LinearSVC(dual="auto", random_state=42))),
+    ("svr", make_pipeline(StandardScaler(), LinearSVC(dual="auto", random_state=42), memory=None)),
 ]
 clf = StackingClassifier(estimators=estimators, final_estimator=LogisticRegression())
 X_train, X_test, y_train, y_test = train_test_split(X, y, stratify=y, random_state=42)
