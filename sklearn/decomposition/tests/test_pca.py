@@ -445,11 +445,11 @@ def test_pca_singular_values(svd_solver):
 @pytest.mark.parametrize("svd_solver", PCA_SOLVERS)
 def test_pca_check_projection(svd_solver):
     # Test that the projection of data is correct
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
     n, p = 100, 3
-    X = rng.randn(n, p) * 0.1
+    X = rng.standard_normal((n, p)) * 0.1
     X[:10] += np.array([3, 4, 5])
-    x_trans = 0.1 * rng.randn(1, p) + np.array([3, 4, 5])
+    x_trans = 0.1 * rng.standard_normal((1, p)) + np.array([3, 4, 5])
 
     y_trans = PCA(n_components=2, svd_solver=svd_solver).fit(X).transform(x_trans)
     y_trans /= np.sqrt((y_trans**2).sum())
@@ -472,9 +472,9 @@ def test_pca_check_projection_list(svd_solver):
 @pytest.mark.parametrize("whiten", [False, True])
 def test_pca_inverse(svd_solver, whiten):
     # Test that the projection of data can be inverted
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
     n, p = 50, 3
-    X = rng.randn(n, p)  # spherical data
+    X = rng.standard_normal((n, p))  # spherical data
     X[:, 1] *= 0.00001  # make middle component relatively small
     X += [5, 4, 3]  # make a large mean
 
@@ -545,9 +545,9 @@ def test_n_components_none(data, solver, n_components_):
 @pytest.mark.parametrize("svd_solver", ["auto", "full"])
 def test_n_components_mle(svd_solver):
     # Ensure that n_components == 'mle' doesn't raise error for auto/full
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
     n_samples, n_features = 600, 10
-    X = rng.randn(n_samples, n_features)
+    X = rng.standard_normal((n_samples, n_features))
     pca = PCA(n_components="mle", svd_solver=svd_solver)
     pca.fit(X)
     assert pca.n_components_ == 1
@@ -557,9 +557,9 @@ def test_n_components_mle(svd_solver):
 def test_n_components_mle_error(svd_solver):
     # Ensure that n_components == 'mle' will raise an error for unsupported
     # solvers
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
     n_samples, n_features = 600, 10
-    X = rng.randn(n_samples, n_features)
+    X = rng.standard_normal((n_samples, n_features))
     pca = PCA(n_components="mle", svd_solver=svd_solver)
     err_msg = "n_components='mle' cannot be a string with svd_solver='{}'".format(
         svd_solver
@@ -570,9 +570,9 @@ def test_n_components_mle_error(svd_solver):
 
 def test_pca_dim():
     # Check automated dimensionality setting
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
     n, p = 100, 5
-    X = rng.randn(n, p) * 0.1
+    X = rng.standard_normal((n, p)) * 0.1
     X[:10] += np.array([3, 4, 5, 1, 2])
     pca = PCA(n_components="mle", svd_solver="full").fit(X)
     assert pca.n_components == "mle"
@@ -583,10 +583,10 @@ def test_infer_dim_1():
     # TODO: explain what this is testing
     # Or at least use explicit variable names...
     n, p = 1000, 5
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
     X = (
-        rng.randn(n, p) * 0.1
-        + rng.randn(n, 1) * np.array([3, 4, 5, 1, 2])
+        rng.standard_normal((n, p)) * 0.1
+        + rng.standard_normal((n, 1)) * np.array([3, 4, 5, 1, 2])
         + np.array([1, 0, 7, 4, 6])
     )
     pca = PCA(n_components=p, svd_solver="full")
@@ -600,8 +600,8 @@ def test_infer_dim_2():
     # TODO: explain what this is testing
     # Or at least use explicit variable names...
     n, p = 1000, 5
-    rng = np.random.RandomState(0)
-    X = rng.randn(n, p) * 0.1
+    rng = np.random.default_rng(0)
+    X = rng.standard_normal((n, p)) * 0.1
     X[:10] += np.array([3, 4, 5, 1, 2])
     X[10:20] += np.array([6, 0, 7, 2, -1])
     pca = PCA(n_components=p, svd_solver="full")
@@ -612,8 +612,8 @@ def test_infer_dim_2():
 
 def test_infer_dim_3():
     n, p = 100, 5
-    rng = np.random.RandomState(0)
-    X = rng.randn(n, p) * 0.1
+    rng = np.random.default_rng(0)
+    X = rng.standard_normal((n, p)) * 0.1
     X[:10] += np.array([3, 4, 5, 1, 2])
     X[10:20] += np.array([6, 0, 7, 2, -1])
     X[30:40] += 2 * np.array([-1, 1, -1, 1, -1])
@@ -642,8 +642,8 @@ def test_infer_dim_by_explained_variance(X, n_components, n_components_validated
 def test_pca_score(svd_solver):
     # Test that probabilistic PCA scoring yields a reasonable score
     n, p = 1000, 3
-    rng = np.random.RandomState(0)
-    X = rng.randn(n, p) * 0.1 + np.array([3, 4, 5])
+    rng = np.random.default_rng(0)
+    X = rng.standard_normal((n, p)) * 0.1 + np.array([3, 4, 5])
     pca = PCA(n_components=2, svd_solver=svd_solver)
     pca.fit(X)
 
@@ -651,7 +651,7 @@ def test_pca_score(svd_solver):
     h = -0.5 * np.log(2 * np.pi * np.exp(1) * 0.1**2) * p
     assert_allclose(ll1 / h, 1, rtol=5e-2)
 
-    ll2 = pca.score(rng.randn(n, p) * 0.2 + np.array([3, 4, 5]))
+    ll2 = pca.score(rng.standard_normal((n, p)) * 0.2 + np.array([3, 4, 5]))
     assert ll1 > ll2
 
     pca = PCA(n_components=2, whiten=True, svd_solver=svd_solver)
