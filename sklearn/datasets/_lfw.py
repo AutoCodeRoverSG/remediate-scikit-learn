@@ -243,7 +243,7 @@ def _fetch_lfw_people(
     # k-means that make an IID assumption
 
     indices = np.arange(n_faces)
-    np.random.RandomState(42).shuffle(indices)
+    np.random.default_rng(42).shuffle(indices)
     faces, target = faces[indices], target[indices]
     return faces, target, target_names
 
@@ -257,7 +257,7 @@ def _fetch_lfw_people(
         "color": ["boolean"],
         "slice_": [tuple, Hidden(None)],
         "download_if_missing": ["boolean"],
-        "return_X_y": ["boolean"],
+        "return_x_y": ["boolean"],
         "n_retries": [Interval(Integral, 1, None, closed="left")],
         "delay": [Interval(Real, 0.0, None, closed="neither")],
     },
@@ -272,7 +272,7 @@ def fetch_lfw_people(
     color=False,
     slice_=(slice(70, 195), slice(78, 172)),
     download_if_missing=True,
-    return_X_y=False,
+    return_x_y=False,
     n_retries=3,
     delay=1.0,
 ):
@@ -415,7 +415,7 @@ def fetch_lfw_people(
 
     fdescr = load_descr("lfw.rst")
 
-    if return_X_y:
+    if return_x_y:
         return X, target
 
     # pack the results as a Bunch instance
@@ -446,7 +446,7 @@ def _fetch_lfw_pairs(
     # iterating over the metadata lines for each pair to find the filename to
     # decode and load in memory
     target = np.zeros(n_pairs, dtype=int)
-    file_paths = list()
+    file_paths = []
     for i, components in enumerate(pair_specs):
         if len(components) == 3:
             target[i] = 1
@@ -467,7 +467,7 @@ def _fetch_lfw_pairs(
                 person_folder = join(data_folder_path, name)
             except TypeError:
                 person_folder = join(data_folder_path, str(name, "UTF-8"))
-            filenames = list(sorted(listdir(person_folder)))
+            filenames = sorted(listdir(person_folder))
             file_path = join(person_folder, filenames[idx])
             file_paths.append(file_path)
 
@@ -633,7 +633,7 @@ def fetch_lfw_pairs(
     if subset not in label_filenames:
         raise ValueError(
             "subset='%s' is invalid: should be one of %r"
-            % (subset, list(sorted(label_filenames.keys())))
+            % (subset, sorted(label_filenames.keys()))
         )
     index_file_path = join(lfw_home, label_filenames[subset])
 
