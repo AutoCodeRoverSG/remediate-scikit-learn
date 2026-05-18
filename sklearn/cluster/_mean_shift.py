@@ -486,7 +486,7 @@ class MeanShift(ClusterMixin, BaseEstimator):
         X = validate_data(self, X)
         bandwidth = self.bandwidth
         if bandwidth is None:
-            bandwidth = estimate_bandwidth(X, n_jobs=self.n_jobs)
+            bandwidth = estimate_bandwidth(X, n_jobs=self.n_jobs, random_state=0)
 
         seeds = self.seeds
         if seeds is None:
@@ -494,7 +494,7 @@ class MeanShift(ClusterMixin, BaseEstimator):
                 seeds = get_bin_seeds(X, bandwidth, self.min_bin_freq)
             else:
                 seeds = X
-        n_samples, n_features = X.shape
+        n_samples, _ = X.shape
         center_intensity_dict = {}
 
         # We use n_jobs=1 because this will be used in nested calls under

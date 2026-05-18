@@ -13,10 +13,7 @@ req = requests.get("https://devguide.python.org/versions/")
 df_list = pd.read_html(io.StringIO(req.content.decode("utf-8")))
 df = pd.concat(df_list).astype({"Branch": str})
 release_dates = {}
-python_version_info = {
-    version: release_date
-    for version, release_date in zip(df["Branch"], df["First release"])
-}
+python_version_info = dict(zip(df["Branch"], df["First release"]))
 python_version_info = {
     version: pd.to_datetime(release_date)
     for version, release_date in python_version_info.items()

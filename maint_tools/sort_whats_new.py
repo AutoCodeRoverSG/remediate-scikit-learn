@@ -17,7 +17,7 @@ def entry_sort_key(s):
 
 
 # discard headings and other non-entry lines
-text = "".join(l for l in sys.stdin if l.startswith("- ") or l.startswith(" "))
+text = "".join(l for l in sys.stdin if l.startswith(("- ", " ")))
 
 bucketed = defaultdict(list)
 

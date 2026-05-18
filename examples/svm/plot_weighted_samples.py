@@ -35,7 +35,7 @@ X, y = make_classification(
     random_state=0,
 )
 # down-sample for plotting
-rng = np.random.RandomState(0)
+rng = np.random.default_rng(0)
 plot_indices = rng.choice(np.arange(X.shape[0]), size=100, replace=True)
 X_plot, y_plot = X[plot_indices], y[plot_indices]
 
@@ -67,7 +67,7 @@ def plot_decision_function(classifier, sample_weight, axis, title):
 # we define constant weights as expected by the plotting function
 sample_weight_constant = np.ones(len(X))
 # assign random weights to all points
-sample_weight_modified = abs(rng.randn(len(X)))
+sample_weight_modified = abs(rng.standard_normal(len(X)))
 # assign bigger weights to the positive class
 positive_class_indices = np.asarray(y == 1).nonzero()[0]
 sample_weight_modified[positive_class_indices] *= 15

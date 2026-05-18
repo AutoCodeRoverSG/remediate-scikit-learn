@@ -261,8 +261,9 @@ class OPTICS(ClusterMixin, BaseEstimator):
         "algorithm": [StrOptions({"auto", "brute", "ball_tree", "kd_tree"})],
         "leaf_size": [Interval(Integral, 1, None, closed="left")],
         "memory": [str, HasMethods("cache"), None],
-        "n_jobs": [Integral, None],
     }
+
+    n_jobs = None
 
     def __init__(
         self,
@@ -280,7 +281,6 @@ class OPTICS(ClusterMixin, BaseEstimator):
         algorithm="auto",
         leaf_size=30,
         memory=None,
-        n_jobs=None,
     ):
         self.max_eps = max_eps
         self.min_samples = min_samples
@@ -295,7 +295,6 @@ class OPTICS(ClusterMixin, BaseEstimator):
         self.xi = xi
         self.predecessor_correction = predecessor_correction
         self.memory = memory
-        self.n_jobs = n_jobs
 
     @_fit_context(
         # Optics.metric is not validated yet
@@ -639,7 +638,7 @@ def compute_optics_graph(
     for ordering_idx in range(X.shape[0]):
         # Choose next based on smallest reachability distance
         # (And prefer smaller ids on ties, possibly np.inf!)
-        index = np.where(processed == 0)[0]
+        index = np.nonzero(processed == 0)[0]
         point = index[np.argmin(reachability_[index])]
 
         processed[point] = True
