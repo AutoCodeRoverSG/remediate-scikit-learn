@@ -25,6 +25,7 @@ import numpy as np
 from sklearn.datasets import make_regression
 
 alpha = 0.1
+SEPARATOR = "=================="
 
 
 
@@ -62,9 +63,9 @@ if __name__ == "__main__":
     n_informative = n_features / 10
     n_test_samples = 1000
     for i in range(1, n + 1):
-        print("==================")
+        print(SEPARATOR)
         print("Iteration %s of %s" % (i, n))
-        print("==================")
+        print(SEPARATOR)
 
         X, Y, coef_ = make_regression(
             n_samples=(i * step) + n_test_samples,
@@ -104,9 +105,9 @@ if __name__ == "__main__":
     n_samples = 500
 
     for i in range(1, n + 1):
-        print("==================")
+        print(SEPARATOR)
         print("Iteration %02d of %02d" % (i, n))
-        print("==================")
+        print(SEPARATOR)
         n_features = i * step
         n_informative = n_features / 10
 
