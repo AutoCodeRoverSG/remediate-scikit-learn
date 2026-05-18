@@ -93,12 +93,11 @@ MAX_INT = np.iinfo(np.int32).max
 
 
 def _generate_sample_indices(
-    random_state, n_samples, n_samples_bootstrap, sample_weight
+    random_instance, n_samples, n_samples_bootstrap, sample_weight
 ):
     """
     Private function used to _parallel_build_trees function."""
 
-    random_instance = check_random_state(random_state)
     if sample_weight is None:
         sample_indices = random_instance.randint(0, n_samples, n_samples_bootstrap)
     else:
@@ -114,13 +113,22 @@ def _generate_sample_indices(
 
 
 def _generate_unsampled_indices(
-    random_state, n_samples, n_samples_bootstrap, sample_weight
+    seed, n_samples, n_samples_bootstrap, sample_weight
 ):
     """
     Private function used to forest._set_oob_score function."""
-    sample_indices = _generate_sample_indices(
-        random_state, n_samples, n_samples_bootstrap, sample_weight
-    )
+    random_instance = check_random_state(seed)
+    if sample_weight is None:
+        sample_indices = random_instance.randint(0, n_samples, n_samples_bootstrap)
+    else:
+        normalized_sample_weight = sample_weight / np.sum(sample_weight)
+        sample_indices = random_instance.choice(
+            n_samples,
+            n_samples_bootstrap,
+            replace=True,
+            p=normalized_sample_weight,
+        )
+    sample_indices = sample_indices.astype(np.int32)
     sample_counts = np.bincount(sample_indices, minlength=n_samples)
     unsampled_mask = sample_counts == 0
     indices_range = np.arange(n_samples)
@@ -149,8 +157,9 @@ def _parallel_build_trees(
 
     if bootstrap:
         n_samples = X.shape[0]
+        random_instance = check_random_state(tree.random_state)
         indices = _generate_sample_indices(
-            tree.random_state, n_samples, n_samples_bootstrap, sample_weight
+            random_instance, n_samples, n_samples_bootstrap, sample_weight
         )
         # Simulate row-wise sampling by passing counts as sample_weight in trees.
         sample_weight_tree = np.bincount(indices, minlength=n_samples)
@@ -208,7 +217,7 @@ class BaseForest(MultiOutputMixin, BaseEnsemble, metaclass=ABCMeta):
         estimator,
         n_estimators=100,
         *,
-        estimator_params=tuple(),
+        estimator_params=(),
         bootstrap=False,
         oob_score=False,
         n_jobs=None,
@@ -456,7 +465,7 @@ class BaseForest(MultiOutputMixin, BaseEnsemble, metaclass=ABCMeta):
 
             trees = [
                 self._make_estimator(append=False, random_state=random_state)
-                for i in range(n_more_estimators)
+                for _ in range(n_more_estimators)
             ]
 
             # Parallel loop: we prefer the threading backend as the Cython code
@@ -671,8 +680,9 @@ class BaseForest(MultiOutputMixin, BaseEnsemble, metaclass=ABCMeta):
                 seed = tree.random_state
                 # Operations accessing random_state must be performed identically
                 # to those in `_parallel_build_trees()`
+                random_instance = check_random_state(seed)
                 yield _generate_sample_indices(
-                    seed,
+                    random_instance,
                     self._n_samples,
                     self._n_samples_bootstrap,
                     self._sample_weight,
@@ -690,7 +700,7 @@ class BaseForest(MultiOutputMixin, BaseEnsemble, metaclass=ABCMeta):
         to reduce the object memory footprint by not storing the sampling
         data. Thus fetching the property may be slower than expected.
         """
-        return [sample_indices for sample_indices in self._get_estimators_indices()]
+        return list(self._get_estimators_indices())
 
     def __sklearn_tags__(self):
         tags = super().__sklearn_tags__()
@@ -731,7 +741,7 @@ class ForestClassifier(ClassifierMixin, BaseForest, metaclass=ABCMeta):
         estimator,
         n_estimators=100,
         *,
-        estimator_params=tuple(),
+        estimator_params=(),
         bootstrap=False,
         oob_score=False,
         n_jobs=None,
@@ -869,9 +879,7 @@ class ForestClassifier(ClassifierMixin, BaseForest, metaclass=ABCMeta):
                 y=y_original[:, k],
                 sample_weight=sample_weight,
             )
-            class_weight_k = {
-                key: val for (key, val) in zip(self.classes_[k], class_weight_k_vect)
-            }
+            class_weight_k = dict(zip(self.classes_[k], class_weight_k_vect))
             class_weight.append(class_weight_k)
         if self.n_outputs_ == 1:
             class_weight = class_weight[0]
@@ -958,8 +966,8 @@ class ForestClassifier(ClassifierMixin, BaseForest, metaclass=ABCMeta):
             for e in self.estimators_
         )
 
-        for proba in all_proba:
-            proba /= len(self.estimators_)
+        for i in range(len(all_proba)):
+            all_proba[i] /= len(self.estimators_)
 
         if len(all_proba) == 1:
             return all_proba[0]
@@ -1019,7 +1027,7 @@ class ForestRegressor(RegressorMixin, BaseForest, metaclass=ABCMeta):
         estimator,
         n_estimators=100,
         *,
-        estimator_params=tuple(),
+        estimator_params=(),
         bootstrap=False,
         oob_score=False,
         n_jobs=None,
