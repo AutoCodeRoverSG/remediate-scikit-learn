@@ -91,7 +91,7 @@ if args.missing_fraction:
     X[mask] = np.nan
 
 if args.random_sample_weights:
-    sample_weight = np.random.rand(len(X)) * 10
+    sample_weight = np.random.default_rng(0).random(len(X)) * 10
 else:
     sample_weight = None
 
