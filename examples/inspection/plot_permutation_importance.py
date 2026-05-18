@@ -47,9 +47,9 @@ from sklearn.datasets import fetch_openml
 from sklearn.model_selection import train_test_split
 
 X, y = fetch_openml("titanic", version=1, as_frame=True, return_X_y=True)
-rng = np.random.RandomState(seed=42)
-X["random_cat"] = rng.randint(3, size=X.shape[0])
-X["random_num"] = rng.randn(X.shape[0])
+rng = np.random.default_rng(seed=42)
+X["random_cat"] = rng.integers(3, size=X.shape[0])
+X["random_num"] = rng.standard_normal(X.shape[0])
 
 categorical_columns = ["pclass", "sex", "embarked", "random_cat"]
 numerical_columns = ["age", "sibsp", "parch", "fare", "random_num"]
@@ -88,7 +88,8 @@ rf = Pipeline(
     [
         ("preprocess", preprocessing),
         ("classifier", RandomForestClassifier(random_state=42)),
-    ]
+    ],
+    memory=None,
 )
 rf.fit(X_train, y_train)
 
@@ -142,6 +143,8 @@ print(f"RF test accuracy: {rf.score(X_test, y_test):.3f}")
 # `random_num` and `random_cat` features have a non-null importance.
 import pandas as pd
 
+DECREASE_LABEL = "Decrease in accuracy score"
+
 feature_names = rf[:-1].get_feature_names_out()
 
 mdi_importances = pd.Series(
@@ -176,7 +179,7 @@ importances = pd.DataFrame(
 ax = importances.plot.box(vert=False, whis=10)
 ax.set_title("Permutation Importances (test set)")
 ax.axvline(x=0, color="k", linestyle="--")
-ax.set_xlabel("Decrease in accuracy score")
+ax.set_xlabel(DECREASE_LABEL)
 ax.figure.tight_layout()
 
 # %%
@@ -197,7 +200,7 @@ importances = pd.DataFrame(
 ax = importances.plot.box(vert=False, whis=10)
 ax.set_title("Permutation Importances (train set)")
 ax.axvline(x=0, color="k", linestyle="--")
-ax.set_xlabel("Decrease in accuracy score")
+ax.set_xlabel(DECREASE_LABEL)
 ax.figure.tight_layout()
 
 # %%
@@ -235,7 +238,7 @@ test_importances = pd.DataFrame(
 for name, importances in zip(["train", "test"], [train_importances, test_importances]):
     ax = importances.plot.box(vert=False, whis=10)
     ax.set_title(f"Permutation Importances ({name} set)")
-    ax.set_xlabel("Decrease in accuracy score")
+    ax.set_xlabel(DECREASE_LABEL)
     ax.axvline(x=0, color="k", linestyle="--")
     ax.figure.tight_layout()
 

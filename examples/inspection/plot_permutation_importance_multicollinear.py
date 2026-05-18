@@ -35,6 +35,9 @@ from sklearn.inspection import permutation_importance
 from sklearn.utils.fixes import parse_version
 
 
+_ACCURACY_DECREASE_LABEL = "Decrease in accuracy score"
+
+
 def plot_permutation_importance(clf, X, y, ax):
     result = permutation_importance(clf, X, y, n_repeats=10, random_state=42, n_jobs=2)
     perm_sorted_idx = result.importances_mean.argsort()
@@ -83,7 +86,7 @@ fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 8))
 mdi_importances.sort_values().plot.barh(ax=ax1)
 ax1.set_xlabel("Gini importance")
 plot_permutation_importance(clf, X_train, y_train, ax2)
-ax2.set_xlabel("Decrease in accuracy score")
+ax2.set_xlabel(_ACCURACY_DECREASE_LABEL)
 fig.suptitle(
     "Impurity-based vs. permutation importances on multicollinear features (train set)"
 )
@@ -110,7 +113,7 @@ _ = fig.tight_layout()
 fig, ax = plt.subplots(figsize=(7, 6))
 plot_permutation_importance(clf, X_test, y_test, ax)
 ax.set_title("Permutation Importances on multicollinear features\n(test set)")
-ax.set_xlabel("Decrease in accuracy score")
+ax.set_xlabel(_ACCURACY_DECREASE_LABEL)
 _ = ax.figure.tight_layout()
 
 # %%
@@ -187,6 +190,6 @@ print(
 fig, ax = plt.subplots(figsize=(7, 6))
 plot_permutation_importance(clf_sel, X_test_sel, y_test, ax)
 ax.set_title("Permutation Importances on selected subset of features\n(test set)")
-ax.set_xlabel("Decrease in accuracy score")
+ax.set_xlabel(_ACCURACY_DECREASE_LABEL)
 ax.figure.tight_layout()
 plt.show()
