@@ -29,8 +29,8 @@ def _blobs_dataset(n_samples=500000, n_features=3, n_clusters=100, dtype=np.floa
     )
     X = X.astype(dtype, copy=False)
 
-    X, X_val = train_test_split(X, test_size=0.1, random_state=0)
-    return X, X_val, None, None
+    X, x_val = train_test_split(X, test_size=0.1, random_state=0)
+    return X, x_val, None, None
 
 
 @M.cache
@@ -40,8 +40,8 @@ def _20newsgroups_highdim_dataset(n_samples=None, ngrams=(1, 1), dtype=np.float3
     X = vectorizer.fit_transform(newsgroups.data[:n_samples])
     y = newsgroups.target[:n_samples]
 
-    X, X_val, y, y_val = train_test_split(X, y, test_size=0.1, random_state=0)
-    return X, X_val, y, y_val
+    X, x_val, y, y_val = train_test_split(X, y, test_size=0.1, random_state=0)
+    return X, x_val, y, y_val
 
 
 @M.cache
@@ -54,8 +54,8 @@ def _20newsgroups_lowdim_dataset(n_components=100, ngrams=(1, 1), dtype=np.float
     X = svd.fit_transform(X)
     y = newsgroups.target
 
-    X, X_val, y, y_val = train_test_split(X, y, test_size=0.1, random_state=0)
-    return X, X_val, y, y_val
+    X, x_val, y, y_val = train_test_split(X, y, test_size=0.1, random_state=0)
+    return X, x_val, y, y_val
 
 
 @M.cache
@@ -64,8 +64,8 @@ def _mnist_dataset(dtype=np.float32):
     X = X.astype(dtype, copy=False)
     X = MaxAbsScaler().fit_transform(X)
 
-    X, X_val, y, y_val = train_test_split(X, y, test_size=0.1, random_state=0)
-    return X, X_val, y, y_val
+    X, x_val, y, y_val = train_test_split(X, y, test_size=0.1, random_state=0)
+    return X, x_val, y, y_val
 
 
 @M.cache
@@ -76,8 +76,8 @@ def _digits_dataset(n_samples=None, dtype=np.float32):
     X = X[:n_samples]
     y = y[:n_samples]
 
-    X, X_val, y, y_val = train_test_split(X, y, test_size=0.1, random_state=0)
-    return X, X_val, y, y_val
+    X, x_val, y, y_val = train_test_split(X, y, test_size=0.1, random_state=0)
+    return X, x_val, y, y_val
 
 
 @M.cache
@@ -92,8 +92,8 @@ def _synth_regression_dataset(n_samples=100000, n_features=100, dtype=np.float32
     X = X.astype(dtype, copy=False)
     X = StandardScaler().fit_transform(X)
 
-    X, X_val, y, y_val = train_test_split(X, y, test_size=0.1, random_state=0)
-    return X, X_val, y, y_val
+    X, x_val, y, y_val = train_test_split(X, y, test_size=0.1, random_state=0)
+    return X, x_val, y, y_val
 
 
 @M.cache
@@ -110,8 +110,8 @@ def _synth_regression_sparse_dataset(
     y = X.dot(coefs.toarray()).reshape(-1)
     y += 0.2 * y.std() * np.random.randn(n_samples)
 
-    X, X_val, y, y_val = train_test_split(X, y, test_size=0.1, random_state=0)
-    return X, X_val, y, y_val
+    X, x_val, y, y_val = train_test_split(X, y, test_size=0.1, random_state=0)
+    return X, x_val, y, y_val
 
 
 @M.cache
@@ -129,22 +129,22 @@ def _synth_classification_dataset(
     X = X.astype(dtype, copy=False)
     X = StandardScaler().fit_transform(X)
 
-    X, X_val, y, y_val = train_test_split(X, y, test_size=0.1, random_state=0)
-    return X, X_val, y, y_val
+    X, x_val, y, y_val = train_test_split(X, y, test_size=0.1, random_state=0)
+    return X, x_val, y, y_val
 
 
 @M.cache
 def _olivetti_faces_dataset():
     dataset = fetch_olivetti_faces(shuffle=True, random_state=42)
     faces = dataset.data
-    n_samples, n_features = faces.shape
+    n_samples, _ = faces.shape
     faces_centered = faces - faces.mean(axis=0)
     # local centering
     faces_centered -= faces_centered.mean(axis=1).reshape(n_samples, -1)
     X = faces_centered
 
-    X, X_val = train_test_split(X, test_size=0.1, random_state=0)
-    return X, X_val, None, None
+    X, x_val = train_test_split(X, test_size=0.1, random_state=0)
+    return X, x_val, None, None
 
 
 @M.cache
