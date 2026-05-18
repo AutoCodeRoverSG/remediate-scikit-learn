@@ -302,12 +302,12 @@ def test_pca_solver_equivalence(
         random_state=global_random_seed,
         **extra_other_kwargs,
     )
-    X_trans_full_train = pca_full.fit_transform(X_train)
-    assert np.isfinite(X_trans_full_train).all()
-    assert X_trans_full_train.dtype == global_dtype
-    X_trans_other_train = pca_other.fit_transform(X_train)
-    assert np.isfinite(X_trans_other_train).all()
-    assert X_trans_other_train.dtype == global_dtype
+    x_trans_full_train = pca_full.fit_transform(X_train)
+    assert np.isfinite(x_trans_full_train).all()
+    assert x_trans_full_train.dtype == global_dtype
+    x_trans_other_train = pca_other.fit_transform(X_train)
+    assert np.isfinite(x_trans_other_train).all()
+    assert x_trans_other_train.dtype == global_dtype
 
     assert (pca_full.explained_variance_ >= 0).all()
     assert_allclose(pca_full.explained_variance_, pca_other.explained_variance_, **tols)
@@ -329,47 +329,47 @@ def test_pca_solver_equivalence(
 
     # As a result the output of fit_transform should be the same:
     assert_allclose(
-        X_trans_other_train[:, stable], X_trans_full_train[:, stable], **tols
+        x_trans_other_train[:, stable], x_trans_full_train[:, stable], **tols
     )
 
     # And similarly for the output of transform on new data (except for the
     # last component that can be underdetermined):
-    X_trans_full_test = pca_full.transform(X_test)
-    assert np.isfinite(X_trans_full_test).all()
-    assert X_trans_full_test.dtype == global_dtype
-    X_trans_other_test = pca_other.transform(X_test)
-    assert np.isfinite(X_trans_other_test).all()
-    assert X_trans_other_test.dtype == global_dtype
-    assert_allclose(X_trans_other_test[:, stable], X_trans_full_test[:, stable], **tols)
+    x_trans_full_test = pca_full.transform(X_test)
+    assert np.isfinite(x_trans_full_test).all()
+    assert x_trans_full_test.dtype == global_dtype
+    x_trans_other_test = pca_other.transform(X_test)
+    assert np.isfinite(x_trans_other_test).all()
+    assert x_trans_other_test.dtype == global_dtype
+    assert_allclose(x_trans_other_test[:, stable], x_trans_full_test[:, stable], **tols)
 
     # Check that inverse transform reconstructions for both solvers are
     # compatible.
-    X_recons_full_test = pca_full.inverse_transform(X_trans_full_test)
-    assert np.isfinite(X_recons_full_test).all()
-    assert X_recons_full_test.dtype == global_dtype
-    X_recons_other_test = pca_other.inverse_transform(X_trans_other_test)
-    assert np.isfinite(X_recons_other_test).all()
-    assert X_recons_other_test.dtype == global_dtype
+    x_recons_full_test = pca_full.inverse_transform(x_trans_full_test)
+    assert np.isfinite(x_recons_full_test).all()
+    assert x_recons_full_test.dtype == global_dtype
+    x_recons_other_test = pca_other.inverse_transform(x_trans_other_test)
+    assert np.isfinite(x_recons_other_test).all()
+    assert x_recons_other_test.dtype == global_dtype
 
     if pca_full.components_.shape[0] == pca_full.components_.shape[1]:
         # In this case, the models should have learned the same invertible
         # transform. They should therefore both be able to reconstruct the test
         # data.
-        assert_allclose(X_recons_full_test, X_test, **tols)
-        assert_allclose(X_recons_other_test, X_test, **tols)
+        assert_allclose(x_recons_full_test, X_test, **tols)
+        assert_allclose(x_recons_other_test, X_test, **tols)
     elif pca_full.components_.shape[0] < rank:
         # In the absence of noisy components, both models should be able to
         # reconstruct the same low-rank approximation of the original data.
         assert pca_full.explained_variance_.min() > variance_threshold
-        assert_allclose(X_recons_full_test, X_recons_other_test, **tols)
+        assert_allclose(x_recons_full_test, x_recons_other_test, **tols)
     else:
         # When n_features > n_samples and n_components is larger than the rank
         # of the training set, the output of the `inverse_transform` function
         # is ill-defined. We can only check that we reach the same fixed point
         # after another round of transform:
         assert_allclose(
-            pca_full.transform(X_recons_full_test)[:, stable],
-            pca_other.transform(X_recons_other_test)[:, stable],
+            pca_full.transform(x_recons_full_test)[:, stable],
+            pca_other.transform(x_recons_other_test)[:, stable],
             **tols,
         )
 
@@ -386,8 +386,8 @@ def test_pca_solver_equivalence(
 @pytest.mark.parametrize("svd_solver", PCA_SOLVERS)
 def test_pca_explained_variance_empirical(X, svd_solver):
     pca = PCA(n_components=2, svd_solver=svd_solver, random_state=0)
-    X_pca = pca.fit_transform(X)
-    assert_allclose(pca.explained_variance_, np.var(X_pca, ddof=1, axis=0))
+    x_pca = pca.fit_transform(X)
+    assert_allclose(pca.explained_variance_, np.var(x_pca, ddof=1, axis=0))
 
     expected_result = np.linalg.eig(np.cov(X, rowvar=False))[0]
     expected_result = sorted(expected_result, reverse=True)[:2]
@@ -416,26 +416,26 @@ def test_pca_singular_values(svd_solver):
     X = rng.randn(n_samples, n_features)
 
     pca = PCA(n_components=2, svd_solver=svd_solver, random_state=rng)
-    X_trans = pca.fit_transform(X)
+    x_trans = pca.fit_transform(X)
 
     # compare to the Frobenius norm
     assert_allclose(
-        np.sum(pca.singular_values_**2), np.linalg.norm(X_trans, "fro") ** 2
+        np.sum(pca.singular_values_**2), np.linalg.norm(x_trans, "fro") ** 2
     )
     # Compare to the 2-norms of the score vectors
-    assert_allclose(pca.singular_values_, np.sqrt(np.sum(X_trans**2, axis=0)))
+    assert_allclose(pca.singular_values_, np.sqrt(np.sum(x_trans**2, axis=0)))
 
     # set the singular values and see what er get back
     n_samples, n_features = 100, 110
     X = rng.randn(n_samples, n_features)
 
     pca = PCA(n_components=3, svd_solver=svd_solver, random_state=rng)
-    X_trans = pca.fit_transform(X)
-    X_trans /= np.sqrt(np.sum(X_trans**2, axis=0))
-    X_trans[:, 0] *= 3.142
-    X_trans[:, 1] *= 2.718
-    X_hat = np.dot(X_trans, pca.components_)
-    pca.fit(X_hat)
+    x_trans = pca.fit_transform(X)
+    x_trans /= np.sqrt(np.sum(x_trans**2, axis=0))
+    x_trans[:, 0] *= 3.142
+    x_trans[:, 1] *= 2.718
+    x_hat = np.dot(x_trans, pca.components_)
+    pca.fit(x_hat)
     assert_allclose(pca.singular_values_, [3.142, 2.718, 1.0])
 
 
