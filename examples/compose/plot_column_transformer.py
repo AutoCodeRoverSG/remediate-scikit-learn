@@ -141,7 +141,8 @@ pipeline = Pipeline(
                             [
                                 ("tfidf", TfidfVectorizer()),
                                 ("best", PCA(n_components=50, svd_solver="arpack")),
-                            ]
+                            ],
+                            memory=None,
                         ),
                         1,
                     ),
@@ -158,7 +159,8 @@ pipeline = Pipeline(
                                     "vect",
                                     DictVectorizer(),
                                 ),  # list of dicts -> feature matrix
-                            ]
+                            ],
+                            memory=None,
                         ),
                         1,
                     ),
@@ -174,6 +176,7 @@ pipeline = Pipeline(
         # Use an SVC classifier on the combined features
         ("svc", LinearSVC(dual=False)),
     ],
+    memory=None,
     verbose=True,
 )
 
