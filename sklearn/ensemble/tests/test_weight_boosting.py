@@ -96,7 +96,7 @@ def test_iris():
     # Check we used multiple estimators
     assert len(clf.estimators_) > 1
     # Check for distinct random states (see issue #7408)
-    assert len(set(est.random_state for est in clf.estimators_)) == len(clf.estimators_)
+    assert len({est.random_state for est in clf.estimators_}) == len(clf.estimators_)
 
 
 @pytest.mark.parametrize("loss", ["linear", "square", "exponential"])
@@ -110,7 +110,7 @@ def test_diabetes(loss):
     # Check we used multiple estimators
     assert len(reg.estimators_) > 1
     # Check for distinct random states (see issue #7408)
-    assert len(set(est.random_state for est in reg.estimators_)) == len(reg.estimators_)
+    assert len({est.random_state for est in reg.estimators_}) == len(reg.estimators_)
 
 
 def test_staged_predict():
@@ -123,13 +123,13 @@ def test_staged_predict():
     clf.fit(iris.data, iris.target, sample_weight=iris_weights)
 
     predictions = clf.predict(iris.data)
-    staged_predictions = [p for p in clf.staged_predict(iris.data)]
+    staged_predictions = list(clf.staged_predict(iris.data))
     proba = clf.predict_proba(iris.data)
-    staged_probas = [p for p in clf.staged_predict_proba(iris.data)]
+    staged_probas = list(clf.staged_predict_proba(iris.data))
     score = clf.score(iris.data, iris.target, sample_weight=iris_weights)
-    staged_scores = [
-        s for s in clf.staged_score(iris.data, iris.target, sample_weight=iris_weights)
-    ]
+    staged_scores = list(
+        clf.staged_score(iris.data, iris.target, sample_weight=iris_weights)
+    )
 
     assert len(staged_predictions) == 10
     assert_array_almost_equal(predictions, staged_predictions[-1])
@@ -143,14 +143,13 @@ def test_staged_predict():
     clf.fit(diabetes.data, diabetes.target, sample_weight=diabetes_weights)
 
     predictions = clf.predict(diabetes.data)
-    staged_predictions = [p for p in clf.staged_predict(diabetes.data)]
+    staged_predictions = list(clf.staged_predict(diabetes.data))
     score = clf.score(diabetes.data, diabetes.target, sample_weight=diabetes_weights)
-    staged_scores = [
-        s
-        for s in clf.staged_score(
+    staged_scores = list(
+        clf.staged_score(
             diabetes.data, diabetes.target, sample_weight=diabetes_weights
         )
-    ]
+    )
 
     assert len(staged_predictions) == 10
     assert_array_almost_equal(predictions, staged_predictions[-1])
@@ -253,11 +252,11 @@ def test_estimator():
     clf.fit(X, y_regr)
 
     # Check that an empty discrete ensemble fails in fit, not predict.
-    X_fail = [[1, 1], [1, 1], [1, 1], [1, 1]]
+    x_fail = [[1, 1], [1, 1], [1, 1], [1, 1]]
     y_fail = ["foo", "bar", 1, 2]
     clf = AdaBoostClassifier(SVC())
     with pytest.raises(ValueError, match="worse than random"):
-        clf.fit(X_fail, y_fail)
+        clf.fit(x_fail, y_fail)
 
 
 def test_sample_weights_infinite():
@@ -300,14 +299,14 @@ def test_sparse_classification(sparse_container, expected_internal_type):
 
     X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
 
-    X_train_sparse = sparse_container(X_train)
-    X_test_sparse = sparse_container(X_test)
+    x_train_sparse = sparse_container(X_train)
+    x_test_sparse = sparse_container(X_test)
 
     # Trained on sparse format
     sparse_classifier = AdaBoostClassifier(
         estimator=CustomProbabilisticClassifier(),
         random_state=1,
-    ).fit(X_train_sparse, y_train)
+    ).fit(x_train_sparse, y_train)
 
     # Trained on dense format
     dense_classifier = AdaBoostClassifier(
@@ -316,50 +315,50 @@ def test_sparse_classification(sparse_container, expected_internal_type):
     ).fit(X_train, y_train)
 
     # predict
-    sparse_clf_results = sparse_classifier.predict(X_test_sparse)
+    sparse_clf_results = sparse_classifier.predict(x_test_sparse)
     dense_clf_results = dense_classifier.predict(X_test)
     assert_array_equal(sparse_clf_results, dense_clf_results)
 
     # decision_function
-    sparse_clf_results = sparse_classifier.decision_function(X_test_sparse)
+    sparse_clf_results = sparse_classifier.decision_function(x_test_sparse)
     dense_clf_results = dense_classifier.decision_function(X_test)
     assert_array_almost_equal(sparse_clf_results, dense_clf_results)
 
     # predict_log_proba
-    sparse_clf_results = sparse_classifier.predict_log_proba(X_test_sparse)
+    sparse_clf_results = sparse_classifier.predict_log_proba(x_test_sparse)
     dense_clf_results = dense_classifier.predict_log_proba(X_test)
     assert_array_almost_equal(sparse_clf_results, dense_clf_results)
 
     # predict_proba
-    sparse_clf_results = sparse_classifier.predict_proba(X_test_sparse)
+    sparse_clf_results = sparse_classifier.predict_proba(x_test_sparse)
     dense_clf_results = dense_classifier.predict_proba(X_test)
     assert_array_almost_equal(sparse_clf_results, dense_clf_results)
 
     # score
-    sparse_clf_results = sparse_classifier.score(X_test_sparse, y_test)
+    sparse_clf_results = sparse_classifier.score(x_test_sparse, y_test)
     dense_clf_results = dense_classifier.score(X_test, y_test)
     assert_array_almost_equal(sparse_clf_results, dense_clf_results)
 
     # staged_decision_function
-    sparse_clf_results = sparse_classifier.staged_decision_function(X_test_sparse)
+    sparse_clf_results = sparse_classifier.staged_decision_function(x_test_sparse)
     dense_clf_results = dense_classifier.staged_decision_function(X_test)
     for sparse_clf_res, dense_clf_res in zip(sparse_clf_results, dense_clf_results):
         assert_array_almost_equal(sparse_clf_res, dense_clf_res)
 
     # staged_predict
-    sparse_clf_results = sparse_classifier.staged_predict(X_test_sparse)
+    sparse_clf_results = sparse_classifier.staged_predict(x_test_sparse)
     dense_clf_results = dense_classifier.staged_predict(X_test)
     for sparse_clf_res, dense_clf_res in zip(sparse_clf_results, dense_clf_results):
         assert_array_equal(sparse_clf_res, dense_clf_res)
 
     # staged_predict_proba
-    sparse_clf_results = sparse_classifier.staged_predict_proba(X_test_sparse)
+    sparse_clf_results = sparse_classifier.staged_predict_proba(x_test_sparse)
     dense_clf_results = dense_classifier.staged_predict_proba(X_test)
     for sparse_clf_res, dense_clf_res in zip(sparse_clf_results, dense_clf_results):
         assert_array_almost_equal(sparse_clf_res, dense_clf_res)
 
     # staged_score
-    sparse_clf_results = sparse_classifier.staged_score(X_test_sparse, y_test)
+    sparse_clf_results = sparse_classifier.staged_score(x_test_sparse, y_test)
     dense_clf_results = dense_classifier.staged_score(X_test, y_test)
     for sparse_clf_res, dense_clf_res in zip(sparse_clf_results, dense_clf_results):
         assert_array_equal(sparse_clf_res, dense_clf_res)
