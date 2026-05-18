@@ -54,41 +54,39 @@ def test_lda_default_prior_params(csr_container):
 @pytest.mark.parametrize("csr_container", CSR_CONTAINERS)
 def test_lda_fit_batch(csr_container):
     # Test LDA batch learning_offset (`fit` method with 'batch' learning)
-    rng = np.random.RandomState(0)
     n_components, X = _build_sparse_array(csr_container)
     lda = LatentDirichletAllocation(
         n_components=n_components,
         evaluate_every=1,
         learning_method="batch",
-        random_state=rng,
+        random_state=0,
     )
     lda.fit(X)
 
     correct_idx_grps = [(0, 1, 2), (3, 4, 5), (6, 7, 8)]
     for component in lda.components_:
         # Find top 3 words in each LDA component
-        top_idx = set(component.argsort()[-3:][::-1])
+        top_idx = set(component.argsort()[-3:])
         assert tuple(sorted(top_idx)) in correct_idx_grps
 
 
 @pytest.mark.parametrize("csr_container", CSR_CONTAINERS)
 def test_lda_fit_online(csr_container):
     # Test LDA online learning (`fit` method with 'online' learning)
-    rng = np.random.RandomState(0)
     n_components, X = _build_sparse_array(csr_container)
     lda = LatentDirichletAllocation(
         n_components=n_components,
         learning_offset=10.0,
         evaluate_every=1,
         learning_method="online",
-        random_state=rng,
+        random_state=0,
     )
     lda.fit(X)
 
     correct_idx_grps = [(0, 1, 2), (3, 4, 5), (6, 7, 8)]
     for component in lda.components_:
         # Find top 3 words in each LDA component
-        top_idx = set(component.argsort()[-3:][::-1])
+        top_idx = set(component.argsort()[-3:])
         assert tuple(sorted(top_idx)) in correct_idx_grps
 
 
