@@ -78,7 +78,7 @@ def test_kernel_pca_invalid_parameters():
     )
     err_ms = "Cannot fit_inverse_transform with a precomputed kernel"
     with pytest.raises(ValueError, match=err_ms):
-        estimator.fit(np.random.randn(10, 10))
+        estimator.fit(np.random.default_rng(0).standard_normal((10, 10)))
 
 
 def test_kernel_pca_consistent_transform(global_random_seed):
@@ -89,9 +89,9 @@ def test_kernel_pca_consistent_transform(global_random_seed):
     internal copy.
     """
     # X_fit_ needs to retain the old, unmodified copy of X
-    state = np.random.RandomState(global_random_seed)
-    X = state.rand(10, 10)
-    kpca = KernelPCA(random_state=state).fit(X)
+    rng = np.random.default_rng(global_random_seed)
+    X = rng.random((10, 10))
+    kpca = KernelPCA(random_state=global_random_seed).fit(X)
     transformed1 = kpca.transform(X)
 
     x_copy = X.copy()
@@ -105,14 +105,18 @@ def test_kernel_pca_deterministic_output(global_random_seed):
 
     Tests that the same inputs and random state produce the same output.
     """
-    rng = np.random.RandomState(global_random_seed)
-    X = rng.rand(10, 10)
+    rng = np.random.default_rng(global_random_seed)
+    X = rng.random((10, 10))
     eigen_solver = ("arpack", "dense")
 
     for solver in eigen_solver:
         transformed_x = np.zeros((20, 2))
         for i in range(20):
-            kpca = KernelPCA(n_components=2, eigen_solver=solver, random_state=rng)
+            kpca = KernelPCA(
+                n_components=2,
+                eigen_solver=solver,
+                random_state=global_random_seed,
+            )
             transformed_x[i, :] = kpca.fit_transform(X)[0]
         assert_allclose(transformed_x, np.tile(transformed_x[0, :], 20).reshape(20, 2))
 
@@ -124,9 +128,9 @@ def test_kernel_pca_sparse(csr_container, global_random_seed):
     Same test as ``test_kernel_pca except inverse_transform`` since it's not
     implemented for sparse matrices.
     """
-    rng = np.random.RandomState(global_random_seed)
-    x_fit = csr_container(rng.random_sample((5, 4)))
-    x_pred = csr_container(rng.random_sample((2, 4)))
+    rng = np.random.default_rng(global_random_seed)
+    x_fit = csr_container(rng.random((5, 4)))
+    x_pred = csr_container(rng.random((2, 4)))
 
     for eigen_solver in ("auto", "arpack", "randomized"):
         for kernel in ("linear", "rbf", "poly"):
@@ -162,9 +166,9 @@ def test_kernel_pca_linear_kernel(solver, n_features, global_random_seed):
 
     KernelPCA with linear kernel should produce the same output as PCA.
     """
-    rng = np.random.RandomState(global_random_seed)
-    x_fit = rng.random_sample((5, n_features))
-    x_pred = rng.random_sample((2, n_features))
+    rng = np.random.default_rng(global_random_seed)
+    x_fit = rng.random((5, n_features))
+    x_pred = rng.random((2, n_features))
 
     # for a linear kernel, kernel PCA should find the same projection as PCA
     # modulo the sign (direction)
@@ -187,9 +191,9 @@ def test_kernel_pca_n_components():
     For all solvers this tests that the output has the correct shape depending
     on the selected number of components.
     """
-    rng = np.random.RandomState(0)
-    x_fit = rng.random_sample((5, 4))
-    x_pred = rng.random_sample((2, 4))
+    rng = np.random.default_rng(0)
+    x_fit = rng.random((5, 4))
+    x_pred = rng.random((2, 4))
 
     for eigen_solver in ("dense", "arpack", "randomized"):
         for c in [1, 2, 4]:
@@ -248,9 +252,9 @@ def test_leave_zero_eig():
 
 def test_kernel_pca_precomputed(global_random_seed):
     """Test that kPCA works with a precomputed kernel, for all solvers"""
-    rng = np.random.RandomState(global_random_seed)
-    data_fit = rng.random_sample((5, 4))
-    data_pred = rng.random_sample((2, 4))
+    rng = np.random.default_rng(global_random_seed)
+    data_fit = rng.random((5, 4))
+    data_pred = rng.random((2, 4))
 
     for eigen_solver in ("dense", "arpack", "randomized"):
         result_kpca = (
@@ -371,7 +375,7 @@ def test_nested_circles():
 
     # The data is perfectly linearly separable in that space
     train_score = Perceptron(max_iter=5).fit(x_kpca, y).score(x_kpca, y)
-    assert train_score == 1.0
+    assert train_score == pytest.approx(1.0)
 
 
 def test_kernel_conditioning():
@@ -497,7 +501,7 @@ def test_kernel_pca_inverse_transform_reconstruction():
 
 
 def test_kernel_pca_raise_not_fitted_error():
-    X = np.random.randn(15).reshape(5, 3)
+    X = np.random.default_rng(0).standard_normal(15).reshape(5, 3)
     kpca = KernelPCA()
     kpca.fit(X)
     with pytest.raises(NotFittedError):
@@ -535,12 +539,12 @@ def test_kernel_pca_inverse_correct_gamma(global_random_seed):
 
     Non-regression test for #26280
     """
-    rng = np.random.RandomState(global_random_seed)
-    X = rng.random_sample((5, 4))
+    rng = np.random.default_rng(global_random_seed)
+    X = rng.random((5, 4))
 
     kwargs = {
         "n_components": 2,
-        "random_state": rng,
+        "random_state": global_random_seed,
         "fit_inverse_transform": True,
         "kernel": "rbf",
     }
