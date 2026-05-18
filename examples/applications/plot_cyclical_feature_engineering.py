@@ -87,7 +87,7 @@ _ = ax.set(
 # several complementary columns.
 #
 X = df.drop("count", axis="columns")
-X
+print(X)
 
 # %%
 # .. note::
@@ -266,6 +266,7 @@ naive_linear_pipeline = make_pipeline(
         verbose_feature_names_out=False,
     ),
     RidgeCV(alphas=alphas),
+    memory=None,
 )
 
 
@@ -314,6 +315,7 @@ one_hot_linear_pipeline = make_pipeline(
         verbose_feature_names_out=False,
     ),
     RidgeCV(alphas=alphas),
+    memory=None,
 )
 
 evaluate(one_hot_linear_pipeline, X, y, cv=ts_cv)
@@ -412,6 +414,7 @@ cyclic_cossin_transformer = ColumnTransformer(
 cyclic_cossin_linear_pipeline = make_pipeline(
     cyclic_cossin_transformer,
     RidgeCV(alphas=alphas),
+    memory=None,
 )
 evaluate(cyclic_cossin_linear_pipeline, X, y, cv=ts_cv)
 
@@ -486,6 +489,7 @@ cyclic_spline_transformer = ColumnTransformer(
 cyclic_spline_linear_pipeline = make_pipeline(
     cyclic_spline_transformer,
     RidgeCV(alphas=alphas),
+    memory=None,
 )
 evaluate(cyclic_spline_linear_pipeline, X, y, cv=ts_cv)
 
@@ -652,6 +656,7 @@ cyclic_spline_interactions_pipeline = make_pipeline(
         verbose_feature_names_out=True,
     ).set_output(transform="pandas"),
     RidgeCV(alphas=alphas),
+    memory=None,
 )
 evaluate(cyclic_spline_interactions_pipeline, X, y, cv=ts_cv)
 
@@ -678,6 +683,7 @@ cyclic_spline_poly_pipeline = make_pipeline(
     cyclic_spline_transformer,
     Nystroem(kernel="poly", degree=2, n_components=300, random_state=0),
     RidgeCV(alphas=alphas),
+    memory=None,
 )
 evaluate(cyclic_spline_poly_pipeline, X, y, cv=ts_cv)
 
@@ -705,6 +711,7 @@ one_hot_poly_pipeline = make_pipeline(
     ),
     Nystroem(kernel="poly", degree=2, n_components=300, random_state=0),
     RidgeCV(alphas=alphas),
+    memory=None,
 ).set_output(transform="pandas")
 evaluate(one_hot_poly_pipeline, X, y, cv=ts_cv)
 
