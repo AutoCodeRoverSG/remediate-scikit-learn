@@ -1508,7 +1508,7 @@ def test_X_val_in_fit(GradientBoosting, make_X_y, sample_weight, global_random_s
         X_train,
         y_train,
         sample_weight=sample_weight_train,
-        X_val=X_val,
+        x_val=X_val,
         y_val=y_val,
         sample_weight_val=sample_weight_val,
     )
@@ -1526,7 +1526,7 @@ def test_X_val_raises_missing_y_val():
         ValueError,
         match="X_val is provided, but y_val was not provided",
     ):
-        HistGradientBoostingClassifier().fit(X, y, X_val=X_val)
+        HistGradientBoostingClassifier().fit(X, y, x_val=X_val)
     with pytest.raises(
         ValueError,
         match="y_val is provided, but X_val was not provided",
