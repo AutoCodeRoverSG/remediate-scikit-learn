@@ -39,13 +39,13 @@ def compute_bench(samples_range, features_range, n_iter=3, rank=50):
             gc.collect()
             print("benchmarking scikit-learn randomized_svd: n_iter=0")
             tstart = time()
-            randomized_svd(X, rank, n_iter=0)
+            randomized_svd(X, rank, n_iter=0, random_state=0)
             results["scikit-learn randomized_svd (n_iter=0)"].append(time() - tstart)
 
             gc.collect()
             print("benchmarking scikit-learn randomized_svd: n_iter=%d " % n_iter)
             tstart = time()
-            randomized_svd(X, rank, n_iter=n_iter)
+            randomized_svd(X, rank, n_iter=n_iter, random_state=0)
             results["scikit-learn randomized_svd (n_iter=%d)" % n_iter].append(
                 time() - tstart
             )

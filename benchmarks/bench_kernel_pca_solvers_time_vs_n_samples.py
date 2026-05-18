@@ -41,6 +41,7 @@ of examples is fixed, and the desired number of components varies.
 # Authors: The scikit-learn developers
 # SPDX-License-Identifier: BSD-3-Clause
 
+import argparse
 import time
 
 import matplotlib.pyplot as plt
@@ -66,7 +67,13 @@ n_samples_range = [
 
 n_components = 100  # the number of principal components we want to use
 n_iter = 3  # the number of times each experiment will be repeated
-include_arpack = False  # set this to True to include arpack solver (slower)
+
+parser = argparse.ArgumentParser()
+parser.add_argument(
+    "--arpack", action="store_true", default=False, dest="include_arpack"
+)
+args = parser.parse_args()
+include_arpack = args.include_arpack  # set this to True to include arpack solver (slower)
 
 
 # 2- Generate random data

@@ -2,7 +2,6 @@ from collections import defaultdict
 from time import time
 
 import numpy as np
-from numpy import random as nr
 
 from sklearn.cluster import AgglomerativeClustering
 
@@ -10,6 +9,7 @@ from sklearn.cluster import AgglomerativeClustering
 def compute_bench(samples_range, features_range):
     it = 0
     results = defaultdict(lambda: [])
+    rng = np.random.default_rng(0)
 
     max_it = len(samples_range) * len(features_range)
     for n_samples in samples_range:
@@ -20,7 +20,7 @@ def compute_bench(samples_range, features_range):
             print("n_samples %05d; n_features %02d" % (n_samples, n_features))
             print("==============================")
             print()
-            data = nr.randint(-50, 51, (n_samples, n_features))
+            data = rng.integers(-50, 51, (n_samples, n_features))
 
             for linkage in ("single", "average", "complete", "ward"):
                 print(linkage.capitalize())
@@ -47,7 +47,7 @@ if __name__ == "__main__":
     max_time = max([max(i) for i in [t for (label, t) in results.items()]])
 
     colors = plt.get_cmap("tab10")(np.linspace(0, 1, 10))[:4]
-    lines = {linkage: None for linkage in results.keys()}
+    lines = dict.fromkeys(results.keys())
     fig, axs = plt.subplots(2, 2, sharex=True, sharey=True)
     fig.suptitle("Scikit-learn agglomerative clustering benchmark results", fontsize=16)
     for c, (label, timings) in zip(colors, sorted(results.items())):
