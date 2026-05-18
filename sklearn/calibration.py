@@ -1048,7 +1048,7 @@ class _SigmoidCalibration(RegressorMixin, BaseEstimator):
         self.a_, self.b_ = _sigmoid_calibration(X, y, sample_weight)
         return self
 
-    def predict(self, T):
+    def predict(self, t):
         """Predict new data by linear interpolation.
 
         Parameters
@@ -1061,8 +1061,8 @@ class _SigmoidCalibration(RegressorMixin, BaseEstimator):
         T_ : ndarray of shape (n_samples,)
             The predicted data.
         """
-        T = column_or_1d(T)
-        return expit(-(self.a_ * T + self.b_))
+        t = column_or_1d(t)
+        return expit(-(self.a_ * t + self.b_))
 
 
 class _TemperatureScaling(RegressorMixin, BaseEstimator):

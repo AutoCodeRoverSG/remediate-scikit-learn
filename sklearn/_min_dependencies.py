@@ -15,6 +15,7 @@ THREADPOOLCTL_MIN_VERSION = "3.5.0"
 PYTEST_MIN_VERSION = "7.1.2"
 CYTHON_MIN_VERSION = "3.1.2"
 
+DOCS_EXAMPLES = "docs, examples"
 
 # 'build' and 'install' is included to have structured metadata for CI.
 # It will NOT be included in setup's extras_require
@@ -28,9 +29,9 @@ dependent_packages = {
     "cython": (CYTHON_MIN_VERSION, "build"),
     "meson-python": ("0.17.1", "build"),
     "matplotlib": ("3.6.1", "benchmark, docs, examples, tests"),
-    "scikit-image": ("0.22.0", "docs, examples"),
+    "scikit-image": ("0.22.0", DOCS_EXAMPLES),
     "pandas": ("1.5.0", "benchmark, docs, examples, tests"),
-    "seaborn": ("0.13.0", "docs, examples"),
+    "seaborn": ("0.13.0", DOCS_EXAMPLES),
     "memory_profiler": ("0.57.0", "benchmark, docs"),
     "pytest": (PYTEST_MIN_VERSION, "tests"),
     "pytest-cov": ("2.9.0", "tests"),
@@ -47,7 +48,7 @@ dependent_packages = {
     "pooch": ("1.8.0", "docs, examples, tests"),
     "sphinx-prompt": ("1.4.0", "docs"),
     "sphinxext-opengraph": ("0.9.1", "docs"),
-    "plotly": ("5.22.0", "docs, examples"),
+    "plotly": ("5.22.0", DOCS_EXAMPLES),
     "sphinxcontrib-sass": ("0.3.4", "docs"),
     "sphinx-remove-toctrees": ("1.0.0.post1", "docs"),
     "sphinx-design": ("0.6.0", "docs"),
