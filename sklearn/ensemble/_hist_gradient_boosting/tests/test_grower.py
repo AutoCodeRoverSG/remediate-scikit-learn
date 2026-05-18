@@ -300,7 +300,7 @@ def assert_is_stump(grower):
 @pytest.mark.parametrize("max_depth", [1, 2, 3])
 def test_max_depth(max_depth):
     # Make sure max_depth parameter works as expected
-    rng = np.random.RandomState(seed=0)
+    rng = np.random.default_rng(seed=0)
 
     n_bins = 256
     n_samples = 1000
@@ -308,7 +308,7 @@ def test_max_depth(max_depth):
     # data = linear target, 3 features, 1 irrelevant.
     X = rng.normal(size=(n_samples, 3))
     y = X[:, 0] - X[:, 1]
-    mapper = _BinMapper(n_bins=n_bins, random_state=rng)
+    mapper = _BinMapper(n_bins=n_bins, random_state=0)
     X = mapper.fit_transform(X)
 
     all_gradients = y.astype(G_H_DTYPE)
@@ -351,9 +351,9 @@ def test_missing_value_predict_only():
     # were not encountered in the training data: the missing values are
     # assigned to whichever child has the most samples.
 
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
     n_samples = 100
-    x_binned = rng.randint(0, 256, size=(n_samples, 1), dtype=np.uint8)
+    x_binned = rng.integers(0, 256, size=(n_samples, 1), dtype=np.uint8)
     x_binned = np.asfortranarray(x_binned)
 
     gradients = rng.normal(size=n_samples).astype(G_H_DTYPE)
@@ -516,9 +516,9 @@ def test_ohe_equivalence(min_samples_leaf, n_unique_categories, target):
     # Make sure that native categorical splits are equivalent to using a OHE,
     # when given enough depth
 
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
     n_samples = 10_000
-    x_binned = rng.randint(0, n_unique_categories, size=(n_samples, 1), dtype=np.uint8)
+    x_binned = rng.integers(0, n_unique_categories, size=(n_samples, 1), dtype=np.uint8)
 
     x_ohe = OneHotEncoder(sparse_output=False).fit_transform(x_binned)
     x_ohe = np.asfortranarray(x_ohe).astype(np.uint8)
@@ -528,7 +528,7 @@ def test_ohe_equivalence(min_samples_leaf, n_unique_categories, target):
     elif target == "binary":
         gradients = (x_binned % 2).reshape(-1)
     else:
-        gradients = rng.randn(n_samples)
+        gradients = rng.standard_normal(n_samples)
     gradients = gradients.astype(G_H_DTYPE)
 
     hessians = np.ones(shape=1, dtype=G_H_DTYPE)
@@ -586,9 +586,9 @@ def test_grower_interaction_constraints():
         return res
 
     for seed in range(20):
-        rng = np.random.RandomState(seed)
+        rng = np.random.default_rng(seed)
 
-        x_binned = rng.randint(
+        x_binned = rng.integers(
             0, n_bins - 1, size=(n_samples, n_features), dtype=X_BINNED_DTYPE
         )
         x_binned = np.asfortranarray(x_binned)
