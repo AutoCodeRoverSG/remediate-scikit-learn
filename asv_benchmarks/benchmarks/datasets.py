@@ -103,12 +103,12 @@ def _synth_regression_sparse_dataset(
     X = _sparse_random_array(
         (n_samples, n_features), density=density, format="csr", random_state=0
     )
-    X.data = np.random.RandomState(0).randn(X.getnnz())
+    X.data = np.random.default_rng(0).standard_normal(X.getnnz())
     X = X.astype(dtype, copy=False)
     coefs = _sparse_random_array((n_features, 1), density=0.5, random_state=0)
-    coefs.data = np.random.RandomState(0).randn(coefs.getnnz())
+    coefs.data = np.random.default_rng(0).standard_normal(coefs.getnnz())
     y = X.dot(coefs.toarray()).reshape(-1)
-    y += 0.2 * y.std() * np.random.randn(n_samples)
+    y += 0.2 * y.std() * np.random.default_rng(0).standard_normal(n_samples)
 
     X, x_val, y, y_val = train_test_split(X, y, test_size=0.1, random_state=0)
     return X, x_val, y, y_val
@@ -152,7 +152,7 @@ def _random_dataset(
     n_samples=1000, n_features=1000, representation="dense", dtype=np.float32
 ):
     if representation == "dense":
-        X = np.random.RandomState(0).random_sample((n_samples, n_features))
+        X = np.random.default_rng(0).random((n_samples, n_features))
         X = X.astype(dtype, copy=False)
     else:
         X = _sparse_random_array(

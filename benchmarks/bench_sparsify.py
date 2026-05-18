@@ -49,7 +49,7 @@ from scipy.sparse import csr_matrix
 from sklearn.linear_model import SGDRegressor
 from sklearn.metrics import r2_score
 
-np.random.seed(42)
+rng = np.random.default_rng(42)
 
 
 def sparsity_ratio(X):
@@ -57,20 +57,20 @@ def sparsity_ratio(X):
 
 
 n_samples, n_features = 5000, 300
-X = np.random.randn(n_samples, n_features)
+X = rng.standard_normal((n_samples, n_features))
 inds = np.arange(n_samples)
-np.random.shuffle(inds)
+rng.shuffle(inds)
 X[inds[int(n_features / 1.2) :]] = 0  # sparsify input
 print("input data sparsity: %f" % sparsity_ratio(X))
-coef = 3 * np.random.randn(n_features)
+coef = 3 * rng.standard_normal(n_features)
 inds = np.arange(n_features)
-np.random.shuffle(inds)
+rng.shuffle(inds)
 coef[inds[n_features // 2 :]] = 0  # sparsify coef
 print("true coef sparsity: %f" % sparsity_ratio(coef))
 y = np.dot(X, coef)
 
 # add noise
-y += 0.01 * np.random.normal((n_samples,))
+y += 0.01 * rng.normal(size=(n_samples,))
 
 # Split data in train set and test set
 n_samples = X.shape[0]
