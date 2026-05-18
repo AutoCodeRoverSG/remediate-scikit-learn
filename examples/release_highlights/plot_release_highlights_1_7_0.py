@@ -37,8 +37,10 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
 
-model = make_pipeline(StandardScaler(with_std=False), LogisticRegression(C=2.0))
-model
+model = make_pipeline(
+    StandardScaler(with_std=False), LogisticRegression(C=2.0), memory=None
+)
+print(model)
 
 # %%
 # Custom validation set for histogram-based Gradient Boosting estimators
@@ -65,7 +67,11 @@ X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.2, random_st
 clf = HistGradientBoostingClassifier()
 clf.set_fit_request(X_val=True, y_val=True)
 
-model = Pipeline([("sc", StandardScaler()), ("clf", clf)], transform_input=["X_val"])
+model = Pipeline(
+    [("sc", StandardScaler()), ("clf", clf)],
+    memory=None,
+    transform_input=["X_val"],
+)
 model.fit(X, y, X_val=X_val, y_val=y_val)
 
 # %%

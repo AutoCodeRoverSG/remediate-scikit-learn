@@ -75,21 +75,21 @@ X_plot_scaled = scaler.fit_transform(X_plot)
 clf = KNeighborsClassifier(n_neighbors=20)
 
 
-def fit_and_plot_model(X_plot, y, clf, ax):
-    clf.fit(X_plot, y)
+def fit_and_plot_model(x_plot, y, clf, ax):
+    clf.fit(x_plot, y)
     disp = DecisionBoundaryDisplay.from_estimator(
         clf,
-        X_plot,
+        x_plot,
         response_method="predict",
         alpha=0.5,
         ax=ax,
     )
     cmap = ListedColormap(disp.multiclass_colors_)
     disp.ax_.scatter(
-        X_plot["proline"], X_plot["hue"], c=y, cmap=cmap, s=20, edgecolor="k"
+        x_plot["proline"], x_plot["hue"], c=y, cmap=cmap, s=20, edgecolor="k"
     )
-    disp.ax_.set_xlim((X_plot["proline"].min(), X_plot["proline"].max()))
-    disp.ax_.set_ylim((X_plot["hue"].min(), X_plot["hue"].max()))
+    disp.ax_.set_xlim((x_plot["proline"].min(), x_plot["proline"].max()))
+    disp.ax_.set_ylim((x_plot["hue"].min(), x_plot["hue"].max()))
     return disp.ax_
 
 
@@ -218,6 +218,7 @@ unscaled_clf = make_pipeline(
         l1_ratios=(0,),  # TODO(1.10): remove because it is default now
         scoring="neg_log_loss",  # TODO(1.11): remove because it is default now
     ),
+    memory=None,
 )
 unscaled_clf.fit(X_train, y_train)
 
@@ -230,6 +231,7 @@ scaled_clf = make_pipeline(
         l1_ratios=(0,),  # TODO(1.10): remove because it is default now
         scoring="neg_log_loss",  # TODO(1.11): remove because it is default now,
     ),
+    memory=None,
 )
 scaled_clf.fit(X_train, y_train)
 
