@@ -1485,12 +1485,12 @@ class KMeans(_BaseKMeans):
 
         # subtract of mean of x for more accurate distance computations
         if not sp.issparse(X):
-            X_mean = X.mean(axis=0)
+            x_mean = X.mean(axis=0)
             # The copy was already done above
-            X -= X_mean
+            X -= x_mean
 
             if init_is_array_like:
-                init -= X_mean
+                init -= x_mean
 
         # precompute squared norms of data points
         x_squared_norms = row_norms(X, squared=True)
@@ -1503,7 +1503,7 @@ class KMeans(_BaseKMeans):
 
         best_inertia, best_labels = None, None
 
-        for i in range(self._n_init):
+        for _ in range(self._n_init):
             # Initialize centers
             centers_init = self._init_centroids(
                 X,
@@ -1542,8 +1542,8 @@ class KMeans(_BaseKMeans):
 
         if not sp.issparse(X):
             if not self.copy_x:
-                X += X_mean
-            best_centers += X_mean
+                X += x_mean
+            best_centers += x_mean
 
         distinct_clusters = len(set(best_labels))
         if distinct_clusters < self.n_clusters:
@@ -2093,7 +2093,7 @@ class MiniBatchKMeans(_BaseKMeans):
         random_state = check_random_state(self.random_state)
         sample_weight = _check_sample_weight(sample_weight, X, dtype=X.dtype)
         self._n_threads = _openmp_effective_n_threads()
-        n_samples, n_features = X.shape
+        n_samples, _ = X.shape
 
         # Validate init array
         init = self.init
