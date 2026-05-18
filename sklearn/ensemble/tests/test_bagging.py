@@ -163,13 +163,13 @@ def test_sparse_classification(sparse_container, params, method):
     sparse_type = type(x_train_sparse)
     types = [i.data_type_ for i in sparse_classifier.estimators_]
 
-    assert all([t == sparse_type for t in types])
+    assert all(t == sparse_type for t in types)
 
 
 def test_regression():
     # Check regression for various parameter settings.
     rng = check_random_state(0)
-    X_train, X_test, y_train, y_test = train_test_split(
+    X_train, X_test, y_train, _ = train_test_split(
         diabetes.data[:50], diabetes.target[:50], random_state=rng
     )
     grid = ParameterGrid(
@@ -198,7 +198,7 @@ def test_regression():
 def test_sparse_regression(sparse_container):
     # Check regression for various parameter settings on sparse input.
     rng = check_random_state(0)
-    X_train, X_test, y_train, y_test = train_test_split(
+    X_train, X_test, y_train, _ = train_test_split(
         diabetes.data[:50], diabetes.target[:50], random_state=rng
     )
 
@@ -227,14 +227,14 @@ def test_sparse_regression(sparse_container):
         {"max_samples": 0.5, "bootstrap": True, "bootstrap_features": False},
     ]
 
-    X_train_sparse = sparse_container(X_train)
-    X_test_sparse = sparse_container(X_test)
+    x_train_sparse = sparse_container(X_train)
+    x_test_sparse = sparse_container(X_test)
     for params in parameter_sets:
         # Trained on sparse format
         sparse_classifier = BaggingRegressor(
             estimator=CustomSVR(), random_state=1, **params
-        ).fit(X_train_sparse, y_train)
-        sparse_results = sparse_classifier.predict(X_test_sparse)
+        ).fit(x_train_sparse, y_train)
+        sparse_results = sparse_classifier.predict(x_test_sparse)
 
         # Trained on dense format
         dense_results = (
@@ -243,11 +243,11 @@ def test_sparse_regression(sparse_container):
             .predict(X_test)
         )
 
-        sparse_type = type(X_train_sparse)
+        sparse_type = type(x_train_sparse)
         types = [i.data_type_ for i in sparse_classifier.estimators_]
 
         assert_array_almost_equal(sparse_results, dense_results)
-        assert all([t == sparse_type for t in types])
+        assert all(t == sparse_type for t in types)
         assert_array_almost_equal(sparse_results, dense_results)
 
 
@@ -263,7 +263,7 @@ class DummySizeEstimator(BaseEstimator):
 def test_bootstrap_samples():
     # Test that bootstrapping samples generate non-perfect base estimators.
     rng = check_random_state(0)
-    X_train, X_test, y_train, y_test = train_test_split(
+    X_train, _, y_train, _ = train_test_split(
         diabetes.data, diabetes.target, random_state=rng
     )
 
@@ -305,7 +305,7 @@ def test_bootstrap_samples():
 def test_bootstrap_features():
     # Test that bootstrapping features may generate duplicate features.
     rng = check_random_state(0)
-    X_train, X_test, y_train, y_test = train_test_split(
+    X_train, _, y_train, _ = train_test_split(
         diabetes.data, diabetes.target, random_state=rng
     )
 
