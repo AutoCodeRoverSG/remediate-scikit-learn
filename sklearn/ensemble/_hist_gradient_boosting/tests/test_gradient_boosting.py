@@ -496,8 +496,8 @@ def test_small_trainset():
     # length (10k samples)
     n_samples = 20000
     original_distrib = {0: 0.1, 1: 0.2, 2: 0.3, 3: 0.4}
-    rng = np.random.RandomState(42)
-    X = rng.randn(n_samples).reshape(n_samples, 1)
+    rng = np.random.default_rng(42)
+    X = rng.standard_normal(n_samples).reshape(n_samples, 1)
     y = [
         [class_] * int(prop * n_samples) for (class_, prop) in original_distrib.items()
     ]
@@ -563,8 +563,10 @@ def test_missing_values_minmax_imputation():
             return np.concatenate([x_min, x_max], axis=1)
 
     def make_missing_value_data(n_samples=int(1e4), seed=0):
-        rng = np.random.RandomState(seed)
-        X, y = make_regression(n_samples=n_samples, n_features=4, random_state=rng)
+        rng = np.random.default_rng(seed)
+        X, y = make_regression(
+            n_samples=n_samples, n_features=4, random_state=rng.integers(2**31)
+        )
 
         # Pre-bin the data to ensure a deterministic handling by the 2
         # strategies and also make it easier to insert np.nan in a structured
@@ -574,7 +576,7 @@ def test_missing_values_minmax_imputation():
         ).fit_transform(X)
 
         # First feature has missing values completely at random:
-        rnd_mask = rng.rand(X.shape[0]) > 0.9
+        rnd_mask = rng.random(X.shape[0]) > 0.9
         X[rnd_mask, 0] = np.nan
 
         # Second and third features have missing values for extreme values
@@ -598,7 +600,7 @@ def test_missing_values_minmax_imputation():
         # Let's use a test set to check that the learned decision function is
         # the same as evaluated on unseen data. Otherwise it could just be the
         # case that we find two independent ways to overfit the training set.
-        return train_test_split(X, y, random_state=rng)
+        return train_test_split(X, y, random_state=rng.integers(2**31))
 
     # n_samples need to be large enough to minimize the likelihood of having
     # several candidate splits with the same gain value in a given tree.
@@ -673,8 +675,8 @@ def test_infinite_values_missing_values():
 def test_string_target_early_stopping(scoring):
     # Regression tests for #14709 where the targets need to be encoded before
     # to compute the score
-    rng = np.random.RandomState(42)
-    X = rng.randn(100, 10)
+    rng = np.random.default_rng(42)
+    X = rng.standard_normal((100, 10))
     y = np.array(["x"] * 50 + ["y"] * 50, dtype=object)
     gbrt = HistGradientBoostingClassifier(n_iter_no_change=10, scoring=scoring)
     gbrt.fit(X, y)
@@ -730,7 +732,7 @@ def test_sample_weight_effect(problem, global_random_seed):
     # 255 distinct values and that we test the impact of weight-aware binning.
     n_samples = 300
     n_features = 2
-    rng = np.random.RandomState(global_random_seed)
+    rng = np.random.default_rng(global_random_seed)
     if problem == "regression":
         X, y = make_regression(
             n_samples=n_samples,
@@ -759,7 +761,7 @@ def test_sample_weight_effect(problem, global_random_seed):
     est = klass(min_samples_leaf=1)
 
     # Create dataset with repetitions and corresponding sample weights
-    sample_weight = rng.randint(0, 3, size=X.shape[0])
+    sample_weight = rng.integers(0, 3, size=X.shape[0])
     x_repeated = np.repeat(X, sample_weight, axis=0)
     assert x_repeated.shape[0] < 2e5
     y_repeated = np.repeat(y, sample_weight, axis=0)
@@ -777,10 +779,10 @@ def test_sum_hessians_are_sample_weight(loss_cls):
     # histograms must be equal to the sum of the sample weight of samples at
     # the corresponding bin.
 
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
     n_samples = 1000
     n_features = 2
-    X, y = make_regression(n_samples=n_samples, n_features=n_features, random_state=rng)
+    X, y = make_regression(n_samples=n_samples, n_features=n_features, random_state=0)
     bin_mapper = _BinMapper(random_state=0)
     x_binned = bin_mapper.fit_transform(X)
 
@@ -1022,10 +1024,10 @@ def test_unknown_categories_nan(
     # Make sure no error is raised at predict if a category wasn't seen during
     # fit. We also make sure they're treated as nans.
 
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
     n_samples = 1000
-    f1 = rng.rand(n_samples)
-    f2 = rng.randint(4, size=n_samples)
+    f1 = rng.random(n_samples)
+    f2 = rng.integers(4, size=n_samples)
     X = np.c_[f1, f2]
     y = np.zeros(shape=n_samples)
     y[X[:, 1] % 2 == 0] = 1
@@ -1061,10 +1063,10 @@ def test_categorical_encoding_strategies():
     # dataset with one random continuous feature, and one categorical feature
     # with values in [0, 5], e.g. from an OrdinalEncoder.
     # class == 1 iff categorical value in {0, 2, 4}
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
     n_samples = 10_000
-    f1 = rng.rand(n_samples)
-    f2 = rng.randint(6, size=n_samples)
+    f1 = rng.random(n_samples)
+    f2 = rng.integers(6, size=n_samples)
     X = np.c_[f1, f2]
     y = np.zeros(shape=n_samples)
     y[X[:, 1] % 2 == 0] = 1
@@ -1174,9 +1176,9 @@ def test_categorical_spec_errors(
     # Test errors when categories are specified incorrectly
     n_samples = 100
     X, y = make_classification(random_state=0, n_features=4, n_samples=n_samples)
-    rng = np.random.RandomState(0)
-    X[:, 0] = rng.randint(0, 10, size=n_samples)
-    X[:, 1] = rng.randint(0, 10, size=n_samples)
+    rng = np.random.default_rng(0)
+    X[:, 0] = rng.integers(0, 10, size=n_samples)
+    X[:, 1] = rng.integers(0, 10, size=n_samples)
     est = estimator_class(categorical_features=categorical_features, monotonic_cst=monotonic_cst)
 
     with pytest.raises(ValueError, match=expected_msg):
@@ -1271,10 +1273,10 @@ def test_uint8_predict(est_cls):
     # Make sure X can be of dtype uint8 (i.e. X_BINNED_DTYPE) in predict. It
     # will be converted to X_DTYPE.
 
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
 
-    X = rng.randint(0, 100, size=(10, 2)).astype(np.uint8)
-    y = rng.randint(0, 2, size=10).astype(np.uint8)
+    X = rng.integers(0, 100, size=(10, 2)).astype(np.uint8)
+    y = rng.integers(0, 2, size=10).astype(np.uint8)
     est = est_cls()
     est.fit(X, y)
     est.predict(X)
@@ -1301,7 +1303,7 @@ def test_check_interaction_cst(interaction_cst, n_features, result):
 
 def test_interaction_cst_numerically():
     """Check that interaction constraints have no forbidden interactions."""
-    rng = np.random.RandomState(42)
+    rng = np.random.default_rng(42)
     n_samples = 2000
     X = rng.uniform(size=(n_samples, 2))
     # Construct y with a strong interaction term
