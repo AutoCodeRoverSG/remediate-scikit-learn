@@ -329,14 +329,14 @@ class FactorAnalysis(ClassNamePrefixFeaturesOutMixin, TransformerMixin, BaseEsti
         X = validate_data(self, X, reset=False)
         identity = np.eye(len(self.components_))
 
-        X_transformed = X - self.mean_
+        x_transformed = X - self.mean_
 
-        Wpsi = self.components_ / self.noise_variance_
-        cov_z = linalg.inv(identity + np.dot(Wpsi, self.components_.T))
-        tmp = np.dot(X_transformed, Wpsi.T)
-        X_transformed = np.dot(tmp, cov_z)
+        wpsi = self.components_ / self.noise_variance_
+        cov_z = linalg.inv(identity + np.dot(wpsi, self.components_.T))
+        tmp = np.dot(x_transformed, wpsi.T)
+        x_transformed = np.dot(tmp, cov_z)
 
-        return X_transformed
+        return x_transformed
 
     def get_covariance(self):
         """Compute data covariance with the FactorAnalysis model.
@@ -397,10 +397,10 @@ class FactorAnalysis(ClassNamePrefixFeaturesOutMixin, TransformerMixin, BaseEsti
         """
         check_is_fitted(self)
         X = validate_data(self, X, reset=False)
-        Xr = X - self.mean_
+        x_centered = X - self.mean_
         precision = self.get_precision()
         n_features = X.shape[1]
-        log_like = -0.5 * (Xr * (np.dot(Xr, precision))).sum(axis=1)
+        log_like = -0.5 * (x_centered * (np.dot(x_centered, precision))).sum(axis=1)
         log_like -= 0.5 * (n_features * log(2.0 * np.pi) - fast_logdet(precision))
         return log_like
 
@@ -422,7 +422,7 @@ class FactorAnalysis(ClassNamePrefixFeaturesOutMixin, TransformerMixin, BaseEsti
         """
         return np.mean(self.score_samples(X))
 
-    def _rotate(self, components, n_components=None, tol=1e-6):
+    def _rotate(self, components, tol=1e-6):
         "Rotate the factor analysis solution."
         # note that tol is not exposed
         return _ortho_rotation(components.T, method=self.rotation, tol=tol)[
