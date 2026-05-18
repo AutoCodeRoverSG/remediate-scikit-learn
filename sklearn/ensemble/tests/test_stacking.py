@@ -557,7 +557,7 @@ def test_stacking_cv_influence(stacker, X, y):
 
 
 @pytest.mark.parametrize(
-    "Stacker, estimator_class, stack_method, final_estimator, X, y",
+    "stacker_class, estimator_class, stack_method, final_estimator, X, y",
     [
         (
             StackingClassifier,
@@ -577,14 +577,16 @@ def test_stacking_cv_influence(stacker, X, y):
         ),
     ],
 )
-def test_stacking_prefit(Stacker, estimator_class, stack_method, final_estimator, X, y):
+def test_stacking_prefit(
+    stacker_class, estimator_class, stack_method, final_estimator, X, y
+):
     """Check the behaviour of stacking when `cv='prefit'`"""
-    X_train1, X_train2, y_train1, y_train2 = train_test_split(
+    x_train1, x_train2, y_train1, y_train2 = train_test_split(
         X, y, random_state=42, test_size=0.5
     )
     estimators = [
-        ("d0", estimator_class().fit(X_train1, y_train1)),
-        ("d1", estimator_class().fit(X_train1, y_train1)),
+        ("d0", estimator_class().fit(x_train1, y_train1)),
+        ("d1", estimator_class().fit(x_train1, y_train1)),
     ]
 
     # mock out fit and stack_method to be asserted later
@@ -597,10 +599,10 @@ def test_stacking_prefit(Stacker, estimator_class, stack_method, final_estimator
         predict_method_mocked.__name__ = stack_method
         setattr(estimator, stack_method, predict_method_mocked)
 
-    stacker = Stacker(
+    stacker = stacker_class(
         estimators=estimators, cv="prefit", final_estimator=final_estimator
     )
-    stacker.fit(X_train2, y_train2)
+    stacker.fit(x_train2, y_train2)
 
     assert stacker.estimators_ == [estimator for _, estimator in estimators]
     # fit was not called again
@@ -609,7 +611,7 @@ def test_stacking_prefit(Stacker, estimator_class, stack_method, final_estimator
     # stack method is called with the proper inputs
     for estimator in stacker.estimators_:
         stack_func_mock = getattr(estimator, stack_method)
-        stack_func_mock.assert_called_with(X_train2)
+        stack_func_mock.assert_called_with(x_train2)
 
 
 @pytest.mark.parametrize(
@@ -644,17 +646,17 @@ def test_stacking_prefit_error(stacker, X, y):
 
 
 @pytest.mark.parametrize(
-    "make_dataset, Stacking, Estimator",
+    "make_dataset, stacking_class, estimator_class",
     [
         (make_classification, StackingClassifier, LogisticRegression),
         (make_regression, StackingRegressor, LinearRegression),
     ],
 )
-def test_stacking_without_n_features_in(make_dataset, Stacking, Estimator):
+def test_stacking_without_n_features_in(make_dataset, stacking_class, estimator_class):
     # Stacking supports estimators without `n_features_in_`. Regression test
     # for #17353
 
-    class MyEstimator(Estimator):
+    class MyEstimator(estimator_class):
         """Estimator without n_features_in_"""
 
         def fit(self, X, y):
@@ -662,9 +664,9 @@ def test_stacking_without_n_features_in(make_dataset, Stacking, Estimator):
             del self.n_features_in_
 
     X, y = make_dataset(random_state=0, n_samples=100)
-    stacker = Stacking(estimators=[("lr", MyEstimator())])
+    stacker = stacking_class(estimators=[("lr", MyEstimator())])
 
-    msg = f"{Stacking.__name__} object has no attribute n_features_in_"
+    msg = f"{stacking_class.__name__} object has no attribute n_features_in_"
     with pytest.raises(AttributeError, match=msg):
         stacker.n_features_in_
 
@@ -706,10 +708,10 @@ def test_stacking_classifier_multilabel_predict_proba(estimator):
         stack_method="predict_proba",
     ).fit(X_train, y_train)
 
-    X_trans = stacker.transform(X_test)
-    assert X_trans.shape == (X_test.shape[0], n_outputs)
+    x_trans = stacker.transform(X_test)
+    assert x_trans.shape == (X_test.shape[0], n_outputs)
     # we should not have any collinear classes and thus nothing should sum to 1
-    assert not any(np.isclose(X_trans.sum(axis=1), 1.0))
+    assert not any(np.isclose(x_trans.sum(axis=1), 1.0))
 
     y_pred = stacker.predict(X_test)
     assert y_pred.shape == y_test.shape
@@ -732,8 +734,8 @@ def test_stacking_classifier_multilabel_decision_function():
         stack_method="decision_function",
     ).fit(X_train, y_train)
 
-    X_trans = stacker.transform(X_test)
-    assert X_trans.shape == (X_test.shape[0], n_outputs)
+    x_trans = stacker.transform(X_test)
+    assert x_trans.shape == (X_test.shape[0], n_outputs)
 
     y_pred = stacker.predict(X_test)
     assert y_pred.shape == y_test.shape
@@ -777,11 +779,11 @@ def test_stacking_classifier_multilabel_auto_predict(stack_method, passthrough):
         expected_stack_methods = ["predict"] * len(estimators)
     assert clf.stack_method_ == expected_stack_methods
 
-    n_features_X_trans = n_outputs * len(estimators)
+    n_features_x_trans = n_outputs * len(estimators)
     if passthrough:
-        n_features_X_trans += X_train.shape[1]
-    X_trans = clf.transform(X_test)
-    assert X_trans.shape == (X_test.shape[0], n_features_X_trans)
+        n_features_x_trans += X_train.shape[1]
+    x_trans = clf.transform(X_test)
+    assert x_trans.shape == (X_test.shape[0], n_features_x_trans)
 
     assert_array_equal(clf.classes_, [np.array([0, 1])] * n_outputs)
 
@@ -908,40 +910,40 @@ def test_stacking_final_estimator_attribute_error():
 
 
 @pytest.mark.parametrize(
-    "Estimator, Child",
+    "estimator_class, child_class",
     [
         (StackingClassifier, ConsumingClassifier),
         (StackingRegressor, ConsumingRegressor),
     ],
 )
-def test_routing_passed_metadata_not_supported(Estimator, Child):
+def test_routing_passed_metadata_not_supported(estimator_class, child_class):
     """Test that the right error message is raised when metadata is passed while
     not supported when `enable_metadata_routing=False`."""
 
     with pytest.raises(
         ValueError, match="is only supported if enable_metadata_routing=True"
     ):
-        Estimator(["clf", Child()]).fit(
+        estimator_class(["clf", child_class()]).fit(
             X_iris, y_iris, sample_weight=[1, 1, 1, 1, 1], metadata="a"
         )
 
 
 @pytest.mark.parametrize(
-    "Estimator, Child",
+    "estimator_class, child_class",
     [
         (StackingClassifier, ConsumingClassifier),
         (StackingRegressor, ConsumingRegressor),
     ],
 )
 @config_context(enable_metadata_routing=True)
-def test_get_metadata_routing_without_fit(Estimator, Child):
+def test_get_metadata_routing_without_fit(estimator_class, child_class):
     # Test that metadata_routing() doesn't raise when called before fit.
-    est = Estimator([("sub_est", Child())])
+    est = estimator_class([("sub_est", child_class())])
     est.get_metadata_routing()
 
 
 @pytest.mark.parametrize(
-    "Estimator, Child",
+    "estimator_class, child_class",
     [
         (StackingClassifier, ConsumingClassifier),
         (StackingRegressor, ConsumingRegressor),
@@ -951,21 +953,25 @@ def test_get_metadata_routing_without_fit(Estimator, Child):
     "prop, prop_value", [("sample_weight", np.ones(X_iris.shape[0])), ("metadata", "a")]
 )
 @config_context(enable_metadata_routing=True)
-def test_metadata_routing_for_stacking_estimators(Estimator, Child, prop, prop_value):
+def test_metadata_routing_for_stacking_estimators(
+    estimator_class, child_class, prop, prop_value
+):
     """Test that metadata is routed correctly for Stacking*."""
 
-    est = Estimator(
+    est = estimator_class(
         [
             (
                 "sub_est1",
-                Child(registry=_Registry()).set_fit_request(**{prop: True}),
+                child_class(registry=_Registry()).set_fit_request(**{prop: True}),
             ),
             (
                 "sub_est2",
-                Child(registry=_Registry()).set_fit_request(**{prop: True}),
+                child_class(registry=_Registry()).set_fit_request(**{prop: True}),
             ),
         ],
-        final_estimator=Child(registry=_Registry()).set_predict_request(**{prop: True}),
+        final_estimator=child_class(registry=_Registry()).set_predict_request(
+            **{prop: True}
+        ),
     )
 
     est.fit(X_iris, y_iris, **{prop: prop_value})
@@ -998,22 +1004,22 @@ def test_metadata_routing_for_stacking_estimators(Estimator, Child, prop, prop_v
 
 
 @pytest.mark.parametrize(
-    "Estimator, Child",
+    "estimator_class, child_class",
     [
         (StackingClassifier, ConsumingClassifier),
         (StackingRegressor, ConsumingRegressor),
     ],
 )
 @config_context(enable_metadata_routing=True)
-def test_metadata_routing_error_for_stacking_estimators(Estimator, Child):
+def test_metadata_routing_error_for_stacking_estimators(estimator_class, child_class):
     """Test that the right error is raised when metadata is not requested."""
     sample_weight, metadata = np.ones(X_iris.shape[0]), "a"
 
-    est = Estimator([("sub_est", Child())])
+    est = estimator_class([("sub_est", child_class())])
 
     error_message = (
         "[sample_weight, metadata] are passed but are not explicitly set as requested"
-        f" or not requested for {Child.__name__}.fit"
+        f" or not requested for {child_class.__name__}.fit"
     )
 
     with pytest.raises(ValueError, match=re.escape(error_message)):
