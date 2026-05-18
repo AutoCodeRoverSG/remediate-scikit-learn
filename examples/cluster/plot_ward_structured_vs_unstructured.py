@@ -123,13 +123,13 @@ _ = fig2.suptitle(
 # Generate 2D spiral dataset.
 # ---------------------------
 n_samples = 1500
-np.random.seed(0)
-t = 1.5 * np.pi * (1 + 3 * np.random.rand(1, n_samples))
+rng = np.random.default_rng(0)
+t = 1.5 * np.pi * (1 + 3 * rng.random((1, n_samples)))
 x = t * np.cos(t)
 y = t * np.sin(t)
 
 X2 = np.concatenate((x, y))
-X2 += 0.7 * np.random.randn(2, n_samples)
+X2 += 0.7 * rng.standard_normal((2, n_samples))
 X2 = X2.T
 
 # %%

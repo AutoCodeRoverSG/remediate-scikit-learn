@@ -39,7 +39,7 @@ import numpy as np
 
 from sklearn.decomposition import PCA, FastICA
 
-rng = np.random.RandomState(42)
+rng = np.random.default_rng(42)
 S = rng.standard_t(1.5, size=(20000, 2))
 S[:, 0] *= 2.0
 
@@ -51,7 +51,7 @@ X = np.dot(S, A.T)  # Generate observations
 pca = PCA()
 S_pca_ = pca.fit(X).transform(X)
 
-ica = FastICA(random_state=rng, whiten="arbitrary-variance")
+ica = FastICA(random_state=42, whiten="arbitrary-variance")
 S_ica_ = ica.fit(X).transform(X)  # Estimate the sources
 
 
@@ -61,9 +61,9 @@ S_ica_ = ica.fit(X).transform(X)  # Estimate the sources
 import matplotlib.pyplot as plt
 
 
-def plot_samples(S, axis_list=None):
+def plot_samples(samples, axis_list=None):
     plt.scatter(
-        S[:, 0], S[:, 1], s=2, marker="o", zorder=10, color="steelblue", alpha=0.5
+        samples[:, 0], samples[:, 1], s=2, marker="o", zorder=10, color="steelblue", alpha=0.5
     )
     if axis_list is not None:
         for axis, color, label in axis_list:

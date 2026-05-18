@@ -60,7 +60,8 @@ height, width = raccoon_face.shape
 # Distort the right half of the image
 print("Distorting image...")
 distorted = raccoon_face.copy()
-distorted[:, width // 2 :] += 0.075 * np.random.randn(height, width // 2)
+rng = np.random.default_rng(0)
+distorted[:, width // 2 :] += 0.075 * rng.standard_normal((height, width // 2))
 
 
 # %%
@@ -104,7 +105,7 @@ from sklearn.feature_extraction.image import extract_patches_2d
 print("Extracting reference patches...")
 t0 = time()
 patch_size = (7, 7)
-data = extract_patches_2d(distorted[:, : width // 2], patch_size)
+data = extract_patches_2d(distorted[:, : width // 2], patch_size, random_state=rng)
 data = data.reshape(data.shape[0], -1)
 data -= np.mean(data, axis=0)
 data /= np.std(data, axis=0)
