@@ -44,7 +44,7 @@ X, y = make_blobs(n_samples=n_samples, centers=centers, shuffle=False, random_st
 
 y[: n_samples // 2] = 0
 y[n_samples // 2 :] = 1
-sample_weight = np.random.RandomState(42).rand(y.shape[0])
+sample_weight = np.random.default_rng(42).random(y.shape[0])
 
 # split train, test for calibration
 X_train, X_test, y_train, y_test, sw_train, sw_test = train_test_split(

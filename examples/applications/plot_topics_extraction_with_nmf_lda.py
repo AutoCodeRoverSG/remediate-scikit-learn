@@ -38,6 +38,7 @@ n_components = 10
 n_top_words = 20
 batch_size = 128
 init = "nndsvda"
+DONE_MESSAGE = "done in %0.3fs."
 
 
 def plot_top_words(model, feature_names, n_top_words, title):
@@ -74,7 +75,7 @@ data, _ = fetch_20newsgroups(
     return_X_y=True,
 )
 data_samples = data[:n_samples]
-print("done in %0.3fs." % (time() - t0))
+print(DONE_MESSAGE % (time() - t0))
 
 # Use tf-idf features for NMF.
 print("Extracting tf-idf features for NMF...")
@@ -83,7 +84,7 @@ tfidf_vectorizer = TfidfVectorizer(
 )
 t0 = time()
 tfidf = tfidf_vectorizer.fit_transform(data_samples)
-print("done in %0.3fs." % (time() - t0))
+print(DONE_MESSAGE % (time() - t0))
 
 # Use tf (raw term count) features for LDA.
 print("Extracting tf features for LDA...")
@@ -92,7 +93,7 @@ tf_vectorizer = CountVectorizer(
 )
 t0 = time()
 tf = tf_vectorizer.fit_transform(data_samples)
-print("done in %0.3fs." % (time() - t0))
+print(DONE_MESSAGE % (time() - t0))
 print()
 
 # Fit the NMF model
@@ -110,7 +111,7 @@ nmf = NMF(
     alpha_H=0.00005,
     l1_ratio=1,
 ).fit(tfidf)
-print("done in %0.3fs." % (time() - t0))
+print(DONE_MESSAGE % (time() - t0))
 
 
 tfidf_feature_names = tfidf_vectorizer.get_feature_names_out()
@@ -137,7 +138,7 @@ nmf = NMF(
     alpha_H=0.00005,
     l1_ratio=0.5,
 ).fit(tfidf)
-print("done in %0.3fs." % (time() - t0))
+print(DONE_MESSAGE % (time() - t0))
 
 tfidf_feature_names = tfidf_vectorizer.get_feature_names_out()
 plot_top_words(
@@ -165,7 +166,7 @@ mbnmf = MiniBatchNMF(
     alpha_H=0.00005,
     l1_ratio=0.5,
 ).fit(tfidf)
-print("done in %0.3fs." % (time() - t0))
+print(DONE_MESSAGE % (time() - t0))
 
 
 tfidf_feature_names = tfidf_vectorizer.get_feature_names_out()
@@ -194,7 +195,7 @@ mbnmf = MiniBatchNMF(
     alpha_H=0.00005,
     l1_ratio=0.5,
 ).fit(tfidf)
-print("done in %0.3fs." % (time() - t0))
+print(DONE_MESSAGE % (time() - t0))
 
 tfidf_feature_names = tfidf_vectorizer.get_feature_names_out()
 plot_top_words(
@@ -218,7 +219,7 @@ lda = LatentDirichletAllocation(
 )
 t0 = time()
 lda.fit(tf)
-print("done in %0.3fs." % (time() - t0))
+print(DONE_MESSAGE % (time() - t0))
 
 tf_feature_names = tf_vectorizer.get_feature_names_out()
 plot_top_words(lda, tf_feature_names, n_top_words, "Topics in LDA model")

@@ -38,7 +38,8 @@ def generate_data(n_samples, n_features):
 
     # add non-discriminative features
     if n_features > 1:
-        X = np.hstack([X, np.random.randn(n_samples, n_features - 1)])
+        rng = np.random.default_rng(0)
+        X = np.hstack([X, rng.standard_normal((n_samples, n_features - 1))])
     return X, y
 
 

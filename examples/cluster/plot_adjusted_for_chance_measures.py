@@ -73,11 +73,11 @@ score_funcs = [
 
 import numpy as np
 
-rng = np.random.RandomState(0)
+rng = np.random.default_rng(0)
 
 
 def random_labels(n_samples, n_classes):
-    return rng.randint(low=0, high=n_classes, size=n_samples)
+    return rng.integers(low=0, high=n_classes, size=n_samples)
 
 
 # %%

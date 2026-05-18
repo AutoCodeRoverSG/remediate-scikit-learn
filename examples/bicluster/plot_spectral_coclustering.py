@@ -33,7 +33,7 @@ plt.matshow(data, cmap=plt.cm.Blues)
 plt.title("Original dataset")
 
 # shuffle clusters
-rng = np.random.RandomState(0)
+rng = np.random.default_rng(0)
 row_idx = rng.permutation(data.shape[0])
 col_idx = rng.permutation(data.shape[1])
 data = data[row_idx][:, col_idx]
