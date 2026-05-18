@@ -32,7 +32,7 @@ from sklearn.metrics import classification_report, confusion_matrix
 from sklearn.semi_supervised import LabelSpreading
 
 digits = datasets.load_digits()
-rng = np.random.RandomState(0)
+rng = np.random.default_rng(0)
 indices = np.arange(len(digits.data))
 rng.shuffle(indices)
 

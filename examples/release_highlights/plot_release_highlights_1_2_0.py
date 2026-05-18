@@ -121,6 +121,7 @@ model = make_pipeline(
         remainder="passthrough",
     ),
     HistGradientBoostingRegressor(random_state=0),
+    memory=None,
 ).fit(X, y)
 
 # %%

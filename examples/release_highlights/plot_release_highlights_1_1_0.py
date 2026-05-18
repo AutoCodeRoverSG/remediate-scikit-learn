@@ -191,7 +191,7 @@ import numpy as np
 
 from sklearn.decomposition import MiniBatchNMF
 
-rng = np.random.RandomState(0)
+rng = np.random.default_rng(0)
 n_samples, n_features, n_components = 10, 10, 5
 true_W = rng.uniform(size=(n_samples, n_components))
 true_H = rng.uniform(size=(n_components, n_features))

@@ -75,7 +75,7 @@ from sklearn.metrics import confusion_matrix
 
 
 def custom_score(y_observed, y_pred):
-    tn, fp, fn, tp = confusion_matrix(y_observed, y_pred, normalize="all").ravel()
+    _, fp, fn, tp = confusion_matrix(y_observed, y_pred, normalize="all").ravel()
     return tp - 2 * fn - 0.1 * fp
 
 

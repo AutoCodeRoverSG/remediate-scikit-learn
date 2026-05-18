@@ -138,8 +138,8 @@ from sklearn.ensemble import HistGradientBoostingRegressor
 from sklearn.model_selection import cross_val_score
 
 n_samples, n_features = 500, 10
-rng = np.random.RandomState(0)
-X = make_low_rank_matrix(n_samples, n_features, random_state=rng)
+rng = np.random.default_rng(0)
+X = make_low_rank_matrix(n_samples, n_features, random_state=0)
 coef = rng.uniform(low=-10, high=20, size=n_features)
 y = rng.gamma(shape=2, scale=np.exp(X @ coef) / 2)
 gbdt = HistGradientBoostingRegressor(loss="gamma")
