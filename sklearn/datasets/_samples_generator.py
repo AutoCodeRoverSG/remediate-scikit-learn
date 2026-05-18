@@ -651,8 +651,7 @@ def make_hastie_10_2(n_samples=12000, *, random_state=None):
 
     shape = (n_samples, 10)
     X = rs.normal(size=shape).reshape(shape)
-    y = ((X**2.0).sum(axis=1) > 9.34).astype(np.float64, copy=False)
-    y[y == 0.0] = -1.0
+    y = np.where((X**2.0).sum(axis=1) > 9.34, 1.0, -1.0)
 
     return X, y
 

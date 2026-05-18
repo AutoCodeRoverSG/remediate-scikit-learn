@@ -12,7 +12,7 @@ import scipy.sparse as sp
 from sklearn.datasets.tests.test_common import (
     check_as_frame,
     check_pandas_dependency_message,
-    check_return_X_y,
+    check_return_x_y,
 )
 from sklearn.preprocessing import normalize
 from sklearn.utils._testing import assert_allclose_dense_sparse
@@ -81,7 +81,7 @@ def test_20news_vectorized(fetch_20newsgroups_vectorized_fxt):
 
     # test return_X_y option
     fetch_func = partial(fetch_20newsgroups_vectorized_fxt, subset="test")
-    check_return_X_y(bunch, fetch_func)
+    check_return_x_y(bunch, fetch_func)
 
     # test subset = all
     bunch = fetch_20newsgroups_vectorized_fxt(subset="all")

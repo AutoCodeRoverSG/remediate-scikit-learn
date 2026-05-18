@@ -15,7 +15,7 @@ import numpy as np
 import pytest
 
 from sklearn.datasets import fetch_lfw_pairs, fetch_lfw_people
-from sklearn.datasets.tests.test_common import check_return_X_y
+from sklearn.datasets.tests.test_common import check_return_x_y
 from sklearn.utils._testing import assert_array_equal
 
 FAKE_NAMES = [
@@ -155,7 +155,7 @@ def test_load_fake_lfw_people(mock_data_home):
         color=True,
         download_if_missing=False,
     )
-    check_return_X_y(lfw_people, fetch_func)
+    check_return_x_y(lfw_people, fetch_func)
 
 
 def test_load_fake_lfw_people_too_restrictive(mock_data_home):

@@ -6,7 +6,7 @@ from functools import partial
 
 import pytest
 
-from sklearn.datasets.tests.test_common import check_return_X_y
+from sklearn.datasets.tests.test_common import check_return_x_y
 
 
 def test_fetch(fetch_california_housing_fxt):
@@ -17,7 +17,7 @@ def test_fetch(fetch_california_housing_fxt):
 
     # test return_X_y option
     fetch_func = partial(fetch_california_housing_fxt)
-    check_return_X_y(data, fetch_func)
+    check_return_x_y(data, fetch_func)
 
 
 def test_fetch_asframe(fetch_california_housing_fxt):

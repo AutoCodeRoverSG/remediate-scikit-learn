@@ -4,7 +4,7 @@ or if specifically requested via environment variable
 
 import numpy as np
 
-from sklearn.datasets.tests.test_common import check_return_X_y
+from sklearn.datasets.tests.test_common import check_return_x_y
 from sklearn.utils import Bunch
 from sklearn.utils._testing import assert_array_equal
 
@@ -23,4 +23,4 @@ def test_olivetti_faces(fetch_olivetti_faces_fxt):
     assert data.DESCR.startswith(".. _olivetti_faces_dataset:")
 
     # test the return_X_y option
-    check_return_X_y(data, fetch_olivetti_faces_fxt)
+    check_return_x_y(data, fetch_olivetti_faces_fxt)

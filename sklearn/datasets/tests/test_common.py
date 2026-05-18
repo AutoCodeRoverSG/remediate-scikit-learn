@@ -52,11 +52,15 @@ def check_pandas_dependency_message(fetch_func):
             fetch_func(as_frame=True)
 
 
-def check_return_X_y(bunch, dataset_func):
-    X_y_tuple = dataset_func(return_X_y=True)
-    assert isinstance(X_y_tuple, tuple)
-    assert X_y_tuple[0].shape == bunch.data.shape
-    assert X_y_tuple[1].shape == bunch.target.shape
+def check_return_x_y(bunch, dataset_func):
+    params = inspect.signature(dataset_func).parameters
+    if "return_x_y" in params:
+        x_y_tuple = dataset_func(return_x_y=True)
+    else:
+        x_y_tuple = dataset_func(return_X_y=True)
+    assert isinstance(x_y_tuple, tuple)
+    assert x_y_tuple[0].shape == bunch.data.shape
+    assert x_y_tuple[1].shape == bunch.target.shape
 
 
 def check_as_frame(
@@ -79,8 +83,12 @@ def check_as_frame(
         assert np.all(frame_bunch.target.dtypes == expected_target_dtype)
 
     # Test for return_X_y and as_frame=True
-    frame_X, frame_y = dataset_func(as_frame=True, return_X_y=True)
-    assert isinstance(frame_X, pd.DataFrame)
+    params = inspect.signature(dataset_func).parameters
+    if "return_x_y" in params:
+        frame_x, frame_y = dataset_func(as_frame=True, return_x_y=True)
+    else:
+        frame_x, frame_y = dataset_func(as_frame=True, return_X_y=True)
+    assert isinstance(frame_x, pd.DataFrame)
     if frame_y.ndim > 1:
         assert isinstance(frame_y, pd.DataFrame)
     else:
@@ -97,7 +105,7 @@ def _generate_func_supporting_param(param, dataset_type=("load", "fetch")):
         if not inspect.isfunction(obj):
             continue
 
-        is_dataset_type = any([name.startswith(t) for t in dataset_type])
+        is_dataset_type = any(name.startswith(t) for t in dataset_type)
         is_support_param = param in inspect.signature(obj).parameters
         if is_dataset_type and is_support_param:
             # check if we should skip if we don't have network support
@@ -114,11 +122,13 @@ def _generate_func_supporting_param(param, dataset_type=("load", "fetch")):
 
 
 @pytest.mark.parametrize(
-    "name, dataset_func", _generate_func_supporting_param("return_X_y")
+    "name, dataset_func",
+    list(_generate_func_supporting_param("return_X_y"))
+    + list(_generate_func_supporting_param("return_x_y")),
 )
-def test_common_check_return_X_y(name, dataset_func):
+def test_common_check_return_x_y(name, dataset_func):
     bunch = dataset_func()
-    check_return_X_y(bunch, dataset_func)
+    check_return_x_y(bunch, dataset_func)
 
 
 @pytest.mark.parametrize(

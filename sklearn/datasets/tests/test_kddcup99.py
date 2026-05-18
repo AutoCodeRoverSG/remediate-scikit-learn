@@ -13,7 +13,7 @@ import pytest
 from sklearn.datasets.tests.test_common import (
     check_as_frame,
     check_pandas_dependency_message,
-    check_return_X_y,
+    check_return_x_y,
 )
 
 
@@ -42,7 +42,7 @@ def test_fetch_kddcup99_percent10(
 def test_fetch_kddcup99_return_X_y(fetch_kddcup99_fxt):
     fetch_func = partial(fetch_kddcup99_fxt, subset="smtp")
     data = fetch_func()
-    check_return_X_y(data, fetch_func)
+    check_return_x_y(data, fetch_func)
 
 
 def test_fetch_kddcup99_as_frame(fetch_kddcup99_fxt):

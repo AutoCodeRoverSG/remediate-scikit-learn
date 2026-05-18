@@ -174,7 +174,7 @@ def test_load_files_allowed_extensions(tmp_path, allowed_extensions):
 def test_load_csv_data(
     filename, expected_n_samples, expected_n_features, expected_target_names
 ):
-    actual_data, actual_target, actual_target_names = load_csv_data(filename)
+    actual_data, actual_target, actual_target_names, _ = load_csv_data(filename)
     assert actual_data.shape[0] == expected_n_samples
     assert actual_data.shape[1] == expected_n_features
     assert actual_target.shape[0] == expected_n_samples
@@ -190,7 +190,7 @@ def test_load_csv_data_with_descr():
         data_file_name=data_file_name, descr_file_name=descr_file_name
     )
     assert len(res_with_descr) == 4
-    assert len(res_without_descr) == 3
+    assert len(res_without_descr) == 4
 
     np.testing.assert_array_equal(res_with_descr[0], res_without_descr[0])
     np.testing.assert_array_equal(res_with_descr[1], res_without_descr[1])

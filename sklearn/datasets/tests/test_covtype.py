@@ -6,7 +6,7 @@ from functools import partial
 
 import pytest
 
-from sklearn.datasets.tests.test_common import check_return_X_y
+from sklearn.datasets.tests.test_common import check_return_x_y
 
 
 def test_fetch(fetch_covtype_fxt, global_random_seed):
@@ -29,7 +29,7 @@ def test_fetch(fetch_covtype_fxt, global_random_seed):
 
     # test return_X_y option
     fetch_func = partial(fetch_covtype_fxt)
-    check_return_X_y(data1, fetch_func)
+    check_return_x_y(data1, fetch_func)
 
 
 def test_fetch_asframe(fetch_covtype_fxt):

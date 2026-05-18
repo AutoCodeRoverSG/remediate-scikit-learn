@@ -389,7 +389,7 @@ def load_csv_data(
             target[i] = np.asarray(ir[-1], dtype=int)
 
     if descr_file_name is None:
-        return data, target, target_names
+        return data, target, target_names, None
     else:
         assert descr_module is not None
         descr = load_descr(descr_module=descr_module, descr_file_name=descr_file_name)
@@ -911,7 +911,7 @@ def load_breast_cancer(*, return_X_y=False, as_frame=False):  # NOSONAR
     },
     prefer_skip_nested_validation=True,
 )
-def load_digits(*, n_class=10, return_X_y=False, as_frame=False):
+def load_digits(*, n_class=10, return_X_y=False, as_frame=False):  # NOSONAR
     """Load and return the digits dataset (classification).
 
     Each datapoint is an 8x8 image of a digit.
@@ -1044,10 +1044,10 @@ def load_digits(*, n_class=10, return_X_y=False, as_frame=False):
 
 
 @validate_params(
-    {"return_X_y": ["boolean"], "as_frame": ["boolean"], "scaled": ["boolean"]},
+    {"return_x_y": ["boolean"], "as_frame": ["boolean"], "scaled": ["boolean"]},
     prefer_skip_nested_validation=True,
 )
-def load_diabetes(*, return_X_y=False, as_frame=False, scaled=True):
+def load_diabetes(*, return_x_y=False, as_frame=False, scaled=True):
     """Load and return the diabetes dataset (regression).
 
     ==============   ==================
@@ -1152,7 +1152,7 @@ def load_diabetes(*, return_X_y=False, as_frame=False, scaled=True):
             "load_diabetes", data, target, feature_names, target_columns
         )
 
-    if return_X_y:
+    if return_x_y:
         return data, target
 
     return Bunch(
@@ -1169,12 +1169,12 @@ def load_diabetes(*, return_X_y=False, as_frame=False, scaled=True):
 
 @validate_params(
     {
-        "return_X_y": ["boolean"],
+        "return_x_y": ["boolean"],
         "as_frame": ["boolean"],
     },
     prefer_skip_nested_validation=True,
 )
-def load_linnerud(*, return_X_y=False, as_frame=False):
+def load_linnerud(*, return_x_y=False, as_frame=False):
     """Load and return the physical exercise Linnerud dataset.
 
     This dataset is suitable for multi-output regression tasks.
@@ -1278,7 +1278,7 @@ def load_linnerud(*, return_X_y=False, as_frame=False):
             header_exercise,
             header_physiological,
         )
-    if return_X_y:
+    if return_x_y:
         return data_exercise, data_physiological
 
     return Bunch(
