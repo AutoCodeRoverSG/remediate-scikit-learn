@@ -1629,15 +1629,15 @@ def test_max_samples_boundary_regressors(name):
     )
     ms_1_predict = ms_1_model.fit(X_train, y_train).predict(X_test)
 
-    ms_None_model = FOREST_REGRESSORS[name](
+    ms_none_model = FOREST_REGRESSORS[name](
         bootstrap=True, max_samples=None, random_state=0
     )
-    ms_None_predict = ms_None_model.fit(X_train, y_train).predict(X_test)
+    ms_none_predict = ms_none_model.fit(X_train, y_train).predict(X_test)
 
     ms_1_ms = mean_squared_error(ms_1_predict, y_test)
-    ms_None_ms = mean_squared_error(ms_None_predict, y_test)
+    ms_none_ms = mean_squared_error(ms_none_predict, y_test)
 
-    assert ms_1_ms == pytest.approx(ms_None_ms)
+    assert ms_1_ms == pytest.approx(ms_none_ms)
 
 
 @pytest.mark.parametrize("name", FOREST_CLASSIFIERS)
@@ -1651,12 +1651,12 @@ def test_max_samples_boundary_classifiers(name):
     )
     ms_1_proba = ms_1_model.fit(X_train, y_train).predict_proba(X_test)
 
-    ms_None_model = FOREST_CLASSIFIERS[name](
+    ms_none_model = FOREST_CLASSIFIERS[name](
         bootstrap=True, max_samples=None, random_state=0
     )
-    ms_None_proba = ms_None_model.fit(X_train, y_train).predict_proba(X_test)
+    ms_none_proba = ms_none_model.fit(X_train, y_train).predict_proba(X_test)
 
-    np.testing.assert_allclose(ms_1_proba, ms_None_proba)
+    np.testing.assert_allclose(ms_1_proba, ms_none_proba)
 
 
 @pytest.mark.parametrize("csr_container", CSR_CONTAINERS)
@@ -1669,22 +1669,22 @@ def test_forest_y_sparse(csr_container):
         est.fit(X, y)
 
 
-@pytest.mark.parametrize("ForestClass", [RandomForestClassifier, RandomForestRegressor])
-def test_little_tree_with_small_max_samples(ForestClass):
+@pytest.mark.parametrize("forest_class", [RandomForestClassifier, RandomForestRegressor])
+def test_little_tree_with_small_max_samples(forest_class):
     rng = np.random.RandomState(1)
 
     X = rng.randn(10000, 2)
     y = rng.randn(10000) > 0
 
     # First fit with no restriction on max samples
-    est1 = ForestClass(
+    est1 = forest_class(
         n_estimators=1,
         random_state=rng,
         max_samples=None,
     )
 
     # Second fit with max samples restricted to just 2
-    est2 = ForestClass(
+    est2 = forest_class(
         n_estimators=1,
         random_state=rng,
         max_samples=2,
@@ -1700,8 +1700,8 @@ def test_little_tree_with_small_max_samples(ForestClass):
     assert tree1.node_count > tree2.node_count, msg
 
 
-@pytest.mark.parametrize("Forest", FOREST_REGRESSORS)
-def test_mse_criterion_object_segfault_smoke_test(Forest):
+@pytest.mark.parametrize("forest", FOREST_REGRESSORS)
+def test_mse_criterion_object_segfault_smoke_test(forest):
     # This is a smoke test to ensure that passing a mutable criterion
     # does not cause a segfault when fitting with concurrent threads.
     # Non-regression test for:
@@ -1711,7 +1711,7 @@ def test_mse_criterion_object_segfault_smoke_test(Forest):
     y = y_reg.reshape(-1, 1)
     n_samples, n_outputs = y.shape
     mse_criterion = MSE(n_outputs, n_samples)
-    est = FOREST_REGRESSORS[Forest](n_estimators=2, n_jobs=2, criterion=mse_criterion)
+    est = FOREST_REGRESSORS[forest](n_estimators=2, n_jobs=2, criterion=mse_criterion)
 
     est.fit(X_reg, y)
 
@@ -1777,8 +1777,8 @@ def test_round_samples_to_one_when_samples_too_low(class_weight):
 
 @pytest.mark.parametrize("seed", [None, 1])
 @pytest.mark.parametrize("bootstrap", [True, False])
-@pytest.mark.parametrize("ForestClass", FOREST_CLASSIFIERS_REGRESSORS.values())
-def test_estimators_samples(ForestClass, bootstrap, seed):
+@pytest.mark.parametrize("forest_class", FOREST_CLASSIFIERS_REGRESSORS.values())
+def test_estimators_samples(forest_class, bootstrap, seed):
     """Estimators_samples_ property should be consistent.
 
     Tests consistency across fits and whether or not the seed for the random generator
@@ -1790,7 +1790,7 @@ def test_estimators_samples(ForestClass, bootstrap, seed):
         max_samples = 0.5
     else:
         max_samples = None
-    est = ForestClass(
+    est = forest_class(
         n_estimators=10,
         max_samples=max_samples,
         max_features=0.5,
@@ -1835,13 +1835,13 @@ def test_estimators_samples(ForestClass, bootstrap, seed):
 # TODO(1.11): remove the deprecated friedman_mse criterion parametrization
 @pytest.mark.filterwarnings("ignore:.*friedman_mse.*:FutureWarning")
 @pytest.mark.parametrize(
-    "Forest, criterion",
+    "forest_cls, criterion",
     [
         *product(FOREST_REGRESSORS.values(), REG_CRITERIONS),
         *product(FOREST_CLASSIFIERS.values(), CLF_CRITERIONS),
     ],
 )
-def test_missing_values_is_resilient(Forest, criterion):
+def test_missing_values_is_resilient(forest_cls, criterion):
     """Check that forest can deal with missing values and has decent performance."""
     rng = np.random.RandomState(0)
     n_samples, n_features = 500, 5
@@ -1853,22 +1853,24 @@ def test_missing_values_is_resilient(Forest, criterion):
         y -= np.min(y)
 
     # Create dataset with missing values
-    X_missing = X.copy()
-    X_missing[rng.choice([False, True], size=X.shape, p=[0.95, 0.05])] = np.nan
-    assert np.isnan(X_missing).any()
+    x_missing = X.copy()
+    x_missing[rng.choice([False, True], size=X.shape, p=[0.95, 0.05])] = np.nan
+    assert np.isnan(x_missing).any()
 
-    X_missing_train, X_missing_test, y_train, y_test = train_test_split(
-        X_missing, y, random_state=0
+    x_missing_train, x_missing_test, y_train, y_test = train_test_split(
+        x_missing, y, random_state=0
     )
 
     # Train forest with missing values
-    forest_with_missing = Forest(random_state=rng, criterion=criterion, n_estimators=50)
-    forest_with_missing.fit(X_missing_train, y_train)
-    score_with_missing = forest_with_missing.score(X_missing_test, y_test)
+    forest_with_missing = forest_cls(
+        random_state=rng, criterion=criterion, n_estimators=50
+    )
+    forest_with_missing.fit(x_missing_train, y_train)
+    score_with_missing = forest_with_missing.score(x_missing_test, y_test)
 
     # Train forest without missing values
     X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
-    forest = Forest(random_state=rng, criterion=criterion, n_estimators=50)
+    forest = forest_cls(random_state=rng, criterion=criterion, n_estimators=50)
     forest.fit(X_train, y_train)
     score_without_missing = forest.score(X_test, y_test)
 
