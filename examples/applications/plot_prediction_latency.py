@@ -69,7 +69,7 @@ def bulk_benchmark_estimator(estimator, X_test, n_bulk_repeats, verbose):
         start = time.time()
         estimator.predict(X_test)
         runtimes[i] = time.time() - start
-    runtimes = np.array(list(map(lambda x: x / float(n_instances), runtimes)))
+    runtimes = np.array([x / float(n_instances) for x in runtimes])
     if verbose:
         print(
             "bulk_benchmark runtimes:",
@@ -106,7 +106,7 @@ def generate_dataset(n_train, n_test, n_features, noise=0.1, verbose=False):
     if verbose:
         print("generating dataset...")
 
-    X, y, coef = make_regression(
+    X, y, _ = make_regression(
         n_samples=n_train + n_test, n_features=n_features, noise=noise, coef=True
     )
 
@@ -116,9 +116,9 @@ def generate_dataset(n_train, n_test, n_features, noise=0.1, verbose=False):
     )
     X_train, y_train = shuffle(X_train, y_train, random_state=random_seed)
 
-    X_scaler = StandardScaler()
-    X_train = X_scaler.fit_transform(X_train)
-    X_test = X_scaler.transform(X_test)
+    x_scaler = StandardScaler()
+    X_train = x_scaler.fit_transform(X_train)
+    X_test = x_scaler.transform(X_test)
 
     y_scaler = StandardScaler()
     y_train = y_scaler.fit_transform(y_train[:, None])[:, 0]
@@ -142,7 +142,7 @@ def boxplot_runtimes(runtimes, pred_type, configuration):
 
     """
 
-    fig, ax1 = plt.subplots(figsize=(10, 6))
+    _, ax1 = plt.subplots(figsize=(10, 6))
     bp = plt.boxplot(
         runtimes,
     )
@@ -175,7 +175,7 @@ def boxplot_runtimes(runtimes, pred_type, configuration):
 
 def benchmark(configuration):
     """Run the whole benchmark."""
-    X_train, y_train, X_test, y_test = generate_dataset(
+    X_train, y_train, X_test, _ = generate_dataset(
         configuration["n_train"], configuration["n_test"], configuration["n_features"]
     )
 
@@ -219,7 +219,7 @@ def n_feature_influence(estimators, n_train, n_test, n_features, percentile):
     percentiles = defaultdict(defaultdict)
     for n in n_features:
         print("benchmarking with %d features" % n)
-        X_train, y_train, X_test, y_test = generate_dataset(n_train, n_test, n)
+        X_train, y_train, X_test, _ = generate_dataset(n_train, n_test, n)
         for cls_name, estimator in estimators.items():
             estimator.fit(X_train, y_train)
             gc.collect()
@@ -229,7 +229,7 @@ def n_feature_influence(estimators, n_train, n_test, n_features, percentile):
 
 
 def plot_n_features_influence(percentiles, percentile):
-    fig, ax1 = plt.subplots(figsize=(10, 6))
+    _, ax1 = plt.subplots(figsize=(10, 6))
     colors = ["r", "g", "b"]
     for i, cls_name in enumerate(percentiles.keys()):
         x = np.array(sorted(percentiles[cls_name].keys()))
@@ -249,10 +249,10 @@ def plot_n_features_influence(percentiles, percentile):
 
 def benchmark_throughputs(configuration, duration_secs=0.1):
     """benchmark throughput for different estimators."""
-    X_train, y_train, X_test, y_test = generate_dataset(
+    X_train, y_train, X_test, _ = generate_dataset(
         configuration["n_train"], configuration["n_test"], configuration["n_features"]
     )
-    throughputs = dict()
+    throughputs = {}
     for estimator_config in configuration["estimators"]:
         estimator_config["instance"].fit(X_train, y_train)
         start_time = time.time()
@@ -265,7 +265,7 @@ def benchmark_throughputs(configuration, duration_secs=0.1):
 
 
 def plot_benchmark_throughput(throughputs, configuration):
-    fig, ax = plt.subplots(figsize=(10, 6))
+    _, ax = plt.subplots(figsize=(10, 6))
     colors = ["r", "g", "b"]
     cls_infos = [
         "%s\n(%d %s)"
