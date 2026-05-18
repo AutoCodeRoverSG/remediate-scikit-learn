@@ -35,7 +35,7 @@ stacking strategy. Here, stacking slightly improves the overall performance.
 import numpy as np
 import pandas as pd
 
-rng = np.random.RandomState(42)
+rng = np.random.default_rng(42)
 X = rng.uniform(-3, 3, size=500)
 trend = 2.4 * X
 seasonal = 3.1 * np.sin(3.2 * X)
@@ -77,7 +77,7 @@ from sklearn.linear_model import RidgeCV
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import PolynomialFeatures, SplineTransformer, StandardScaler
 
-linear_ridge = make_pipeline(StandardScaler(), RidgeCV())
+linear_ridge = make_pipeline(StandardScaler(), RidgeCV(), memory=None)
 
 spline_ridge = make_pipeline(
     SplineTransformer(n_knots=6, degree=3),
