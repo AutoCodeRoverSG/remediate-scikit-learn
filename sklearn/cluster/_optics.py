@@ -700,7 +700,7 @@ def _set_reach_dist(
             dists = np.asarray(dists)
         dists = dists.ravel()
     else:
-        _params = dict() if metric_params is None else metric_params.copy()
+        _params = {} if metric_params is None else metric_params.copy()
         if metric == "minkowski" and "p" not in _params:
             # the same logic as neighbors, p is ignored if explicitly set
             # in the dict params
@@ -709,7 +709,7 @@ def _set_reach_dist(
 
     rdists = np.maximum(dists, core_distances_[point_index])
     np.around(rdists, decimals=np.finfo(rdists.dtype).precision, out=rdists)
-    improved = np.where(rdists < np.take(reachability_, unproc))
+    improved = np.nonzero(rdists < np.take(reachability_, unproc))
     reachability_[unproc[improved]] = rdists[improved]
     predecessor_[unproc[improved]] = point_index
 
@@ -1099,33 +1099,33 @@ def _xi_cluster(
         # steep downward areas
         if steep_downward[steep_index]:
             sdas = _update_filter_sdas(sdas, mib, xi_complement, reachability_plot)
-            D_start = steep_index
-            D_end = _extend_region(steep_downward, upward, D_start, min_samples)
-            D = {"start": D_start, "end": D_end, "mib": 0.0}
+            d_start = steep_index
+            d_end = _extend_region(steep_downward, upward, d_start, min_samples)
+            D = {"start": d_start, "end": d_end, "mib": 0.0}
             sdas.append(D)
-            index = D_end + 1
+            index = d_end + 1
             mib = reachability_plot[index]
 
         # steep upward areas
         else:
             sdas = _update_filter_sdas(sdas, mib, xi_complement, reachability_plot)
-            U_start = steep_index
-            U_end = _extend_region(steep_upward, downward, U_start, min_samples)
-            index = U_end + 1
+            u_start = steep_index
+            u_end = _extend_region(steep_upward, downward, u_start, min_samples)
+            index = u_end + 1
             mib = reachability_plot[index]
 
-            U_clusters = []
+            u_clusters = []
             for D in sdas:
                 c_start = D["start"]
-                c_end = U_end
+                c_end = u_end
 
                 # line (**), sc2*
                 if reachability_plot[c_end + 1] * xi_complement < D["mib"]:
                     continue
 
                 # Definition 11: criterion 4
-                D_max = reachability_plot[D["start"]]
-                if D_max * xi_complement >= reachability_plot[c_end + 1]:
+                d_max = reachability_plot[D["start"]]
+                if d_max * xi_complement >= reachability_plot[c_end + 1]:
                     # Find the first index from the left side which is almost
                     # at the same level as the end of the detected cluster.
                     while (
@@ -1133,14 +1133,14 @@ def _xi_cluster(
                         and c_start < D["end"]
                     ):
                         c_start += 1
-                elif reachability_plot[c_end + 1] * xi_complement >= D_max:
+                elif reachability_plot[c_end + 1] * xi_complement >= d_max:
                     # Find the first index from the right side which is almost
                     # at the same level as the beginning of the detected
                     # cluster.
                     # Our implementation corrects a mistake in the original
                     # paper, i.e., in Definition 11 4c, r(x) < r(sD) should be
                     # r(x) > r(sD).
-                    while reachability_plot[c_end - 1] > D_max and c_end > U_start:
+                    while reachability_plot[c_end - 1] > d_max and c_end > u_start:
                         c_end -= 1
 
                 # predecessor correction
@@ -1160,14 +1160,14 @@ def _xi_cluster(
                     continue
 
                 # Definition 11: criterion 2
-                if c_end < U_start:
+                if c_end < u_start:
                     continue
 
-                U_clusters.append((c_start, c_end))
+                u_clusters.append((c_start, c_end))
 
             # add smaller clusters first.
-            U_clusters.reverse()
-            clusters.extend(U_clusters)
+            u_clusters.reverse()
+            clusters.extend(u_clusters)
 
     return np.array(clusters)
 
