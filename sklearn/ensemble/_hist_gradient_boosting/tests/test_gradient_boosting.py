@@ -54,13 +54,13 @@ X_multi_classification, y_multi_classification = make_classification(
 def _make_dumb_dataset(n_samples):
     """Make a dumb dataset to test early stopping."""
     rng = np.random.RandomState(42)
-    X_dumb = rng.randn(n_samples, 1)
-    y_dumb = (X_dumb[:, 0] > 0).astype("int64")
-    return X_dumb, y_dumb
+    x_dumb = rng.randn(n_samples, 1)
+    y_dumb = (x_dumb[:, 0] > 0).astype("int64")
+    return x_dumb, y_dumb
 
 
 @pytest.mark.parametrize(
-    "GradientBoosting, X, y",
+    "gradient_boosting, X, y",
     [
         (HistGradientBoostingClassifier, X_classification, y_classification),
         (HistGradientBoostingRegressor, X_regression, y_regression),
@@ -90,9 +90,9 @@ def _make_dumb_dataset(n_samples):
         ),
     ],
 )
-def test_init_parameters_validation(GradientBoosting, X, y, params, err_msg):
+def test_init_parameters_validation(gradient_boosting, X, y, params, err_msg):
     with pytest.raises(ValueError, match=err_msg):
-        GradientBoosting(**params).fit(X, y)
+        gradient_boosting(**params).fit(X, y)
 
 
 @pytest.mark.parametrize(
@@ -181,7 +181,7 @@ def test_early_stopping_classification(
 
 
 @pytest.mark.parametrize(
-    "GradientBoosting, X, y",
+    "gradient_boosting, X, y",
     [
         (HistGradientBoostingClassifier, *_make_dumb_dataset(10000)),
         (HistGradientBoostingClassifier, *_make_dumb_dataset(10001)),
@@ -189,10 +189,10 @@ def test_early_stopping_classification(
         (HistGradientBoostingRegressor, *_make_dumb_dataset(10001)),
     ],
 )
-def test_early_stopping_default(GradientBoosting, X, y):
+def test_early_stopping_default(gradient_boosting, X, y):
     # Test that early stopping is enabled by default if and only if there
     # are more than 10000 samples
-    gb = GradientBoosting(max_iter=10, n_iter_no_change=2, tol=1e-1)
+    gb = gradient_boosting(max_iter=10, n_iter_no_change=2, tol=1e-1)
     gb.fit(X, y)
     if X.shape[0] > 10000:
         assert gb.n_iter_ < gb.max_iter
@@ -506,7 +506,7 @@ def test_small_trainset():
     gb = HistGradientBoostingClassifier()
 
     # Compute the small training set
-    X_small, y_small, *_ = gb._get_small_trainset(
+    x_small, y_small, *_ = gb._get_small_trainset(
         X, y, seed=42, sample_weight_train=None
     )
 
@@ -515,7 +515,7 @@ def test_small_trainset():
     small_distrib = {class_: count / 10000 for (class_, count) in zip(unique, counts)}
 
     # Test that the small training set has the expected length
-    assert X_small.shape[0] == 10000
+    assert x_small.shape[0] == 10000
     assert y_small.shape[0] == 10000
 
     # Test that the class distributions in the whole dataset and in the small
@@ -554,14 +554,14 @@ def test_missing_values_minmax_imputation():
             return self
 
         def transform(self, X):
-            X_min, X_max = X.copy(), X.copy()
+            x_min, x_max = X.copy(), X.copy()
 
             for feature_idx in range(X.shape[1]):
                 nan_mask = np.isnan(X[:, feature_idx])
-                X_min[nan_mask, feature_idx] = self.data_min_[feature_idx] - 1
-                X_max[nan_mask, feature_idx] = self.data_max_[feature_idx] + 1
+                x_min[nan_mask, feature_idx] = self.data_min_[feature_idx] - 1
+                x_max[nan_mask, feature_idx] = self.data_max_[feature_idx] + 1
 
-            return np.concatenate([X_min, X_max], axis=1)
+            return np.concatenate([x_min, x_max], axis=1)
 
     def make_missing_value_data(n_samples=int(1e4), seed=0):
         rng = np.random.RandomState(seed)
@@ -613,7 +613,7 @@ def test_missing_values_minmax_imputation():
     gbm1 = HistGradientBoostingRegressor(max_iter=100, max_leaf_nodes=5, random_state=0)
     gbm1.fit(X_train, y_train)
 
-    gbm2 = make_pipeline(MinMaxImputer(), clone(gbm1))
+    gbm2 = make_pipeline(MinMaxImputer(), clone(gbm1), memory=None)
     gbm2.fit(X_train, y_train)
 
     # Check that the model reach the same score:
@@ -739,7 +739,7 @@ def test_sample_weight_effect(problem, global_random_seed):
             n_informative=n_features,
             random_state=0,
         )
-        Klass = HistGradientBoostingRegressor
+        klass = HistGradientBoostingRegressor
     else:
         n_classes = 2 if problem == "binary_classification" else 3
         X, y = make_classification(
@@ -751,29 +751,29 @@ def test_sample_weight_effect(problem, global_random_seed):
             n_classes=n_classes,
             random_state=0,
         )
-        Klass = HistGradientBoostingClassifier
+        klass = HistGradientBoostingClassifier
 
     # This test can't pass if min_samples_leaf > 1 because that would force 2
     # samples to be in the same node in est_sw, while these samples would be
     # free to be separate in est_dup: est_dup would just group together the
     # duplicated samples.
-    est = Klass(min_samples_leaf=1)
+    est = klass(min_samples_leaf=1)
 
     # Create dataset with repetitions and corresponding sample weights
     sample_weight = rng.randint(0, 3, size=X.shape[0])
-    X_repeated = np.repeat(X, sample_weight, axis=0)
-    assert X_repeated.shape[0] < 2e5
+    x_repeated = np.repeat(X, sample_weight, axis=0)
+    assert x_repeated.shape[0] < 2e5
     y_repeated = np.repeat(y, sample_weight, axis=0)
 
     est_weighted = clone(est).fit(X, y, sample_weight=sample_weight)
-    est_repeated = clone(est).fit(X_repeated, y_repeated)
+    est_repeated = clone(est).fit(x_repeated, y_repeated)
 
     # checking raw_predict is stricter than just predict for classification
     assert_allclose(est_weighted._raw_predict(X), est_repeated._raw_predict(X))
 
 
-@pytest.mark.parametrize("Loss", (HalfSquaredError, AbsoluteError))
-def test_sum_hessians_are_sample_weight(Loss):
+@pytest.mark.parametrize("loss_cls", (HalfSquaredError, AbsoluteError))
+def test_sum_hessians_are_sample_weight(loss_cls):
     # For losses with constant hessians, the sum_hessians field of the
     # histograms must be equal to the sum of the sample weight of samples at
     # the corresponding bin.
@@ -788,7 +788,7 @@ def test_sum_hessians_are_sample_weight(Loss):
     # While sample weights are supposed to be positive, this still works.
     sample_weight = rng.normal(size=n_samples)
 
-    loss = Loss(sample_weight=sample_weight)
+    loss = loss_cls(sample_weight=sample_weight)
     gradients, hessians = loss.init_gradient_and_hessian(
         n_samples=n_samples, dtype=G_H_DTYPE
     )
