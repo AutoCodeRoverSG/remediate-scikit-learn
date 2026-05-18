@@ -806,7 +806,7 @@ class LinearDiscriminantAnalysis(
         prediction = self.predict_proba(X)
 
         smallest_normal = xp.finfo(prediction.dtype).smallest_normal
-        prediction[prediction == 0.0] += smallest_normal
+        prediction = xp.where(prediction > 0.0, prediction, smallest_normal)
         return xp.log(prediction)
 
     def decision_function(self, X):
@@ -1110,21 +1110,21 @@ class QuadraticDiscriminantAnalysis(
         scalings = []
         rotations = []
         for class_idx, class_label in enumerate(self.classes_):
-            X_class = X[y == class_label, :]
-            if len(X_class) == 1:
+            x_class = X[y == class_label, :]
+            if len(x_class) == 1:
                 raise ValueError(
                     "y has only 1 sample in class %s, covariance is ill defined."
                     % str(self.classes_[class_idx])
                 )
 
-            mean_class = X_class.mean(0)
+            mean_class = x_class.mean(0)
             means.append(mean_class)
 
-            scaling_class, rotation_class, cov_class = specific_solver(X_class)
+            scaling_class, rotation_class, cov_class = specific_solver(x_class)
 
             rank = np.sum(scaling_class > self.tol)
             if rank < n_features:
-                n_samples_class = X_class.shape[0]
+                n_samples_class = x_class.shape[0]
                 if self.solver == "svd" and n_samples_class <= n_features:
                     raise linalg.LinAlgError(
                         f"The covariance matrix of class {class_label} is not full "
@@ -1162,8 +1162,8 @@ class QuadraticDiscriminantAnalysis(
         for i in range(len(self.classes_)):
             R = self.rotations_[i]
             S = self.scalings_[i]
-            Xm = X - self.means_[i]
-            X2 = np.dot(Xm, R * (S ** (-0.5)))
+            xm = X - self.means_[i]
+            X2 = np.dot(xm, R * (S ** (-0.5)))
             norm2.append(np.sum(X2**2, axis=1))
         norm2 = np.array(norm2).T  # shape = [len(X), n_classes]
         u = np.asarray([np.sum(np.log(s)) for s in self.scalings_])
