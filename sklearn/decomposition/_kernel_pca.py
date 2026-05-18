@@ -25,6 +25,7 @@ from sklearn.utils.extmath import _randomized_eigsh, svd_flip
 from sklearn.utils.validation import (
     _check_psd_eigenvalues,
     check_is_fitted,
+    check_random_state,
     validate_data,
 )
 
@@ -279,7 +280,7 @@ class KernelPCA(ClassNamePrefixFeaturesOutMixin, TransformerMixin, BaseEstimator
         "n_jobs": [None, Integral],
     }
 
-    def __init__(
+    def __init__(  # noqa: S107
         self,
         n_components=None,
         *,
@@ -296,7 +297,7 @@ class KernelPCA(ClassNamePrefixFeaturesOutMixin, TransformerMixin, BaseEstimator
         iterated_power="auto",
         remove_zero_eig=False,
         random_state=None,
-        copy_X=True,
+        copy_X=True,  # noqa: S117
         n_jobs=None,
     ):
         self.n_components = n_components
@@ -325,10 +326,10 @@ class KernelPCA(ClassNamePrefixFeaturesOutMixin, TransformerMixin, BaseEstimator
             X, Y, metric=self.kernel, filter_params=True, n_jobs=self.n_jobs, **params
         )
 
-    def _fit_transform_in_place(self, K):
+    def _fit_transform_in_place(self, kernel_matrix):
         """Fit's using kernel K"""
         # center kernel in place
-        K = self._centerer.fit(K).transform(K, copy=False)
+        K = self._centerer.fit(kernel_matrix).transform(kernel_matrix, copy=False)
 
         # adjust n_components according to user inputs
         if self.n_components is None:
@@ -351,7 +352,8 @@ class KernelPCA(ClassNamePrefixFeaturesOutMixin, TransformerMixin, BaseEstimator
                 K, subset_by_index=(K.shape[0] - n_components, K.shape[0] - 1)
             )
         elif eigen_solver == "arpack":
-            v0 = _init_arpack_v0(K.shape[0], self.random_state)
+            random_state = check_random_state(self.random_state)
+            v0 = _init_arpack_v0(K.shape[0], random_state)
             self.eigenvalues_, self.eigenvectors_ = eigsh(
                 K, n_components, which="LA", tol=self.tol, maxiter=self.max_iter, v0=v0
             )
@@ -403,17 +405,17 @@ class KernelPCA(ClassNamePrefixFeaturesOutMixin, TransformerMixin, BaseEstimator
 
         return K
 
-    def _fit_inverse_transform(self, X_transformed, X):
+    def _fit_inverse_transform(self, x_transformed, X):
         if hasattr(X, "tocsr"):
             raise NotImplementedError(
                 "Inverse transform not implemented for sparse matrices!"
             )
 
-        n_samples = X_transformed.shape[0]
-        K = self._get_kernel(X_transformed)
+        n_samples = x_transformed.shape[0]
+        K = self._get_kernel(x_transformed)
         K.flat[:: n_samples + 1] += self.alpha
         self.dual_coef_ = linalg.solve(K, X, assume_a="pos", overwrite_a=True)
-        self.X_transformed_fit_ = X_transformed
+        self.X_transformed_fit_ = x_transformed
 
     @_fit_context(prefer_skip_nested_validation=True)
     def fit(self, X, y=None):
@@ -445,9 +447,9 @@ class KernelPCA(ClassNamePrefixFeaturesOutMixin, TransformerMixin, BaseEstimator
 
         if self.fit_inverse_transform:
             # no need to use the kernel to transform X, use shortcut expression
-            X_transformed = self.eigenvectors_ * np.sqrt(self.eigenvalues_)
+            x_transformed = self.eigenvectors_ * np.sqrt(self.eigenvalues_)
 
-            self._fit_inverse_transform(X_transformed, X)
+            self._fit_inverse_transform(x_transformed, X)
 
         self.X_fit_ = X
         return self

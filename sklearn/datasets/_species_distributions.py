@@ -64,23 +64,22 @@ DATA_ARCHIVE_NAME = "species_coverage.pkz"
 logger = logging.getLogger(__name__)
 
 
-def _load_coverage(F, header_length=6, dtype=np.int16):
+def _load_coverage(fobj, header_length=6, dtype=np.int16):
     """Load a coverage file from an open file object.
 
     This will return a numpy array of the given dtype
     """
-    header = [F.readline() for _ in range(header_length)]
-    make_tuple = lambda t: (t.split()[0], float(t.split()[1]))
-    header = dict([make_tuple(line) for line in header])
+    header = [fobj.readline() for _ in range(header_length)]
+    header = {line.split()[0]: float(line.split()[1]) for line in header}
 
-    M = np.loadtxt(F, dtype=dtype)
+    M = np.loadtxt(fobj, dtype=dtype)
     nodata = int(header[b"NODATA_value"])
     if nodata != -9999:
         M[nodata] = -9999
     return M
 
 
-def _load_csv(F):
+def _load_csv(f):
     """Load csv file.
 
     Parameters
@@ -93,9 +92,9 @@ def _load_csv(F):
     rec : np.ndarray
         record array representing the data
     """
-    names = F.readline().decode("ascii").strip().split(",")
+    names = f.readline().decode("ascii").strip().split(",")
 
-    rec = np.loadtxt(F, skiprows=0, delimiter=",", dtype="S22,f4,f4")
+    rec = np.loadtxt(f, skiprows=0, delimiter=",", dtype="S22,f4,f4")
     rec.dtype.names = names
     return rec
 
@@ -237,13 +236,13 @@ def fetch_species_distributions(
     # Define parameters for the data files.  These should not be changed
     # unless the data model changes.  They will be saved in the npz file
     # with the downloaded data.
-    extra_params = dict(
-        x_left_lower_corner=-94.8,
-        Nx=1212,
-        y_left_lower_corner=-56.05,
-        Ny=1592,
-        grid_size=0.05,
-    )
+    extra_params = {
+        "x_left_lower_corner": -94.8,
+        "Nx": 1212,
+        "y_left_lower_corner": -56.05,
+        "Ny": 1592,
+        "grid_size": 0.05,
+    }
     dtype = np.int16
 
     archive_path = _pkl_filepath(data_home, DATA_ARCHIVE_NAME)
