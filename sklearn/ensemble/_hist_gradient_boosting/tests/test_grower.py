@@ -19,12 +19,12 @@ n_threads = _openmp_effective_n_threads()
 
 
 def _make_training_data(n_bins=256, constant_hessian=True):
-    rng = np.random.RandomState(42)
+    rng = np.random.default_rng(42)
     n_samples = 10000
 
     # Generate some test data directly binned so as to test the grower code
     # independently of the binning logic.
-    x_binned = rng.randint(0, n_bins - 1, size=(n_samples, 2), dtype=X_BINNED_DTYPE)
+    x_binned = rng.integers(0, n_bins - 1, size=(n_samples, 2), dtype=X_BINNED_DTYPE)
     x_binned = np.asfortranarray(x_binned)
 
     def true_decision_function(input_features):
@@ -223,7 +223,7 @@ def test_predictor_from_grower():
     ],
 )
 def test_min_samples_leaf(n_samples, min_samples_leaf, n_bins, constant_hessian, noise):
-    rng = np.random.RandomState(seed=0)
+    rng = np.random.default_rng(seed=0)
     # data = linear target, 3 features, 1 irrelevant.
     X = rng.normal(size=(n_samples, 3))
     y = X[:, 0] - X[:, 1]
@@ -262,14 +262,14 @@ def test_min_samples_leaf(n_samples, min_samples_leaf, n_bins, constant_hessian,
 def test_min_samples_leaf_root(n_samples, min_samples_leaf):
     # Make sure root node isn't split if n_samples is not at least twice
     # min_samples_leaf
-    rng = np.random.RandomState(seed=0)
+    rng = np.random.default_rng(seed=0)
 
     n_bins = 256
 
     # data = linear target, 3 features, 1 irrelevant.
     X = rng.normal(size=(n_samples, 3))
     y = X[:, 0] - X[:, 1]
-    mapper = _BinMapper(n_bins=n_bins, random_state=rng)
+    mapper = _BinMapper(n_bins=n_bins, random_state=0)
     X = mapper.fit_transform(X)
 
     all_gradients = y.astype(G_H_DTYPE)
@@ -353,20 +353,20 @@ def test_missing_value_predict_only():
 
     rng = np.random.RandomState(0)
     n_samples = 100
-    X_binned = rng.randint(0, 256, size=(n_samples, 1), dtype=np.uint8)
-    X_binned = np.asfortranarray(X_binned)
+    x_binned = rng.randint(0, 256, size=(n_samples, 1), dtype=np.uint8)
+    x_binned = np.asfortranarray(x_binned)
 
     gradients = rng.normal(size=n_samples).astype(G_H_DTYPE)
     hessians = np.ones(shape=1, dtype=G_H_DTYPE)
 
     grower = TreeGrower(
-        X_binned, gradients, hessians, min_samples_leaf=5, has_missing_values=False
+        x_binned, gradients, hessians, min_samples_leaf=5, has_missing_values=False
     )
     grower.grow()
 
     # We pass undefined binning_thresholds because we won't use predict anyway
     predictor = grower.make_predictor(
-        binning_thresholds=np.zeros((X_binned.shape[1], X_binned.max() + 1))
+        binning_thresholds=np.zeros((x_binned.shape[1], x_binned.max() + 1))
     )
 
     # go from root to a leaf, always following node with the most samples.
@@ -401,13 +401,13 @@ def test_split_on_nan_with_infinite_values():
     gradients = np.array([0, 0, 0, 100, 100], dtype=G_H_DTYPE)
     hessians = np.ones(shape=1, dtype=G_H_DTYPE)
 
-    bin_mapper = _BinMapper()
-    X_binned = bin_mapper.fit_transform(X)
+    bin_mapper = _BinMapper(random_state=42)
+    x_binned = bin_mapper.fit_transform(X)
 
     n_bins_non_missing = 3
     has_missing_values = True
     grower = TreeGrower(
-        X_binned,
+        x_binned,
         gradients,
         hessians,
         n_bins_non_missing=n_bins_non_missing,
@@ -431,7 +431,7 @@ def test_split_on_nan_with_infinite_values():
     # right child, even though it's a "split on nan" situation.
     predictions = predictor.predict(X, known_cat_bitsets, f_idx_map, n_threads)
     predictions_binned = predictor.predict_binned(
-        X_binned,
+        x_binned,
         missing_values_bin_idx=bin_mapper.missing_values_bin_idx_,
         n_threads=n_threads,
     )
@@ -442,15 +442,15 @@ def test_split_on_nan_with_infinite_values():
 def test_grow_tree_categories():
     # Check that the grower produces the right predictor tree when a split is
     # categorical
-    X_binned = np.array([[0, 1] * 11 + [1]], dtype=X_BINNED_DTYPE).T
-    X_binned = np.asfortranarray(X_binned)
+    x_binned = np.array([[0, 1] * 11 + [1]], dtype=X_BINNED_DTYPE).T
+    x_binned = np.asfortranarray(x_binned)
 
     all_gradients = np.array([10, 1] * 11 + [1], dtype=G_H_DTYPE)
     all_hessians = np.ones(1, dtype=G_H_DTYPE)
     is_categorical = np.ones(1, dtype=np.uint8)
 
     grower = TreeGrower(
-        X_binned,
+        x_binned,
         all_gradients,
         all_hessians,
         n_bins=4,
@@ -518,15 +518,15 @@ def test_ohe_equivalence(min_samples_leaf, n_unique_categories, target):
 
     rng = np.random.RandomState(0)
     n_samples = 10_000
-    X_binned = rng.randint(0, n_unique_categories, size=(n_samples, 1), dtype=np.uint8)
+    x_binned = rng.randint(0, n_unique_categories, size=(n_samples, 1), dtype=np.uint8)
 
-    X_ohe = OneHotEncoder(sparse_output=False).fit_transform(X_binned)
-    X_ohe = np.asfortranarray(X_ohe).astype(np.uint8)
+    x_ohe = OneHotEncoder(sparse_output=False).fit_transform(x_binned)
+    x_ohe = np.asfortranarray(x_ohe).astype(np.uint8)
 
     if target == "equal":
-        gradients = X_binned.reshape(-1)
+        gradients = x_binned.reshape(-1)
     elif target == "binary":
-        gradients = (X_binned % 2).reshape(-1)
+        gradients = (x_binned % 2).reshape(-1)
     else:
         gradients = rng.randn(n_samples)
     gradients = gradients.astype(G_H_DTYPE)
@@ -540,7 +540,7 @@ def test_ohe_equivalence(min_samples_leaf, n_unique_categories, target):
     }
 
     grower = TreeGrower(
-        X_binned, gradients, hessians, is_categorical=[True], **grower_params
+        x_binned, gradients, hessians, is_categorical=[True], **grower_params
     )
     grower.grow()
     # we pass undefined bin_thresholds because we won't use predict()
@@ -548,16 +548,16 @@ def test_ohe_equivalence(min_samples_leaf, n_unique_categories, target):
         binning_thresholds=np.zeros((1, n_unique_categories))
     )
     preds = predictor.predict_binned(
-        X_binned, missing_values_bin_idx=255, n_threads=n_threads
+        x_binned, missing_values_bin_idx=255, n_threads=n_threads
     )
 
-    grower_ohe = TreeGrower(X_ohe, gradients, hessians, **grower_params)
+    grower_ohe = TreeGrower(x_ohe, gradients, hessians, **grower_params)
     grower_ohe.grow()
     predictor_ohe = grower_ohe.make_predictor(
-        binning_thresholds=np.zeros((X_ohe.shape[1], n_unique_categories))
+        binning_thresholds=np.zeros((x_ohe.shape[1], n_unique_categories))
     )
     preds_ohe = predictor_ohe.predict_binned(
-        X_ohe, missing_values_bin_idx=255, n_threads=n_threads
+        x_ohe, missing_values_bin_idx=255, n_threads=n_threads
     )
 
     assert predictor.get_max_depth() <= predictor_ohe.get_max_depth()
@@ -588,15 +588,15 @@ def test_grower_interaction_constraints():
     for seed in range(20):
         rng = np.random.RandomState(seed)
 
-        X_binned = rng.randint(
+        x_binned = rng.randint(
             0, n_bins - 1, size=(n_samples, n_features), dtype=X_BINNED_DTYPE
         )
-        X_binned = np.asfortranarray(X_binned)
+        x_binned = np.asfortranarray(x_binned)
         gradients = rng.normal(size=n_samples).astype(G_H_DTYPE)
         hessians = np.ones(shape=1, dtype=G_H_DTYPE)
 
         grower = TreeGrower(
-            X_binned,
+            x_binned,
             gradients,
             hessians,
             n_bins=n_bins,
