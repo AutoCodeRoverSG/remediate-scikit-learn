@@ -167,10 +167,10 @@ def test_nodes_values(monotonic_cst, seed):
     #
     # The last one is a consequence of the others, but can't hurt to check
 
-    rng = np.random.RandomState(seed)
+    rng = np.random.default_rng(seed)
     n_samples = 1000
     n_features = 1
-    x_binned = rng.randint(0, 255, size=(n_samples, n_features), dtype=np.uint8)
+    x_binned = rng.integers(0, 255, size=(n_samples, n_features), dtype=np.uint8)
     x_binned = np.asfortranarray(x_binned)
 
     gradients = rng.normal(size=n_samples).astype(G_H_DTYPE)
@@ -212,17 +212,17 @@ def test_predictions(global_random_seed, use_feature_names):
     # test adapted from lightgbm's test_monotone_constraint(), itself inspired
     # by https://xgboost.readthedocs.io/en/latest/tutorials/monotonic.html
 
-    rng = np.random.RandomState(global_random_seed)
+    rng = np.random.default_rng(global_random_seed)
 
     n_samples = 1000
-    f_0 = rng.rand(n_samples)  # positive correlation with y
-    f_1 = rng.rand(n_samples)  # negative correlation with y
+    f_0 = rng.random(n_samples)  # positive correlation with y
+    f_1 = rng.random(n_samples)  # negative correlation with y
 
     # extra categorical features, no correlation with y,
     # to check the correctness of monotonicity constraint remapping, see issue #28898
-    f_a = rng.randint(low=0, high=9, size=n_samples)
-    f_b = rng.randint(low=0, high=9, size=n_samples)
-    f_c = rng.randint(low=0, high=9, size=n_samples)
+    f_a = rng.integers(low=0, high=9, size=n_samples)
+    f_b = rng.integers(low=0, high=9, size=n_samples)
+    f_c = rng.integers(low=0, high=9, size=n_samples)
 
     X = np.c_[f_a, f_0, f_b, f_1, f_c]
     column_names = ["f_a", "f_0", "f_b", "f_1", "f_c"]
@@ -322,7 +322,7 @@ def test_input_error_related_to_feature_names():
     with pytest.raises(ValueError, match=expected_msg):
         gbdt.fit(X, y)
 
-    monotonic_cst = {k: 1 for k in "abcdefghijklmnopqrstuvwxyz"}
+    monotonic_cst = dict.fromkeys("abcdefghijklmnopqrstuvwxyz", 1)
     gbdt = HistGradientBoostingRegressor(monotonic_cst=monotonic_cst)
     expected_msg = re.escape(
         "monotonic_cst contains 24 unexpected feature names: "
@@ -359,7 +359,7 @@ def test_bounded_value_min_gain_to_split():
     min_hessian_to_split = 0
     min_samples_leaf = 1
     n_bins = n_samples = 5
-    X_binned = np.arange(n_samples).reshape(-1, 1).astype(X_BINNED_DTYPE)
+    x_binned = np.arange(n_samples).reshape(-1, 1).astype(X_BINNED_DTYPE)
     sample_indices = np.arange(n_samples, dtype=np.uint32)
     all_hessians = np.ones(n_samples, dtype=G_H_DTYPE)
     all_gradients = np.array([1, 1, 100, 1, 1], dtype=G_H_DTYPE)
@@ -368,12 +368,12 @@ def test_bounded_value_min_gain_to_split():
     hessians_are_constant = False
 
     builder = HistogramBuilder(
-        X_binned, n_bins, all_gradients, all_hessians, hessians_are_constant, n_threads
+        x_binned, n_bins, all_gradients, all_hessians, hessians_are_constant, n_threads
     )
-    n_bins_non_missing = np.array([n_bins - 1] * X_binned.shape[1], dtype=np.uint32)
-    has_missing_values = np.array([False] * X_binned.shape[1], dtype=np.uint8)
+    n_bins_non_missing = np.array([n_bins - 1] * x_binned.shape[1], dtype=np.uint32)
+    has_missing_values = np.array([False] * x_binned.shape[1], dtype=np.uint8)
     monotonic_cst = np.array(
-        [MonotonicConstraint.NO_CST] * X_binned.shape[1], dtype=np.int8
+        [MonotonicConstraint.NO_CST] * x_binned.shape[1], dtype=np.int8
     )
     is_categorical = np.zeros_like(monotonic_cst, dtype=np.uint8)
     missing_values_bin_idx = n_bins - 1
@@ -381,7 +381,7 @@ def test_bounded_value_min_gain_to_split():
 
     min_gain_to_split = 2000
     splitter = Splitter(
-        X_binned,
+        x_binned,
         n_bins_non_missing,
         missing_values_bin_idx,
         has_missing_values,

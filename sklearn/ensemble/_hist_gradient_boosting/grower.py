@@ -9,8 +9,10 @@ the gradients and hessians of the training data.
 # SPDX-License-Identifier: BSD-3-Clause
 
 import numbers
+from dataclasses import dataclass, field
 from heapq import heappop, heappush
 from timeit import default_timer as time
+from typing import Optional
 
 import numpy as np
 
@@ -24,6 +26,38 @@ from sklearn.ensemble._hist_gradient_boosting.predictor import TreePredictor
 from sklearn.ensemble._hist_gradient_boosting.splitting import Splitter
 from sklearn.utils._bitset import set_raw_bitset_from_binned_bitset
 from sklearn.utils._openmp_helpers import _openmp_effective_n_threads
+
+
+@dataclass
+class FeatureConfig:
+    """Configuration for feature-related parameters used in tree growing.
+
+    Parameters
+    ----------
+    n_bins_non_missing : None or int or array of int
+        For each feature, gives the number of bins actually used for
+        non-missing values. If None, defaults to n_bins - 1.
+    has_missing_values : bool or array of bool
+        Whether each feature has missing values.
+    is_categorical : None or array of uint8
+        Indicates which features are categorical.
+    monotonic_cst : None or array of int8
+        Monotonic constraints for each feature.
+    interaction_cst : None or list of sets
+        Interaction constraints.
+    l2_regularization : float
+        L2 regularization parameter.
+    feature_fraction_per_split : float
+        Proportion of features to consider at each split.
+    """
+
+    n_bins_non_missing: Optional[object] = None
+    has_missing_values: object = False
+    is_categorical: Optional[object] = None
+    monotonic_cst: Optional[object] = None
+    interaction_cst: Optional[object] = None
+    l2_regularization: float = 0.0
+    feature_fraction_per_split: float = 1.0
 
 
 class TreeNode:
@@ -252,17 +286,22 @@ class TreeGrower:
         min_gain_to_split=0.0,
         min_hessian_to_split=1e-3,
         n_bins=256,
-        n_bins_non_missing=None,
-        has_missing_values=False,
-        is_categorical=None,
-        monotonic_cst=None,
-        interaction_cst=None,
-        l2_regularization=0.0,
-        feature_fraction_per_split=1.0,
+        feature_config=None,
         rng=None,
         shrinkage=1.0,
         n_threads=None,
     ):
+        if feature_config is None:
+            feature_config = FeatureConfig()
+
+        n_bins_non_missing = feature_config.n_bins_non_missing
+        has_missing_values = feature_config.has_missing_values
+        is_categorical = feature_config.is_categorical
+        monotonic_cst = feature_config.monotonic_cst
+        interaction_cst = feature_config.interaction_cst
+        l2_regularization = feature_config.l2_regularization
+        feature_fraction_per_split = feature_config.feature_fraction_per_split
+
         if rng is None:
             rng = np.random.default_rng(seed=0)
         self._validate_parameters(
@@ -758,8 +797,9 @@ def _fill_predictor_arrays(
     node = predictor_nodes[next_free_node_idx]
     node["count"] = grower_node.n_samples
     node["depth"] = grower_node.depth
-    if grower_node.split_info is not None:
-        node["gain"] = grower_node.split_info.gain
+    split_info = grower_node.split_info
+    if split_info is not None:
+        node["gain"] = split_info.gain
     else:
         node["gain"] = -1
 
@@ -770,7 +810,10 @@ def _fill_predictor_arrays(
         node["is_leaf"] = True
         return next_free_node_idx + 1, next_free_bitset_idx
 
-    split_info = grower_node.split_info
+    # split_info is always defined for non-leaf nodes. The following check
+    # is added for static analysis tools; in practice it is never triggered.
+    if split_info is None:
+        raise ValueError("split_info is None for a non-leaf node.")
     feature_idx, bin_idx = split_info.feature_idx, split_info.bin_idx
     node["feature_idx"] = feature_idx
     node["bin_threshold"] = bin_idx
