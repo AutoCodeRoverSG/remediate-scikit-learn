@@ -47,7 +47,7 @@ X_reg, y_reg = make_regression(
 )
 y_reg = scale(y_reg)
 
-rng = np.random.RandomState(0)
+rng = np.random.default_rng(0)
 # also load the iris dataset
 # and randomly permute it
 iris = datasets.load_iris()
@@ -451,7 +451,7 @@ def test_staged_predict_proba():
 @pytest.mark.parametrize("estimator_class", GRADIENT_BOOSTING_ESTIMATORS)
 def test_staged_functions_defensive(estimator_class, global_random_seed):
     # test that staged_functions make defensive copies
-    rng = np.random.RandomState(global_random_seed)
+    rng = np.random.default_rng(global_random_seed)
     X = rng.uniform(size=(10, 3))
     y = (4 * X[:, 0]).astype(int) + 1  # don't predict zeros
     estimator = estimator_class()
@@ -497,8 +497,8 @@ def test_degenerate_targets():
 
     clf = GradientBoostingRegressor(n_estimators=100, random_state=1)
     clf.fit(X, np.ones(len(X)))
-    clf.predict([rng.rand(2)])
-    assert_array_equal(np.ones((1,), dtype=np.float64), clf.predict([rng.rand(2)]))
+    clf.predict([rng.random(2)])
+    assert_array_equal(np.ones((1,), dtype=np.float64), clf.predict([rng.random(2)]))
 
 
 def test_quantile_loss(global_random_seed):
@@ -684,7 +684,6 @@ def test_oob_multilcass_iris():
         n_iter_no_change=5,
     )
     estimator.fit(iris.data, iris.target)
-    score = estimator.score(iris.data, iris.target)
     assert estimator.oob_improvement_.shape[0] < estimator.n_estimators
     assert estimator.oob_scores_.shape[0] < estimator.n_estimators
     assert estimator.oob_scores_[-1] == pytest.approx(estimator.oob_score_)
@@ -897,8 +896,8 @@ def test_warm_start_oob_switch(estimator_cls):
     assert_array_equal(est.oob_scores_[:100], np.zeros(100))
 
     # the last 10 are not zeros
-    assert (est.oob_improvement_[-10:] != 0.0).all()
-    assert (est.oob_scores_[-10:] != 0.0).all()
+    assert not np.any(np.isclose(est.oob_improvement_[-10:], 0.0))
+    assert not np.any(np.isclose(est.oob_scores_[-10:], 0.0))
 
     assert est.oob_scores_[-1] == pytest.approx(est.oob_score_)
 
@@ -1140,7 +1139,7 @@ def test_min_impurity_decrease(gb_estimator):
     for tree in est.estimators_.flat:
         # Simply check if the parameter is passed on correctly. Tree tests
         # will suffice for the actual working of this param
-        assert tree.min_impurity_decrease == 0.1
+        assert tree.min_impurity_decrease == pytest.approx(0.1)
 
 
 def test_warm_start_wo_nestimators_change():
@@ -1369,7 +1368,7 @@ def test_gradient_boosting_with_init(
     # initial estimator does not support sample weight
 
     X, y = dataset_maker()
-    sample_weight = np.random.RandomState(global_random_seed).rand(100)
+    sample_weight = np.random.default_rng(global_random_seed).random(100)
 
     # init supports sample weights
     init_est = init_estimator()
@@ -1386,7 +1385,7 @@ def test_gradient_boosting_with_init_pipeline():
     # Check that the init estimator can be a pipeline (see issue #13466)
 
     X, y = make_regression(random_state=0)
-    init = make_pipeline(LinearRegression())
+    init = make_pipeline(LinearRegression(), memory=None)
     gb = GradientBoostingRegressor(init=init)
     gb.fit(X, y)  # pipeline without sample_weight works fine
 
@@ -1429,7 +1428,7 @@ def test_early_stopping_n_classes():
         gb.fit(X, y)
 
     # No error if we let training data be big enough
-    gb = GradientBoostingClassifier(
+    GradientBoostingClassifier(
         n_iter_no_change=5, random_state=0, validation_fraction=0.4
     )
 
@@ -1690,8 +1689,8 @@ def test_gb_denominator_zero(global_random_seed):
         clf.fit(X, y)
 
 
-@pytest.mark.parametrize("GradientBoosting", GRADIENT_BOOSTING_ESTIMATORS)
-def test_criterion_param_deprecation(GradientBoosting):
+@pytest.mark.parametrize("gradient_boosting", GRADIENT_BOOSTING_ESTIMATORS)
+def test_criterion_param_deprecation(gradient_boosting):
     with pytest.warns(FutureWarning, match="criterion"):
-        reg = GradientBoosting(criterion="friedman_mse")
+        reg = gradient_boosting(criterion="friedman_mse")
         reg.fit(X, y)
