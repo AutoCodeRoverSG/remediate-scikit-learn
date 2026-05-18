@@ -109,9 +109,9 @@ for method_name in all_method_names:
         for n_components, ax in zip(all_n_components, axes[row_idx]):
             for solver in SOLVERS:
                 if solver == "auto":
-                    style_kwargs = dict(linewidth=2, color="black", style="--")
+                    style_kwargs = {"linewidth": 2, "color": "black", "style": "--"}
                 else:
-                    style_kwargs = dict(style="o-")
+                    style_kwargs = {"style": "o-"}
                 ax.set(
                     title=f"n_components={n_components}, n_features={ref_dim}",
                     ylabel="time (s)",
@@ -142,9 +142,9 @@ for method_name in all_method_names:
         for n_components, ax in zip(all_n_components, axes[row_idx]):
             for solver in SOLVERS:
                 if solver == "auto":
-                    style_kwargs = dict(linewidth=2, color="black", style="--")
+                    style_kwargs = {"linewidth": 2, "color": "black", "style": "--"}
                 else:
-                    style_kwargs = dict(style="o-")
+                    style_kwargs = {"style": "o-"}
                 ax.set(
                     title=f"n_components={n_components}, n_samples={ref_dim}",
                     ylabel="time (s)",
