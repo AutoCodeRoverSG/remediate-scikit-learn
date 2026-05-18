@@ -58,24 +58,24 @@ def trace_dot(X, Y):
     return np.dot(X.ravel(), Y.ravel())
 
 
-def _check_init(A, shape, whom):
-    A = check_array(A)
-    if shape[0] != "auto" and A.shape[0] != shape[0]:
+def _check_init(init_array, shape, whom):
+    init_array = check_array(init_array)
+    if shape[0] != "auto" and init_array.shape[0] != shape[0]:
         raise ValueError(
             f"Array with wrong first dimension passed to {whom}. Expected {shape[0]}, "
-            f"but got {A.shape[0]}."
+            f"but got {init_array.shape[0]}."
         )
-    if shape[1] != "auto" and A.shape[1] != shape[1]:
+    if shape[1] != "auto" and init_array.shape[1] != shape[1]:
         raise ValueError(
             f"Array with wrong second dimension passed to {whom}. Expected {shape[1]}, "
-            f"but got {A.shape[1]}."
+            f"but got {init_array.shape[1]}."
         )
-    check_non_negative(A, whom)
-    if np.max(A) == 0:
+    check_non_negative(init_array, whom)
+    if np.max(init_array) == 0:
         raise ValueError(f"Array passed to {whom} is full of zeros.")
 
 
-def _beta_divergence(X, W, H, beta, square_root=False):
+def _beta_divergence(X, w, h, beta, square_root=False):
     """Compute the beta-divergence of X and dot(W, H).
 
     Parameters
@@ -107,19 +107,19 @@ def _beta_divergence(X, W, H, beta, square_root=False):
     # The method can be called with scalars
     if not sp.issparse(X):
         X = np.atleast_2d(X)
-    W = np.atleast_2d(W)
-    H = np.atleast_2d(H)
+    w = np.atleast_2d(w)
+    h = np.atleast_2d(h)
 
     # Frobenius norm
     if beta == 2:
         # Avoid the creation of the dense np.dot(W, H) if X is sparse.
         if sp.issparse(X):
-            norm_X = np.dot(X.data, X.data)
-            norm_WH = trace_dot(np.linalg.multi_dot([W.T, W, H]), H)
-            cross_prod = trace_dot((X @ H.T), W)
-            res = (norm_X + norm_WH - 2.0 * cross_prod) / 2.0
+            norm_x = np.dot(X.data, X.data)
+            norm_wh = trace_dot(np.linalg.multi_dot([w.T, w, h]), h)
+            cross_prod = trace_dot((X @ h.T), w)
+            res = (norm_x + norm_wh - 2.0 * cross_prod) / 2.0
         else:
-            res = squared_norm(X - np.dot(W, H)) / 2.0
+            res = squared_norm(X - np.dot(w, h)) / 2.0
 
         if square_root:
             return np.sqrt(res * 2)
@@ -128,34 +128,34 @@ def _beta_divergence(X, W, H, beta, square_root=False):
 
     if sp.issparse(X):
         # compute np.dot(W, H) only where X is nonzero
-        WH_data = _special_sparse_dot(W, H, X).data
-        X_data = X.data
+        wh_data = _special_sparse_dot(w, h, X).data
+        x_data = X.data
     else:
-        WH = np.dot(W, H)
-        WH_data = WH.ravel()
-        X_data = X.ravel()
+        WH = np.dot(w, h)
+        wh_data = WH.ravel()
+        x_data = X.ravel()
 
     # do not affect the zeros: here 0 ** (-1) = 0 and not infinity
-    indices = X_data > EPSILON
-    WH_data = WH_data[indices]
-    X_data = X_data[indices]
+    indices = x_data > EPSILON
+    wh_data = wh_data[indices]
+    x_data = x_data[indices]
 
     # used to avoid division by zero
-    WH_data[WH_data < EPSILON] = EPSILON
+    wh_data[wh_data < EPSILON] = EPSILON
 
     # generalized Kullback-Leibler divergence
     if beta == 1:
         # fast and memory efficient computation of np.sum(np.dot(W, H))
-        sum_WH = np.dot(np.sum(W, axis=0), np.sum(H, axis=1))
+        sum_wh = np.dot(np.sum(w, axis=0), np.sum(h, axis=1))
         # computes np.sum(X * log(X / WH)) only where X is nonzero
-        div = X_data / WH_data
-        res = np.dot(X_data, np.log(div))
+        div = x_data / wh_data
+        res = np.dot(x_data, np.log(div))
         # add full np.sum(np.dot(W, H)) - np.sum(X)
-        res += sum_WH - X_data.sum()
+        res += sum_wh - x_data.sum()
 
     # Itakura-Saito divergence
     elif beta == 0:
-        div = X_data / WH_data
+        div = x_data / wh_data
         res = np.sum(div) - np.prod(X.shape) - np.sum(np.log(div))
 
     # beta-divergence, beta not in (0, 1, 2)
@@ -163,16 +163,16 @@ def _beta_divergence(X, W, H, beta, square_root=False):
         if sp.issparse(X):
             # slow loop, but memory efficient computation of :
             # np.sum(np.dot(W, H) ** beta)
-            sum_WH_beta = 0
+            sum_wh_beta = 0
             for i in range(X.shape[1]):
-                sum_WH_beta += np.sum(np.dot(W, H[:, i]) ** beta)
+                sum_wh_beta += np.sum(np.dot(w, h[:, i]) ** beta)
 
         else:
-            sum_WH_beta = np.sum(WH**beta)
+            sum_wh_beta = np.sum(WH**beta)
 
-        sum_X_WH = np.dot(X_data, WH_data ** (beta - 1))
-        res = (X_data**beta).sum() - beta * sum_X_WH
-        res += sum_WH_beta * (beta - 1)
+        sum_x_wh = np.dot(x_data, wh_data ** (beta - 1))
+        res = (x_data**beta).sum() - beta * sum_x_wh
+        res += sum_wh_beta * (beta - 1)
         res /= beta * (beta - 1)
 
     if square_root:
