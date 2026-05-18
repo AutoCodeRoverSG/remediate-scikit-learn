@@ -249,39 +249,39 @@ def test_leave_zero_eig():
 def test_kernel_pca_precomputed(global_random_seed):
     """Test that kPCA works with a precomputed kernel, for all solvers"""
     rng = np.random.RandomState(global_random_seed)
-    x_fit = rng.random_sample((5, 4))
-    x_pred = rng.random_sample((2, 4))
+    data_fit = rng.random_sample((5, 4))
+    data_pred = rng.random_sample((2, 4))
 
     for eigen_solver in ("dense", "arpack", "randomized"):
-        x_kpca = (
+        result_kpca = (
             KernelPCA(4, eigen_solver=eigen_solver, random_state=0)
-            .fit(x_fit)
-            .transform(x_pred)
+            .fit(data_fit)
+            .transform(data_pred)
         )
 
-        x_kpca2 = (
+        result_kpca_precomp = (
             KernelPCA(
                 4, eigen_solver=eigen_solver, kernel="precomputed", random_state=0
             )
-            .fit(np.dot(x_fit, x_fit.T))
-            .transform(np.dot(x_pred, x_fit.T))
+            .fit(np.dot(data_fit, data_fit.T))
+            .transform(np.dot(data_pred, data_fit.T))
         )
 
-        x_kpca_train = KernelPCA(
+        result_kpca_train = KernelPCA(
             4, eigen_solver=eigen_solver, kernel="precomputed", random_state=0
-        ).fit_transform(np.dot(x_fit, x_fit.T))
+        ).fit_transform(np.dot(data_fit, data_fit.T))
 
-        x_kpca_train2 = (
+        result_kpca_train2 = (
             KernelPCA(
                 4, eigen_solver=eigen_solver, kernel="precomputed", random_state=0
             )
-            .fit(np.dot(x_fit, x_fit.T))
-            .transform(np.dot(x_fit, x_fit.T))
+            .fit(np.dot(data_fit, data_fit.T))
+            .transform(np.dot(data_fit, data_fit.T))
         )
 
-        assert_array_almost_equal(np.abs(x_kpca), np.abs(x_kpca2))
+        assert_array_almost_equal(np.abs(result_kpca), np.abs(result_kpca_precomp))
 
-        assert_array_almost_equal(np.abs(x_kpca_train), np.abs(x_kpca_train2))
+        assert_array_almost_equal(np.abs(result_kpca_train), np.abs(result_kpca_train2))
 
 
 @pytest.mark.parametrize("solver", ["auto", "dense", "arpack", "randomized"])
@@ -300,11 +300,11 @@ def test_kernel_pca_precomputed_non_symmetric(solver):
     kpca.fit(K)  # no error
 
     # same test with centered kernel
-    Kc = [[9, -9], [-9, 9]]
+    kc = [[9, -9], [-9, 9]]
     kpca_c = KernelPCA(
         kernel="precomputed", eigen_solver=solver, n_components=1, random_state=0
     )
-    kpca_c.fit(Kc)
+    kpca_c.fit(kc)
 
     # comparison between the non-centered and centered versions
     assert_array_equal(kpca.eigenvectors_, kpca_c.eigenvectors_)
@@ -319,8 +319,10 @@ def test_gridsearch_pipeline():
     """
     X, y = make_circles(n_samples=400, factor=0.3, noise=0.05, random_state=0)
     kpca = KernelPCA(kernel="rbf", n_components=2)
-    pipeline = Pipeline([("kernel_pca", kpca), ("Perceptron", Perceptron(max_iter=5))])
-    param_grid = dict(kernel_pca__gamma=2.0 ** np.arange(-2, 2))
+    pipeline = Pipeline(
+        [("kernel_pca", kpca), ("Perceptron", Perceptron(max_iter=5))], memory=None
+    )
+    param_grid = {"kernel_pca__gamma": 2.0 ** np.arange(-2, 2)}
     grid_search = GridSearchCV(pipeline, cv=3, param_grid=param_grid)
     grid_search.fit(X, y)
     assert grid_search.best_score_ == 1
@@ -334,8 +336,10 @@ def test_gridsearch_pipeline_precomputed():
     """
     X, y = make_circles(n_samples=400, factor=0.3, noise=0.05, random_state=0)
     kpca = KernelPCA(kernel="precomputed", n_components=2)
-    pipeline = Pipeline([("kernel_pca", kpca), ("Perceptron", Perceptron(max_iter=5))])
-    param_grid = dict(Perceptron__max_iter=np.arange(1, 5))
+    pipeline = Pipeline(
+        [("kernel_pca", kpca), ("Perceptron", Perceptron(max_iter=5))], memory=None
+    )
+    param_grid = {"Perceptron__max_iter": np.arange(1, 5)}
     grid_search = GridSearchCV(pipeline, cv=3, param_grid=param_grid)
     X_kernel = rbf_kernel(X, gamma=2.0)
     grid_search.fit(X_kernel, y)
