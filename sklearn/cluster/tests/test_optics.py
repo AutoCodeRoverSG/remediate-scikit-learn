@@ -86,21 +86,21 @@ def test_extract_xi(global_dtype):
     # but with a clear noise data.
     # global_random_seed is not used here since the expected labels
     # are hardcoded for these specific data.
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
     n_points_per_cluster = 5
 
-    C1 = [-5, -2] + 0.8 * rng.randn(n_points_per_cluster, 2)
-    C2 = [4, -1] + 0.1 * rng.randn(n_points_per_cluster, 2)
-    C3 = [1, -2] + 0.2 * rng.randn(n_points_per_cluster, 2)
-    C4 = [-2, 3] + 0.3 * rng.randn(n_points_per_cluster, 2)
-    C5 = [3, -2] + 0.6 * rng.randn(n_points_per_cluster, 2)
-    C6 = [5, 6] + 0.2 * rng.randn(n_points_per_cluster, 2)
+    C1 = [-5, -2] + 0.8 * rng.standard_normal((n_points_per_cluster, 2))
+    C2 = [4, -1] + 0.1 * rng.standard_normal((n_points_per_cluster, 2))
+    C3 = [1, -2] + 0.2 * rng.standard_normal((n_points_per_cluster, 2))
+    C4 = [-2, 3] + 0.3 * rng.standard_normal((n_points_per_cluster, 2))
+    C5 = [3, -2] + 0.6 * rng.standard_normal((n_points_per_cluster, 2))
+    C6 = [5, 6] + 0.2 * rng.standard_normal((n_points_per_cluster, 2))
 
     X = np.vstack((C1, C2, C3, C4, C5, np.array([[100, 100]]), C6)).astype(
         global_dtype, copy=False
     )
     expected_labels = np.r_[[2] * 5, [0] * 5, [1] * 5, [3] * 5, [1] * 5, -1, [4] * 5]
-    X, expected_labels = shuffle(X, expected_labels, random_state=rng)
+    X, expected_labels = shuffle(X, expected_labels, random_state=0)
 
     clust = OPTICS(
         min_samples=3, min_cluster_size=2, max_eps=20, cluster_method="xi", xi=0.4
@@ -119,7 +119,7 @@ def test_extract_xi(global_dtype):
     expected_labels = np.r_[
         [1] * 5, [3] * 5, [2] * 5, [0] * 5, [2] * 5, -1, -1, [4] * 5
     ]
-    X, expected_labels = shuffle(X, expected_labels, random_state=rng)
+    X, expected_labels = shuffle(X, expected_labels, random_state=1)
 
     clust = OPTICS(
         min_samples=3, min_cluster_size=3, max_eps=20, cluster_method="xi", xi=0.3
@@ -132,7 +132,7 @@ def test_extract_xi(global_dtype):
     C3 = [[100, 100], [100, 90], [100, 110], [90, 100]]
     X = np.vstack((C1, C2, C3)).astype(global_dtype, copy=False)
     expected_labels = np.r_[[0] * 4, [1] * 4, [2] * 4]
-    X, expected_labels = shuffle(X, expected_labels, random_state=rng)
+    X, expected_labels = shuffle(X, expected_labels, random_state=2)
 
     clust = OPTICS(
         min_samples=2, min_cluster_size=2, max_eps=np.inf, cluster_method="xi", xi=0.04
@@ -141,16 +141,16 @@ def test_extract_xi(global_dtype):
 
 
 def test_cluster_hierarchy(global_dtype, global_random_seed):
-    rng = np.random.RandomState(global_random_seed)
+    rng = np.random.default_rng(global_random_seed)
     n_points_per_cluster = 100
-    C1 = [0, 0] + 2 * rng.randn(n_points_per_cluster, 2).astype(
+    C1 = [0, 0] + 2 * rng.standard_normal((n_points_per_cluster, 2)).astype(
         global_dtype, copy=False
     )
-    C2 = [0, 0] + 50 * rng.randn(n_points_per_cluster, 2).astype(
+    C2 = [0, 0] + 50 * rng.standard_normal((n_points_per_cluster, 2)).astype(
         global_dtype, copy=False
     )
     X = np.vstack((C1, C2))
-    X = shuffle(X, random_state=rng)
+    rng.shuffle(X)
 
     clusters = OPTICS(min_samples=20, xi=0.2).fit(X).cluster_hierarchy_
     assert clusters.shape == (2, 2)
@@ -239,7 +239,7 @@ def test_nowarn_if_metric_bool_data_bool():
     # https://github.com/scikit-learn/scikit-learn/issues/18996
 
     pairwise_metric = "rogerstanimoto"
-    X = np.random.randint(2, size=(5, 2), dtype=bool)
+    X = np.random.default_rng(0).integers(2, size=(5, 2), dtype=bool)
 
     with warnings.catch_warnings():
         warnings.simplefilter("error", DataConversionWarning)
@@ -254,7 +254,7 @@ def test_warn_if_metric_bool_data_no_bool():
     # https://github.com/scikit-learn/scikit-learn/issues/18996
 
     pairwise_metric = "rogerstanimoto"
-    X = np.random.randint(2, size=(5, 2), dtype=np.int32)
+    X = np.random.default_rng(0).integers(2, size=(5, 2), dtype=np.int32)
     msg = f"Data will be converted to boolean for metric {pairwise_metric}"
 
     with pytest.warns(DataConversionWarning, match=msg) as warn_record:
@@ -272,8 +272,9 @@ def test_nowarn_if_metric_no_bool():
     # make sure no conversion warning is raised if
     # metric isn't boolean, no matter what the data type is
     pairwise_metric = "minkowski"
-    x_bool = np.random.randint(2, size=(5, 2), dtype=bool)
-    x_num = np.random.randint(2, size=(5, 2), dtype=np.int32)
+    rng = np.random.default_rng(0)
+    x_bool = rng.integers(2, size=(5, 2), dtype=bool)
+    x_num = rng.integers(2, size=(5, 2), dtype=np.int32)
 
     with warnings.catch_warnings():
         warnings.simplefilter("error", DataConversionWarning)
@@ -395,7 +396,7 @@ def test_processing_order():
     assert_array_equal(clust.ordering_, [0, 1, 2, 3])
 
 
-def test_compare_to_ELKI():
+def test_compare_to_elki():
     # Expected values, computed with (future) ELKI 0.7.5 using:
     # java -jar elki.jar cli -dbc.in csv -dbc.filter FixedDBIDsFilter
     #   -algorithm clustering.optics.OPTICSHeap -optics.minpts 5
@@ -803,19 +804,19 @@ def test_compare_to_ELKI():
     assert_array_equal(clust2.predecessor_[clust2.ordering_], np.array(p2))
     assert_allclose(clust2.reachability_[clust2.ordering_], np.array(r2))
 
-    index = np.where(clust1.core_distances_ <= 0.5)[0]
+    index = np.nonzero(clust1.core_distances_ <= 0.5)[0]
     assert_allclose(clust1.core_distances_[index], clust2.core_distances_[index])
 
 
 def test_extract_dbscan(global_dtype, global_random_seed):
     # testing an easy dbscan case. Not including clusters with different
     # densities.
-    rng = np.random.RandomState(global_random_seed)
+    rng = np.random.default_rng(global_random_seed)
     n_points_per_cluster = 20
-    C1 = [-5, -2] + 0.2 * rng.randn(n_points_per_cluster, 2)
-    C2 = [4, -1] + 0.2 * rng.randn(n_points_per_cluster, 2)
-    C3 = [1, 2] + 0.2 * rng.randn(n_points_per_cluster, 2)
-    C4 = [-2, 3] + 0.2 * rng.randn(n_points_per_cluster, 2)
+    C1 = [-5, -2] + 0.2 * rng.standard_normal((n_points_per_cluster, 2))
+    C2 = [4, -1] + 0.2 * rng.standard_normal((n_points_per_cluster, 2))
+    C3 = [1, 2] + 0.2 * rng.standard_normal((n_points_per_cluster, 2))
+    C4 = [-2, 3] + 0.2 * rng.standard_normal((n_points_per_cluster, 2))
     X = np.vstack((C1, C2, C3, C4)).astype(global_dtype, copy=False)
 
     clust = OPTICS(cluster_method="dbscan", eps=0.5).fit(X)
@@ -848,7 +849,7 @@ def test_optics_input_not_modified_precomputed_sparse_nodiag(
     Non-regression test for:
     https://github.com/scikit-learn/scikit-learn/issues/27508
     """
-    X = np.random.RandomState(global_random_seed).rand(6, 6)
+    X = np.random.default_rng(global_random_seed).random((6, 6))
     # Add zeros on the diagonal that will be implicit when creating
     # the sparse matrix. If `X` is modified in-place, the zeros from
     # the diagonal will be made explicit.
