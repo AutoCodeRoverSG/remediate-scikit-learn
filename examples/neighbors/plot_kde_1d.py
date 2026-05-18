@@ -39,10 +39,10 @@ from sklearn.neighbors import KernelDensity
 
 # ----------------------------------------------------------------------
 # Plot the progression of histograms to kernels
-np.random.seed(1)
+rng = np.random.default_rng(1)
 N = 20
 X = np.concatenate(
-    (np.random.normal(0, 1, int(0.3 * N)), np.random.normal(5, 1, int(0.7 * N)))
+    (rng.normal(0, 1, int(0.3 * N)), rng.normal(5, 1, int(0.7 * N)))
 )[:, np.newaxis]
 X_plot = np.linspace(-5, 10, 1000)[:, np.newaxis]
 bins = np.linspace(-5, 10, 10)
@@ -121,9 +121,9 @@ ax[0, 1].set_title("Available Kernels")
 # ----------------------------------------------------------------------
 # Plot a 1D density example
 N = 100
-np.random.seed(1)
+rng = np.random.default_rng(1)
 X = np.concatenate(
-    (np.random.normal(0, 1, int(0.3 * N)), np.random.normal(5, 1, int(0.7 * N)))
+    (rng.normal(0, 1, int(0.3 * N)), rng.normal(5, 1, int(0.7 * N)))
 )[:, np.newaxis]
 
 X_plot = np.linspace(-5, 10, 1000)[:, np.newaxis]
@@ -151,7 +151,7 @@ for color, kernel in zip(colors, kernels):
 ax.text(6, 0.38, "N={0} points".format(N))
 
 ax.legend(loc="upper left")
-ax.plot(X[:, 0], -0.005 - 0.01 * np.random.random(X.shape[0]), "+k")
+ax.plot(X[:, 0], -0.005 - 0.01 * rng.random(X.shape[0]), "+k")
 
 ax.set_xlim(-4, 9)
 ax.set_ylim(-0.02, 0.4)
