@@ -71,7 +71,7 @@ diabetes.target = diabetes.target[perm]
 def test_classification():
     # Check classification for various parameter settings.
     rng = check_random_state(0)
-    X_train, X_test, y_train, y_test = train_test_split(
+    X_train, X_test, y_train, _ = train_test_split(
         iris.data, iris.target, random_state=rng
     )
     grid = ParameterGrid(
@@ -84,7 +84,7 @@ def test_classification():
     )
     estimators = [
         None,
-        DummyClassifier(),
+        DummyClassifier(random_state=rng),
         Perceptron(max_iter=20),
         DecisionTreeClassifier(max_depth=2),
         KNeighborsClassifier(),
@@ -135,21 +135,21 @@ def test_sparse_classification(sparse_container, params, method):
             return self
 
     rng = check_random_state(0)
-    X_train, X_test, y_train, y_test = train_test_split(
+    X_train, X_test, y_train, _ = train_test_split(
         scale(iris.data), iris.target, random_state=rng
     )
 
-    X_train_sparse = sparse_container(X_train)
-    X_test_sparse = sparse_container(X_test)
+    x_train_sparse = sparse_container(X_train)
+    x_test_sparse = sparse_container(X_test)
 
     # Trained on sparse format
     sparse_classifier = BaggingClassifier(
         estimator=CustomClassifier(),
         random_state=1,
         **params,
-    ).fit(X_train_sparse, y_train)
+    ).fit(x_train_sparse, y_train)
     print(sparse_classifier, method)
-    sparse_results = getattr(sparse_classifier, method)(X_test_sparse)
+    sparse_results = getattr(sparse_classifier, method)(x_test_sparse)
 
     # Trained on dense format
     dense_classifier = BaggingClassifier(
@@ -160,7 +160,7 @@ def test_sparse_classification(sparse_container, params, method):
     dense_results = getattr(dense_classifier, method)(X_test)
     assert_array_almost_equal(sparse_results, dense_results)
 
-    sparse_type = type(X_train_sparse)
+    sparse_type = type(x_train_sparse)
     types = [i.data_type_ for i in sparse_classifier.estimators_]
 
     assert all([t == sparse_type for t in types])
