@@ -117,7 +117,7 @@ class BaseEnsemble(MetaEstimatorMixin, BaseEstimator, metaclass=ABCMeta):
         estimator=None,
         *,
         n_estimators=10,
-        estimator_params=tuple(),
+        estimator_params=(),
     ):
         # Set parameters
         self.estimator = estimator
