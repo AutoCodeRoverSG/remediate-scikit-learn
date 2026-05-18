@@ -34,7 +34,7 @@ centers_1 = np.array([[0, 0], [3, 1]])
 # construct the datasets
 random_state = 42
 X_list = [
-    np.random.RandomState(random_state).uniform(-3, 3, size=(n_samples, 2)),
+    np.random.default_rng(random_state).uniform(-3, 3, size=(n_samples, 2)),
     make_blobs(
         n_samples=[
             n_samples // 10,

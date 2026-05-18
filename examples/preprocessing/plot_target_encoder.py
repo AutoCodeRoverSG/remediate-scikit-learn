@@ -162,7 +162,6 @@ mixed_pipe = make_pipeline(
     ),
     memory=None,
 )
-mixed_pipe
 
 # %%
 # Finally, we evaluate the pipeline using cross validation and record the results:

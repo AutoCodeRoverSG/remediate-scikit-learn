@@ -48,7 +48,7 @@ new_data = new_data.reshape((4, 11, -1))
 real_data = digits.data[:44].reshape((4, 11, -1))
 
 # plot real digits and resampled digits
-fig, ax = plt.subplots(9, 11, subplot_kw=dict(xticks=[], yticks=[]))
+fig, ax = plt.subplots(9, 11, subplot_kw={"xticks": [], "yticks": []})
 for j in range(11):
     ax[4, j].set_visible(False)
     for i in range(4):

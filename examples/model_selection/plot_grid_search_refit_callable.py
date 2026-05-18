@@ -121,7 +121,8 @@ pipe = Pipeline(
     [
         ("reduce_dim", PCA(random_state=42)),
         ("classify", LogisticRegression(random_state=42, C=0.01, max_iter=1000)),
-    ]
+    ],
+    memory=None,
 )
 
 param_grid = {"reduce_dim__n_components": [6, 8, 10, 15, 20, 25, 35, 45, 55]}

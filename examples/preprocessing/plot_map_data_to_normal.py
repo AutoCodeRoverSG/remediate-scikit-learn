@@ -48,13 +48,13 @@ FONT_SIZE = 6
 BINS = 30
 
 
-rng = np.random.RandomState(304)
+rng = np.random.default_rng(304)
 bc = PowerTransformer(method="box-cox")
 yj = PowerTransformer(method="yeo-johnson")
 # n_quantiles is set to the training set size rather than the default value
 # to avoid a warning being raised by this example
 qt = QuantileTransformer(
-    n_quantiles=500, output_distribution="normal", random_state=rng
+    n_quantiles=500, output_distribution="normal", random_state=304
 )
 size = (N_SAMPLES, 1)
 

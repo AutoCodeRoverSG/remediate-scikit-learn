@@ -87,7 +87,7 @@ def make_heatmap(ax, gs, is_sh=False, make_cbar=False):
     if is_sh:
         iterations = results.pivot_table(
             index="param_gamma", columns="param_C", values="iter", aggfunc="max"
-        ).values
+        ).to_numpy()
         for i in range(len(gammas)):
             for j in range(len(Cs)):
                 ax.text(
