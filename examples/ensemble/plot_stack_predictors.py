@@ -83,6 +83,7 @@ spline_ridge = make_pipeline(
     SplineTransformer(n_knots=6, degree=3),
     PolynomialFeatures(interaction_only=True),
     RidgeCV(),
+    memory=None,
 )
 
 hgbt = HistGradientBoostingRegressor(random_state=0)
@@ -94,7 +95,6 @@ estimators = [
 ]
 
 stacking_regressor = StackingRegressor(estimators=estimators, final_estimator=RidgeCV())
-stacking_regressor
 
 # %%
 # Measure and plot the results
@@ -184,8 +184,8 @@ for ax, (name, est) in zip(
     )
     ax.set_title(f"{name}\nEvaluation in {elapsed_time:.2f} seconds")
 
-    for name, score in scores.items():
-        ax.plot([], [], " ", label=f"{name}: {score}")
+    for score_name, score in scores.items():
+        ax.plot([], [], " ", label=f"{score_name}: {score}")
     ax.legend(loc="upper left")
 
 plt.suptitle("Prediction Errors of Base versus Stacked Predictors", y=1)
