@@ -29,8 +29,8 @@ def _blobs_dataset(n_samples=500000, n_features=3, n_clusters=100, dtype=np.floa
     )
     X = X.astype(dtype, copy=False)
 
-    X, X_val = train_test_split(X, test_size=0.1, random_state=0)
-    return X, X_val, None, None
+    X, x_val = train_test_split(X, test_size=0.1, random_state=0)
+    return X, x_val, None, None
 
 
 @M.cache
