@@ -26,11 +26,11 @@ import numpy as np
 
 
 def make_data(n_samples, n_features, cov_class_1, cov_class_2, seed=0):
-    rng = np.random.RandomState(seed)
+    rng = np.random.default_rng(seed)
     X = np.concatenate(
         [
-            rng.randn(n_samples, n_features) @ cov_class_1,
-            rng.randn(n_samples, n_features) @ cov_class_2 + np.array([1, 1]),
+            rng.standard_normal((n_samples, n_features)) @ cov_class_1,
+            rng.standard_normal((n_samples, n_features)) @ cov_class_2 + np.array([1, 1]),
         ]
     )
     y = np.concatenate([np.zeros(n_samples), np.ones(n_samples)])
@@ -111,11 +111,11 @@ def plot_ellipse(mean, cov, color, ax):
     ax.add_artist(ell)
 
 
-def plot_result(estimator, X, y, ax):
+def plot_result(estimator, x, y, ax):
     cmap = colors.ListedColormap(["tab:red", "tab:blue"])
     DecisionBoundaryDisplay.from_estimator(
         estimator,
-        X,
+        x,
         response_method="predict_proba",
         plot_method="pcolormesh",
         ax=ax,
@@ -124,16 +124,16 @@ def plot_result(estimator, X, y, ax):
     )
     DecisionBoundaryDisplay.from_estimator(
         estimator,
-        X,
+        x,
         response_method="predict_proba",
         plot_method="contour",
         ax=ax,
         alpha=1.0,
         levels=[0.5],
     )
-    y_pred = estimator.predict(X)
-    x_right, y_right = X[y == y_pred], y[y == y_pred]
-    x_wrong, y_wrong = X[y != y_pred], y[y != y_pred]
+    y_pred = estimator.predict(x)
+    x_right, y_right = x[y == y_pred], y[y == y_pred]
+    x_wrong, y_wrong = x[y != y_pred], y[y != y_pred]
     ax.scatter(x_right[:, 0], x_right[:, 1], c=y_right, s=20, cmap=cmap, alpha=0.5)
     ax.scatter(
         x_wrong[:, 0],

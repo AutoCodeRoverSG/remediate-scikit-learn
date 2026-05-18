@@ -194,7 +194,7 @@ from sklearn.metrics import (
 from sklearn.model_selection import cross_validate
 
 
-def consolidate_scores(cv_results, scores, metric):
+def consolidate_scores(scores, metric):
     if metric == "MAPE":
         scores[metric].append(f"{value.mean():.2f} ± {value.std():.2f}")
     else:
@@ -230,7 +230,7 @@ for loss_func in loss_functions:
     for key, value in cv_results.items():
         if key.startswith("test_"):
             metric = key.split("test_")[1]
-            scores = consolidate_scores(cv_results, scores, metric)
+            scores = consolidate_scores(scores, metric)
 
 
 # %%
@@ -269,10 +269,10 @@ for quantile in quantile_list:
     for key, value in cv_results.items():
         if key.startswith("test_"):
             metric = key.split("test_")[1]
-            scores = consolidate_scores(cv_results, scores, metric)
+            scores = consolidate_scores(scores, metric)
 
 scores_df = pl.DataFrame(scores)
-scores_df
+print(scores_df)
 
 
 # %%

@@ -81,7 +81,7 @@ def bench_k_means(kmeans, name, data, labels):
         supervision.
     """
     t0 = time()
-    estimator = make_pipeline(StandardScaler(), kmeans).fit(data)
+    estimator = make_pipeline(StandardScaler(), kmeans, memory=None).fit(data)
     fit_time = time() - t0
     results = [name, fit_time, estimator[-1].inertia_]
 
@@ -130,11 +130,13 @@ def bench_k_means(kmeans, name, data, labels):
 from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
 
+KMEANS_PLUS_PLUS = "k-means++"
+
 print(82 * "_")
 print("init\t\ttime\tinertia\thomo\tcompl\tv-meas\tARI\tAMI\tsilhouette")
 
-kmeans = KMeans(init="k-means++", n_clusters=n_digits, n_init=4, random_state=0)
-bench_k_means(kmeans=kmeans, name="k-means++", data=data, labels=labels)
+kmeans = KMeans(init=KMEANS_PLUS_PLUS, n_clusters=n_digits, n_init=4, random_state=0)
+bench_k_means(kmeans=kmeans, name=KMEANS_PLUS_PLUS, data=data, labels=labels)
 
 kmeans = KMeans(init="random", n_clusters=n_digits, n_init=4, random_state=0)
 bench_k_means(kmeans=kmeans, name="random", data=data, labels=labels)
@@ -156,7 +158,7 @@ print(82 * "_")
 import matplotlib.pyplot as plt
 
 reduced_data = PCA(n_components=2).fit_transform(data)
-kmeans = KMeans(init="k-means++", n_clusters=n_digits, n_init=4)
+kmeans = KMeans(init=KMEANS_PLUS_PLUS, n_clusters=n_digits, n_init=4)
 kmeans.fit(reduced_data)
 
 # Step size of the mesh. Decrease to increase the quality of the VQ.

@@ -37,6 +37,9 @@ X_filtered = np.vstack(
 )  # Unevenly sized blobs
 y_filtered = [0] * 500 + [1] * 100 + [2] * 10
 
+ANISO_TITLE = "Anisotropically Distributed Blobs"
+UNEQUAL_VAR_TITLE = "Unequal Variance"
+
 # %%
 # We can visualize the resulting data:
 
@@ -48,10 +51,10 @@ axs[0, 0].scatter(X[:, 0], X[:, 1], c=y)
 axs[0, 0].set_title("Mixture of Gaussian Blobs")
 
 axs[0, 1].scatter(X_aniso[:, 0], X_aniso[:, 1], c=y)
-axs[0, 1].set_title("Anisotropically Distributed Blobs")
+axs[0, 1].set_title(ANISO_TITLE)
 
 axs[1, 0].scatter(X_varied[:, 0], X_varied[:, 1], c=y_varied)
-axs[1, 0].set_title("Unequal Variance")
+axs[1, 0].set_title(UNEQUAL_VAR_TITLE)
 
 axs[1, 1].scatter(X_filtered[:, 0], X_filtered[:, 1], c=y_filtered)
 axs[1, 1].set_title("Unevenly Sized Blobs")
@@ -97,11 +100,11 @@ axs[0, 0].set_title("Non-optimal Number of Clusters")
 
 y_pred = KMeans(n_clusters=3, **common_params).fit_predict(X_aniso)
 axs[0, 1].scatter(X_aniso[:, 0], X_aniso[:, 1], c=y_pred)
-axs[0, 1].set_title("Anisotropically Distributed Blobs")
+axs[0, 1].set_title(ANISO_TITLE)
 
 y_pred = KMeans(n_clusters=3, **common_params).fit_predict(X_varied)
 axs[1, 0].scatter(X_varied[:, 0], X_varied[:, 1], c=y_pred)
-axs[1, 0].set_title("Unequal Variance")
+axs[1, 0].set_title(UNEQUAL_VAR_TITLE)
 
 y_pred = KMeans(n_clusters=3, **common_params).fit_predict(X_filtered)
 axs[1, 1].scatter(X_filtered[:, 0], X_filtered[:, 1], c=y_pred)
@@ -153,11 +156,11 @@ fig, (ax1, ax2) = plt.subplots(nrows=1, ncols=2, figsize=(12, 6))
 
 y_pred = GaussianMixture(n_components=3).fit_predict(X_aniso)
 ax1.scatter(X_aniso[:, 0], X_aniso[:, 1], c=y_pred)
-ax1.set_title("Anisotropically Distributed Blobs")
+ax1.set_title(ANISO_TITLE)
 
 y_pred = GaussianMixture(n_components=3).fit_predict(X_varied)
 ax2.scatter(X_varied[:, 0], X_varied[:, 1], c=y_pred)
-ax2.set_title("Unequal Variance")
+ax2.set_title(UNEQUAL_VAR_TITLE)
 
 plt.suptitle("Gaussian mixture clusters").set_y(0.95)
 plt.show()
