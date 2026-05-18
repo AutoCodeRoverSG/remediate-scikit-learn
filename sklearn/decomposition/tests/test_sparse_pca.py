@@ -121,14 +121,14 @@ def test_fit_transform_tall(global_random_seed):
 
 def test_initialization(global_random_seed):
     rng = np.random.RandomState(global_random_seed)
-    U_init = rng.randn(5, 3)
-    V_init = rng.randn(3, 4)
+    u_init = rng.randn(5, 3)
+    v_init = rng.randn(3, 4)
     model = SparsePCA(
-        n_components=3, u_init=U_init, v_init=V_init, max_iter=0, random_state=rng
+        n_components=3, u_init=u_init, v_init=v_init, max_iter=0, random_state=rng
     )
     model.fit(rng.randn(5, 4))
 
-    expected_components = V_init / np.linalg.norm(V_init, axis=1, keepdims=True)
+    expected_components = v_init / np.linalg.norm(v_init, axis=1, keepdims=True)
     expected_components = svd_flip(u=expected_components.T, v=None)[0].T
     assert_allclose(model.components_, expected_components)
 
@@ -175,14 +175,14 @@ def test_pca_vs_spca(global_random_seed):
     assert_allclose(results_test_pca, results_test_spca, atol=1e-4)
 
 
-@pytest.mark.parametrize("SPCA", [SparsePCA, MiniBatchSparsePCA])
+@pytest.mark.parametrize("spca_cls", [SparsePCA, MiniBatchSparsePCA])
 @pytest.mark.parametrize("n_components", [None, 3])
-def test_spca_n_components_(SPCA, n_components):
+def test_spca_n_components_(spca_cls, n_components):
     rng = np.random.RandomState(0)
     n_samples, n_features = 12, 10
     X = rng.randn(n_samples, n_features)
 
-    model = SPCA(n_components=n_components).fit(X)
+    model = spca_cls(n_components=n_components).fit(X)
 
     if n_components is not None:
         assert model.n_components_ == n_components
@@ -190,7 +190,7 @@ def test_spca_n_components_(SPCA, n_components):
         assert model.n_components_ == n_features
 
 
-@pytest.mark.parametrize("SPCA", (SparsePCA, MiniBatchSparsePCA))
+@pytest.mark.parametrize("spca", (SparsePCA, MiniBatchSparsePCA))
 @pytest.mark.parametrize("method", ("lars", "cd"))
 @pytest.mark.parametrize(
     "data_type, expected_type",
@@ -201,21 +201,21 @@ def test_spca_n_components_(SPCA, n_components):
         (np.int64, np.float64),
     ),
 )
-def test_sparse_pca_dtype_match(SPCA, method, data_type, expected_type):
+def test_sparse_pca_dtype_match(spca, method, data_type, expected_type):
     # Verify output matrix dtype
     n_samples, n_features, n_components = 12, 10, 3
     rng = np.random.RandomState(0)
     input_array = rng.randn(n_samples, n_features).astype(data_type)
-    model = SPCA(n_components=n_components, method=method)
+    model = spca(n_components=n_components, method=method)
     transformed = model.fit_transform(input_array)
 
     assert transformed.dtype == expected_type
     assert model.components_.dtype == expected_type
 
 
-@pytest.mark.parametrize("SPCA", (SparsePCA, MiniBatchSparsePCA))
+@pytest.mark.parametrize("spca_estimator", (SparsePCA, MiniBatchSparsePCA))
 @pytest.mark.parametrize("method", ("lars", "cd"))
-def test_sparse_pca_numerical_consistency(SPCA, method, global_random_seed):
+def test_sparse_pca_numerical_consistency(spca_estimator, method, global_random_seed):
     # Verify numericall consistentency among np.float32 and np.float64
     n_samples, n_features, n_components = 20, 20, 5
     input_array = make_low_rank_matrix(
@@ -225,14 +225,14 @@ def test_sparse_pca_numerical_consistency(SPCA, method, global_random_seed):
         random_state=global_random_seed,
     )
 
-    model_32 = SPCA(
+    model_32 = spca_estimator(
         n_components=n_components,
         method=method,
         random_state=global_random_seed,
     )
     transformed_32 = model_32.fit_transform(input_array.astype(np.float32))
 
-    model_64 = SPCA(
+    model_64 = spca_estimator(
         n_components=n_components,
         method=method,
         random_state=global_random_seed,
@@ -242,17 +242,17 @@ def test_sparse_pca_numerical_consistency(SPCA, method, global_random_seed):
     assert_allclose(model_64.components_, model_32.components_)
 
 
-@pytest.mark.parametrize("SPCA", [SparsePCA, MiniBatchSparsePCA])
-def test_spca_feature_names_out(SPCA):
+@pytest.mark.parametrize("spca_model", [SparsePCA, MiniBatchSparsePCA])
+def test_spca_feature_names_out(spca_model):
     """Check feature names out for *SparsePCA."""
     rng = np.random.RandomState(0)
     n_samples, n_features = 12, 10
     X = rng.randn(n_samples, n_features)
 
-    model = SPCA(n_components=4).fit(X)
+    model = spca_model(n_components=4).fit(X)
     names = model.get_feature_names_out()
 
-    estimator_name = SPCA.__name__.lower()
+    estimator_name = spca_model.__name__.lower()
     assert_array_equal([f"{estimator_name}{i}" for i in range(4)], names)
 
 
@@ -322,15 +322,15 @@ def test_sparse_pca_inverse_transform(global_random_seed):
         random_state=global_random_seed,
     )
     pca = PCA(n_components=n_components, random_state=global_random_seed)
-    X_trans_spca = spca.fit_transform(X)
-    X_trans_pca = pca.fit_transform(X)
+    x_trans_spca = spca.fit_transform(X)
+    x_trans_pca = pca.fit_transform(X)
     assert_allclose(
-        spca.inverse_transform(X_trans_spca), pca.inverse_transform(X_trans_pca)
+        spca.inverse_transform(x_trans_spca), pca.inverse_transform(x_trans_pca)
     )
 
 
-@pytest.mark.parametrize("SPCA", [SparsePCA, MiniBatchSparsePCA])
-def test_transform_inverse_transform_round_trip(SPCA, global_random_seed):
+@pytest.mark.parametrize("spca_estimator", [SparsePCA, MiniBatchSparsePCA])
+def test_transform_inverse_transform_round_trip(spca_estimator, global_random_seed):
     """Check the `transform` and `inverse_transform` round trip with no loss of
     information.
     """
@@ -339,11 +339,11 @@ def test_transform_inverse_transform_round_trip(SPCA, global_random_seed):
     X = rng.randn(n_samples, n_features)
 
     n_components = n_features
-    spca = SPCA(
+    spca = spca_estimator(
         n_components=n_components,
         alpha=1e-12,
         ridge_alpha=1e-12,
         random_state=global_random_seed,
     )
-    X_trans_spca = spca.fit_transform(X)
-    assert_allclose(spca.inverse_transform(X_trans_spca), X)
+    x_trans_spca = spca.fit_transform(X)
+    assert_allclose(spca.inverse_transform(x_trans_spca), X)
