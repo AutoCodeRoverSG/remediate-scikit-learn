@@ -32,11 +32,11 @@ outliers. In practice, such information is generally not available, and taking
 # %%
 import numpy as np
 
-np.random.seed(42)
+rng = np.random.default_rng(42)
 
-X_inliers = 0.3 * np.random.randn(100, 2)
+X_inliers = 0.3 * rng.standard_normal((100, 2))
 X_inliers = np.r_[X_inliers + 2, X_inliers - 2]
-X_outliers = np.random.uniform(low=-4, high=4, size=(20, 2))
+X_outliers = rng.uniform(low=-4, high=4, size=(20, 2))
 X = np.r_[X_inliers, X_outliers]
 
 n_outliers = len(X_outliers)

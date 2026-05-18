@@ -86,7 +86,7 @@ cv = RepeatedStratifiedKFold(n_splits=3, n_repeats=5, random_state=0)
 tree = DecisionTreeClassifier(random_state=0)
 ovo_tree = OneVsOneClassifier(tree)
 ovr_tree = OneVsRestClassifier(tree)
-ecoc = OutputCodeClassifier(tree, code_size=2)
+ecoc = OutputCodeClassifier(tree, code_size=2, random_state=0)
 
 cv_results_tree = cross_validate(tree, X, y, cv=cv, n_jobs=2)
 cv_results_ovo = cross_validate(ovo_tree, X, y, cv=cv, n_jobs=2)
@@ -136,7 +136,7 @@ param_grid = {"max_depth": [3, 5, 8]}
 tree_optimized = GridSearchCV(tree, param_grid=param_grid, cv=3)
 ovo_tree = OneVsOneClassifier(tree_optimized)
 ovr_tree = OneVsRestClassifier(tree_optimized)
-ecoc = OutputCodeClassifier(tree_optimized, code_size=2)
+ecoc = OutputCodeClassifier(tree_optimized, code_size=2, random_state=0)
 
 cv_results_tree = cross_validate(tree_optimized, X, y, cv=cv, n_jobs=2)
 cv_results_ovo = cross_validate(ovo_tree, X, y, cv=cv, n_jobs=2)

@@ -222,6 +222,7 @@ transformers = [
                 n_neighbors=n_neighbors, mode="distance", metric=metric
             ),
             TSNE(metric="precomputed", **tsne_params),
+            memory=None,
         ),
     ),
     (
@@ -229,6 +230,7 @@ transformers = [
         make_pipeline(
             NMSlibTransformer(n_neighbors=n_neighbors, metric=metric),
             TSNE(metric="precomputed", **tsne_params),
+            memory=None,
         ),
     ),
 ]

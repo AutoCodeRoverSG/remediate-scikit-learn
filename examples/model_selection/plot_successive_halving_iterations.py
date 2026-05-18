@@ -27,7 +27,7 @@ from sklearn.model_selection import HalvingRandomSearchCV
 # We first define the parameter space and train a
 # :class:`~sklearn.model_selection.HalvingRandomSearchCV` instance.
 
-rng = np.random.RandomState(0)
+rng = 0
 
 X, y = datasets.make_classification(n_samples=400, n_features=12, random_state=rng)
 
@@ -52,7 +52,7 @@ rsh.fit(X, y)
 
 results = pd.DataFrame(rsh.cv_results_)
 results["params_str"] = results.params.apply(str)
-results.drop_duplicates(subset=("params_str", "iter"), inplace=True)
+results = results.drop_duplicates(subset=("params_str", "iter"))
 mean_scores = results.pivot(
     index="iter", columns="params_str", values="mean_test_score"
 )

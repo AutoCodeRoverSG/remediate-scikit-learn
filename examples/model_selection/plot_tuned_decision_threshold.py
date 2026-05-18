@@ -54,8 +54,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
 
-model = make_pipeline(StandardScaler(), LogisticRegression())
-model
+model = make_pipeline(StandardScaler(), LogisticRegression(), memory=None)
 
 # %%
 # We evaluate our model using cross-validation. We use the accuracy and the balanced
