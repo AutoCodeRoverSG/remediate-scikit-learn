@@ -27,8 +27,8 @@ from sklearn.metrics import euclidean_distances
 # Generate the data
 EPSILON = np.finfo(np.float32).eps
 n_samples = 20
-rng = np.random.RandomState(seed=3)
-X_true = rng.randint(0, 20, 2 * n_samples).astype(float)
+rng = np.random.default_rng(seed=3)
+X_true = rng.integers(0, 20, 2 * n_samples).astype(float)
 X_true = X_true.reshape((n_samples, 2))
 
 # Center the data
@@ -43,7 +43,7 @@ X_true -= X_true.mean()
 distances = euclidean_distances(X_true)
 
 # Add noise to the distances
-noise = rng.rand(n_samples, n_samples)
+noise = rng.random((n_samples, n_samples))
 noise = noise + noise.T
 np.fill_diagonal(noise, 0)
 distances += noise

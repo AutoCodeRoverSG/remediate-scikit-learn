@@ -54,7 +54,7 @@ ESTIMATORS = {
     "Ridge": RidgeCV(),
 }
 
-y_test_predict = dict()
+y_test_predict = {}
 for name, estimator in ESTIMATORS.items():
     estimator.fit(X_train, y_train)
     y_test_predict[name] = estimator.predict(X_test)

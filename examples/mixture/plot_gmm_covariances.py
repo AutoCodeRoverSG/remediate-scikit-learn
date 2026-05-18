@@ -132,7 +132,7 @@ for index, (name, estimator) in enumerate(estimators.items()):
     plt.yticks(())
     plt.title(name)
 
-plt.legend(scatterpoints=1, loc="lower right", prop=dict(size=12))
+plt.legend(scatterpoints=1, loc="lower right", prop={"size": 12})
 
 
 plt.show()

@@ -144,7 +144,7 @@ dists = dists[nonzero]
 
 for n_components in n_components_range:
     t0 = time()
-    rp = SparseRandomProjection(n_components=n_components)
+    rp = SparseRandomProjection(n_components=n_components, random_state=42)
     projected_data = rp.fit_transform(data)
     print(
         f"Projected {n_samples} samples from {n_features} to {n_components} in "
