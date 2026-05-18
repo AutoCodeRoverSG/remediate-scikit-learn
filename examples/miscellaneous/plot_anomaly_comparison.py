@@ -88,6 +88,8 @@ outliers_fraction = 0.15
 n_outliers = int(outliers_fraction * n_samples)
 n_inliers = n_samples - n_outliers
 
+LOCAL_OUTLIER_FACTOR = "Local Outlier Factor"
+
 # define outlier/anomaly detection methods to be compared.
 # the SGDOneClassSVM must be used in a pipeline with a kernel approximation
 # to give similar results to the OneClassSVM
@@ -108,6 +110,7 @@ anomaly_algorithms = [
                 random_state=42,
                 tol=1e-6,
             ),
+            memory=None,
         ),
     ),
     (
@@ -115,13 +118,13 @@ anomaly_algorithms = [
         IsolationForest(contamination=outliers_fraction, random_state=42),
     ),
     (
-        "Local Outlier Factor",
+        LOCAL_OUTLIER_FACTOR,
         LocalOutlierFactor(n_neighbors=35, contamination=outliers_fraction),
     ),
 ]
 
 # Define datasets
-blobs_params = dict(random_state=0, n_samples=n_inliers, n_features=2)
+blobs_params = {"random_state": 0, "n_samples": n_inliers, "n_features": 2}
 datasets = [
     make_blobs(centers=[[0, 0], [0, 0]], cluster_std=0.5, **blobs_params)[0],
     make_blobs(centers=[[2, 2], [-2, -2]], cluster_std=[0.5, 0.5], **blobs_params)[0],
@@ -131,7 +134,7 @@ datasets = [
         make_moons(n_samples=n_samples, noise=0.05, random_state=0)[0]
         - np.array([0.5, 0.25])
     ),
-    14.0 * (np.random.RandomState(42).rand(n_samples, 2) - 0.5),
+    14.0 * (np.random.default_rng(42).random((n_samples, 2)) - 0.5),
 ]
 
 # Compare given classifiers under given settings
@@ -143,7 +146,7 @@ plt.subplots_adjust(
 )
 
 plot_num = 1
-rng = np.random.RandomState(42)
+rng = np.random.default_rng(42)
 
 for i_dataset, X in enumerate(datasets):
     # Add outliers
@@ -158,13 +161,13 @@ for i_dataset, X in enumerate(datasets):
             plt.title(name, size=18)
 
         # fit the data and tag outliers
-        if name == "Local Outlier Factor":
+        if name == LOCAL_OUTLIER_FACTOR:
             y_pred = algorithm.fit_predict(X)
         else:
             y_pred = algorithm.fit(X).predict(X)
 
         # plot the levels lines and the points
-        if name != "Local Outlier Factor":  # LOF does not implement predict
+        if name != LOCAL_OUTLIER_FACTOR:  # LOF does not implement predict
             Z = algorithm.predict(np.c_[xx.ravel(), yy.ravel()])
             Z = Z.reshape(xx.shape)
             plt.contour(xx, yy, Z, levels=[0], linewidths=2, colors="black")
