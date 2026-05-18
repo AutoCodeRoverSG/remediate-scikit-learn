@@ -11,43 +11,43 @@ from matplotlib import ticker
 from sklearn import datasets, neighbors
 
 
-def get_data(N, D, dataset="dense"):
+def get_data(n_samples, n_features, dataset="dense"):
     if dataset == "dense":
-        np.random.seed(0)
-        return np.random.random((N, D))
+        rng = np.random.default_rng(0)
+        return rng.random((n_samples, n_features))
     elif dataset == "digits":
         X, _ = datasets.load_digits(return_X_y=True)
         i = np.argsort(X[0])[::-1]
         X = X[:, i]
-        return X[:N, :D]
+        return X[:n_samples, :n_features]
     else:
         raise ValueError("invalid dataset: %s" % dataset)
 
 
 def barplot_neighbors(
-    Nrange=2 ** np.arange(1, 11),
-    Drange=2 ** np.arange(7),
+    n_range=2 ** np.arange(1, 11),
+    d_range=2 ** np.arange(7),
     krange=2 ** np.arange(10),
-    N=1000,
-    D=64,
+    n=1000,
+    d=64,
     k=5,
     leaf_size=30,
     dataset="digits",
 ):
     algorithms = ("kd_tree", "brute", "ball_tree")
-    fiducial_values = {"N": N, "D": D, "k": k}
+    fiducial_values = {"N": n, "D": d, "k": k}
 
     # ------------------------------------------------------------
     # varying N
-    N_results_build = {alg: np.zeros(len(Nrange)) for alg in algorithms}
-    N_results_query = {alg: np.zeros(len(Nrange)) for alg in algorithms}
+    n_results_build = {alg: np.zeros(len(n_range)) for alg in algorithms}
+    n_results_query = {alg: np.zeros(len(n_range)) for alg in algorithms}
 
-    for i, NN in enumerate(Nrange):
-        print("N = %i (%i out of %i)" % (NN, i + 1, len(Nrange)))
-        X = get_data(NN, D, dataset)
+    for i, nn in enumerate(n_range):
+        print("N = %i (%i out of %i)" % (nn, i + 1, len(n_range)))
+        X = get_data(nn, d, dataset)
         for algorithm in algorithms:
             nbrs = neighbors.NearestNeighbors(
-                n_neighbors=min(NN, k), algorithm=algorithm, leaf_size=leaf_size
+                n_neighbors=min(nn, k), algorithm=algorithm, leaf_size=leaf_size
             )
             t0 = time()
             nbrs.fit(X)
@@ -55,17 +55,17 @@ def barplot_neighbors(
             nbrs.kneighbors(X)
             t2 = time()
 
-            N_results_build[algorithm][i] = t1 - t0
-            N_results_query[algorithm][i] = t2 - t1
+            n_results_build[algorithm][i] = t1 - t0
+            n_results_query[algorithm][i] = t2 - t1
 
     # ------------------------------------------------------------
     # varying D
-    D_results_build = {alg: np.zeros(len(Drange)) for alg in algorithms}
-    D_results_query = {alg: np.zeros(len(Drange)) for alg in algorithms}
+    D_results_build = {alg: np.zeros(len(d_range)) for alg in algorithms}
+    D_results_query = {alg: np.zeros(len(d_range)) for alg in algorithms}
 
-    for i, DD in enumerate(Drange):
-        print("D = %i (%i out of %i)" % (DD, i + 1, len(Drange)))
-        X = get_data(N, DD, dataset)
+    for i, DD in enumerate(d_range):
+        print("D = %i (%i out of %i)" % (DD, i + 1, len(d_range)))
+        X = get_data(n, DD, dataset)
         for algorithm in algorithms:
             nbrs = neighbors.NearestNeighbors(
                 n_neighbors=k, algorithm=algorithm, leaf_size=leaf_size
@@ -84,7 +84,7 @@ def barplot_neighbors(
     k_results_build = {alg: np.zeros(len(krange)) for alg in algorithms}
     k_results_query = {alg: np.zeros(len(krange)) for alg in algorithms}
 
-    X = get_data(N, DD, dataset)
+    X = get_data(n, DD, dataset)
 
     for i, kk in enumerate(krange):
         print("k = %i (%i out of %i)" % (kk, i + 1, len(krange)))
@@ -104,8 +104,8 @@ def barplot_neighbors(
     plt.figure(figsize=(8, 11))
 
     for sbplt, vals, quantity, build_time, query_time in [
-        (311, Nrange, "N", N_results_build, N_results_query),
-        (312, Drange, "D", D_results_build, D_results_query),
+        (311, n_range, "N", n_results_build, n_results_query),
+        (312, d_range, "D", D_results_build, D_results_query),
         (313, krange, "k", k_results_build, k_results_query),
     ]:
         ax = plt.subplot(sbplt, yscale="log")
