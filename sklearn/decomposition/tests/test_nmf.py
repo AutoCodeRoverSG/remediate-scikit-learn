@@ -664,13 +664,13 @@ def test_nmf_regularization(estimator_cls, solver):
     h_model = model.components_
 
     eps = np.finfo(np.float64).eps
-    w_regul_n_zeros = w_regul[w_regul <= eps].size
-    w_model_n_zeros = w_model[w_model <= eps].size
-    h_regul_n_zeros = h_regul[h_regul <= eps].size
-    h_model_n_zeros = h_model[h_model <= eps].size
+    w_regul_nz = w_regul[w_regul <= eps].size
+    w_model_nz = w_model[w_model <= eps].size
+    h_regul_nz = h_regul[h_regul <= eps].size
+    h_model_nz = h_model[h_model <= eps].size
 
-    assert w_regul_n_zeros > w_model_n_zeros
-    assert h_regul_n_zeros > h_model_n_zeros
+    assert w_regul_nz > w_model_nz
+    assert h_regul_nz > h_model_nz
 
     # L2 regularization should decrease the sum of the squared norm
     # of the matrices W and H
@@ -780,15 +780,15 @@ def test_nmf_underflow():
     ],
 )
 @pytest.mark.parametrize(
-    ["Estimator", "solver"],
+    ["estimator", "solver"],
     [[NMF, {"solver": "cd"}], [NMF, {"solver": "mu"}], [MiniBatchNMF, {}]],
 )
-def test_nmf_dtype_match(Estimator, solver, dtype_in, dtype_out):
+def test_nmf_dtype_match(estimator, solver, dtype_in, dtype_out):
     # Check that NMF preserves dtype (float32 and float64)
     X = np.random.RandomState(0).randn(20, 15).astype(dtype_in, copy=False)
     np.abs(X, out=X)
 
-    nmf = Estimator(
+    nmf = estimator(
         alpha_W=1.0,
         alpha_H=1.0,
         tol=1e-2,
@@ -802,23 +802,23 @@ def test_nmf_dtype_match(Estimator, solver, dtype_in, dtype_out):
 
 
 @pytest.mark.parametrize(
-    ["Estimator", "solver"],
+    ["estimator", "solver"],
     [[NMF, {"solver": "cd"}], [NMF, {"solver": "mu"}], [MiniBatchNMF, {}]],
 )
-def test_nmf_float32_float64_consistency(Estimator, solver):
+def test_nmf_float32_float64_consistency(estimator, solver):
     # Check that the result of NMF is the same between float32 and float64
     X = np.random.RandomState(0).randn(50, 7)
     np.abs(X, out=X)
-    nmf32 = Estimator(random_state=0, tol=1e-3, **solver)
+    nmf32 = estimator(random_state=0, tol=1e-3, **solver)
     W32 = nmf32.fit_transform(X.astype(np.float32))
-    nmf64 = Estimator(random_state=0, tol=1e-3, **solver)
+    nmf64 = estimator(random_state=0, tol=1e-3, **solver)
     W64 = nmf64.fit_transform(X)
 
     assert_allclose(W32, W64, atol=1e-5)
 
 
-@pytest.mark.parametrize("Estimator", [NMF, MiniBatchNMF])
-def test_nmf_custom_init_dtype_error(Estimator):
+@pytest.mark.parametrize("estimator", [NMF, MiniBatchNMF])
+def test_nmf_custom_init_dtype_error(estimator):
     # Check that an error is raise if custom H and/or W don't have the same
     # dtype as X.
     rng = np.random.RandomState(0)
@@ -827,7 +827,7 @@ def test_nmf_custom_init_dtype_error(Estimator):
     W = rng.random_sample((20, 15))
 
     with pytest.raises(TypeError, match="should have the same dtype as X"):
-        Estimator(init="custom").fit(X, H=H, W=W)
+        estimator(init="custom").fit(X, H=H, W=W)
 
     with pytest.raises(TypeError, match="should have the same dtype as X"):
         non_negative_factorization(X, H=H, update_H=False)
@@ -857,8 +857,8 @@ def test_nmf_minibatchnmf_equivalence(beta_loss):
         forget_factor=0.0,
     )
     W = nmf.fit_transform(X)
-    mbW = mbnmf.fit_transform(X)
-    assert_allclose(W, mbW)
+    mb_w = mbnmf.fit_transform(X)
+    assert_allclose(W, mb_w)
 
 
 def test_minibatch_nmf_partial_fit():
@@ -888,7 +888,7 @@ def test_minibatch_nmf_partial_fit():
     )
 
     mbnmf1.fit(X, W=W, H=H)
-    for i in range(max_iter):
+    for _ in range(max_iter):
         for j in range(batch_size):
             mbnmf2.partial_fit(X[j : j + batch_size], W=W[:batch_size], H=H)
 
@@ -918,15 +918,15 @@ def test_minibatch_nmf_verbose():
         sys.stdout = old_stdout
 
 
-@pytest.mark.parametrize("Estimator", [NMF, MiniBatchNMF])
-def test_nmf_n_components_auto(Estimator):
+@pytest.mark.parametrize("estimator", [NMF, MiniBatchNMF])
+def test_nmf_n_components_auto(estimator):
     # Check that n_components is correctly inferred
     # from the provided custom initialization.
     rng = np.random.RandomState(0)
     X = rng.random_sample((6, 5))
     W = rng.random_sample((6, 2))
     H = rng.random_sample((2, 5))
-    est = Estimator(
+    est = estimator(
         n_components="auto",
         init="custom",
         random_state=0,
