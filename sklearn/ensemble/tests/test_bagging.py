@@ -333,7 +333,7 @@ def test_bootstrap_features():
 def test_probability():
     # Predict probabilities.
     rng = check_random_state(0)
-    X_train, X_test, y_train, y_test = train_test_split(
+    X_train, X_test, y_train, _ = train_test_split(
         iris.data, iris.target, random_state=rng
     )
 
@@ -444,7 +444,7 @@ def test_oob_score_regression():
 def test_single_estimator():
     # Check singleton ensembles.
     rng = check_random_state(0)
-    X_train, X_test, y_train, y_test = train_test_split(
+    X_train, X_test, y_train, _ = train_test_split(
         diabetes.data, diabetes.target, random_state=rng
     )
 
@@ -473,7 +473,7 @@ def test_error():
 @pytest.mark.thread_unsafe
 def test_parallel_classification():
     # Check parallel classification.
-    X_train, X_test, y_train, y_test = train_test_split(
+    X_train, X_test, y_train, _ = train_test_split(
         iris.data, iris.target, random_state=0
     )
 
@@ -519,7 +519,7 @@ def test_parallel_regression():
     # Check parallel regression.
     rng = check_random_state(0)
 
-    X_train, X_test, y_train, y_test = train_test_split(
+    X_train, X_test, y_train, _ = train_test_split(
         diabetes.data, diabetes.target, random_state=rng
     )
 
@@ -561,7 +561,7 @@ def test_estimator():
     rng = check_random_state(0)
 
     # Classification
-    X_train, X_test, y_train, y_test = train_test_split(
+    X_train, _, y_train, _ = train_test_split(
         iris.data, iris.target, random_state=rng
     )
 
@@ -582,7 +582,7 @@ def test_estimator():
     assert isinstance(ensemble.estimator_, Perceptron)
 
     # Regression
-    X_train, X_test, y_train, y_test = train_test_split(
+    X_train, _, y_train, _ = train_test_split(
         diabetes.data, diabetes.target, random_state=rng
     )
 
@@ -602,7 +602,8 @@ def test_estimator():
 
 def test_bagging_with_pipeline():
     estimator = BaggingClassifier(
-        make_pipeline(SelectKBest(k=1), DecisionTreeClassifier()), max_features=2
+        make_pipeline(SelectKBest(k=1), DecisionTreeClassifier(), memory=None),
+        max_features=2,
     )
     estimator.fit(iris.data, iris.target)
     assert isinstance(estimator[0].steps[-1][1].random_state, int)
@@ -629,9 +630,9 @@ def test_warm_start(random_state=42):
     )
     clf_no_ws.fit(X, y)
 
-    assert set([tree.random_state for tree in clf_ws]) == set(
-        [tree.random_state for tree in clf_no_ws]
-    )
+    assert {tree.random_state for tree in clf_ws} == {
+        tree.random_state for tree in clf_no_ws
+    }
 
 
 def test_warm_start_smaller_n_estimators():
@@ -647,7 +648,7 @@ def test_warm_start_smaller_n_estimators():
 def test_warm_start_equal_n_estimators():
     # Test that nothing happens when fitting without increasing n_estimators
     X, y = make_hastie_10_2(n_samples=20, random_state=1)
-    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=43)
+    X_train, X_test, y_train, _ = train_test_split(X, y, random_state=43)
 
     clf = BaggingClassifier(n_estimators=5, warm_start=True, random_state=83)
     clf.fit(X_train, y_train)
