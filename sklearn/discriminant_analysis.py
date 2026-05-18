@@ -1036,17 +1036,17 @@ class QuadraticDiscriminantAnalysis(
         n_samples, _ = X.shape
 
         mean = X.mean(0)
-        Xc = X - mean
+        xc = X - mean
         # Xc = U * S * V.T
-        _, S, Vt = np.linalg.svd(Xc, full_matrices=False)
+        _, S, vt = np.linalg.svd(xc, full_matrices=False)
         scaling = (S**2) / (n_samples - 1)  # scalings are squared singular values
         scaling = ((1 - self.reg_param) * scaling) + self.reg_param
-        rotation = Vt.T
+        rotation = vt.T
 
         cov = None
         if self.store_covariance:
             # cov = V * (S^2 / (n-1)) * V.T
-            cov = scaling * Vt.T @ Vt
+            cov = scaling * vt.T @ vt
 
         return scaling, rotation, cov
 
