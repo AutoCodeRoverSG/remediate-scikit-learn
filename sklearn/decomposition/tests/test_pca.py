@@ -446,12 +446,12 @@ def test_pca_check_projection(svd_solver):
     n, p = 100, 3
     X = rng.randn(n, p) * 0.1
     X[:10] += np.array([3, 4, 5])
-    Xt = 0.1 * rng.randn(1, p) + np.array([3, 4, 5])
+    x_trans = 0.1 * rng.randn(1, p) + np.array([3, 4, 5])
 
-    Yt = PCA(n_components=2, svd_solver=svd_solver).fit(X).transform(Xt)
-    Yt /= np.sqrt((Yt**2).sum())
+    y_trans = PCA(n_components=2, svd_solver=svd_solver).fit(X).transform(x_trans)
+    y_trans /= np.sqrt((y_trans**2).sum())
 
-    assert_allclose(np.abs(Yt[0][0]), 1.0, rtol=5e-3)
+    assert_allclose(np.abs(y_trans[0][0]), 1.0, rtol=5e-3)
 
 
 @pytest.mark.parametrize("svd_solver", PCA_SOLVERS)
@@ -459,10 +459,10 @@ def test_pca_check_projection_list(svd_solver):
     # Test that the projection of data is correct
     X = [[1.0, 0.0], [0.0, 1.0]]
     pca = PCA(n_components=1, svd_solver=svd_solver, random_state=0)
-    X_trans = pca.fit_transform(X)
-    assert X_trans.shape, (2, 1)
-    assert_allclose(X_trans.mean(), 0.00, atol=1e-12)
-    assert_allclose(X_trans.std(), 0.71, rtol=5e-3)
+    x_trans = pca.fit_transform(X)
+    assert x_trans.shape, (2, 1)
+    assert_allclose(x_trans.mean(), 0.00, atol=1e-12)
+    assert_allclose(x_trans.std(), 0.71, rtol=5e-3)
 
 
 @pytest.mark.parametrize("svd_solver", ["full", "arpack", "randomized"])
@@ -479,8 +479,8 @@ def test_pca_inverse(svd_solver, whiten):
     # signal (since the data is almost of rank n_components)
     pca = PCA(n_components=2, svd_solver=svd_solver, whiten=whiten).fit(X)
     Y = pca.transform(X)
-    Y_inverse = pca.inverse_transform(Y)
-    assert_allclose(X, Y_inverse, rtol=5e-6)
+    y_inverse = pca.inverse_transform(Y)
+    assert_allclose(X, y_inverse, rtol=5e-6)
 
 
 @pytest.mark.parametrize(
@@ -661,13 +661,13 @@ def test_pca_score3():
     # Check that probabilistic PCA selects the right model
     n, p = 200, 3
     rng = np.random.RandomState(0)
-    Xl = rng.randn(n, p) + rng.randn(n, 1) * np.array([3, 4, 5]) + np.array([1, 0, 7])
-    Xt = rng.randn(n, p) + rng.randn(n, 1) * np.array([3, 4, 5]) + np.array([1, 0, 7])
+    x_train = rng.randn(n, p) + rng.randn(n, 1) * np.array([3, 4, 5]) + np.array([1, 0, 7])
+    x_test = rng.randn(n, p) + rng.randn(n, 1) * np.array([3, 4, 5]) + np.array([1, 0, 7])
     ll = np.zeros(p)
     for k in range(p):
         pca = PCA(n_components=k, svd_solver="full")
-        pca.fit(Xl)
-        ll[k] = pca.score(Xt)
+        pca.fit(x_train)
+        ll[k] = pca.score(x_test)
 
     assert ll.argmax() == 1
 
@@ -750,11 +750,11 @@ def test_pca_deterministic_output(svd_solver):
     rng = np.random.RandomState(0)
     X = rng.rand(10, 10)
 
-    transformed_X = np.zeros((20, 2))
+    transformed_x = np.zeros((20, 2))
     for i in range(20):
         pca = PCA(n_components=2, svd_solver=svd_solver, random_state=rng)
-        transformed_X[i, :] = pca.fit_transform(X)[0]
-    assert_allclose(transformed_X, np.tile(transformed_X[0, :], 20).reshape(20, 2))
+        transformed_x[i, :] = pca.fit_transform(X)[0]
+    assert_allclose(transformed_x, np.tile(transformed_x[0, :], 20).reshape(20, 2))
 
 
 @pytest.mark.parametrize("svd_solver", PCA_SOLVERS)
@@ -766,20 +766,20 @@ def test_pca_dtype_preservation(svd_solver, global_random_seed):
 def check_pca_float_dtype_preservation(svd_solver, seed):
     # Ensure that PCA does not upscale the dtype when input is float32
     X = np.random.RandomState(seed).rand(1000, 4)
-    X_float64 = X.astype(np.float64, copy=False)
-    X_float32 = X.astype(np.float32)
+    x_float64 = X.astype(np.float64, copy=False)
+    x_float32 = X.astype(np.float32)
 
     pca_64 = PCA(n_components=3, svd_solver=svd_solver, random_state=seed).fit(
-        X_float64
+        x_float64
     )
     pca_32 = PCA(n_components=3, svd_solver=svd_solver, random_state=seed).fit(
-        X_float32
+        x_float32
     )
 
     assert pca_64.components_.dtype == np.float64
     assert pca_32.components_.dtype == np.float32
-    assert pca_64.transform(X_float64).dtype == np.float64
-    assert pca_32.transform(X_float32).dtype == np.float32
+    assert pca_64.transform(x_float64).dtype == np.float64
+    assert pca_32.transform(x_float32).dtype == np.float32
 
     # The atol and rtol are set such that the test passes for all random seeds
     # on all supported platforms on our CI and conda-forge with the default
@@ -789,17 +789,17 @@ def check_pca_float_dtype_preservation(svd_solver, seed):
 
 def check_pca_int_dtype_upcast_to_double(svd_solver):
     # Ensure that all int types will be upcast to float64
-    X_i64 = np.random.RandomState(0).randint(0, 1000, (1000, 4))
-    X_i64 = X_i64.astype(np.int64, copy=False)
-    X_i32 = X_i64.astype(np.int32, copy=False)
+    x_i64 = np.random.RandomState(0).randint(0, 1000, (1000, 4))
+    x_i64 = x_i64.astype(np.int64, copy=False)
+    x_i32 = x_i64.astype(np.int32, copy=False)
 
-    pca_64 = PCA(n_components=3, svd_solver=svd_solver, random_state=0).fit(X_i64)
-    pca_32 = PCA(n_components=3, svd_solver=svd_solver, random_state=0).fit(X_i32)
+    pca_64 = PCA(n_components=3, svd_solver=svd_solver, random_state=0).fit(x_i64)
+    pca_32 = PCA(n_components=3, svd_solver=svd_solver, random_state=0).fit(x_i32)
 
     assert pca_64.components_.dtype == np.float64
     assert pca_32.components_.dtype == np.float64
-    assert pca_64.transform(X_i64).dtype == np.float64
-    assert pca_32.transform(X_i32).dtype == np.float64
+    assert pca_64.transform(x_i64).dtype == np.float64
+    assert pca_32.transform(x_i32).dtype == np.float64
 
     assert_allclose(pca_64.components_, pca_32.components_, rtol=1e-4)
 
