@@ -60,12 +60,12 @@ def barplot_neighbors(
 
     # ------------------------------------------------------------
     # varying D
-    D_results_build = {alg: np.zeros(len(d_range)) for alg in algorithms}
-    D_results_query = {alg: np.zeros(len(d_range)) for alg in algorithms}
+    d_results_build = {alg: np.zeros(len(d_range)) for alg in algorithms}
+    d_results_query = {alg: np.zeros(len(d_range)) for alg in algorithms}
 
-    for i, DD in enumerate(d_range):
-        print("D = %i (%i out of %i)" % (DD, i + 1, len(d_range)))
-        X = get_data(n, DD, dataset)
+    for i, dd in enumerate(d_range):
+        print("D = %i (%i out of %i)" % (dd, i + 1, len(d_range)))
+        X = get_data(n, dd, dataset)
         for algorithm in algorithms:
             nbrs = neighbors.NearestNeighbors(
                 n_neighbors=k, algorithm=algorithm, leaf_size=leaf_size
@@ -76,15 +76,15 @@ def barplot_neighbors(
             nbrs.kneighbors(X)
             t2 = time()
 
-            D_results_build[algorithm][i] = t1 - t0
-            D_results_query[algorithm][i] = t2 - t1
+            d_results_build[algorithm][i] = t1 - t0
+            d_results_query[algorithm][i] = t2 - t1
 
     # ------------------------------------------------------------
     # varying k
     k_results_build = {alg: np.zeros(len(krange)) for alg in algorithms}
     k_results_query = {alg: np.zeros(len(krange)) for alg in algorithms}
 
-    X = get_data(n, DD, dataset)
+    X = get_data(n, dd, dataset)
 
     for i, kk in enumerate(krange):
         print("k = %i (%i out of %i)" % (kk, i + 1, len(krange)))
@@ -105,7 +105,7 @@ def barplot_neighbors(
 
     for sbplt, vals, quantity, build_time, query_time in [
         (311, n_range, "N", n_results_build, n_results_query),
-        (312, d_range, "D", D_results_build, D_results_query),
+        (312, d_range, "D", d_results_build, d_results_query),
         (313, krange, "k", k_results_build, k_results_query),
     ]:
         ax = plt.subplot(sbplt, yscale="log")
@@ -135,7 +135,7 @@ def barplot_neighbors(
                 transform=ax.transAxes,
                 ha="left",
                 va="top",
-                bbox=dict(facecolor="w", edgecolor="w", alpha=0.5),
+                bbox={"facecolor": "w", "edgecolor": "w", "alpha": 0.5},
             )
 
             plt.ylabel("Time (s)")
@@ -152,9 +152,7 @@ def barplot_neighbors(
         descr_string = ""
 
         for s in "NDk":
-            if s == quantity:
-                pass
-            else:
+            if s != quantity:
                 descr_string += "%s = %i, " % (s, fiducial_values[s])
 
         descr_string = descr_string[:-2]

@@ -38,7 +38,7 @@ def type_auto_or_int(val):
         return int(val)
 
 
-def compute_time(t_start, delta):
+def compute_time(delta):
     mu_second = 0.0 + 10**6  # number of microseconds in a second
 
     return delta.seconds + delta.microseconds / mu_second
@@ -54,14 +54,14 @@ def bench_scikit_transformer(X, transformer):
     clf.fit(X)
     delta = datetime.now() - t_start
     # stop time
-    time_to_fit = compute_time(t_start, delta)
+    time_to_fit = compute_time(delta)
 
     # start time
     t_start = datetime.now()
     clf.transform(X)
     delta = datetime.now() - t_start
     # stop time
-    time_to_transform = compute_time(t_start, delta)
+    time_to_transform = compute_time(delta)
 
     return time_to_fit, time_to_transform
 
@@ -69,13 +69,13 @@ def bench_scikit_transformer(X, transformer):
 # Make some random data with uniformly located non zero entries with
 # Gaussian distributed values
 def make_sparse_random_data(n_samples, n_features, n_nonzeros, random_state=None):
-    rng = np.random.RandomState(random_state)
+    rng = np.random.default_rng(random_state)
     data_coo = sp.coo_array(
         (
-            rng.randn(n_nonzeros),
+            rng.standard_normal(n_nonzeros),
             (
-                rng.randint(n_samples, size=n_nonzeros),
-                rng.randint(n_features, size=n_nonzeros),
+                rng.integers(n_samples, size=n_nonzeros),
+                rng.integers(n_features, size=n_nonzeros),
             ),
         ),
         shape=(n_samples, n_features),
@@ -196,8 +196,10 @@ if __name__ == "__main__":
     ###########################################################################
     n_nonzeros = int(opts.ratio_nonzeros * opts.n_features)
 
+    SEPARATOR = "==========================="
+
     print("Dataset statistics")
-    print("===========================")
+    print(SEPARATOR)
     print("n_samples \t= %s" % opts.n_samples)
     print("n_features \t= %s" % opts.n_features)
     if opts.n_components == "auto":
@@ -221,23 +223,21 @@ if __name__ == "__main__":
     # Set GaussianRandomProjection input
     gaussian_matrix_params = {
         "n_components": opts.n_components,
-        "random_state": opts.random_seed,
     }
     transformers["GaussianRandomProjection"] = GaussianRandomProjection(
-        **gaussian_matrix_params
+        random_state=opts.random_seed, **gaussian_matrix_params
     )
 
     ###########################################################################
     # Set SparseRandomProjection input
     sparse_matrix_params = {
         "n_components": opts.n_components,
-        "random_state": opts.random_seed,
         "density": opts.density,
         "eps": opts.eps,
     }
 
     transformers["SparseRandomProjection"] = SparseRandomProjection(
-        **sparse_matrix_params
+        random_state=opts.random_seed, **sparse_matrix_params
     )
 
     ###########################################################################
@@ -247,7 +247,7 @@ if __name__ == "__main__":
     time_transform = collections.defaultdict(list)
 
     print("Benchmarks")
-    print("===========================")
+    print(SEPARATOR)
     print("Generate dataset benchmarks... ", end="")
     X_dense, X_sparse = make_sparse_random_data(
         opts.n_samples, opts.n_features, n_nonzeros, random_state=opts.random_seed
@@ -273,7 +273,7 @@ if __name__ == "__main__":
     # Print results
     ###########################################################################
     print("Script arguments")
-    print("===========================")
+    print(SEPARATOR)
     arguments = vars(opts)
     print(
         "%s \t | %s "
@@ -288,7 +288,7 @@ if __name__ == "__main__":
     print("")
 
     print("Transformer performance:")
-    print("===========================")
+    print(SEPARATOR)
     print("Results are averaged over %s repetition(s)." % opts.n_times)
     print("")
     print(
