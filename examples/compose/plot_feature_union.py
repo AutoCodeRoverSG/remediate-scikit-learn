@@ -48,13 +48,13 @@ svm = SVC(kernel="linear")
 
 # Do grid search over k, n_components and C:
 
-pipeline = Pipeline([("features", combined_features), ("svm", svm)])
+pipeline = Pipeline([("features", combined_features), ("svm", svm)], memory=None)
 
-param_grid = dict(
-    features__pca__n_components=[1, 2, 3],
-    features__univ_select__k=[1, 2],
-    svm__C=[0.1, 1, 10],
-)
+param_grid = {
+    "features__pca__n_components": [1, 2, 3],
+    "features__univ_select__k": [1, 2],
+    "svm__C": [0.1, 1, 10],
+}
 
 grid_search = GridSearchCV(pipeline, param_grid=param_grid, verbose=10)
 grid_search.fit(X, y)

@@ -32,7 +32,9 @@ scaler = StandardScaler()
 
 # set the tolerance to a large value to make the example faster
 logistic = LogisticRegression(max_iter=10000, tol=0.1)
-pipe = Pipeline(steps=[("scaler", scaler), ("pca", pca), ("logistic", logistic)])
+pipe = Pipeline(
+    steps=[("scaler", scaler), ("pca", pca), ("logistic", logistic)], memory=None
+)
 
 X_digits, y_digits = datasets.load_digits(return_X_y=True)
 # Parameters of pipelines can be set using '__' separated parameter names:
@@ -59,7 +61,7 @@ ax0.axvline(
     linestyle=":",
     label="n_components chosen",
 )
-ax0.legend(prop=dict(size=12))
+ax0.legend(prop={"size": 12})
 
 # For each number of components, find the best classifier results
 components_col = "param_pca__n_components"
