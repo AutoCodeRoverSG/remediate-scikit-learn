@@ -17,7 +17,7 @@ from sklearn.linear_model import lars_path, lars_path_gram, orthogonal_mp
 def compute_bench(samples_range, features_range):
     it = 0
 
-    results = dict()
+    results = {}
     lars = np.empty((len(features_range), len(samples_range)))
     lars_gram = lars.copy()
     omp = lars.copy()
@@ -31,7 +31,7 @@ def compute_bench(samples_range, features_range):
             print("====================")
             print("Iteration %03d of %03d" % (it, max_it))
             print("====================")
-            # dataset_kwargs = {
+            
             #     'n_train_samples': n_samples,
             #     'n_test_samples': 2,
             #     'n_features': n_features,
@@ -57,8 +57,8 @@ def compute_bench(samples_range, features_range):
             sys.stdout.flush()
             tstart = time()
             G = np.dot(X.T, X)  # precomputed Gram matrix
-            Xy = np.dot(X.T, y)
-            lars_path_gram(Xy=Xy, Gram=G, n_samples=y.size, max_iter=n_informative)
+            xy = np.dot(X.T, y)
+            lars_path_gram(Xy=xy, Gram=G, n_samples=y.size, max_iter=n_informative)
             delta = time() - tstart
             print("%0.3fs" % delta)
             lars_gram[i_f, i_s] = delta

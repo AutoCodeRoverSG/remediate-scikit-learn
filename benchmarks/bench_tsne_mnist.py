@@ -199,7 +199,7 @@ $ cd ..
                 "Fitting {} on {} samples took {:.3f}s in {:d} iterations, "
                 "nn accuracy: {:0.3f}".format(name, n, duration, n_iter, precision_5)
             )
-            results.append(dict(method=name, duration=duration, n_samples=n))
+            results.append({"method": name, "duration": duration, "n_samples": n})
             with open(log_filename, "w", encoding="utf-8") as f:
                 json.dump(results, f)
             method_name = sanitize(name)
