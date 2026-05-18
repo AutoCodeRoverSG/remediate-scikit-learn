@@ -29,7 +29,7 @@ from sklearn.utils.fixes import (
 )
 
 # Common random state
-rng = np.random.RandomState(0)
+rng = np.random.default_rng(0)
 
 # Toy sample
 X = [[-2, -1], [-1, -1], [-1, -2], [1, 1], [1, 2], [2, 1]]
@@ -42,12 +42,12 @@ y_t_regr = [-1, 1, 1]
 # Load the iris dataset and randomly permute it
 iris = datasets.load_iris()
 perm = rng.permutation(iris.target.size)
-iris.data, iris.target = shuffle(iris.data, iris.target, random_state=rng)
+iris.data, iris.target = shuffle(iris.data, iris.target, random_state=0)
 
 # Load the diabetes dataset and randomly permute it
 diabetes = datasets.load_diabetes()
 diabetes.data, diabetes.target = shuffle(
-    diabetes.data, diabetes.target, random_state=rng
+    diabetes.data, diabetes.target, random_state=0
 )
 
 
@@ -115,9 +115,9 @@ def test_diabetes(loss):
 
 def test_staged_predict():
     # Check staged predictions.
-    rng = np.random.RandomState(0)
-    iris_weights = rng.randint(10, size=iris.target.shape)
-    diabetes_weights = rng.randint(10, size=diabetes.target.shape)
+    rng = np.random.default_rng(0)
+    iris_weights = rng.integers(10, size=iris.target.shape)
+    diabetes_weights = rng.integers(10, size=diabetes.target.shape)
 
     clf = AdaBoostClassifier(n_estimators=10)
     clf.fit(iris.data, iris.target, sample_weight=iris_weights)
@@ -398,14 +398,14 @@ def test_sparse_regression(sparse_container, expected_internal_type):
         n_samples=15, n_features=50, n_targets=1, random_state=42
     )
 
-    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
+    X_train, X_test, y_train, _ = train_test_split(X, y, random_state=0)
 
-    X_train_sparse = sparse_container(X_train)
-    X_test_sparse = sparse_container(X_test)
+    x_train_sparse = sparse_container(X_train)
+    x_test_sparse = sparse_container(X_test)
 
     # Trained on sparse format
     sparse_regressor = AdaBoostRegressor(estimator=CustomSVR(), random_state=1).fit(
-        X_train_sparse, y_train
+        x_train_sparse, y_train
     )
 
     # Trained on dense format
@@ -414,12 +414,12 @@ def test_sparse_regression(sparse_container, expected_internal_type):
     )
 
     # predict
-    sparse_regr_results = sparse_regressor.predict(X_test_sparse)
+    sparse_regr_results = sparse_regressor.predict(x_test_sparse)
     dense_regr_results = dense_regressor.predict(X_test)
     assert_array_almost_equal(sparse_regr_results, dense_regr_results)
 
     # staged_predict
-    sparse_regr_results = sparse_regressor.staged_predict(X_test_sparse)
+    sparse_regr_results = sparse_regressor.staged_predict(x_test_sparse)
     dense_regr_results = dense_regressor.staged_predict(X_test)
     for sparse_regr_res, dense_regr_res in zip(sparse_regr_results, dense_regr_results):
         assert_array_almost_equal(sparse_regr_res, dense_regr_res)
@@ -448,18 +448,20 @@ def test_sample_weight_adaboost_regressor():
     assert len(boost.estimator_weights_) == len(boost.estimator_errors_)
 
 
-def test_multidimensional_X():
+def test_multidimensional_x():
     """
     Check that the AdaBoost estimators can work with n-dimensional
     data matrix
     """
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
 
-    X = rng.randn(51, 3, 3)
+    X = rng.standard_normal((51, 3, 3))
     yc = rng.choice([0, 1], 51)
-    yr = rng.randn(51)
+    yr = rng.standard_normal(51)
 
-    boost = AdaBoostClassifier(DummyClassifier(strategy="most_frequent"))
+    boost = AdaBoostClassifier(
+        DummyClassifier(strategy="most_frequent"), random_state=0
+    )
     boost.fit(X, yc)
     boost.predict(X)
     boost.predict_proba(X)
@@ -472,7 +474,7 @@ def test_multidimensional_X():
 def test_adaboostclassifier_without_sample_weight():
     X, y = iris.data, iris.target
     estimator = NoSampleWeightWrapper(DummyClassifier())
-    clf = AdaBoostClassifier(estimator=estimator)
+    clf = AdaBoostClassifier(estimator=estimator, random_state=0)
     err_msg = "{} doesn't support sample_weight".format(estimator.__class__.__name__)
     with pytest.raises(ValueError, match=err_msg):
         clf.fit(X, y)
@@ -520,7 +522,7 @@ def test_adaboost_consistent_predict():
     # check that predict_proba and predict give consistent results
     # regression test for:
     # https://github.com/scikit-learn/scikit-learn/issues/14084
-    X_train, X_test, y_train, y_test = train_test_split(
+    X_train, X_test, y_train, _ = train_test_split(
         *datasets.load_digits(return_X_y=True), random_state=42
     )
     model = AdaBoostClassifier(random_state=42)
