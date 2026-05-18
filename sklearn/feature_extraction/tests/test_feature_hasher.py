@@ -11,16 +11,16 @@ def test_feature_hasher_dicts():
     feature_hasher = FeatureHasher(n_features=16)
     assert "dict" == feature_hasher.input_type
 
-    raw_X = [{"foo": "bar", "dada": 42, "tzara": 37}, {"foo": "baz", "gaga": "string1"}]
-    X1 = FeatureHasher(n_features=16).transform(raw_X)
-    gen = (iter(d.items()) for d in raw_X)
+    raw_x = [{"foo": "bar", "dada": 42, "tzara": 37}, {"foo": "baz", "gaga": "string1"}]
+    X1 = FeatureHasher(n_features=16).transform(raw_x)
+    gen = (iter(d.items()) for d in raw_x)
     X2 = FeatureHasher(n_features=16, input_type="pair").transform(gen)
     assert_array_equal(X1.toarray(), X2.toarray())
 
 
 def test_feature_hasher_strings():
     # mix byte and Unicode strings; note that "foo" is a duplicate in row 0
-    raw_X = [
+    raw_x = [
         ["foo", "bar", "baz", "foo".encode("ascii")],
         ["bar".encode("ascii"), "baz", "quux"],
     ]
@@ -28,14 +28,14 @@ def test_feature_hasher_strings():
     for lg_n_features in (7, 9, 11, 16, 22):
         n_features = 2**lg_n_features
 
-        it = (x for x in raw_X)  # iterable
+        it = iter(raw_x)  # iterable
 
         feature_hasher = FeatureHasher(
             n_features=n_features, input_type="string", alternate_sign=False
         )
         X = feature_hasher.transform(it)
 
-        assert X.shape[0] == len(raw_X)
+        assert X.shape[0] == len(raw_x)
         assert X.shape[1] == n_features
 
         if SCIPY_VERSION_BELOW_1_12:
@@ -55,43 +55,43 @@ def test_feature_hasher_single_string(input_type):
     Non-regression test for gh-13199.
     """
     msg = "Samples can not be a single string"
-    raw_X = ["my_string", "another_string"]
+    raw_x = ["my_string", "another_string"]
     if input_type == "generator":
-        raw_X = (x for x in raw_X)
+        raw_x = iter(raw_x)
 
     feature_hasher = FeatureHasher(n_features=10, input_type="string")
     with pytest.raises(ValueError, match=msg):
-        feature_hasher.transform(raw_X)
+        feature_hasher.transform(raw_x)
 
 
 def test_hashing_transform_seed():
     # check the influence of the seed when computing the hashes
-    raw_X = [
+    raw_x = [
         ["foo", "bar", "baz", "foo".encode("ascii")],
         ["bar".encode("ascii"), "baz", "quux"],
     ]
 
-    raw_X_ = (((f, 1) for f in x) for x in raw_X)
-    indices, indptr, _ = _hashing_transform(raw_X_, 2**7, str, False)
+    raw_x_ = (((f, 1) for f in x) for x in raw_x)
+    indices, indptr, _ = _hashing_transform(raw_x_, 2**7, str, False)
 
-    raw_X_ = (((f, 1) for f in x) for x in raw_X)
-    indices_0, indptr_0, _ = _hashing_transform(raw_X_, 2**7, str, False, seed=0)
+    raw_x_ = (((f, 1) for f in x) for x in raw_x)
+    indices_0, indptr_0, _ = _hashing_transform(raw_x_, 2**7, str, False, seed=0)
     assert_array_equal(indices, indices_0)
     assert_array_equal(indptr, indptr_0)
 
-    raw_X_ = (((f, 1) for f in x) for x in raw_X)
-    indices_1, _, _ = _hashing_transform(raw_X_, 2**7, str, False, seed=1)
+    raw_x_ = (((f, 1) for f in x) for x in raw_x)
+    indices_1, _, _ = _hashing_transform(raw_x_, 2**7, str, False, seed=1)
     with pytest.raises(AssertionError):
         assert_array_equal(indices, indices_1)
 
 
 def test_feature_hasher_pairs():
-    raw_X = (
+    raw_x = (
         iter(d.items())
         for d in [{"foo": 1, "bar": 2}, {"baz": 3, "quux": 4, "foo": -1}]
     )
     feature_hasher = FeatureHasher(n_features=16, input_type="pair")
-    x1, x2 = feature_hasher.transform(raw_X).toarray()
+    x1, x2 = feature_hasher.transform(raw_x).toarray()
     x1_nz = sorted(np.abs(x1[x1 != 0]))
     x2_nz = sorted(np.abs(x2[x2 != 0]))
     assert [1, 2] == x1_nz
@@ -99,19 +99,19 @@ def test_feature_hasher_pairs():
 
 
 def test_feature_hasher_pairs_with_string_values():
-    raw_X = (
+    raw_x = (
         iter(d.items())
         for d in [{"foo": 1, "bar": "a"}, {"baz": "abc", "quux": 4, "foo": -1}]
     )
     feature_hasher = FeatureHasher(n_features=16, input_type="pair")
-    x1, x2 = feature_hasher.transform(raw_X).toarray()
+    x1, x2 = feature_hasher.transform(raw_x).toarray()
     x1_nz = sorted(np.abs(x1[x1 != 0]))
     x2_nz = sorted(np.abs(x2[x2 != 0]))
     assert [1, 1] == x1_nz
     assert [1, 1, 4] == x2_nz
 
-    raw_X = (iter(d.items()) for d in [{"bax": "abc"}, {"bax": "abc"}])
-    x1, x2 = feature_hasher.transform(raw_X).toarray()
+    raw_x = (iter(d.items()) for d in [{"bax": "abc"}, {"bax": "abc"}])
+    x1, x2 = feature_hasher.transform(raw_x).toarray()
     x1_nz = np.abs(x1[x1 != 0])
     x2_nz = np.abs(x2[x2 != 0])
     assert [1] == x1_nz
@@ -121,12 +121,12 @@ def test_feature_hasher_pairs_with_string_values():
 
 def test_hash_empty_input():
     n_features = 16
-    raw_X = [[], (), iter(range(0))]
+    raw_x = [[], (), iter(range(0))]
 
     feature_hasher = FeatureHasher(n_features=n_features, input_type="string")
-    X = feature_hasher.transform(raw_X)
+    X = feature_hasher.transform(raw_x)
 
-    assert_array_equal(X.toarray(), np.zeros((len(raw_X), n_features)))
+    assert_array_equal(X.toarray(), np.zeros((len(raw_x), n_features)))
 
 
 def test_hasher_zeros():
