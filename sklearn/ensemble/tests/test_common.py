@@ -94,7 +94,7 @@ def test_ensemble_heterogeneous_estimators_behavior(X, y, estimator):
     estimator.fit(X, y)
     assert len(estimator.named_estimators) == 3
     assert len(estimator.named_estimators_) == 3
-    assert sorted(list(estimator.named_estimators_.keys())) == sorted(
+    assert sorted(estimator.named_estimators_.keys()) == sorted(
         ["lr", "svm", "rf"]
     )
 
@@ -119,7 +119,7 @@ def test_ensemble_heterogeneous_estimators_behavior(X, y, estimator):
     assert len(estimator_dropped.named_estimators) == 3
     assert estimator_dropped.named_estimators.svm == "drop"
     assert len(estimator_dropped.named_estimators_) == 3
-    assert sorted(list(estimator_dropped.named_estimators_.keys())) == sorted(
+    assert sorted(estimator_dropped.named_estimators_.keys()) == sorted(
         ["lr", "svm", "rf"]
     )
     for sub_est in estimator_dropped.named_estimators_:
@@ -140,14 +140,14 @@ def test_ensemble_heterogeneous_estimators_behavior(X, y, estimator):
 
 
 @pytest.mark.parametrize(
-    "Ensemble",
+    "ensemble_cls",
     [VotingClassifier, StackingRegressor, VotingRegressor],
 )
-def test_ensemble_heterogeneous_estimators_type(Ensemble):
+def test_ensemble_heterogeneous_estimators_type(ensemble_cls):
     # check that ensemble will fail during validation if the underlying
     # estimators are not of the same type (i.e. classifier or regressor)
     # StackingClassifier can have an underlying regresor so it's not checked
-    if issubclass(Ensemble, ClassifierMixin):
+    if issubclass(ensemble_cls, ClassifierMixin):
         X, y = make_classification(n_samples=10)
         estimators = [("lr", LinearRegression())]
         ensemble_type = "classifier"
@@ -155,7 +155,7 @@ def test_ensemble_heterogeneous_estimators_type(Ensemble):
         X, y = make_regression(n_samples=10)
         estimators = [("lr", LogisticRegression())]
         ensemble_type = "regressor"
-    ensemble = Ensemble(estimators=estimators)
+    ensemble = ensemble_cls(estimators=estimators)
 
     err_msg = "should be a {}".format(ensemble_type)
     with pytest.raises(ValueError, match=err_msg):
@@ -163,7 +163,7 @@ def test_ensemble_heterogeneous_estimators_type(Ensemble):
 
 
 @pytest.mark.parametrize(
-    "X, y, Ensemble",
+    "X, y, ensemble_cls",
     [
         (*make_classification(n_samples=10), StackingClassifier),
         (*make_classification(n_samples=10), VotingClassifier),
@@ -171,35 +171,35 @@ def test_ensemble_heterogeneous_estimators_type(Ensemble):
         (*make_regression(n_samples=10), VotingRegressor),
     ],
 )
-def test_ensemble_heterogeneous_estimators_name_validation(X, y, Ensemble):
+def test_ensemble_heterogeneous_estimators_name_validation(X, y, ensemble_cls):
     # raise an error when the name contains dunder
-    if issubclass(Ensemble, ClassifierMixin):
+    if issubclass(ensemble_cls, ClassifierMixin):
         estimators = [("lr__", LogisticRegression())]
     else:
         estimators = [("lr__", LinearRegression())]
-    ensemble = Ensemble(estimators=estimators)
+    ensemble = ensemble_cls(estimators=estimators)
 
     err_msg = r"Estimator names must not contain __: got \['lr__'\]"
     with pytest.raises(ValueError, match=err_msg):
         ensemble.fit(X, y)
 
     # raise an error when the name is not unique
-    if issubclass(Ensemble, ClassifierMixin):
+    if issubclass(ensemble_cls, ClassifierMixin):
         estimators = [("lr", LogisticRegression()), ("lr", LogisticRegression())]
     else:
         estimators = [("lr", LinearRegression()), ("lr", LinearRegression())]
-    ensemble = Ensemble(estimators=estimators)
+    ensemble = ensemble_cls(estimators=estimators)
 
     err_msg = r"Names provided are not unique: \['lr', 'lr'\]"
     with pytest.raises(ValueError, match=err_msg):
         ensemble.fit(X, y)
 
     # raise an error when the name conflicts with the parameters
-    if issubclass(Ensemble, ClassifierMixin):
+    if issubclass(ensemble_cls, ClassifierMixin):
         estimators = [("estimators", LogisticRegression())]
     else:
         estimators = [("estimators", LinearRegression())]
-    ensemble = Ensemble(estimators=estimators)
+    ensemble = ensemble_cls(estimators=estimators)
 
     err_msg = "Estimator names conflict with constructor arguments"
     with pytest.raises(ValueError, match=err_msg):
@@ -242,7 +242,7 @@ def test_ensemble_heterogeneous_estimators_all_dropped(X, y, estimator):
 
 
 @pytest.mark.parametrize(
-    "Ensemble, Estimator, X, y",
+    "ensemble_cls, estimator_cls, X, y",
     [
         (StackingClassifier, LogisticRegression, X, y),
         (StackingRegressor, LinearRegression, X_r, y_r),
@@ -252,12 +252,13 @@ def test_ensemble_heterogeneous_estimators_all_dropped(X, y, estimator):
 )
 # FIXME: we should move this test in `estimator_checks` once we are able
 # to construct meta-estimator instances
-def test_heterogeneous_ensemble_support_missing_values(Ensemble, Estimator, X, y):
+def test_heterogeneous_ensemble_support_missing_values(ensemble_cls, estimator_cls, X, y):
     # check that Voting and Stacking predictor delegate the missing values
     # validation to the underlying estimator.
     X = X.copy()
-    mask = np.random.choice([1, 0], X.shape, p=[0.1, 0.9]).astype(bool)
+    rng = np.random.default_rng(0)
+    mask = rng.choice([1, 0], X.shape, p=[0.1, 0.9]).astype(bool)
     X[mask] = np.nan
-    pipe = make_pipeline(SimpleImputer(), Estimator())
-    ensemble = Ensemble(estimators=[("pipe1", pipe), ("pipe2", pipe)])
+    pipe = make_pipeline(SimpleImputer(), estimator_cls(), memory=None)
+    ensemble = ensemble_cls(estimators=[("pipe1", pipe), ("pipe2", pipe)])
     ensemble.fit(X, y).score(X, y)

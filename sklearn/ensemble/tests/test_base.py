@@ -56,14 +56,15 @@ def test_set_random_states():
     clf1 = Perceptron(random_state=None)
     assert clf1.random_state is None
     # check random_state is None still sets
-    _set_random_states(clf1, None)
+    seed = 0
+    _set_random_states(clf1, random_state=seed)
     assert isinstance(clf1.random_state, int)
 
     # check random_state fixes results in consistent initialisation
-    _set_random_states(clf1, 3)
+    _set_random_states(clf1, random_state=3)
     assert isinstance(clf1.random_state, int)
     clf2 = Perceptron(random_state=None)
-    _set_random_states(clf2, 3)
+    _set_random_states(clf2, random_state=3)
     assert clf1.random_state == clf2.random_state
 
     # nested random_state
