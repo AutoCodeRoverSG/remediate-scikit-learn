@@ -73,7 +73,7 @@ preprocessor = ColumnTransformer(
 preprocessor.set_output(transform="polars")
 
 df_out = preprocessor.fit_transform(df)
-df_out
+print(df_out)
 
 # %%
 print(f"Output type: {type(df_out)}")
@@ -109,8 +109,8 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.inspection import PartialDependenceDisplay
 
 n_samples = 500
-rng = np.random.RandomState(0)
-X = rng.randn(n_samples, 2)
+rng = np.random.default_rng(0)
+X = rng.standard_normal((n_samples, 2))
 noise = rng.normal(loc=0.0, scale=0.01, size=n_samples)
 y = 5 * X[:, 0] + np.sin(10 * np.pi * X[:, 0]) - noise
 
@@ -143,7 +143,7 @@ plt.show()
 # Enriched estimator displays
 # ---------------------------
 # Estimators displays have been enriched: if we look at `forest`, defined above:
-forest
+print(forest)
 
 # %%
 # One can access the documentation of the estimator by clicking on the icon "?" on
@@ -174,9 +174,9 @@ sklearn.set_config(enable_metadata_routing=True)
 
 n_samples = 100
 X, y = make_regression(n_samples=n_samples, n_features=5, noise=0.5)
-rng = np.random.RandomState(7)
-groups = rng.randint(0, 10, size=n_samples)
-sample_weights = rng.rand(n_samples)
+rng = np.random.default_rng(7)
+groups = rng.integers(0, 10, size=n_samples)
+sample_weights = rng.random(n_samples)
 estimator = Lasso().set_fit_request(sample_weight=True)
 hyperparameter_grid = {"alpha": [0.1, 0.5, 1.0, 2.0]}
 scoring_inner_cv = get_scorer("neg_mean_squared_error").set_score_request(
