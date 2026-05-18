@@ -89,11 +89,11 @@ def test_stacking_classifier_iris(cv, final_estimator, passthrough):
     clf.predict_proba(X_test)
     assert clf.score(X_test, y_test) > 0.8
 
-    X_trans = clf.transform(X_test)
+    x_trans = clf.transform(X_test)
     expected_column_count = 10 if passthrough else 6
-    assert X_trans.shape[1] == expected_column_count
+    assert x_trans.shape[1] == expected_column_count
     if passthrough:
-        assert_allclose(X_test, X_trans[:, -4:])
+        assert_allclose(X_test, x_trans[:, -4:])
 
     clf.set_params(lr="drop")
     clf.fit(X_train, y_train)
@@ -103,11 +103,11 @@ def test_stacking_classifier_iris(cv, final_estimator, passthrough):
         # LogisticRegression has decision_function method
         clf.decision_function(X_test)
 
-    X_trans = clf.transform(X_test)
+    x_trans = clf.transform(X_test)
     expected_column_count_drop = 7 if passthrough else 3
-    assert X_trans.shape[1] == expected_column_count_drop
+    assert x_trans.shape[1] == expected_column_count_drop
     if passthrough:
-        assert_allclose(X_test, X_trans[:, -4:])
+        assert_allclose(X_test, x_trans[:, -4:])
 
 
 def test_stacking_classifier_drop_column_binary_classification():
@@ -125,16 +125,16 @@ def test_stacking_classifier_drop_column_binary_classification():
     clf = StackingClassifier(estimators=estimators, cv=3)
 
     clf.fit(X_train, y_train)
-    X_trans = clf.transform(X_test)
-    assert X_trans.shape[1] == 2
+    x_trans = clf.transform(X_test)
+    assert x_trans.shape[1] == 2
 
     # LinearSVC does not implement 'predict_proba' and will not drop one column
     estimators = [("lr", LogisticRegression()), ("svc", LinearSVC())]
     clf.set_params(estimators=estimators)
 
     clf.fit(X_train, y_train)
-    X_trans = clf.transform(X_test)
-    assert X_trans.shape[1] == 2
+    x_trans = clf.transform(X_test)
+    assert x_trans.shape[1] == 2
 
 
 def test_stacking_classifier_drop_estimator():
@@ -209,21 +209,21 @@ def test_stacking_regressor_diabetes(cv, final_estimator, predict_params, passth
     if predict_params:
         assert len(result) == expected_result_length
 
-    X_trans = reg.transform(X_test)
+    x_trans = reg.transform(X_test)
     expected_column_count = 12 if passthrough else 2
-    assert X_trans.shape[1] == expected_column_count
+    assert x_trans.shape[1] == expected_column_count
     if passthrough:
-        assert_allclose(X_test, X_trans[:, -10:])
+        assert_allclose(X_test, x_trans[:, -10:])
 
     reg.set_params(lr="drop")
     reg.fit(X_train, y_train)
     reg.predict(X_test)
 
-    X_trans = reg.transform(X_test)
+    x_trans = reg.transform(X_test)
     expected_column_count_drop = 11 if passthrough else 1
-    assert X_trans.shape[1] == expected_column_count_drop
+    assert x_trans.shape[1] == expected_column_count_drop
     if passthrough:
-        assert_allclose(X_test, X_trans[:, -10:])
+        assert_allclose(X_test, x_trans[:, -10:])
 
 
 @pytest.mark.parametrize(
@@ -240,10 +240,10 @@ def test_stacking_regressor_sparse_passthrough(sparse_container):
         estimators=estimators, final_estimator=rf, cv=5, passthrough=True
     )
     clf.fit(X_train, y_train)
-    X_trans = clf.transform(X_test)
-    assert_allclose_dense_sparse(X_test, X_trans[:, -10:])
-    assert sparse.issparse(X_trans)
-    assert X_test.format == X_trans.format
+    x_trans = clf.transform(X_test)
+    assert_allclose_dense_sparse(X_test, x_trans[:, -10:])
+    assert sparse.issparse(x_trans)
+    assert X_test.format == x_trans.format
 
 
 @pytest.mark.parametrize(
@@ -260,10 +260,10 @@ def test_stacking_classifier_sparse_passthrough(sparse_container):
         estimators=estimators, final_estimator=rf, cv=5, passthrough=True
     )
     clf.fit(X_train, y_train)
-    X_trans = clf.transform(X_test)
-    assert_allclose_dense_sparse(X_test, X_trans[:, -4:])
-    assert sparse.issparse(X_trans)
-    assert X_test.format == X_trans.format
+    x_trans = clf.transform(X_test)
+    assert_allclose_dense_sparse(X_test, x_trans[:, -4:])
+    assert sparse.issparse(x_trans)
+    assert X_test.format == x_trans.format
 
 
 def test_stacking_classifier_drop_binary_prob():
@@ -276,8 +276,8 @@ def test_stacking_classifier_drop_binary_prob():
     estimators = [("lr", LogisticRegression()), ("rf", RandomForestClassifier())]
     clf = StackingClassifier(estimators=estimators)
     clf.fit(X_, y_)
-    X_meta = clf.transform(X_)
-    assert X_meta.shape[1] == 2
+    x_meta = clf.transform(X_)
+    assert x_meta.shape[1] == 2
 
 
 class NoWeightRegressor(RegressorMixin, BaseEstimator):
@@ -291,7 +291,7 @@ class NoWeightRegressor(RegressorMixin, BaseEstimator):
 
 class NoWeightClassifier(ClassifierMixin, BaseEstimator):
     def fit(self, X, y):
-        self.clf = DummyClassifier(strategy="stratified")
+        self.clf = DummyClassifier(strategy="stratified", random_state=0)
         return self.clf.fit(X, y)
 
 
@@ -493,8 +493,12 @@ def test_stacking_with_sample_weight(stacker, X, y):
 def test_stacking_classifier_sample_weight_fit_param():
     # check sample_weight is passed to all invocations of fit
     stacker = StackingClassifier(
-        estimators=[("lr", CheckingClassifier(expected_sample_weight=True))],
-        final_estimator=CheckingClassifier(expected_sample_weight=True),
+        estimators=[
+            ("lr", CheckingClassifier(expected_sample_weight=True, random_state=42))
+        ],
+        final_estimator=CheckingClassifier(
+            expected_sample_weight=True, random_state=42
+        ),
     )
     stacker.fit(X_iris, y_iris, sample_weight=np.ones(X_iris.shape[0]))
 
@@ -553,7 +557,7 @@ def test_stacking_cv_influence(stacker, X, y):
 
 
 @pytest.mark.parametrize(
-    "Stacker, Estimator, stack_method, final_estimator, X, y",
+    "Stacker, estimator_class, stack_method, final_estimator, X, y",
     [
         (
             StackingClassifier,
@@ -573,14 +577,14 @@ def test_stacking_cv_influence(stacker, X, y):
         ),
     ],
 )
-def test_stacking_prefit(Stacker, Estimator, stack_method, final_estimator, X, y):
+def test_stacking_prefit(Stacker, estimator_class, stack_method, final_estimator, X, y):
     """Check the behaviour of stacking when `cv='prefit'`"""
     X_train1, X_train2, y_train1, y_train2 = train_test_split(
         X, y, random_state=42, test_size=0.5
     )
     estimators = [
-        ("d0", Estimator().fit(X_train1, y_train1)),
-        ("d1", Estimator().fit(X_train1, y_train1)),
+        ("d0", estimator_class().fit(X_train1, y_train1)),
+        ("d1", estimator_class().fit(X_train1, y_train1)),
     ]
 
     # mock out fit and stack_method to be asserted later
