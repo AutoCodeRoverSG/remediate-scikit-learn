@@ -163,5 +163,5 @@ def _random_dataset(
             random_state=0,
         )
 
-    X, X_val = train_test_split(X, test_size=0.1, random_state=0)
-    return X, X_val, None, None
+    X, x_val = train_test_split(X, test_size=0.1, random_state=0)
+    return X, x_val, None, None
