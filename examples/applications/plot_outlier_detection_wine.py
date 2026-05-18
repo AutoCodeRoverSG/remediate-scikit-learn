@@ -76,8 +76,8 @@ for color, (name, estimator) in zip(colors, estimators.items()):
 
 
 ax.scatter(X[:, 0], X[:, 1], color="black")
-bbox_args = dict(boxstyle="round", fc="0.8")
-arrow_args = dict(arrowstyle="->")
+bbox_args = {"boxstyle": "round", "fc": "0.8"}
+arrow_args = {"arrowstyle": "->"}
 ax.annotate(
     "outlying points",
     xy=(4, 2),

@@ -6,7 +6,7 @@
  */
 
 function addVersionSwitcherAvailDocsLink() {
-  var availDocsLinkAdded = false;
+  let availDocsLinkAdded = false;
 
   // There can be multiple version switcher buttons because there is at least one for
   // laptop size and one for mobile size (in the sidebar)
@@ -19,7 +19,7 @@ function addVersionSwitcherAvailDocsLink() {
           document
             .querySelectorAll(".version-switcher__menu")
             .forEach(function (menu) {
-              var availDocsLink = document.createElement("a");
+              const availDocsLink = document.createElement("a");
               availDocsLink.setAttribute(
                 "href",
                 "https://scikit-learn.org/dev/versions.html"

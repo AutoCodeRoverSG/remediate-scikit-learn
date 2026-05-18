@@ -28,15 +28,15 @@ from sklearn.cluster import OPTICS, cluster_optics_dbscan
 
 # Generate sample data
 
-np.random.seed(0)
+rng = np.random.default_rng(0)
 n_points_per_cluster = 250
 
-C1 = [-5, -2] + 0.8 * np.random.randn(n_points_per_cluster, 2)
-C2 = [4, -1] + 0.1 * np.random.randn(n_points_per_cluster, 2)
-C3 = [1, -2] + 0.2 * np.random.randn(n_points_per_cluster, 2)
-C4 = [-2, 3] + 0.3 * np.random.randn(n_points_per_cluster, 2)
-C5 = [3, -2] + 1.6 * np.random.randn(n_points_per_cluster, 2)
-C6 = [5, 6] + 2 * np.random.randn(n_points_per_cluster, 2)
+C1 = [-5, -2] + 0.8 * rng.standard_normal((n_points_per_cluster, 2))
+C2 = [4, -1] + 0.1 * rng.standard_normal((n_points_per_cluster, 2))
+C3 = [1, -2] + 0.2 * rng.standard_normal((n_points_per_cluster, 2))
+C4 = [-2, 3] + 0.3 * rng.standard_normal((n_points_per_cluster, 2))
+C5 = [3, -2] + 1.6 * rng.standard_normal((n_points_per_cluster, 2))
+C6 = [5, 6] + 2 * rng.standard_normal((n_points_per_cluster, 2))
 X = np.vstack((C1, C2, C3, C4, C5, C6))
 
 clust = OPTICS(min_samples=50, xi=0.05, min_cluster_size=0.05)
