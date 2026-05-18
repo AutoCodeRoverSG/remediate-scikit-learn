@@ -136,11 +136,13 @@ def test_explained_variance_components_10_20(x_sparse, kind, solver):
 @pytest.mark.parametrize("solver", SVD_SOLVERS)
 def test_singular_values_consistency(solver, global_random_seed):
     # Check that the TruncatedSVD output has the correct singular values
-    rng = np.random.RandomState(global_random_seed)
+    rng = np.random.default_rng(global_random_seed)
     n_samples, n_features = 100, 80
-    X = rng.randn(n_samples, n_features)
+    X = rng.standard_normal((n_samples, n_features))
 
-    pca = TruncatedSVD(n_components=2, algorithm=solver, random_state=rng).fit(X)
+    pca = TruncatedSVD(
+        n_components=2, algorithm=solver, random_state=global_random_seed
+    ).fit(X)
 
     # Compare to the Frobenius norm
     x_pca = pca.transform(X)
@@ -159,13 +161,13 @@ def test_singular_values_consistency(solver, global_random_seed):
 @pytest.mark.parametrize("solver", SVD_SOLVERS)
 def test_singular_values_expected(solver, global_random_seed):
     # Set the singular values and see what we get back
-    rng = np.random.RandomState(global_random_seed)
+    rng = np.random.default_rng(global_random_seed)
     n_samples = 100
     n_features = 110
 
-    X = rng.randn(n_samples, n_features)
+    X = rng.standard_normal((n_samples, n_features))
 
-    pca = TruncatedSVD(n_components=3, algorithm=solver, random_state=rng)
+    pca = TruncatedSVD(n_components=3, algorithm=solver, random_state=global_random_seed)
     x_pca = pca.fit_transform(X)
 
     x_pca /= np.sqrt(np.sum(x_pca**2.0, axis=0))
@@ -180,19 +182,19 @@ def test_singular_values_expected(solver, global_random_seed):
 def test_truncated_svd_eq_pca(x_sparse):
     # TruncatedSVD should be equal to PCA on centered data
 
-    X_dense = x_sparse.toarray()
+    x_dense = x_sparse.toarray()
 
-    X_c = X_dense - X_dense.mean(axis=0)
+    x_c = x_dense - x_dense.mean(axis=0)
 
-    params = dict(n_components=10, random_state=42)
+    params = {"n_components": 10, "random_state": 42}
 
     svd = TruncatedSVD(algorithm="arpack", **params)
     pca = PCA(svd_solver="arpack", **params)
 
-    Xt_svd = svd.fit_transform(X_c)
-    Xt_pca = pca.fit_transform(X_c)
+    xt_svd = svd.fit_transform(x_c)
+    xt_pca = pca.fit_transform(x_c)
 
-    assert_allclose(Xt_svd, Xt_pca, rtol=1e-9)
+    assert_allclose(xt_svd, xt_pca, rtol=1e-9)
     assert_allclose(pca.mean_, 0, atol=1e-9)
     assert_allclose(svd.components_, pca.components_)
 
@@ -220,6 +222,6 @@ def test_fit_transform(x_sparse, algorithm, tol, kind, normalizer):
         power_iteration_normalizer=normalizer,
         tol=tol,
     )
-    X_transformed_1 = svd.fit_transform(x)
-    X_transformed_2 = svd.fit(x).transform(x)
-    assert_allclose(X_transformed_1, X_transformed_2)
+    x_transformed_1 = svd.fit_transform(x)
+    x_transformed_2 = svd.fit(x).transform(x)
+    assert_allclose(x_transformed_1, x_transformed_2)

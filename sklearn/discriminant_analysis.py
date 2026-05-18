@@ -1033,7 +1033,7 @@ class QuadraticDiscriminantAnalysis(
         X : array-like of shape (n_samples, n_features)
             Training data.
         """
-        n_samples, n_features = X.shape
+        n_samples, _ = X.shape
 
         mean = X.mean(0)
         Xc = X - mean
