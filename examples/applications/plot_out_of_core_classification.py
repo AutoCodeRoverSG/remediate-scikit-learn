@@ -338,6 +338,9 @@ for i, (X_train_text, y_train) in enumerate(minibatch_iterators):
 # before feeding them to the learner.
 
 
+RUNTIME_LABEL = "runtime (s)"
+
+
 def plot_accuracy(x, y, x_legend):
     """Plot accuracy as a function of x."""
     x = np.array(x)
@@ -366,7 +369,7 @@ plt.figure()
 for _, stats in sorted(cls_stats.items()):
     # Plot accuracy evolution with runtime
     accuracy, runtime = zip(*stats["runtime_history"])
-    plot_accuracy(runtime, accuracy, "runtime (s)")
+    plot_accuracy(runtime, accuracy, RUNTIME_LABEL)
     ax = plt.gca()
     ax.set_ylim((0.8, 1))
 plt.legend(cls_names, loc="best")
@@ -387,7 +390,7 @@ ax.set_xticks(np.linspace(0, len(cls_names) - 1, len(cls_names)))
 ax.set_xticklabels(cls_names, fontsize=10)
 ymax = max(cls_runtime) * 1.2
 ax.set_ylim((0, ymax))
-ax.set_ylabel("runtime (s)")
+ax.set_ylabel(RUNTIME_LABEL)
 ax.set_title("Training Times")
 
 
@@ -428,7 +431,7 @@ ax.set_xticklabels(cls_names, fontsize=8)
 plt.setp(plt.xticks()[1], rotation=30)
 ymax = max(cls_runtime) * 1.2
 ax.set_ylim((0, ymax))
-ax.set_ylabel("runtime (s)")
+ax.set_ylabel(RUNTIME_LABEL)
 ax.set_title("Prediction Times (%d instances)" % n_test_documents)
 autolabel(rectangles)
 plt.tight_layout()

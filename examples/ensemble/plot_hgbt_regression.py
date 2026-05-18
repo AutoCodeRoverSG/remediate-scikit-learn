@@ -76,13 +76,16 @@ df = electricity.frame.iloc[17_760:]
 X = df.drop(columns=["transfer", "class"])
 y = df["transfer"]
 
+YLABEL_ENERGY = "Normalized energy transfer"
+XLABEL_WEEK = "Time of the week"
+
 fig, ax = plt.subplots(figsize=(15, 10))
 pointplot = sns.lineplot(x=df["period"], y=df["transfer"], hue=df["day"], ax=ax)
 handles, labels = ax.get_legend_handles_labels()
 ax.set(
     title="Hourly energy transfer for different days of the week",
     xlabel="Normalized time of the day",
-    ylabel="Normalized energy transfer",
+    ylabel=YLABEL_ENERGY,
 )
 _ = ax.legend(handles, ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"])
 
@@ -136,8 +139,8 @@ ax.set(
     title="Predicted average energy transfer during the week",
     xticks=[(i + 0.2) * 48 for i in range(7)],
     xticklabels=["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
-    xlabel="Time of the week",
-    ylabel="Normalized energy transfer",
+    xlabel=XLABEL_WEEK,
+    ylabel=YLABEL_ENERGY,
 )
 _ = ax.legend()
 
@@ -220,7 +223,7 @@ import numpy as np
 
 from sklearn.metrics import root_mean_squared_error
 
-rng = np.random.RandomState(42)
+rng = np.random.default_rng(42)
 first_week = slice(0, 336)  # first week in the test set as 7 * 48 = 336
 missing_fraction_list = [0, 0.01, 0.03]
 
@@ -230,9 +233,9 @@ def generate_missing_values(X, missing_fraction):
     num_missing_cells = int(total_cells * missing_fraction)
     row_indices = rng.choice(X.shape[0], num_missing_cells, replace=True)
     col_indices = rng.choice(X.shape[1], num_missing_cells, replace=True)
-    X_missing = X.copy()
-    X_missing.iloc[row_indices, col_indices] = np.nan
-    return X_missing
+    x_missing = X.copy()
+    x_missing.iloc[row_indices, col_indices] = np.nan
+    return x_missing
 
 
 fig, ax = plt.subplots(figsize=(12, 6))
@@ -253,8 +256,8 @@ ax.set(
     title="Daily energy transfer predictions on data with MCAR values",
     xticks=[(i + 0.2) * 48 for i in range(7)],
     xticklabels=["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
-    xlabel="Time of the week",
-    ylabel="Normalized energy transfer",
+    xlabel=XLABEL_WEEK,
+    ylabel=YLABEL_ENERGY,
 )
 _ = ax.legend(loc="lower right")
 
@@ -303,8 +306,8 @@ ax.set(
     title="Daily energy transfer predictions with quantile loss",
     xticks=[(i + 0.2) * 48 for i in range(7)],
     xticklabels=["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
-    xlabel="Time of the week",
-    ylabel="Normalized energy transfer",
+    xlabel=XLABEL_WEEK,
+    ylabel=YLABEL_ENERGY,
 )
 _ = ax.legend(loc="lower right")
 

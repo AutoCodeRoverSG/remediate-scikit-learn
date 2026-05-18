@@ -255,11 +255,11 @@ for index, (name, label, (x, y)) in enumerate(zip(names, labels, embedding.T)):
         size=10,
         horizontalalignment=horizontalalignment,
         verticalalignment=verticalalignment,
-        bbox=dict(
-            facecolor="w",
-            edgecolor=plt.cm.nipy_spectral(label / float(n_labels)),
-            alpha=0.6,
-        ),
+        bbox={
+            "facecolor": "w",
+            "edgecolor": plt.cm.nipy_spectral(label / float(n_labels)),
+            "alpha": 0.6,
+        },
     )
 
 plt.xlim(

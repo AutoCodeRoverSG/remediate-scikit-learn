@@ -38,10 +38,11 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 
 n_samples, n_outliers = 120, 40
-rng = np.random.RandomState(0)
+LEGEND_TITLE = "true class"
+rng = np.random.default_rng(0)
 covariance = np.array([[0.5, -0.1], [0.7, 0.4]])
-cluster_1 = 0.4 * rng.randn(n_samples, 2) @ covariance + np.array([2, 2])  # general
-cluster_2 = 0.3 * rng.randn(n_samples, 2) + np.array([-2, -2])  # spherical
+cluster_1 = 0.4 * rng.standard_normal((n_samples, 2)) @ covariance + np.array([2, 2])  # general
+cluster_2 = 0.3 * rng.standard_normal((n_samples, 2)) + np.array([-2, -2])  # spherical
 outliers = rng.uniform(low=-4, high=4, size=(n_outliers, 2))
 
 X = np.concatenate([cluster_1, cluster_2, outliers])
@@ -59,7 +60,7 @@ import matplotlib.pyplot as plt
 scatter = plt.scatter(X[:, 0], X[:, 1], c=y, s=20, edgecolor="k")
 handles, labels = scatter.legend_elements()
 plt.axis("square")
-plt.legend(handles=handles, labels=["outliers", "inliers"], title="true class")
+plt.legend(handles=handles, labels=["outliers", "inliers"], title=LEGEND_TITLE)
 plt.title("Gaussian inliers with \nuniformly distributed outliers")
 plt.show()
 
@@ -94,7 +95,7 @@ disp = DecisionBoundaryDisplay.from_estimator(
 disp.ax_.scatter(X[:, 0], X[:, 1], c=y, s=20, edgecolor="k")
 disp.ax_.set_title("Binary decision boundary \nof IsolationForest")
 plt.axis("square")
-plt.legend(handles=handles, labels=["outliers", "inliers"], title="true class")
+plt.legend(handles=handles, labels=["outliers", "inliers"], title=LEGEND_TITLE)
 plt.show()
 
 # %%
@@ -121,6 +122,6 @@ disp = DecisionBoundaryDisplay.from_estimator(
 disp.ax_.scatter(X[:, 0], X[:, 1], c=y, s=20, edgecolor="k")
 disp.ax_.set_title("Path length decision boundary \nof IsolationForest")
 plt.axis("square")
-plt.legend(handles=handles, labels=["outliers", "inliers"], title="true class")
+plt.legend(handles=handles, labels=["outliers", "inliers"], title=LEGEND_TITLE)
 plt.colorbar(disp.ax_.collections[1])
 plt.show()
