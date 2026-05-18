@@ -53,8 +53,8 @@ X_multi_classification, y_multi_classification = make_classification(
 
 def _make_dumb_dataset(n_samples):
     """Make a dumb dataset to test early stopping."""
-    rng = np.random.RandomState(42)
-    x_dumb = rng.randn(n_samples, 1)
+    rng = np.random.default_rng(42)
+    x_dumb = rng.standard_normal((n_samples, 1))
     y_dumb = (x_dumb[:, 0] > 0).astype("int64")
     return x_dumb, y_dumb
 
@@ -233,7 +233,7 @@ def test_absolute_error_sample_weight():
     # make sure no error is thrown during fit of
     # HistGradientBoostingRegressor with absolute_error loss function
     # and passing sample_weight
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
     n_samples = 100
     X = rng.uniform(-1, 1, size=(n_samples, 2))
     y = rng.uniform(-1, 1, size=n_samples)
@@ -262,12 +262,12 @@ def test_gamma():
     # out-of-sample performance than the Gamma HGBT, measured in Gamma deviance.
     # LightGBM shows the same behaviour. Hence, we only compare to a squared error
     # HGBT, but not to a Poisson deviance HGBT.
-    rng = np.random.RandomState(42)
+    rng = np.random.default_rng(42)
     n_train, n_test, n_features = 500, 100, 20
     X = make_low_rank_matrix(
         n_samples=n_train + n_test,
         n_features=n_features,
-        random_state=rng,
+        random_state=rng.integers(0, 2**31),
     )
     # We create a log-linear Gamma model. This gives y.min ~ 1e-2, y.max ~ 1e2
     coef = rng.uniform(low=-10, high=20, size=n_features)
@@ -278,7 +278,7 @@ def test_gamma():
     dispersion = 0.5
     y = rng.gamma(shape=1 / dispersion, scale=dispersion * np.exp(X @ coef))
     X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=n_test, random_state=rng
+        X, y, test_size=n_test, random_state=rng.integers(0, 2**31)
     )
     gbdt_gamma = HistGradientBoostingRegressor(loss="gamma", random_state=123)
     gbdt_mse = HistGradientBoostingRegressor(loss="squared_error", random_state=123)
@@ -782,8 +782,8 @@ def test_sum_hessians_are_sample_weight(loss_cls):
     n_samples = 1000
     n_features = 2
     X, y = make_regression(n_samples=n_samples, n_features=n_features, random_state=rng)
-    bin_mapper = _BinMapper()
-    X_binned = bin_mapper.fit_transform(X)
+    bin_mapper = _BinMapper(random_state=0)
+    x_binned = bin_mapper.fit_transform(X)
 
     # While sample weights are supposed to be positive, this still works.
     sample_weight = rng.normal(size=n_samples)
@@ -809,13 +809,13 @@ def test_sum_hessians_are_sample_weight(loss_cls):
     sum_sw = np.zeros(shape=(n_features, bin_mapper.n_bins))
     for feature_idx in range(n_features):
         for sample_idx in range(n_samples):
-            sum_sw[feature_idx, X_binned[sample_idx, feature_idx]] += sample_weight[
+            sum_sw[feature_idx, x_binned[sample_idx, feature_idx]] += sample_weight[
                 sample_idx
             ]
 
     # Build histogram
     grower = TreeGrower(
-        X_binned, gradients[:, 0], hessians[:, 0], n_bins=bin_mapper.n_bins
+        x_binned, gradients[:, 0], hessians[:, 0], n_bins=bin_mapper.n_bins
     )
     histograms = grower.histogram_builder.compute_histograms_brute(
         grower.root.sample_indices
@@ -920,9 +920,9 @@ def test_raw_predict_is_called_with_custom_scorer():
 
 
 @pytest.mark.parametrize(
-    "Est", (HistGradientBoostingClassifier, HistGradientBoostingRegressor)
+    "est_cls", (HistGradientBoostingClassifier, HistGradientBoostingRegressor)
 )
-def test_single_node_trees(Est):
+def test_single_node_trees(est_cls):
     # Make sure it's still possible to build single-node trees. In that case
     # the value of the root is set to 0. That's a correct value: if the tree is
     # single-node that's because min_gain_to_split is not respected right from
@@ -932,7 +932,7 @@ def test_single_node_trees(Est):
     X, y = make_classification(random_state=0)
     y[:] = 1  # constant target will lead to a single root node
 
-    est = Est(max_iter=20)
+    est = est_cls(max_iter=20)
     est.fit(X, y)
 
     assert all(len(predictor[0].nodes) == 1 for predictor in est._predictors)
@@ -942,7 +942,7 @@ def test_single_node_trees(Est):
 
 
 @pytest.mark.parametrize(
-    "Est, loss, X, y",
+    "estimator_cls, loss, X, y",
     [
         (
             HistGradientBoostingClassifier,
@@ -958,13 +958,13 @@ def test_single_node_trees(Est):
         ),
     ],
 )
-def test_custom_loss(Est, loss, X, y):
-    est = Est(loss=loss, max_iter=20)
+def test_custom_loss(estimator_cls, loss, X, y):
+    est = estimator_cls(loss=loss, max_iter=20)
     est.fit(X, y)
 
 
 @pytest.mark.parametrize(
-    "HistGradientBoosting, X, y",
+    "hist_gradient_boosting, X, y",
     [
         (HistGradientBoostingClassifier, X_classification, y_classification),
         (HistGradientBoostingRegressor, X_regression, y_regression),
@@ -975,13 +975,13 @@ def test_custom_loss(Est, loss, X, y):
         ),
     ],
 )
-def test_staged_predict(HistGradientBoosting, X, y):
+def test_staged_predict(hist_gradient_boosting, X, y):
     # Test whether staged predictor eventually gives
     # the same prediction.
-    X_train, X_test, y_train, y_test = train_test_split(
+    X_train, X_test, y_train, _ = train_test_split(
         X, y, test_size=0.5, random_state=0
     )
-    gb = HistGradientBoosting(max_iter=10)
+    gb = hist_gradient_boosting(max_iter=10)
 
     # test raise NotFittedError if not fitted
     with pytest.raises(NotFittedError):
@@ -1003,7 +1003,7 @@ def test_staged_predict(HistGradientBoosting, X, y):
         staged_predictions = list(staged_method(X_test))
         assert len(staged_predictions) == gb.n_iter_
         for n_iter, staged_predictions in enumerate(staged_method(X_test), 1):
-            aux = HistGradientBoosting(max_iter=n_iter)
+            aux = hist_gradient_boosting(max_iter=n_iter)
             aux.fit(X_train, y_train)
             pred_aux = getattr(aux, method_name)(X_test)
 
@@ -1013,12 +1013,12 @@ def test_staged_predict(HistGradientBoosting, X, y):
 
 @pytest.mark.parametrize("insert_missing", [False, True])
 @pytest.mark.parametrize(
-    "Est", (HistGradientBoostingRegressor, HistGradientBoostingClassifier)
+    "est_cls", (HistGradientBoostingRegressor, HistGradientBoostingClassifier)
 )
 @pytest.mark.parametrize("bool_categorical_parameter", [True, False])
 @pytest.mark.parametrize("missing_value", [np.nan, -1])
 def test_unknown_categories_nan(
-    insert_missing, Est, bool_categorical_parameter, missing_value
+    insert_missing, est_cls, bool_categorical_parameter, missing_value
 ):
     # Make sure no error is raised at predict if a category wasn't seen during
     # fit. We also make sure they're treated as nans.
@@ -1041,7 +1041,7 @@ def test_unknown_categories_nan(
         assert mask.sum() > 0
         X[mask] = missing_value
 
-    est = Est(max_iter=20, categorical_features=categorical_features).fit(X, y)
+    est = est_cls(max_iter=20, categorical_features=categorical_features).fit(X, y)
     assert_array_equal(est.is_categorical_, [False, True])
 
     # Make sure no error is raised on unknown categories and nans
