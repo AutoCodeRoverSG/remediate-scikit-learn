@@ -29,8 +29,8 @@ def test_kernel_pca(global_random_seed):
      - that the shapes of transforms and inverse transforms are correct
     """
     rng = np.random.RandomState(global_random_seed)
-    X_fit = rng.random_sample((5, 4))
-    X_pred = rng.random_sample((2, 4))
+    x_fit = rng.random_sample((5, 4))
+    x_pred = rng.random_sample((2, 4))
 
     def histogram(x, y, **kwargs):
         # Histogram kernel implemented as a callable.
@@ -47,24 +47,24 @@ def test_kernel_pca(global_random_seed):
             kpca = KernelPCA(
                 4, kernel=kernel, eigen_solver=eigen_solver, fit_inverse_transform=inv
             )
-            X_fit_transformed = kpca.fit_transform(X_fit)
-            X_fit_transformed2 = kpca.fit(X_fit).transform(X_fit)
+            x_fit_transformed = kpca.fit_transform(x_fit)
+            x_fit_transformed2 = kpca.fit(x_fit).transform(x_fit)
             assert_array_almost_equal(
-                np.abs(X_fit_transformed), np.abs(X_fit_transformed2)
+                np.abs(x_fit_transformed), np.abs(x_fit_transformed2)
             )
 
             # non-regression test: previously, gamma would be 0 by default,
             # forcing all eigenvalues to 0 under the poly kernel
-            assert X_fit_transformed.size != 0
+            assert x_fit_transformed.size != 0
 
             # transform new data
-            X_pred_transformed = kpca.transform(X_pred)
-            assert X_pred_transformed.shape[1] == X_fit_transformed.shape[1]
+            x_pred_transformed = kpca.transform(x_pred)
+            assert x_pred_transformed.shape[1] == x_fit_transformed.shape[1]
 
             # inverse transform
             if inv:
-                X_pred2 = kpca.inverse_transform(X_pred_transformed)
-                assert X_pred2.shape == X_pred.shape
+                x_pred2 = kpca.inverse_transform(x_pred_transformed)
+                assert x_pred2.shape == x_pred.shape
 
 
 def test_kernel_pca_invalid_parameters():
@@ -94,9 +94,9 @@ def test_kernel_pca_consistent_transform(global_random_seed):
     kpca = KernelPCA(random_state=state).fit(X)
     transformed1 = kpca.transform(X)
 
-    X_copy = X.copy()
+    x_copy = X.copy()
     X[:, 0] = 666
-    transformed2 = kpca.transform(X_copy)
+    transformed2 = kpca.transform(x_copy)
     assert_array_almost_equal(transformed1, transformed2)
 
 
@@ -110,11 +110,11 @@ def test_kernel_pca_deterministic_output(global_random_seed):
     eigen_solver = ("arpack", "dense")
 
     for solver in eigen_solver:
-        transformed_X = np.zeros((20, 2))
+        transformed_x = np.zeros((20, 2))
         for i in range(20):
             kpca = KernelPCA(n_components=2, eigen_solver=solver, random_state=rng)
-            transformed_X[i, :] = kpca.fit_transform(X)[0]
-        assert_allclose(transformed_X, np.tile(transformed_X[0, :], 20).reshape(20, 2))
+            transformed_x[i, :] = kpca.fit_transform(X)[0]
+        assert_allclose(transformed_x, np.tile(transformed_x[0, :], 20).reshape(20, 2))
 
 
 @pytest.mark.parametrize("csr_container", CSR_CONTAINERS)
@@ -125,8 +125,8 @@ def test_kernel_pca_sparse(csr_container, global_random_seed):
     implemented for sparse matrices.
     """
     rng = np.random.RandomState(global_random_seed)
-    X_fit = csr_container(rng.random_sample((5, 4)))
-    X_pred = csr_container(rng.random_sample((2, 4)))
+    x_fit = csr_container(rng.random_sample((5, 4)))
+    x_pred = csr_container(rng.random_sample((2, 4)))
 
     for eigen_solver in ("auto", "arpack", "randomized"):
         for kernel in ("linear", "rbf", "poly"):
@@ -138,21 +138,21 @@ def test_kernel_pca_sparse(csr_container, global_random_seed):
                 fit_inverse_transform=False,
                 random_state=0,
             )
-            X_fit_transformed = kpca.fit_transform(X_fit)
-            X_fit_transformed2 = kpca.fit(X_fit).transform(X_fit)
+            x_fit_transformed = kpca.fit_transform(x_fit)
+            x_fit_transformed2 = kpca.fit(x_fit).transform(x_fit)
             assert_array_almost_equal(
-                np.abs(X_fit_transformed), np.abs(X_fit_transformed2)
+                np.abs(x_fit_transformed), np.abs(x_fit_transformed2)
             )
 
             # transform new data
-            X_pred_transformed = kpca.transform(X_pred)
-            assert X_pred_transformed.shape[1] == X_fit_transformed.shape[1]
+            x_pred_transformed = kpca.transform(x_pred)
+            assert x_pred_transformed.shape[1] == x_fit_transformed.shape[1]
 
             # inverse transform: not available for sparse matrices
             # XXX: should we raise another exception type here? For instance:
             # NotImplementedError.
             with pytest.raises(NotFittedError):
-                kpca.inverse_transform(X_pred_transformed)
+                kpca.inverse_transform(x_pred_transformed)
 
 
 @pytest.mark.parametrize("solver", ["auto", "dense", "arpack", "randomized"])
