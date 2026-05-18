@@ -175,51 +175,33 @@ class BaseHistGradientBoosting(BaseEstimator, ABC):
         "random_state": ["random_state"],
     }
 
+    _common_param_names = [
+        "learning_rate",
+        "max_iter",
+        "max_leaf_nodes",
+        "max_depth",
+        "min_samples_leaf",
+        "l2_regularization",
+        "max_features",
+        "max_bins",
+        "categorical_features",
+        "monotonic_cst",
+        "interaction_cst",
+        "warm_start",
+        "early_stopping",
+        "scoring",
+        "validation_fraction",
+        "n_iter_no_change",
+        "tol",
+        "verbose",
+        "random_state",
+    ]
+
     @abstractmethod
-    def __init__(
-        self,
-        loss,
-        *,
-        learning_rate,
-        max_iter,
-        max_leaf_nodes,
-        max_depth,
-        min_samples_leaf,
-        l2_regularization,
-        max_features,
-        max_bins,
-        categorical_features,
-        monotonic_cst,
-        interaction_cst,
-        warm_start,
-        early_stopping,
-        scoring,
-        validation_fraction,
-        n_iter_no_change,
-        tol,
-        verbose,
-        random_state,
-    ):
+    def __init__(self, loss, **kwargs):
         self.loss = loss
-        self.learning_rate = learning_rate
-        self.max_iter = max_iter
-        self.max_leaf_nodes = max_leaf_nodes
-        self.max_depth = max_depth
-        self.min_samples_leaf = min_samples_leaf
-        self.l2_regularization = l2_regularization
-        self.max_features = max_features
-        self.max_bins = max_bins
-        self.monotonic_cst = monotonic_cst
-        self.interaction_cst = interaction_cst
-        self.categorical_features = categorical_features
-        self.warm_start = warm_start
-        self.early_stopping = early_stopping
-        self.scoring = scoring
-        self.validation_fraction = validation_fraction
-        self.n_iter_no_change = n_iter_no_change
-        self.tol = tol
-        self.verbose = verbose
-        self.random_state = random_state
+        for param_name in self._common_param_names:
+            setattr(self, param_name, kwargs.get(param_name))
 
     def _validate_parameters(self):
         """Validate parameters passed to __init__.
@@ -820,7 +802,7 @@ class BaseHistGradientBoosting(BaseEstimator, ABC):
             # Build `n_trees_per_iteration` trees.
             for k in range(self.n_trees_per_iteration_):
                 grower = TreeGrower(
-                    X_binned=x_binned_train,
+                    x_binned=x_binned_train,
                     gradients=g_view[:, k],
                     hessians=h_view[:, k],
                     n_bins=n_bins,
@@ -1037,7 +1019,7 @@ class BaseHistGradientBoosting(BaseEstimator, ABC):
         else:
             return self._should_stop(self.train_score_)
 
-    def _score_with_raw_predictions(self, X, y, sample_weight, raw_predictions=None):
+    def _score_with_raw_predictions(self, x, y, sample_weight, raw_predictions=None):
         if raw_predictions is None:
             patcher_raw_predict = nullcontext()
         else:
@@ -1045,9 +1027,9 @@ class BaseHistGradientBoosting(BaseEstimator, ABC):
 
         with patcher_raw_predict:
             if sample_weight is None:
-                return self._scorer(self, X, y)
+                return self._scorer(self, x, y)
             else:
-                return self._scorer(self, X, y, sample_weight=sample_weight)
+                return self._scorer(self, x, y, sample_weight=sample_weight)
 
     def _check_early_stopping_loss(
         self,
@@ -1100,8 +1082,7 @@ class BaseHistGradientBoosting(BaseEstimator, ABC):
         # because of the lack of significant improvement.
         reference_score = scores[-reference_position] + self.tol
         recent_scores = scores[-reference_position + 1 :]
-        recent_improvements = [score > reference_score for score in recent_scores]
-        return not any(recent_improvements)
+        return not any(score > reference_score for score in recent_scores)
 
     def _bin_data(self, X, sample_weight, is_training_data):
         """Bin data X.
@@ -1119,20 +1100,20 @@ class BaseHistGradientBoosting(BaseEstimator, ABC):
             )
         tic = time()
         if is_training_data:
-            X_binned = self._bin_mapper.fit_transform(
+            x_binned = self._bin_mapper.fit_transform(
                 X, sample_weight=sample_weight
             )  # F-aligned array
         else:
-            X_binned = self._bin_mapper.transform(X)  # F-aligned array
+            x_binned = self._bin_mapper.transform(X)  # F-aligned array
             # We convert the array to C-contiguous since predicting is faster
             # with this layout (training is faster on F-arrays though)
-            X_binned = np.ascontiguousarray(X_binned)
+            x_binned = np.ascontiguousarray(x_binned)
         toc = time()
         if self.verbose:
             duration = toc - tic
             print("{:.3f} s".format(duration))
 
-        return X_binned
+        return x_binned
 
     def _print_iteration_stats(self, iteration_start_time):
         """Print info about the current fitting iteration."""
@@ -1643,54 +1624,39 @@ class HistGradientBoostingRegressor(RegressorMixin, BaseHistGradientBoosting):
         "quantile": [Interval(Real, 0, 1, closed="both"), None],
     }
 
-    def __init__(
-        self,
-        loss="squared_error",
-        *,
-        quantile=None,
-        learning_rate=0.1,
-        max_iter=100,
-        max_leaf_nodes=31,
-        max_depth=None,
-        min_samples_leaf=20,
-        l2_regularization=0.0,
-        max_features=1.0,
-        max_bins=255,
-        categorical_features="from_dtype",
-        monotonic_cst=None,
-        interaction_cst=None,
-        warm_start=False,
-        early_stopping="auto",
-        scoring="loss",
-        validation_fraction=0.1,
-        n_iter_no_change=10,
-        tol=1e-7,
-        verbose=0,
-        random_state=None,
-    ):
-        super().__init__(
-            loss=loss,
-            learning_rate=learning_rate,
-            max_iter=max_iter,
-            max_leaf_nodes=max_leaf_nodes,
-            max_depth=max_depth,
-            min_samples_leaf=min_samples_leaf,
-            l2_regularization=l2_regularization,
-            max_features=max_features,
-            max_bins=max_bins,
-            monotonic_cst=monotonic_cst,
-            interaction_cst=interaction_cst,
-            categorical_features=categorical_features,
-            early_stopping=early_stopping,
-            warm_start=warm_start,
-            scoring=scoring,
-            validation_fraction=validation_fraction,
-            n_iter_no_change=n_iter_no_change,
-            tol=tol,
-            verbose=verbose,
-            random_state=random_state,
-        )
+    _defaults = {
+        "learning_rate": 0.1,
+        "max_iter": 100,
+        "max_leaf_nodes": 31,
+        "max_depth": None,
+        "min_samples_leaf": 20,
+        "l2_regularization": 0.0,
+        "max_features": 1.0,
+        "max_bins": 255,
+        "categorical_features": "from_dtype",
+        "monotonic_cst": None,
+        "interaction_cst": None,
+        "warm_start": False,
+        "early_stopping": "auto",
+        "scoring": "loss",
+        "validation_fraction": 0.1,
+        "n_iter_no_change": 10,
+        "tol": 1e-7,
+        "verbose": 0,
+        "random_state": None,
+    }
+
+    def __init__(self, loss="squared_error", *, quantile=None, **kwargs):
+        common_params = {
+            name: kwargs.pop(name, default)
+            for name, default in self._defaults.items()
+        }
+        super().__init__(loss=loss, **common_params)
         self.quantile = quantile
+
+    @classmethod
+    def _get_param_names(cls):
+        return sorted(["loss", "quantile"] + cls._common_param_names)
 
     def predict(self, X):
         """Predict values for X.
@@ -1731,7 +1697,7 @@ class HistGradientBoostingRegressor(RegressorMixin, BaseHistGradientBoosting):
         for raw_predictions in self._staged_raw_predict(X):
             yield self._loss.link.inverse(raw_predictions.ravel())
 
-    def _encode_y(self, y):
+    def _encode_y(self, y=None):
         # Just convert y to the expected dtype
         self.n_trees_per_iteration_ = 1
         y = y.astype(Y_DTYPE, copy=False)
@@ -2037,54 +2003,39 @@ class HistGradientBoostingClassifier(ClassifierMixin, BaseHistGradientBoosting):
         "class_weight": [dict, StrOptions({"balanced"}), None],
     }
 
-    def __init__(
-        self,
-        loss="log_loss",
-        *,
-        learning_rate=0.1,
-        max_iter=100,
-        max_leaf_nodes=31,
-        max_depth=None,
-        min_samples_leaf=20,
-        l2_regularization=0.0,
-        max_features=1.0,
-        max_bins=255,
-        categorical_features="from_dtype",
-        monotonic_cst=None,
-        interaction_cst=None,
-        warm_start=False,
-        early_stopping="auto",
-        scoring="loss",
-        validation_fraction=0.1,
-        n_iter_no_change=10,
-        tol=1e-7,
-        verbose=0,
-        random_state=None,
-        class_weight=None,
-    ):
-        super().__init__(
-            loss=loss,
-            learning_rate=learning_rate,
-            max_iter=max_iter,
-            max_leaf_nodes=max_leaf_nodes,
-            max_depth=max_depth,
-            min_samples_leaf=min_samples_leaf,
-            l2_regularization=l2_regularization,
-            max_features=max_features,
-            max_bins=max_bins,
-            categorical_features=categorical_features,
-            monotonic_cst=monotonic_cst,
-            interaction_cst=interaction_cst,
-            warm_start=warm_start,
-            early_stopping=early_stopping,
-            scoring=scoring,
-            validation_fraction=validation_fraction,
-            n_iter_no_change=n_iter_no_change,
-            tol=tol,
-            verbose=verbose,
-            random_state=random_state,
-        )
+    _defaults = {
+        "learning_rate": 0.1,
+        "max_iter": 100,
+        "max_leaf_nodes": 31,
+        "max_depth": None,
+        "min_samples_leaf": 20,
+        "l2_regularization": 0.0,
+        "max_features": 1.0,
+        "max_bins": 255,
+        "categorical_features": "from_dtype",
+        "monotonic_cst": None,
+        "interaction_cst": None,
+        "warm_start": False,
+        "early_stopping": "auto",
+        "scoring": "loss",
+        "validation_fraction": 0.1,
+        "n_iter_no_change": 10,
+        "tol": 1e-7,
+        "verbose": 0,
+        "random_state": None,
+    }
+
+    def __init__(self, loss="log_loss", *, class_weight=None, **kwargs):
+        common_params = {
+            name: kwargs.pop(name, default)
+            for name, default in self._defaults.items()
+        }
+        super().__init__(loss=loss, **common_params)
         self.class_weight = class_weight
+
+    @classmethod
+    def _get_param_names(cls):
+        return sorted(["loss", "class_weight"] + cls._common_param_names)
 
     def _finalize_sample_weight(self, sample_weight, y):
         """Adjust sample_weights with class_weights."""
@@ -2228,7 +2179,7 @@ class HistGradientBoostingClassifier(ClassifierMixin, BaseHistGradientBoosting):
                 staged_decision = staged_decision.ravel()
             yield staged_decision
 
-    def _encode_y(self, y):
+    def _encode_y(self, y=None):
         """Create self._label_encoder and encode y correspondingly."""
         # encode classes into 0 ... n_classes - 1 and sets attributes classes_
         # and n_trees_per_iteration_
@@ -2246,7 +2197,7 @@ class HistGradientBoostingClassifier(ClassifierMixin, BaseHistGradientBoosting):
         encoded_y = encoded_y.astype(Y_DTYPE, copy=False)
         return encoded_y
 
-    def _encode_y_val(self, y):
+    def _encode_y_val(self, y=None):
         encoded_y = self._label_encoder.transform(y)
         return encoded_y.astype(Y_DTYPE, copy=False)
 
