@@ -44,14 +44,14 @@ def generate_toy_data(n_components, n_samples, image_size, random_state=None):
 
 
 def test_correct_shapes():
-    rng = np.random.RandomState(0)
-    X = rng.randn(12, 10)
-    spca = SparsePCA(n_components=8, random_state=rng)
+    rng = np.random.default_rng(0)
+    X = rng.standard_normal((12, 10))
+    spca = SparsePCA(n_components=8, random_state=0)
     U = spca.fit_transform(X)
     assert spca.components_.shape == (8, 10)
     assert U.shape == (12, 8)
     # test overcomplete decomposition
-    spca = SparsePCA(n_components=13, random_state=rng)
+    spca = SparsePCA(n_components=13, random_state=0)
     U = spca.fit_transform(X)
     assert spca.components_.shape == (13, 10)
     assert U.shape == (12, 13)
@@ -59,8 +59,7 @@ def test_correct_shapes():
 
 def test_fit_transform(global_random_seed):
     alpha = 1
-    rng = np.random.RandomState(global_random_seed)
-    Y, _, _ = generate_toy_data(3, 10, (8, 8), random_state=rng)  # wide array
+    Y, _, _ = generate_toy_data(3, 10, (8, 8), random_state=global_random_seed)  # wide array
     spca_lars = SparsePCA(
         n_components=3, method="lars", alpha=alpha, random_state=global_random_seed
     )
