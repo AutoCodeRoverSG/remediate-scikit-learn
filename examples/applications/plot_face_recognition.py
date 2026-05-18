@@ -25,6 +25,8 @@ from sklearn.model_selection import RandomizedSearchCV, train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC
 
+DONE_IN_FORMAT = "done in %0.3fs"
+
 # %%
 # Download the data, if not already on disk and load it as numpy arrays
 
@@ -71,7 +73,7 @@ print(
 )
 t0 = time()
 pca = PCA(n_components=n_components, svd_solver="randomized", whiten=True).fit(X_train)
-print("done in %0.3fs" % (time() - t0))
+print(DONE_IN_FORMAT % (time() - t0))
 
 eigenfaces = pca.components_.reshape((n_components, h, w))
 
@@ -79,7 +81,7 @@ print("Projecting the input data on the eigenfaces orthonormal basis")
 t0 = time()
 X_train_pca = pca.transform(X_train)
 X_test_pca = pca.transform(X_test)
-print("done in %0.3fs" % (time() - t0))
+print(DONE_IN_FORMAT % (time() - t0))
 
 
 # %%
@@ -95,7 +97,7 @@ clf = RandomizedSearchCV(
     SVC(kernel="rbf", class_weight="balanced"), param_grid, n_iter=10
 )
 clf = clf.fit(X_train_pca, y_train)
-print("done in %0.3fs" % (time() - t0))
+print(DONE_IN_FORMAT % (time() - t0))
 print("Best estimator found by grid search:")
 print(clf.best_estimator_)
 
@@ -106,7 +108,7 @@ print(clf.best_estimator_)
 print("Predicting people's names on the test set")
 t0 = time()
 y_pred = clf.predict(X_test_pca)
-print("done in %0.3fs" % (time() - t0))
+print(DONE_IN_FORMAT % (time() - t0))
 
 print(classification_report(y_test, y_pred, target_names=target_names))
 ConfusionMatrixDisplay.from_estimator(

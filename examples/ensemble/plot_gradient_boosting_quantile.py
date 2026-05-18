@@ -26,7 +26,7 @@ def f(x):
     return x * np.sin(x)
 
 
-rng = np.random.RandomState(42)
+rng = np.random.default_rng(42)
 X = np.atleast_2d(rng.uniform(0, 10.0, size=1000)).T
 expected_y = f(X).ravel()
 
@@ -65,13 +65,13 @@ from sklearn.ensemble import GradientBoostingRegressor
 from sklearn.metrics import mean_pinball_loss, mean_squared_error
 
 all_models = {}
-common_params = dict(
-    learning_rate=0.05,
-    n_estimators=200,
-    max_depth=2,
-    min_samples_leaf=9,
-    min_samples_split=9,
-)
+common_params = {
+    "learning_rate": 0.05,
+    "n_estimators": 200,
+    "max_depth": 2,
+    "min_samples_leaf": 9,
+    "min_samples_split": 9,
+}
 for alpha in [0.05, 0.5, 0.95]:
     gbr = GradientBoostingRegressor(loss="quantile", alpha=alpha, **common_params)
     all_models["q %1.2f" % alpha] = gbr.fit(X_train, y_train)
@@ -214,12 +214,12 @@ from sklearn.experimental import enable_halving_search_cv  # noqa: F401
 from sklearn.metrics import make_scorer
 from sklearn.model_selection import HalvingRandomSearchCV
 
-param_grid = dict(
-    learning_rate=[0.05, 0.1, 0.2],
-    max_depth=[2, 5, 10],
-    min_samples_leaf=[1, 5, 10, 20],
-    min_samples_split=[5, 10, 20, 30, 50],
-)
+param_grid = {
+    "learning_rate": [0.05, 0.1, 0.2],
+    "max_depth": [2, 5, 10],
+    "min_samples_leaf": [1, 5, 10, 20],
+    "min_samples_split": [5, 10, 20, 30, 50],
+}
 neg_mean_pinball_loss_05p_scorer = make_scorer(
     mean_pinball_loss,
     alpha=0.05,
