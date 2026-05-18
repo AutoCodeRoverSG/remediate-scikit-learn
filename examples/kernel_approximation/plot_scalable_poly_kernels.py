@@ -67,7 +67,7 @@ X_train, X_test, y_train, y_test = train_test_split(
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import MinMaxScaler, Normalizer
 
-mm = make_pipeline(MinMaxScaler(), Normalizer())
+mm = make_pipeline(MinMaxScaler(), Normalizer(), memory=None)
 X_train = mm.fit_transform(X_train)
 X_test = mm.transform(X_test)
 
@@ -127,6 +127,7 @@ for n_components in N_COMPONENTS:
         pipeline = make_pipeline(
             PolynomialCountSketch(n_components=n_components, degree=4),
             LinearSVC(),
+            memory=None,
         )
 
         start = time.time()

@@ -26,6 +26,9 @@ from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.tree import DecisionTreeRegressor
 
+DECISION_TREE_LABEL = "Decision Tree"
+MLP_LABEL = "Multi-layer Perceptron"
+
 # %%
 # Train models on the diabetes dataset
 # ================================================
@@ -41,6 +44,7 @@ tree = DecisionTreeRegressor()
 mlp = make_pipeline(
     StandardScaler(),
     MLPRegressor(hidden_layer_sizes=(100, 100), tol=1e-2, max_iter=500, random_state=0),
+    memory=None,
 )
 tree.fit(X, y)
 mlp.fit(X, y)
@@ -55,7 +59,7 @@ mlp.fit(X, y)
 # two curves. Here the plot function place a grid of two plots using the space
 # defined by `ax` .
 fig, ax = plt.subplots(figsize=(12, 6))
-ax.set_title("Decision Tree")
+ax.set_title(DECISION_TREE_LABEL)
 tree_disp = PartialDependenceDisplay.from_estimator(tree, X, ["age", "bmi"], ax=ax)
 
 # %%
@@ -64,7 +68,7 @@ tree_disp = PartialDependenceDisplay.from_estimator(tree, X, ["age", "bmi"], ax=
 # :func:`~sklearn.inspection.PartialDependenceDisplay.from_estimator` to change the
 # color of the curve.
 fig, ax = plt.subplots(figsize=(12, 6))
-ax.set_title("Multi-layer Perceptron")
+ax.set_title(MLP_LABEL)
 mlp_disp = PartialDependenceDisplay.from_estimator(
     mlp, X, ["age", "bmi"], ax=ax, line_kw={"color": "red"}
 )
@@ -90,9 +94,9 @@ mlp_disp = PartialDependenceDisplay.from_estimator(
 
 fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 10))
 tree_disp.plot(ax=ax1)
-ax1.set_title("Decision Tree")
+ax1.set_title(DECISION_TREE_LABEL)
 mlp_disp.plot(ax=ax2, line_kw={"color": "red"})
-ax2.set_title("Multi-layer Perceptron")
+ax2.set_title(MLP_LABEL)
 
 # %%
 # Another way to compare the curves is to plot them on top of each other. Here,
@@ -101,11 +105,11 @@ ax2.set_title("Multi-layer Perceptron")
 # which will plot the partial dependence curves of each model on the same axes.
 # The length of the axes list must be equal to the number of plots drawn.
 
-# sphinx_gallery_thumbnail_number = 4
+
 fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 6))
-tree_disp.plot(ax=[ax1, ax2], line_kw={"label": "Decision Tree"})
+tree_disp.plot(ax=[ax1, ax2], line_kw={"label": DECISION_TREE_LABEL})
 mlp_disp.plot(
-    ax=[ax1, ax2], line_kw={"label": "Multi-layer Perceptron", "color": "red"}
+    ax=[ax1, ax2], line_kw={"label": MLP_LABEL, "color": "red"}
 )
 ax1.legend()
 ax2.legend()
@@ -118,9 +122,9 @@ ax2.legend()
 # after calling `plot`. In this case `tree_disp.axes_` has two dimensions, thus
 # `plot` will only show the y label and y ticks on the left most plot.
 
-tree_disp.plot(line_kw={"label": "Decision Tree"})
+tree_disp.plot(line_kw={"label": DECISION_TREE_LABEL})
 mlp_disp.plot(
-    line_kw={"label": "Multi-layer Perceptron", "color": "red"}, ax=tree_disp.axes_
+    line_kw={"label": MLP_LABEL, "color": "red"}, ax=tree_disp.axes_
 )
 tree_disp.figure_.set_size_inches(10, 6)
 tree_disp.axes_[0, 0].legend()
