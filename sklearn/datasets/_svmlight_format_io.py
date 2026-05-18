@@ -432,7 +432,7 @@ def _dump_svmlight(X, y, f, multilabel, one_based, comment, query_id):
 
         f.write(b"#\n")
         f.writelines(b"# %s\n" % line for line in comment.splitlines())
-    X_is_sp = sp.issparse(X)
+    x_is_sp = sp.issparse(X)
     y_is_sp = sp.issparse(y)
     if not multilabel and not y_is_sp:
         y = y[:, np.newaxis]
@@ -443,7 +443,7 @@ def _dump_svmlight(X, y, f, multilabel, one_based, comment, query_id):
         multilabel,
         one_based,
         query_id,
-        X_is_sp,
+        x_is_sp,
         y_is_sp,
     )
 
@@ -545,11 +545,11 @@ def dump_svmlight_file(
         if yval.ndim != 1 and not multilabel:
             raise ValueError("expected y of shape (n_samples,), got %r" % (yval.shape,))
 
-    Xval = check_array(X, accept_sparse="csr")
-    if Xval.shape[0] != yval.shape[0]:
+    x_val = check_array(X, accept_sparse="csr")
+    if x_val.shape[0] != yval.shape[0]:
         raise ValueError(
             "X.shape[0] and y.shape[0] should be the same, got %r and %r instead."
-            % (Xval.shape[0], yval.shape[0])
+            % (x_val.shape[0], yval.shape[0])
         )
 
     # We had some issues with CSR matrices with unsorted indices (e.g. #1501),
@@ -562,10 +562,10 @@ def dump_svmlight_file(
         if hasattr(y, "sort_indices"):
             y.sort_indices()
 
-    if Xval is X and hasattr(Xval, "sorted_indices"):
-        X = Xval.sorted_indices()
+    if x_val is X and hasattr(x_val, "sorted_indices"):
+        X = x_val.sorted_indices()
     else:
-        X = Xval
+        X = x_val
         if hasattr(X, "sort_indices"):
             X.sort_indices()
 

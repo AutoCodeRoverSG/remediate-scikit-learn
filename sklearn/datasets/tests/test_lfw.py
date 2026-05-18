@@ -38,27 +38,34 @@ def mock_empty_data_home(tmp_path_factory):
 @pytest.fixture(scope="module")
 def mock_data_home(tmp_path_factory):
     """Test fixture run once and common to all tests of this module"""
-    Image = pytest.importorskip("PIL.Image")
+    pil_image = pytest.importorskip("PIL.Image")
 
     data_dir = tmp_path_factory.mktemp("scikit_learn_lfw_test")
     lfw_home = data_dir / "lfw_home"
     lfw_home.mkdir(parents=True, exist_ok=True)
 
     random_state = random.Random(42)
-    np_rng = np.random.RandomState(42)
+    np_rng = np.random.default_rng(42)
 
     # generate some random jpeg files for each person
-    counts = {}
+    counts = {
+        "Abdelatif_Smith": 3,
+        "Abhati_Kepler": 3,
+        "Camara_Alvaro": 2,
+        "Chen_Dupont": 2,
+        "John_Lee": 1,
+        "Lin_Bauman": 2,
+        "Onur_Lopez": 4,
+    }
     for name in FAKE_NAMES:
         folder_name = lfw_home / "lfw_funneled" / name
         folder_name.mkdir(parents=True, exist_ok=True)
 
-        n_faces = np_rng.randint(1, 5)
-        counts[name] = n_faces
+        n_faces = counts[name]
         for i in range(n_faces):
             file_path = folder_name / (name + "_%04d.jpg" % i)
-            uniface = np_rng.randint(0, 255, size=(250, 250, 3))
-            img = Image.fromarray(uniface.astype(np.uint8))
+            uniface = np_rng.integers(0, 255, size=(250, 250, 3))
+            img = pil_image.fromarray(uniface.astype(np.uint8))
             img.save(file_path)
 
     # add some random file pollution to test robustness

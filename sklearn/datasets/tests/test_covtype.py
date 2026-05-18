@@ -45,8 +45,8 @@ def test_fetch_asframe(fetch_covtype_fxt):
     column_names = set(frame.columns)
 
     # enumerated names are added correctly
-    assert set(f"Wilderness_Area_{i}" for i in range(4)) < column_names
-    assert set(f"Soil_Type_{i}" for i in range(40)) < column_names
+    assert {f"Wilderness_Area_{i}" for i in range(4)} < column_names
+    assert {f"Soil_Type_{i}" for i in range(40)} < column_names
 
 
 def test_pandas_dependency_message(fetch_covtype_fxt, hide_available_pandas):
