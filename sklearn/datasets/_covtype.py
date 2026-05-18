@@ -200,10 +200,10 @@ def fetch_covtype(
             archive_path = _fetch_remote(
                 ARCHIVE, dirname=temp_dir, n_retries=n_retries, delay=delay
             )
-            Xy = np.genfromtxt(GzipFile(filename=archive_path), delimiter=",")
+            xy = np.genfromtxt(GzipFile(filename=archive_path), delimiter=",")
 
-            X = Xy[:, :-1]
-            y = Xy[:, -1].astype(np.int32, copy=False)
+            X = xy[:, :-1]
+            y = xy[:, -1].astype(np.int32, copy=False)
 
             samples_tmp_path = _pkl_filepath(temp_dir, "samples")
             joblib.dump(X, samples_tmp_path, compress=9)
