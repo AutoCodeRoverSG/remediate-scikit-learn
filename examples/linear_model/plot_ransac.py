@@ -37,9 +37,9 @@ X, y, coef = datasets.make_regression(
 )
 
 # Add outlier data
-np.random.seed(0)
-X[:n_outliers] = 3 + 0.5 * np.random.normal(size=(n_outliers, 1))
-y[:n_outliers] = -3 + 10 * np.random.normal(size=n_outliers)
+rng = np.random.default_rng(0)
+X[:n_outliers] = 3 + 0.5 * rng.normal(size=(n_outliers, 1))
+y[:n_outliers] = -3 + 10 * rng.normal(size=n_outliers)
 
 # Fit line using all data
 lr = linear_model.LinearRegression()

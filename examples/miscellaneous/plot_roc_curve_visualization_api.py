@@ -55,7 +55,7 @@ rfc = RandomForestClassifier(n_estimators=10, random_state=42)
 rfc.fit(X_train, y_train)
 ax = plt.gca()
 rfc_disp = RocCurveDisplay.from_estimator(
-    rfc, X_test, y_test, ax=ax, curve_kwargs=dict(alpha=0.8)
+    rfc, X_test, y_test, ax=ax, curve_kwargs={"alpha": 0.8}
 )
-svc_disp.plot(ax=ax, curve_kwargs=dict(alpha=0.8))
+svc_disp.plot(ax=ax, curve_kwargs={"alpha": 0.8})
 plt.show()
