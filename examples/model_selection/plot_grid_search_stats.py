@@ -416,7 +416,7 @@ for interval in intervals:
 cred_int_df = pd.DataFrame(
     cred_intervals, columns=["interval", "lower value", "upper value"]
 ).set_index("interval")
-cred_int_df
+print(cred_int_df)
 
 # %%
 # As shown in the table, there is a 50% probability that the true mean
@@ -465,7 +465,7 @@ for model_i, model_k in combinations(range(len(model_scores)), 2):
 pairwise_comp_df = pd.DataFrame(
     pairwise_t_test, columns=["model_1", "model_2", "t_stat", "p_val"]
 ).round(3)
-pairwise_comp_df
+print(pairwise_comp_df)
 
 # %%
 # We observe that after correcting for multiple comparisons, the only model
@@ -503,8 +503,8 @@ pairwise_bayesian_df = pd.DataFrame(
     pairwise_bayesian, columns=["worse_prob", "better_prob", "rope_prob"]
 ).round(3)
 
-pairwise_comp_df = pairwise_comp_df.join(pairwise_bayesian_df)
-pairwise_comp_df
+pairwise_comp_df = pd.concat([pairwise_comp_df, pairwise_bayesian_df], axis=1)
+print(pairwise_comp_df)
 
 # %%
 # Using the Bayesian approach we can compute the probability that a model
