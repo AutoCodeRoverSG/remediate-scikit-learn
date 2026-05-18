@@ -537,10 +537,10 @@ def test_column_transformer_sparse_stacking(csr_container, constructor_name):
         sparse_threshold=0.8,
     )
     col_trans.fit(X)
-    X_trans = col_trans.transform(X)
-    assert sparse.issparse(X_trans)
-    assert X_trans.shape == (X_trans.shape[0], X_trans.shape[0] + 1)
-    assert_array_equal(X_trans.toarray()[:, 1:], np.eye(X_trans.shape[0]))
+    x_trans = col_trans.transform(X)
+    assert sparse.issparse(x_trans)
+    assert x_trans.shape == (x_trans.shape[0], x_trans.shape[0] + 1)
+    assert_array_equal(x_trans.toarray()[:, 1:], np.eye(x_trans.shape[0]))
     assert len(col_trans.transformers_) == 2
     assert col_trans.transformers_[-1][0] != "remainder"
 
@@ -549,10 +549,10 @@ def test_column_transformer_sparse_stacking(csr_container, constructor_name):
         sparse_threshold=0.1,
     )
     col_trans.fit(X)
-    X_trans = col_trans.transform(X)
-    assert not sparse.issparse(X_trans)
-    assert X_trans.shape == (X_trans.shape[0], X_trans.shape[0] + 1)
-    assert_array_equal(X_trans[:, 1:], np.eye(X_trans.shape[0]))
+    x_trans = col_trans.transform(X)
+    assert not sparse.issparse(x_trans)
+    assert x_trans.shape == (x_trans.shape[0], x_trans.shape[0] + 1)
+    assert_array_equal(x_trans[:, 1:], np.eye(x_trans.shape[0]))
 
 
 def test_column_transformer_mixed_cols_sparse():
@@ -564,9 +564,9 @@ def test_column_transformer_mixed_cols_sparse():
 
     # this shouldn't fail, since boolean can be coerced into a numeric
     # See: https://github.com/scikit-learn/scikit-learn/issues/11912
-    X_trans = ct.fit_transform(df)
-    assert X_trans.format == "csr"
-    assert_array_equal(X_trans.toarray(), np.array([[1, 0, 1, 1], [0, 1, 2, 0]]))
+    x_trans = ct.fit_transform(df)
+    assert x_trans.format == "csr"
+    assert_array_equal(x_trans.toarray(), np.array([[1, 0, 1, 1], [0, 1, 2, 0]]))
 
     ct = make_column_transformer(
         (OneHotEncoder(), [0]), ("passthrough", [0]), sparse_threshold=1.0
@@ -578,7 +578,7 @@ def test_column_transformer_mixed_cols_sparse():
 
 
 def test_column_transformer_sparse_threshold():
-    X_array = np.array([["a", "b"], ["A", "B"]], dtype=object).T
+    x_array = np.array([["a", "b"], ["A", "B"]], dtype=object).T
     # above data has sparsity of 4 / 8 = 0.5
 
     # apply threshold even if all sparse
@@ -586,7 +586,7 @@ def test_column_transformer_sparse_threshold():
         [("trans1", OneHotEncoder(), [0]), ("trans2", OneHotEncoder(), [1])],
         sparse_threshold=0.2,
     )
-    res = col_trans.fit_transform(X_array)
+    res = col_trans.fit_transform(x_array)
     assert not sparse.issparse(res)
     assert not col_trans.sparse_output_
 
@@ -599,7 +599,7 @@ def test_column_transformer_sparse_threshold():
             ],
             sparse_threshold=thres,
         )
-        res = col_trans.fit_transform(X_array)
+        res = col_trans.fit_transform(x_array)
         assert sparse.issparse(res)
         assert col_trans.sparse_output_
 
@@ -611,7 +611,7 @@ def test_column_transformer_sparse_threshold():
             ],
             sparse_threshold=thres,
         )
-        res = col_trans.fit_transform(X_array)
+        res = col_trans.fit_transform(x_array)
         assert not sparse.issparse(res)
         assert not col_trans.sparse_output_
 
@@ -624,83 +624,83 @@ def test_column_transformer_sparse_threshold():
             ],
             sparse_threshold=thres,
         )
-        res = col_trans.fit_transform(X_array)
+        res = col_trans.fit_transform(x_array)
         assert not sparse.issparse(res)
         assert not col_trans.sparse_output_
 
 
 def test_column_transformer_error_msg_1D():
-    X_array = np.array([[0.0, 1.0, 2.0], [2.0, 4.0, 6.0]]).T
+    x_array = np.array([[0.0, 1.0, 2.0], [2.0, 4.0, 6.0]]).T
 
     col_trans = ColumnTransformer([("trans", StandardScaler(), 0)])
     msg = "1D data passed to a transformer"
     with pytest.raises(ValueError, match=msg):
-        col_trans.fit(X_array)
+        col_trans.fit(x_array)
 
     with pytest.raises(ValueError, match=msg):
-        col_trans.fit_transform(X_array)
+        col_trans.fit_transform(x_array)
 
     col_trans = ColumnTransformer([("trans", TransRaise(), 0)])
     for func in [col_trans.fit, col_trans.fit_transform]:
         with pytest.raises(ValueError, match="specific message"):
-            func(X_array)
+            func(x_array)
 
 
 def test_2D_transformer_output():
-    X_array = np.array([[0, 1, 2], [2, 4, 6]]).T
+    x_array = np.array([[0, 1, 2], [2, 4, 6]]).T
 
     # if one transformer is dropped, test that name is still correct
     ct = ColumnTransformer([("trans1", "drop", 0), ("trans2", TransNo2D(), 1)])
 
     msg = "the 'trans2' transformer should be 2D"
     with pytest.raises(ValueError, match=msg):
-        ct.fit_transform(X_array)
+        ct.fit_transform(x_array)
     # because fit is also doing transform, this raises already on fit
     with pytest.raises(ValueError, match=msg):
-        ct.fit(X_array)
+        ct.fit(x_array)
 
 
 def test_2D_transformer_output_pandas():
     pd = pytest.importorskip("pandas")
 
-    X_array = np.array([[0, 1, 2], [2, 4, 6]]).T
-    X_df = pd.DataFrame(X_array, columns=["col1", "col2"])
+    x_array = np.array([[0, 1, 2], [2, 4, 6]]).T
+    x_df = pd.DataFrame(x_array, columns=["col1", "col2"])
 
     # if one transformer is dropped, test that name is still correct
     ct = ColumnTransformer([("trans1", TransNo2D(), "col1")])
     msg = "the 'trans1' transformer should be 2D"
     with pytest.raises(ValueError, match=msg):
-        ct.fit_transform(X_df)
+        ct.fit_transform(x_df)
     # because fit is also doing transform, this raises already on fit
     with pytest.raises(ValueError, match=msg):
-        ct.fit(X_df)
+        ct.fit(x_df)
 
 
 @pytest.mark.parametrize("remainder", ["drop", "passthrough"])
 def test_column_transformer_invalid_columns(remainder):
-    X_array = np.array([[0, 1, 2], [2, 4, 6]]).T
+    x_array = np.array([[0, 1, 2], [2, 4, 6]]).T
 
     # general invalid
     for col in [1.5, ["string", 1], slice(1, "s"), np.array([1.0])]:
         ct = ColumnTransformer([("trans", Trans(), col)], remainder=remainder)
         with pytest.raises(ValueError, match="No valid specification"):
-            ct.fit(X_array)
+            ct.fit(x_array)
 
     # invalid for arrays
     for col in ["string", ["string", "other"], slice("a", "b")]:
         ct = ColumnTransformer([("trans", Trans(), col)], remainder=remainder)
         with pytest.raises(ValueError, match="Specifying the columns"):
-            ct.fit(X_array)
+            ct.fit(x_array)
 
     # transformed n_features does not match fitted n_features
     col = [0, 1]
     ct = ColumnTransformer([("trans", Trans(), col)], remainder=remainder)
-    ct.fit(X_array)
-    X_array_more = np.array([[0, 1, 2], [2, 4, 6], [3, 6, 9]]).T
+    ct.fit(x_array)
+    x_array_more = np.array([[0, 1, 2], [2, 4, 6], [3, 6, 9]]).T
     msg = "X has 3 features, but ColumnTransformer is expecting 2 features as input."
     with pytest.raises(ValueError, match=msg):
-        ct.transform(X_array_more)
-    X_array_fewer = np.array(
+        ct.transform(x_array_more)
+    x_array_fewer = np.array(
         [
             [0, 1, 2],
         ]
@@ -709,7 +709,7 @@ def test_column_transformer_invalid_columns(remainder):
         "X has 1 features, but ColumnTransformer is expecting 2 features as input."
     )
     with pytest.raises(ValueError, match=err_msg):
-        ct.transform(X_array_fewer)
+        ct.transform(x_array_fewer)
 
 
 def test_column_transformer_invalid_transformer():
