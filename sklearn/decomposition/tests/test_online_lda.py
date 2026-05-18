@@ -94,37 +94,35 @@ def test_lda_fit_online(csr_container):
 def test_lda_partial_fit(csr_container):
     # Test LDA online learning (`partial_fit` method)
     # (same as test_lda_batch)
-    rng = np.random.RandomState(0)
     n_components, X = _build_sparse_array(csr_container)
     lda = LatentDirichletAllocation(
         n_components=n_components,
         learning_offset=10.0,
         total_samples=100,
-        random_state=rng,
+        random_state=0,
     )
-    for i in range(3):
+    for _ in range(3):
         lda.partial_fit(X)
 
     correct_idx_grps = [(0, 1, 2), (3, 4, 5), (6, 7, 8)]
     for c in lda.components_:
-        top_idx = set(c.argsort()[-3:][::-1])
+        top_idx = set(c.argsort()[-3:])
         assert tuple(sorted(top_idx)) in correct_idx_grps
 
 
 @pytest.mark.parametrize("csr_container", CSR_CONTAINERS)
 def test_lda_dense_input(csr_container):
     # Test LDA with dense input.
-    rng = np.random.RandomState(0)
     n_components, X = _build_sparse_array(csr_container)
     lda = LatentDirichletAllocation(
-        n_components=n_components, learning_method="batch", random_state=rng
+        n_components=n_components, learning_method="batch", random_state=0
     )
     lda.fit(X.toarray())
 
     correct_idx_grps = [(0, 1, 2), (3, 4, 5), (6, 7, 8)]
     for component in lda.components_:
         # Find top 3 words in each LDA component
-        top_idx = set(component.argsort()[-3:][::-1])
+        top_idx = set(component.argsort()[-3:])
         assert tuple(sorted(top_idx)) in correct_idx_grps
 
 
@@ -135,13 +133,13 @@ def test_lda_transform():
     X = rng.randint(5, size=(20, 10))
     n_components = 3
     lda = LatentDirichletAllocation(n_components=n_components, random_state=rng)
-    X_trans = lda.fit_transform(X)
-    assert (X_trans > 0.0).any()
-    assert_array_almost_equal(np.sum(X_trans, axis=1), np.ones(X_trans.shape[0]))
+    x_trans = lda.fit_transform(X)
+    assert (x_trans > 0.0).any()
+    assert_array_almost_equal(np.sum(x_trans, axis=1), np.ones(x_trans.shape[0]))
 
-    X_trans_unnormalized = lda.transform(X, normalize=False)
+    x_trans_unnormalized = lda.transform(X, normalize=False)
     assert_array_almost_equal(
-        X_trans, X_trans_unnormalized / X_trans_unnormalized.sum(axis=1)[:, np.newaxis]
+        x_trans, x_trans_unnormalized / x_trans_unnormalized.sum(axis=1)[:, np.newaxis]
     )
 
 
@@ -154,9 +152,9 @@ def test_lda_fit_transform(method):
     lda = LatentDirichletAllocation(
         n_components=5, learning_method=method, random_state=rng
     )
-    X_fit = lda.fit_transform(X)
-    X_trans = lda.transform(X)
-    assert_array_almost_equal(X_fit, X_trans, 4)
+    x_fit = lda.fit_transform(X)
+    x_trans = lda.transform(X)
+    assert_array_almost_equal(x_fit, x_trans, 4)
 
 
 def test_lda_negative_input():
@@ -223,7 +221,7 @@ def test_lda_partial_fit_multi_jobs(csr_container):
         total_samples=30,
         random_state=rng,
     )
-    for i in range(2):
+    for _ in range(2):
         lda.partial_fit(X)
 
     correct_idx_grps = [(0, 1, 2), (3, 4, 5), (6, 7, 8)]
