@@ -148,7 +148,8 @@ dummy = Pipeline(
     [
         ("preprocessor", linear_model_preprocessor),
         ("regressor", DummyRegressor(strategy="mean")),
-    ]
+    ],
+    memory=None,
 ).fit(df_train, df_train["Frequency"], regressor__sample_weight=df_train["Exposure"])
 
 
@@ -219,7 +220,8 @@ ridge_glm = Pipeline(
     [
         ("preprocessor", linear_model_preprocessor),
         ("regressor", Ridge(alpha=1e-6)),
-    ]
+    ],
+    memory=None,
 ).fit(df_train, df_train["Frequency"], regressor__sample_weight=df_train["Exposure"])
 
 # %%
@@ -253,7 +255,8 @@ poisson_glm = Pipeline(
     [
         ("preprocessor", linear_model_preprocessor),
         ("regressor", PoissonRegressor(alpha=1e-12, solver="newton-cholesky")),
-    ]
+    ],
+    memory=None,
 )
 poisson_glm.fit(
     df_train, df_train["Frequency"], regressor__sample_weight=df_train["Exposure"]

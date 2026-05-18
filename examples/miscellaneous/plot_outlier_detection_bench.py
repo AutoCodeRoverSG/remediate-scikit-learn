@@ -75,7 +75,7 @@ def make_estimator(name, categorical_columns=None, iforest_kw=None, lof_kw=None)
                 remainder="passthrough",
             )
 
-    return make_pipeline(preprocessor, outlier_detector)
+    return make_pipeline(preprocessor, outlier_detector, memory=None)
 
 
 # %%
@@ -338,7 +338,7 @@ y = y_true["forestcover"]
 
 n_samples = X.shape[0]
 n_neighbors_list = (n_samples * np.array([0.2, 0.02, 0.01, 0.001])).astype(np.int32)
-model = make_pipeline(RobustScaler(), LocalOutlierFactor())
+model = make_pipeline(RobustScaler(), LocalOutlierFactor(), memory=None)
 
 linestyles = ["solid", "dashed", "dashdot", ":", (5, (10, 3))]
 
@@ -355,7 +355,7 @@ for model_idx, (linestyle, n_neighbors) in enumerate(zip(linestyles, n_neighbors
         ax=ax,
         plot_chance_level=(model_idx == len(n_neighbors_list) - 1),
         chance_level_kw={"linestyle": (0, (1, 10))},
-        curve_kwargs=dict(linestyle=linestyle, linewidth=2),
+        curve_kwargs={"linestyle": linestyle, "linewidth": 2},
     )
 _ = ax.set_title("RobustScaler with varying n_neighbors\non forestcover dataset")
 
@@ -383,7 +383,7 @@ fig, ax = plt.subplots()
 for model_idx, (linestyle, preprocessor) in enumerate(
     zip(linestyles, preprocessor_list)
 ):
-    model = make_pipeline(preprocessor, lof)
+    model = make_pipeline(preprocessor, lof, memory=None)
     model.fit(X)
     y_score = model[-1].negative_outlier_factor_
     display = RocCurveDisplay.from_predictions(
@@ -394,7 +394,7 @@ for model_idx, (linestyle, preprocessor) in enumerate(
         ax=ax,
         plot_chance_level=(model_idx == len(preprocessor_list) - 1),
         chance_level_kw={"linestyle": (0, (1, 10))},
-        curve_kwargs=dict(linestyle=linestyle, linewidth=2),
+        curve_kwargs={"linestyle": linestyle, "linewidth": 2},
     )
 _ = ax.set_title("Fixed n_neighbors with varying preprocessing\non forestcover dataset")
 
@@ -434,7 +434,7 @@ fig, ax = plt.subplots()
 for model_idx, (linestyle, preprocessor) in enumerate(
     zip(linestyles, preprocessor_list)
 ):
-    model = make_pipeline(preprocessor, lof)
+    model = make_pipeline(preprocessor, lof, memory=None)
     model.fit(X)
     y_score = model[-1].negative_outlier_factor_
     display = RocCurveDisplay.from_predictions(
@@ -445,7 +445,7 @@ for model_idx, (linestyle, preprocessor) in enumerate(
         ax=ax,
         plot_chance_level=(model_idx == len(preprocessor_list) - 1),
         chance_level_kw={"linestyle": (0, (1, 10))},
-        curve_kwargs=dict(linestyle=linestyle, linewidth=2),
+        curve_kwargs={"linestyle": linestyle, "linewidth": 2},
     )
 ax.set_title(
     "Fixed n_neighbors with varying preprocessing\non cardiotocography dataset"
