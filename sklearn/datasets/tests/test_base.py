@@ -94,8 +94,9 @@ def test_data_home(path_container, data_home):
     # get_data_home will point to a pre-existing folder
     if path_container is not None:
         data_home = path_container(data_home)
+    expected_data_home = str(os.fspath(data_home))
     data_home = get_data_home(data_home=data_home)
-    assert data_home == data_home
+    assert data_home == expected_data_home
     assert os.path.exists(data_home)
 
     # clear_data_home will delete both the content and the folder it-self
@@ -158,7 +159,7 @@ def test_load_files_allowed_extensions(tmp_path, allowed_extensions):
     for p in paths:
         p.write_bytes(b"hello")
     res = load_files(tmp_path, allowed_extensions=allowed_extensions)
-    assert set([str(p) for p in paths if p.suffix in allowed_extensions]) == set(
+    assert {str(p) for p in paths if p.suffix in allowed_extensions} == set(
         res.filenames
     )
 
@@ -301,11 +302,9 @@ def test_loader(loader_func, data_shape, target_shape, n_target, has_descr, file
     if filenames:
         assert "data_module" in bunch
         assert all(
-            [
-                f in bunch
-                and (resources.files(bunch["data_module"]) / bunch[f]).is_file()
-                for f in filenames
-            ]
+            f in bunch
+            and (resources.files(bunch["data_module"]) / bunch[f]).is_file()
+            for f in filenames
         )
 
 

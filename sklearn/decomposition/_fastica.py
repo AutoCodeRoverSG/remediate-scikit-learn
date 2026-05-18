@@ -58,19 +58,19 @@ def _gs_decorrelation(w, w_matrix, j):
     return w
 
 
-def _sym_decorrelation(W):
+def _sym_decorrelation(w):
     """Symmetric decorrelation
     i.e. W <- (W * W.T) ^{-1/2} * W
     """
-    s, u = linalg.eigh(np.dot(W, W.T))
+    s, u = linalg.eigh(np.dot(w, w.T))
     # Avoid sqrt of negative values because of rounding errors. Note that
     # np.sqrt(tiny) is larger than tiny and therefore this clipping also
     # prevents division by zero in the next step.
-    s = np.clip(s, a_min=np.finfo(W.dtype).tiny, a_max=None)
+    s = np.clip(s, a_min=np.finfo(w.dtype).tiny, a_max=None)
 
     # u (resp. s) contains the eigenvectors (resp. square roots of
     # the eigenvalues) of W * W.T
-    return np.linalg.multi_dot([u * (1.0 / np.sqrt(s)), u.T, W])
+    return np.linalg.multi_dot([u * (1.0 / np.sqrt(s)), u.T, w])
 
 
 def _ica_def(X, tol, g, fun_args, max_iter, w_init):
@@ -171,9 +171,8 @@ def _cube(x, fun_args):
 @validate_params(
     {
         "X": ["array-like"],
-        "return_X_mean": ["boolean"],
+        "return_x_mean": ["boolean"],
         "compute_sources": ["boolean"],
-        "return_n_iter": ["boolean"],
     },
     prefer_skip_nested_validation=False,
 )
@@ -190,9 +189,8 @@ def fastica(
     w_init=None,
     whiten_solver="svd",
     random_state=None,
-    return_X_mean=False,
+    return_x_mean=False,
     compute_sources=True,
-    return_n_iter=False,
 ):
     """Perform Fast Independent Component Analysis.
 
@@ -358,16 +356,14 @@ def fastica(
 
     if est.whiten in ["unit-variance", "arbitrary-variance"]:
         K = est.whitening_
-        X_mean = est.mean_
+        x_mean = est.mean_
     else:
         K = None
-        X_mean = None
+        x_mean = None
 
     returned_values = [K, est._unmixing, S]
-    if return_X_mean:
-        returned_values.append(X_mean)
-    if return_n_iter:
-        returned_values.append(est.n_iter_)
+    if return_x_mean:
+        returned_values.append(x_mean)
 
     return returned_values
 
@@ -609,8 +605,8 @@ class FastICA(ClassNamePrefixFeaturesOutMixin, TransformerMixin, BaseEstimator):
 
         if self.whiten:
             # Centering the features of X
-            X_mean = XT.mean(axis=-1)
-            XT -= X_mean[:, np.newaxis]
+            x_mean = XT.mean(axis=-1)
+            XT -= x_mean[:, np.newaxis]
 
             # Whitening and preprocessing by PCA
             if self.whiten_solver == "eigh":
@@ -687,12 +683,12 @@ class FastICA(ClassNamePrefixFeaturesOutMixin, TransformerMixin, BaseEstimator):
             if self.whiten == "unit-variance":
                 if not compute_sources:
                     S = np.linalg.multi_dot([W, K, XT]).T
-                S_std = np.std(S, axis=0, keepdims=True)
-                S /= S_std
-                W /= S_std.T
+                s_std = np.std(S, axis=0, keepdims=True)
+                S /= s_std
+                W /= s_std.T
 
             self.components_ = np.dot(W, K)
-            self.mean_ = X_mean
+            self.mean_ = x_mean
             self.whitening_ = K
         else:
             self.components_ = W

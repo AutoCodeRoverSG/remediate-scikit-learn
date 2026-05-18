@@ -69,7 +69,7 @@ TARGET_NAMES = ["Cover_Type"]
         "download_if_missing": ["boolean"],
         "random_state": ["random_state"],
         "shuffle": ["boolean"],
-        "return_X_y": ["boolean"],
+        "return_x_y": ["boolean"],
         "as_frame": ["boolean"],
         "n_retries": [Interval(Integral, 1, None, closed="left")],
         "delay": [Interval(Real, 0.0, None, closed="neither")],
@@ -82,7 +82,7 @@ def fetch_covtype(
     download_if_missing=True,
     random_state=None,
     shuffle=False,
-    return_X_y=False,
+    return_x_y=False,
     as_frame=False,
     n_retries=3,
     delay=1.0,
@@ -239,7 +239,7 @@ def fetch_covtype(
             feature_names=FEATURE_NAMES,
             target_names=TARGET_NAMES,
         )
-    if return_X_y:
+    if return_x_y:
         return X, y
 
     return Bunch(
