@@ -129,10 +129,10 @@ def test_lda_dense_input(csr_container):
 def test_lda_transform():
     # Test LDA transform.
     # Transform result cannot be negative and should be normalized by default
-    rng = np.random.RandomState(0)
-    X = rng.randint(5, size=(20, 10))
+    rng = np.random.default_rng(0)
+    X = rng.integers(5, size=(20, 10))
     n_components = 3
-    lda = LatentDirichletAllocation(n_components=n_components, random_state=rng)
+    lda = LatentDirichletAllocation(n_components=n_components, random_state=0)
     x_trans = lda.fit_transform(X)
     assert (x_trans > 0.0).any()
     assert_array_almost_equal(np.sum(x_trans, axis=1), np.ones(x_trans.shape[0]))
@@ -147,10 +147,10 @@ def test_lda_transform():
 def test_lda_fit_transform(method):
     # Test LDA fit_transform & transform
     # fit_transform and transform result should be the same
-    rng = np.random.RandomState(0)
-    X = rng.randint(10, size=(50, 20))
+    rng = np.random.default_rng(0)
+    X = rng.integers(10, size=(50, 20))
     lda = LatentDirichletAllocation(
-        n_components=5, learning_method=method, random_state=rng
+        n_components=5, learning_method=method, random_state=0
     )
     x_fit = lda.fit_transform(X)
     x_trans = lda.transform(X)
@@ -168,8 +168,8 @@ def test_lda_negative_input():
 
 def test_lda_no_component_error():
     # test `perplexity` before `fit`
-    rng = np.random.RandomState(0)
-    X = rng.randint(4, size=(20, 10))
+    rng = np.random.default_rng(0)
+    X = rng.integers(4, size=(20, 10))
     lda = LatentDirichletAllocation()
     regex = (
         "This LatentDirichletAllocation instance is not fitted yet. "
@@ -189,19 +189,18 @@ def test_lda_no_component_error():
 def test_lda_multi_jobs(method, csr_container):
     n_components, X = _build_sparse_array(csr_container)
     # Test LDA batch training with multi CPU
-    rng = np.random.RandomState(0)
     lda = LatentDirichletAllocation(
         n_components=n_components,
         n_jobs=2,
         learning_method=method,
         evaluate_every=1,
-        random_state=rng,
+        random_state=0,
     )
     lda.fit(X)
 
     correct_idx_grps = [(0, 1, 2), (3, 4, 5), (6, 7, 8)]
     for c in lda.components_:
-        top_idx = set(c.argsort()[-3:][::-1])
+        top_idx = set(c.argsort()[-3:])
         assert tuple(sorted(top_idx)) in correct_idx_grps
 
 
@@ -212,43 +211,42 @@ def test_lda_multi_jobs(method, csr_container):
 @pytest.mark.parametrize("csr_container", CSR_CONTAINERS)
 def test_lda_partial_fit_multi_jobs(csr_container):
     # Test LDA online training with multi CPU
-    rng = np.random.RandomState(0)
     n_components, X = _build_sparse_array(csr_container)
     lda = LatentDirichletAllocation(
         n_components=n_components,
         n_jobs=2,
         learning_offset=5.0,
         total_samples=30,
-        random_state=rng,
+        random_state=0,
     )
     for _ in range(2):
         lda.partial_fit(X)
 
     correct_idx_grps = [(0, 1, 2), (3, 4, 5), (6, 7, 8)]
     for c in lda.components_:
-        top_idx = set(c.argsort()[-3:][::-1])
+        top_idx = set(c.argsort()[-3:])
         assert tuple(sorted(top_idx)) in correct_idx_grps
 
 
 def test_lda_preplexity_mismatch():
     # test dimension mismatch in `perplexity` method
-    rng = np.random.RandomState(0)
-    n_components = rng.randint(3, 6)
-    n_samples = rng.randint(6, 10)
-    X = np.random.randint(4, size=(n_samples, 10))
+    rng = np.random.default_rng(0)
+    n_components = int(rng.integers(3, 6))
+    n_samples = int(rng.integers(6, 10))
+    X = rng.integers(4, size=(n_samples, 10))
     lda = LatentDirichletAllocation(
         n_components=n_components,
         learning_offset=5.0,
         total_samples=20,
-        random_state=rng,
+        random_state=0,
     )
     lda.fit(X)
     # invalid samples
-    invalid_n_samples = rng.randint(4, size=(n_samples + 1, n_components))
+    invalid_n_samples = rng.integers(4, size=(n_samples + 1, n_components))
     with pytest.raises(ValueError, match=r"Number of samples"):
         lda._perplexity_precomp_distr(X, invalid_n_samples)
     # invalid topic number
-    invalid_n_components = rng.randint(4, size=(n_samples, n_components + 1))
+    invalid_n_components = rng.integers(4, size=(n_samples, n_components + 1))
     with pytest.raises(ValueError, match=r"Number of topics"):
         lda._perplexity_precomp_distr(X, invalid_n_components)
 
@@ -456,7 +454,7 @@ def test_lda_feature_names_out(csr_container):
 @pytest.mark.parametrize("learning_method", ("batch", "online"))
 def test_lda_dtype_match(learning_method, global_dtype):
     """Check data type preservation of fitted attributes."""
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
     X = rng.uniform(size=(20, 10)).astype(global_dtype, copy=False)
 
     lda = LatentDirichletAllocation(
