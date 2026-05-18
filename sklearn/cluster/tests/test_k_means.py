@@ -776,7 +776,7 @@ def test_n_init(global_random_seed):
 
 def test_k_means_function(global_random_seed):
     # test calling the k_means function directly
-    cluster_centers, labels, inertia = k_means(
+    cluster_centers, labels, inertia, n_iter = k_means(
         X, n_clusters=n_clusters, sample_weight=None, random_state=global_random_seed
     )
 

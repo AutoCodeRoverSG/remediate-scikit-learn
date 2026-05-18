@@ -59,6 +59,8 @@ from sklearn.utils.validation import (
 ###############################################################################
 # Initialization heuristic
 
+_KMEANS_PLUS_PLUS = "k-means++"
+
 
 @validate_params(
     {
@@ -306,7 +308,7 @@ def k_means(
     n_clusters,
     *,
     sample_weight=None,
-    init="k-means++",
+    init=_KMEANS_PLUS_PLUS,
     n_init="auto",
     max_iter=300,
     verbose=False,
@@ -453,10 +455,7 @@ def k_means(
         copy_x=copy_x,
         algorithm=algorithm,
     ).fit(X, sample_weight=sample_weight)
-    if return_n_iter:
-        return est.cluster_centers_, est.labels_, est.inertia_, est.n_iter_
-    else:
-        return est.cluster_centers_, est.labels_, est.inertia_
+    return est.cluster_centers_, est.labels_, est.inertia_, est.n_iter_
 
 
 def _kmeans_single_elkan(
@@ -841,7 +840,7 @@ class _BaseKMeans(
 
     _parameter_constraints: dict = {
         "n_clusters": [Interval(Integral, 1, None, closed="left")],
-        "init": [StrOptions({"k-means++", "random"}), callable, "array-like"],
+        "init": [StrOptions({_KMEANS_PLUS_PLUS, "random"}), callable, "array-like"],
         "n_init": [
             StrOptions({"auto"}),
             Interval(Integral, 1, None, closed="left"),
@@ -883,7 +882,7 @@ class _BaseKMeans(
 
         # n-init
         if self.n_init == "auto":
-            if isinstance(self.init, str) and self.init == "k-means++":
+            if isinstance(self.init, str) and self.init == _KMEANS_PLUS_PLUS:
                 self._n_init = 1
             elif isinstance(self.init, str) and self.init == "random":
                 self._n_init = default_n_init
@@ -1019,7 +1018,7 @@ class _BaseKMeans(
             n_samples = X.shape[0]
             sample_weight = sample_weight[init_indices]
 
-        if isinstance(init, str) and init == "k-means++":
+        if isinstance(init, str) and init == _KMEANS_PLUS_PLUS:
             centers, _ = _kmeans_plusplus(
                 X,
                 n_clusters,
@@ -1387,7 +1386,7 @@ class KMeans(_BaseKMeans):
         self,
         n_clusters=8,
         *,
-        init="k-means++",
+        init=_KMEANS_PLUS_PLUS,
         n_init="auto",
         max_iter=300,
         tol=1e-4,
@@ -1409,8 +1408,8 @@ class KMeans(_BaseKMeans):
         self.copy_x = copy_x
         self.algorithm = algorithm
 
-    def _check_params_vs_input(self, X):
-        super()._check_params_vs_input(X, default_n_init=10)
+    def _check_params_vs_input(self, X, default_n_init=10):
+        super()._check_params_vs_input(X, default_n_init=default_n_init)
 
         self._algorithm = self.algorithm
         if self._algorithm == "elkan" and self.n_clusters == 1:
@@ -1901,7 +1900,7 @@ class MiniBatchKMeans(_BaseKMeans):
         self,
         n_clusters=8,
         *,
-        init="k-means++",
+        init=_KMEANS_PLUS_PLUS,
         max_iter=100,
         batch_size=1024,
         verbose=0,
@@ -1929,8 +1928,8 @@ class MiniBatchKMeans(_BaseKMeans):
         self.init_size = init_size
         self.reassignment_ratio = reassignment_ratio
 
-    def _check_params_vs_input(self, X):
-        super()._check_params_vs_input(X, default_n_init=3)
+    def _check_params_vs_input(self, X, default_n_init=3):
+        super()._check_params_vs_input(X, default_n_init=default_n_init)
 
         self._batch_size = min(self.batch_size, X.shape[0])
 
