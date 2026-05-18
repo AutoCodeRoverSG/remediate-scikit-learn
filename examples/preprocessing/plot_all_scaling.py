@@ -164,7 +164,7 @@ def create_axes(title, figsize=(16, 6)):
 
 
 def plot_distribution(axes, X, y, hist_nbins=50, title="", x0_label="", x1_label=""):
-    ax, hist_X1, hist_X0 = axes
+    ax, hist_x1, hist_x0 = axes
 
     ax.set_title(title)
     ax.set_xlabel(x0_label)
@@ -184,18 +184,18 @@ def plot_distribution(axes, X, y, hist_nbins=50, title="", x0_label="", x1_label
     ax.spines["bottom"].set_position(("outward", 10))
 
     # Histogram for axis X1 (feature 5)
-    hist_X1.set_ylim(ax.get_ylim())
-    hist_X1.hist(
+    hist_x1.set_ylim(ax.get_ylim())
+    hist_x1.hist(
         X[:, 1], bins=hist_nbins, orientation="horizontal", color="grey", ec="grey"
     )
-    hist_X1.axis("off")
+    hist_x1.axis("off")
 
     # Histogram for axis X0 (feature 0)
-    hist_X0.set_xlim(ax.get_xlim())
-    hist_X0.hist(
+    hist_x0.set_xlim(ax.get_xlim())
+    hist_x0.hist(
         X[:, 0], bins=hist_nbins, orientation="vertical", color="grey", ec="grey"
     )
-    hist_X0.axis("off")
+    hist_x0.axis("off")
 
 
 # %%
@@ -222,11 +222,11 @@ def make_plot(item_idx):
 
     # zoom-in
     zoom_in_percentile_range = (0, 99)
-    cutoffs_X0 = np.percentile(X[:, 0], zoom_in_percentile_range)
-    cutoffs_X1 = np.percentile(X[:, 1], zoom_in_percentile_range)
+    cutoffs_x0 = np.percentile(X[:, 0], zoom_in_percentile_range)
+    cutoffs_x1 = np.percentile(X[:, 1], zoom_in_percentile_range)
 
-    non_outliers_mask = np.all(X > [cutoffs_X0[0], cutoffs_X1[0]], axis=1) & np.all(
-        X < [cutoffs_X0[1], cutoffs_X1[1]], axis=1
+    non_outliers_mask = np.all(X > [cutoffs_x0[0], cutoffs_x1[0]], axis=1) & np.all(
+        X < [cutoffs_x0[1], cutoffs_x1[1]], axis=1
     )
     plot_distribution(
         axarr[1],

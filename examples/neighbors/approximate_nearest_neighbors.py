@@ -129,14 +129,14 @@ metric = "euclidean"
 # Add one since we include each sample as its own neighbor.
 n_neighbors = int(3.0 * perplexity + 1) + 1
 
-tsne_params = dict(
-    init="random",  # pca cannot be used with precomputed distances
-    perplexity=perplexity,
-    method="barnes_hut",
-    random_state=42,
-    max_iter=max_iter,
-    learning_rate="auto",
-)
+tsne_params = {
+    "init": "random",  # pca cannot be used with precomputed distances
+    "perplexity": perplexity,
+    "method": "barnes_hut",
+    "random_state": 42,
+    "max_iter": max_iter,
+    "learning_rate": "auto",
+}
 
 transformers = [
     (
