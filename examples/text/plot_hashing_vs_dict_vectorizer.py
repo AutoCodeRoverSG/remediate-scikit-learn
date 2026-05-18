@@ -136,7 +136,7 @@ print(f"Found {len(vectorizer.get_feature_names_out())} unique terms")
 # The actual mapping from text token to column index is explicitly stored in
 # the `.vocabulary_` attribute which is a potentially very large Python
 # dictionary:
-type(vectorizer.vocabulary_)
+print(type(vectorizer.vocabulary_))
 
 # %%
 len(vectorizer.vocabulary_)

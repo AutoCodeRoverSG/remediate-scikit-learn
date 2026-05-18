@@ -204,7 +204,7 @@ def plot_feature_effects():
     padding = 0.75
     y_locs = np.arange(len(top_indices)) * (4 * bar_size + padding)
 
-    fig, ax = plt.subplots(figsize=(10, 8))
+    _, ax = plt.subplots(figsize=(10, 8))
     for i, label in enumerate(target_names):
         ax.barh(
             y_locs + (i - 2) * bar_size,

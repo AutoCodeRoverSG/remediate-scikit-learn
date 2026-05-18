@@ -22,7 +22,7 @@ for estimator in _tested_estimators():
     ):
         check_results = check_estimator(estimator, on_skip=None, on_fail=None)
     failed_tests = [e for e in check_results if e["status"] == "failed"]
-    failed_test_names = set(e["check_name"] for e in failed_tests)
+    failed_test_names = {e["check_name"] for e in failed_tests}
     expected_failed_tests = set(_get_expected_failed_checks(estimator).keys())
     unexpected_failures = failed_test_names - expected_failed_tests
     if unexpected_failures:
