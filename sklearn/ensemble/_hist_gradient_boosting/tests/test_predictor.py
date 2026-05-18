@@ -33,7 +33,7 @@ def test_regression_dataset(n_bins):
     X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
 
     mapper = _BinMapper(n_bins=n_bins, random_state=42)
-    X_train_binned = mapper.fit_transform(X_train)
+    x_train_binned = mapper.fit_transform(X_train)
 
     # Init gradients and hessians to that of least squares loss
     gradients = -y_train.astype(G_H_DTYPE)
@@ -42,7 +42,7 @@ def test_regression_dataset(n_bins):
     min_samples_leaf = 10
     max_leaf_nodes = 30
     grower = TreeGrower(
-        X_train_binned,
+        x_train_binned,
         gradients,
         hessians,
         min_samples_leaf=min_samples_leaf,
@@ -120,7 +120,7 @@ def test_infinite_values_and_thresholds(num_threshold, expected_predictions):
 def test_categorical_predictor(bins_go_left, expected_predictions):
     # Test predictor outputs are correct with categorical features
 
-    X_binned = np.array([[0, 1, 2, 3, 4, 5]], dtype=X_BINNED_DTYPE).T
+    x_binned = np.array([[0, 1, 2, 3, 4, 5]], dtype=X_BINNED_DTYPE).T
     categories = np.array([2, 5, 6, 8, 10, 15], dtype=X_DTYPE)
 
     bins_go_left = np.array(bins_go_left, dtype=X_BINNED_DTYPE)
@@ -155,7 +155,7 @@ def test_categorical_predictor(bins_go_left, expected_predictions):
 
     # Check binned data gives correct predictions
     prediction_binned = predictor.predict_binned(
-        X_binned, missing_values_bin_idx=6, n_threads=n_threads
+        x_binned, missing_values_bin_idx=6, n_threads=n_threads
     )
     assert_allclose(prediction_binned, expected_predictions)
 
@@ -171,9 +171,9 @@ def test_categorical_predictor(bins_go_left, expected_predictions):
     assert_allclose(predictions, expected_predictions)
 
     # Check missing goes left because missing_values_bin_idx=6
-    X_binned_missing = np.array([[6]], dtype=X_BINNED_DTYPE).T
+    x_binned_missing = np.array([[6]], dtype=X_BINNED_DTYPE).T
     predictions = predictor.predict_binned(
-        X_binned_missing, missing_values_bin_idx=6, n_threads=n_threads
+        x_binned_missing, missing_values_bin_idx=6, n_threads=n_threads
     )
     assert_allclose(predictions, [1])
 

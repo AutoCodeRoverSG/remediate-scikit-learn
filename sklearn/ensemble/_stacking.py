@@ -102,7 +102,7 @@ class _BaseStacking(TransformerMixin, _BaseHeterogeneousEnsemble, metaclass=ABCM
         `(n_samples, n_class)` or for some estimators a list of `ndarray`.
         This function will drop one of the probability column in this situation as well.
         """
-        X_meta = []
+        x_meta = []
         for est_idx, preds in enumerate(predictions):
             if isinstance(preds, list):
                 # `preds` is here a list of `n_targets` 2D ndarrays of
@@ -113,11 +113,11 @@ class _BaseStacking(TransformerMixin, _BaseHeterogeneousEnsemble, metaclass=ABCM
                 # we can work with probabilities of `n_classes - 1` classes.
                 # Hence we drop the first column.
                 for pred in preds:
-                    X_meta.append(pred[:, 1:])
+                    x_meta.append(pred[:, 1:])
             elif preds.ndim == 1:
                 # Some estimator return a 1D array for predictions
                 # which must be 2-dimensional arrays.
-                X_meta.append(preds.reshape(-1, 1))
+                x_meta.append(preds.reshape(-1, 1))
             elif (
                 self.stack_method_[est_idx] == "predict_proba"
                 and len(self.classes_) == 2
@@ -125,17 +125,17 @@ class _BaseStacking(TransformerMixin, _BaseHeterogeneousEnsemble, metaclass=ABCM
                 # Remove the first column when using probabilities in
                 # binary classification because both features `preds` are perfectly
                 # collinear.
-                X_meta.append(preds[:, 1:])
+                x_meta.append(preds[:, 1:])
             else:
-                X_meta.append(preds)
+                x_meta.append(preds)
 
-        self._n_feature_outs = [pred.shape[1] for pred in X_meta]
+        self._n_feature_outs = [pred.shape[1] for pred in x_meta]
         if self.passthrough:
-            X_meta.append(X)
+            x_meta.append(X)
             if sparse.issparse(X):
-                return sparse.hstack(X_meta, format=X.format)
+                return sparse.hstack(x_meta, format=X.format)
 
-        return np.hstack(X_meta)
+        return np.hstack(x_meta)
 
     @staticmethod
     def _method_name(name, estimator, method):
