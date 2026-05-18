@@ -35,10 +35,10 @@ from sklearn.model_selection import KFold, train_test_split
 
 # Generate data (adapted from G. Ridgeway's gbm example)
 n_samples = 1000
-random_state = np.random.RandomState(13)
+random_state = np.random.default_rng(13)
 x1 = random_state.uniform(size=n_samples)
 x2 = random_state.uniform(size=n_samples)
-x3 = random_state.randint(0, 4, size=n_samples)
+x3 = random_state.integers(0, 4, size=n_samples)
 
 p = expit(np.sin(3 * x1) - 4 * x2 + x3)
 y = random_state.binomial(1, p, size=n_samples)
@@ -107,9 +107,9 @@ cv_score -= cv_score[0]
 cv_best_iter = x[np.argmin(cv_score)]
 
 # color brew for the three curves
-oob_color = list(map(lambda x: x / 256.0, (190, 174, 212)))
-test_color = list(map(lambda x: x / 256.0, (127, 201, 127)))
-cv_color = list(map(lambda x: x / 256.0, (253, 192, 134)))
+oob_color = [x / 256.0 for x in (190, 174, 212)]
+test_color = [x / 256.0 for x in (127, 201, 127)]
+cv_color = [x / 256.0 for x in (253, 192, 134)]
 
 # line type for the three curves
 oob_line = "dashed"
@@ -130,7 +130,7 @@ xticks = plt.xticks()
 xticks_pos = np.array(
     xticks[0].tolist() + [oob_best_iter, cv_best_iter, test_best_iter]
 )
-xticks_label = np.array(list(map(lambda t: int(t), xticks[0])) + ["OOB", "CV", "Test"])
+xticks_label = np.array([int(t) for t in xticks[0]] + ["OOB", "CV", "Test"])
 ind = np.argsort(xticks_pos)
 xticks_pos = xticks_pos[ind]
 xticks_label = xticks_label[ind]
