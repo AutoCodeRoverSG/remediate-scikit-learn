@@ -52,12 +52,12 @@ def get_data(
     auto_examples/ensemble/plot_isolation_forest.html#sphx-glr-auto-
     examples-ensemble-plot-isolation-forest-py
     """
-    rng = np.random.RandomState(random_state)
+    rng = np.random.default_rng(random_state)
 
-    X = 0.3 * rng.randn(n_samples_train, n_features)
+    X = 0.3 * rng.standard_normal((n_samples_train, n_features))
     X_train = np.r_[X + 2, X - 2]
 
-    X = 0.3 * rng.randn(n_samples_test, n_features)
+    X = 0.3 * rng.standard_normal((n_samples_test, n_features))
     X_test = np.r_[X + 2, X - 2]
 
     n_outliers = int(np.floor(contamination * n_samples_test))
@@ -91,7 +91,9 @@ def plot(args):
         df_pr,
         df_main,
         on=["n_samples_test", "n_jobs"],
+        how="inner",
         suffixes=("_pr", "_main"),
+        validate="many_to_many",
     )
 
     # Set up the plotting grid
@@ -172,7 +174,8 @@ def bench(args):
 
                     # clearcache
                     for _ in range(1000):
-                        1 + 1
+                        # Warm-up loop before timing
+                        pass
                     with parallel_config("threading", n_jobs=n_jobs):
                         tstart = time()
                         model.decision_function(X_test)  # the lower, the more abnormal
