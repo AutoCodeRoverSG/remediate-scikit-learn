@@ -20,13 +20,14 @@ import numpy as np
 from sklearn import svm
 
 # Generate train data
-X = 0.3 * np.random.randn(100, 2)
+rng = np.random.default_rng(42)
+X = 0.3 * rng.standard_normal((100, 2))
 X_train = np.r_[X + 2, X - 2]
 # Generate some regular novel observations
-X = 0.3 * np.random.randn(20, 2)
+X = 0.3 * rng.standard_normal((20, 2))
 X_test = np.r_[X + 2, X - 2]
 # Generate some abnormal novel observations
-X_outliers = np.random.uniform(low=-4, high=4, size=(20, 2))
+X_outliers = rng.uniform(low=-4, high=4, size=(20, 2))
 
 # fit the model
 clf = svm.OneClassSVM(nu=0.1, kernel="rbf", gamma=0.1)

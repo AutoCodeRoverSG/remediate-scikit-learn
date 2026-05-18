@@ -65,8 +65,8 @@ data = fetch_20newsgroups(
 )
 
 # Parameters
-sdg_params = dict(alpha=1e-5, penalty="l2", loss="log_loss")
-vectorizer_params = dict(ngram_range=(1, 2), min_df=5, max_df=0.8)
+sdg_params = {"alpha": 1e-5, "penalty": "l2", "loss": "log_loss"}
+vectorizer_params = {"ngram_range": (1, 2), "min_df": 5, "max_df": 0.8}
 
 # Supervised Pipeline
 pipeline = Pipeline(
@@ -74,7 +74,8 @@ pipeline = Pipeline(
         ("vect", CountVectorizer(**vectorizer_params)),
         ("tfidf", TfidfTransformer()),
         ("clf", SGDClassifier(**sdg_params)),
-    ]
+    ],
+    memory=None,
 )
 # SelfTraining Pipeline
 st_pipeline = Pipeline(
@@ -82,7 +83,8 @@ st_pipeline = Pipeline(
         ("vect", CountVectorizer(**vectorizer_params)),
         ("tfidf", TfidfTransformer()),
         ("clf", SelfTrainingClassifier(SGDClassifier(**sdg_params))),
-    ]
+    ],
+    memory=None,
 )
 # LabelSpreading Pipeline
 ls_pipeline = Pipeline(
@@ -90,7 +92,8 @@ ls_pipeline = Pipeline(
         ("vect", CountVectorizer(**vectorizer_params)),
         ("tfidf", TfidfTransformer()),
         ("clf", LabelSpreading()),
-    ]
+    ],
+    memory=None,
 )
 
 
