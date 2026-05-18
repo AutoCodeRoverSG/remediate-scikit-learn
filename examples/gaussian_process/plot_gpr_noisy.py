@@ -21,11 +21,14 @@ initialization.
 # option to add some noise to the generated target.
 import numpy as np
 
+EXPECTED_SIGNAL_LABEL = "Expected signal"
+POSTERIOR_MEAN_LABEL = "Posterior mean \u00b1 std"
+
 
 def target_generator(X, add_noise=False):
     target = 0.5 + np.sin(3 * X)
     if add_noise:
-        rng = np.random.RandomState(1)
+        rng = np.random.default_rng(1)
         target += rng.normal(0, 0.3, size=target.shape)
     return target.squeeze()
 
@@ -39,7 +42,7 @@ y = target_generator(X, add_noise=False)
 # %%
 import matplotlib.pyplot as plt
 
-plt.plot(X, y, label="Expected signal")
+plt.plot(X, y, label=EXPECTED_SIGNAL_LABEL)
 plt.legend()
 plt.xlabel("X")
 _ = plt.ylabel("y")
@@ -48,12 +51,12 @@ _ = plt.ylabel("y")
 # The target is transforming the input `X` using a sine function. Now, we will
 # generate few noisy training samples. To illustrate the noise level, we will
 # plot the true signal together with the noisy training samples.
-rng = np.random.RandomState(0)
+rng = np.random.default_rng(0)
 X_train = rng.uniform(0, 5, size=20).reshape(-1, 1)
 y_train = target_generator(X_train, add_noise=True)
 
 # %%
-plt.plot(X, y, label="Expected signal")
+plt.plot(X, y, label=EXPECTED_SIGNAL_LABEL)
 plt.scatter(
     x=X_train[:, 0],
     y=y_train,
@@ -95,9 +98,9 @@ gpr.fit(X_train, y_train)
 y_mean, y_std = gpr.predict(X, return_std=True)
 
 # %%
-plt.plot(X, y, label="Expected signal")
+plt.plot(X, y, label=EXPECTED_SIGNAL_LABEL)
 plt.scatter(x=X_train[:, 0], y=y_train, color="black", alpha=0.4, label="Observations")
-plt.errorbar(X, y_mean, y_std, label="Posterior mean ± std")
+plt.errorbar(X, y_mean, y_std, label=POSTERIOR_MEAN_LABEL)
 plt.legend()
 plt.xlabel("X")
 plt.ylabel("y")
@@ -129,9 +132,9 @@ gpr.fit(X_train, y_train)
 y_mean, y_std = gpr.predict(X, return_std=True)
 
 # %%
-plt.plot(X, y, label="Expected signal")
+plt.plot(X, y, label=EXPECTED_SIGNAL_LABEL)
 plt.scatter(x=X_train[:, 0], y=y_train, color="black", alpha=0.4, label="Observations")
-plt.errorbar(X, y_mean, y_std, label="Posterior mean ± std")
+plt.errorbar(X, y_mean, y_std, label=POSTERIOR_MEAN_LABEL)
 plt.legend()
 plt.xlabel("X")
 plt.ylabel("y")
@@ -207,9 +210,9 @@ gpr.fit(X_train, y_train)
 y_mean, y_std = gpr.predict(X, return_std=True)
 
 # %%
-plt.plot(X, y, label="Expected signal")
+plt.plot(X, y, label=EXPECTED_SIGNAL_LABEL)
 plt.scatter(x=X_train[:, 0], y=y_train, color="black", alpha=0.4, label="Observations")
-plt.errorbar(X, y_mean, y_std, label="Posterior mean ± std")
+plt.errorbar(X, y_mean, y_std, label=POSTERIOR_MEAN_LABEL)
 plt.legend()
 plt.xlabel("X")
 plt.ylabel("y")

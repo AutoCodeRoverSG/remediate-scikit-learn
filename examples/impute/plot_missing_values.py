@@ -56,8 +56,8 @@ X_california = X_california[:300]
 y_california = y_california[:300]
 
 
-def add_missing_values(X_full, y_full, rng):
-    n_samples, n_features = X_full.shape
+def add_missing_values(x_full, y_full, rng):
+    n_samples, n_features = x_full.shape
 
     # Add missing values in 75% of the lines
     missing_rate = 0.75
@@ -67,15 +67,15 @@ def add_missing_values(X_full, y_full, rng):
     missing_samples[:n_missing_samples] = True
 
     rng.shuffle(missing_samples)
-    missing_features = rng.randint(0, n_features, n_missing_samples)
-    X_missing = X_full.copy()
-    X_missing[missing_samples, missing_features] = np.nan
+    missing_features = rng.integers(0, n_features, n_missing_samples)
+    x_missing = x_full.copy()
+    x_missing[missing_samples, missing_features] = np.nan
     y_missing = y_full.copy()
 
-    return X_missing, y_missing
+    return x_missing, y_missing
 
 
-rng = np.random.RandomState(42)
+rng = np.random.default_rng(42)
 X_miss_diabetes, y_miss_diabetes = add_missing_values(X_diabetes, y_diabetes, rng)
 X_miss_california, y_miss_california = add_missing_values(
     X_california, y_california, rng
@@ -106,7 +106,7 @@ N_SPLITS = 4
 def get_score(X, y, imputer=None):
     regressor = RandomForestRegressor(random_state=0)
     if imputer is not None:
-        estimator = make_pipeline(imputer, regressor)
+        estimator = make_pipeline(imputer, regressor, memory=None)
     else:
         estimator = regressor
     scores = cross_val_score(
@@ -181,7 +181,7 @@ mses_diabetes[3], stds_diabetes[3] = get_score(
     X_miss_diabetes, y_miss_diabetes, imputer
 )
 mses_california[3], stds_california[3] = get_score(
-    X_miss_california, y_miss_california, make_pipeline(RobustScaler(), imputer)
+    X_miss_california, y_miss_california, make_pipeline(RobustScaler(), imputer, memory=None)
 )
 x_labels.append("KNN Imputation")
 
@@ -205,7 +205,7 @@ mses_diabetes[4], stds_diabetes[4] = get_score(
     X_miss_diabetes, y_miss_diabetes, imputer
 )
 mses_california[4], stds_california[4] = get_score(
-    X_miss_california, y_miss_california, make_pipeline(RobustScaler(), imputer)
+    X_miss_california, y_miss_california, make_pipeline(RobustScaler(), imputer, memory=None)
 )
 x_labels.append("Iterative Imputation")
 
