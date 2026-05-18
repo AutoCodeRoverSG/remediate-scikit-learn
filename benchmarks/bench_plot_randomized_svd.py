@@ -117,6 +117,9 @@ MAX_MEMORY = int(4e9)
 CIFAR_FOLDER = "./cifar-10-batches-py/"
 SVHN_FOLDER = "./SVHN/"
 
+OFFSET_POINTS = "offset points"
+NORM_DISCREPANCY = "norm discrepancy"
+
 datasets = [
     "low rank matrix",
     "lfw_people",
@@ -212,13 +215,13 @@ def plot_time_vs_s(time, norm, point_labels, title):
                 label,
                 xy=(x, y),
                 xytext=(0, -20),
-                textcoords="offset points",
+                textcoords=OFFSET_POINTS,
                 ha="right",
                 va="bottom",
             )
     plt.legend(loc="upper right")
     plt.suptitle(title)
-    plt.ylabel("norm discrepancy")
+    plt.ylabel(NORM_DISCREPANCY)
     plt.xlabel("running time [s]")
 
 
@@ -233,7 +236,7 @@ def scatter_time_vs_s(time, norm, point_labels, title):
                     label,
                     xy=(x, y),
                     xytext=(0, -80),
-                    textcoords="offset points",
+                    textcoords=OFFSET_POINTS,
                     ha="right",
                     arrowprops={"arrowstyle": "->", "connectionstyle": "arc3"},
                     va="bottom",
@@ -247,7 +250,7 @@ def scatter_time_vs_s(time, norm, point_labels, title):
                     label,
                     xy=(x, y),
                     xytext=(0, 30),
-                    textcoords="offset points",
+                    textcoords=OFFSET_POINTS,
                     ha="right",
                     arrowprops={"arrowstyle": "->", "connectionstyle": "arc3"},
                     va="bottom",
@@ -257,7 +260,7 @@ def scatter_time_vs_s(time, norm, point_labels, title):
 
     plt.legend(loc="best")
     plt.suptitle(title)
-    plt.ylabel("norm discrepancy")
+    plt.ylabel(NORM_DISCREPANCY)
     plt.xlabel("running time [s]")
 
 
@@ -267,7 +270,7 @@ def plot_power_iter_vs_s(power_iter, s, title):
         plt.plot(power_iter, s[l], label=l, marker="o")
     plt.legend(loc="lower right", prop={"size": 10})
     plt.suptitle(title)
-    plt.ylabel("norm discrepancy")
+    plt.ylabel(NORM_DISCREPANCY)
     plt.xlabel("n_iter")
 
 
@@ -314,7 +317,7 @@ def norm_diff(matrix, norm=2, msg=True, random_state=0):
     if msg:
         print("... computing %s norm ..." % norm)
     if norm == 2:
-        # s = sp.linalg.norm(A, ord=2)  # slow
+        
         v0 = _init_arpack_v0(min(matrix.shape), random_state)
         value = sp.sparse.linalg.svds(
             matrix, k=1, return_singular_vectors=False, v0=v0
@@ -350,9 +353,9 @@ def bench_a(X, dataset_name, power_iter, n_oversamples, n_comps):
     all_time = defaultdict(list)
     if enable_spectral_norm:
         all_spectral = defaultdict(list)
-        X_spectral_norm = norm_diff(X, norm=2, msg=False, random_state=0)
+        x_spectral_norm = norm_diff(X, norm=2, msg=False, random_state=0)
     all_frobenius = defaultdict(list)
-    X_fro_norm = norm_diff(X, norm="fro", msg=False)
+    x_fro_norm = norm_diff(X, norm="fro", msg=False)
 
     for pi in power_iter:
         for pm in ["none", "LU", "QR"]:
@@ -369,10 +372,10 @@ def bench_a(X, dataset_name, power_iter, n_oversamples, n_comps):
             if enable_spectral_norm:
                 A = U.dot(np.diag(s).dot(V))
                 all_spectral[label].append(
-                    norm_diff(X - A, norm=2, random_state=0) / X_spectral_norm
+                    norm_diff(X - A, norm=2, random_state=0) / x_spectral_norm
                 )
             f = scalable_frobenius_norm_discrepancy(X, U, s, V)
-            all_frobenius[label].append(f / X_fro_norm)
+            all_frobenius[label].append(f / x_fro_norm)
 
         if fbpca_available:
             print("n_iter = %d on fbca" % (pi))
@@ -389,10 +392,10 @@ def bench_a(X, dataset_name, power_iter, n_oversamples, n_comps):
             if enable_spectral_norm:
                 A = U.dot(np.diag(s).dot(V))
                 all_spectral[label].append(
-                    norm_diff(X - A, norm=2, random_state=0) / X_spectral_norm
+                    norm_diff(X - A, norm=2, random_state=0) / x_spectral_norm
                 )
             f = scalable_frobenius_norm_discrepancy(X, U, s, V)
-            all_frobenius[label].append(f / X_fro_norm)
+            all_frobenius[label].append(f / x_fro_norm)
 
     if enable_spectral_norm:
         title = "%s: spectral norm diff vs running time" % (dataset_name)
@@ -418,8 +421,8 @@ def bench_b(power_list):
     for rank in ranks:
         X = make_low_rank_matrix(effective_rank=rank, **data_params)
         if enable_spectral_norm:
-            X_spectral_norm = norm_diff(X, norm=2, msg=False, random_state=0)
-        X_fro_norm = norm_diff(X, norm="fro", msg=False)
+            x_spectral_norm = norm_diff(X, norm=2, msg=False, random_state=0)
+        x_fro_norm = norm_diff(X, norm="fro", msg=False)
 
         for n_comp in [int(rank / 2), rank, rank * 2]:
             label = "rank=%d, n_comp=%d" % (rank, n_comp)
@@ -435,10 +438,10 @@ def bench_b(power_list):
                 if enable_spectral_norm:
                     A = U.dot(np.diag(s).dot(V))
                     all_spectral[label].append(
-                        norm_diff(X - A, norm=2, random_state=0) / X_spectral_norm
+                        norm_diff(X - A, norm=2, random_state=0) / x_spectral_norm
                     )
                 f = scalable_frobenius_norm_discrepancy(X, U, s, V)
-                all_frobenius[label].append(f / X_fro_norm)
+                all_frobenius[label].append(f / x_fro_norm)
 
     if enable_spectral_norm:
         title = "%s: spectral norm diff vs n power iteration" % (dataset_name)
@@ -459,8 +462,8 @@ def bench_c(datasets, n_comps):
             continue
 
         if enable_spectral_norm:
-            X_spectral_norm = norm_diff(X, norm=2, msg=False, random_state=0)
-        X_fro_norm = norm_diff(X, norm="fro", msg=False)
+            x_spectral_norm = norm_diff(X, norm=2, msg=False, random_state=0)
+        x_fro_norm = norm_diff(X, norm="fro", msg=False)
         n_comps = np.minimum(n_comps, np.min(X.shape))
 
         label = "sklearn"
@@ -471,10 +474,10 @@ def bench_c(datasets, n_comps):
         if enable_spectral_norm:
             A = U.dot(np.diag(s).dot(V))
             all_spectral[label].append(
-                norm_diff(X - A, norm=2, random_state=0) / X_spectral_norm
+                norm_diff(X - A, norm=2, random_state=0) / x_spectral_norm
             )
         f = scalable_frobenius_norm_discrepancy(X, U, s, V)
-        all_frobenius[label].append(f / X_fro_norm)
+        all_frobenius[label].append(f / x_fro_norm)
 
         if fbpca_available:
             label = "fbpca"
@@ -486,10 +489,10 @@ def bench_c(datasets, n_comps):
             if enable_spectral_norm:
                 A = U.dot(np.diag(s).dot(V))
                 all_spectral[label].append(
-                    norm_diff(X - A, norm=2, random_state=0) / X_spectral_norm
+                    norm_diff(X - A, norm=2, random_state=0) / x_spectral_norm
                 )
             f = scalable_frobenius_norm_discrepancy(X, U, s, V)
-            all_frobenius[label].append(f / X_fro_norm)
+            all_frobenius[label].append(f / x_fro_norm)
 
     if len(all_time) == 0:
         raise ValueError("No tests ran. Aborting.")
