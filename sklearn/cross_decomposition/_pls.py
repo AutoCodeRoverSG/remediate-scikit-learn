@@ -73,11 +73,11 @@ def _get_first_singular_vectors_power_method(
         # As a result, and as detailed in the Wegelin's review, CCA (i.e. mode
         # B) will be unstable if n_features > n_samples or n_targets >
         # n_samples
-        X_pinv, y_pinv = _pinv2_old(X), _pinv2_old(y)
+        x_pinv, y_pinv = _pinv2_old(X), _pinv2_old(y)
 
     for i in range(max_iter):
         if mode == "B":
-            x_weights = np.dot(X_pinv, y_score)
+            x_weights = np.dot(x_pinv, y_score)
         else:
             x_weights = np.dot(X.T, y_score) / np.dot(y_score, y_score)
 
@@ -112,8 +112,8 @@ def _get_first_singular_vectors_svd(X, y):
     Here the whole SVD is computed.
     """
     C = np.dot(X.T, y)
-    U, _, Vt = svd(C, full_matrices=False)
-    return U[:, 0], Vt[0, :]
+    U, _, vt = svd(C, full_matrices=False)
+    return U[:, 0], vt[0, :]
 
 
 def _center_scale_xy(X, y, scale=True):
@@ -131,10 +131,10 @@ def _center_scale_xy(X, y, scale=True):
     # scale
     if scale:
         x_std = X.std(axis=0, ddof=1)
-        x_std[x_std == 0.0] = 1.0
+        x_std[np.isclose(x_std, 0.0)] = 1.0
         X /= x_std
         y_std = y.std(axis=0, ddof=1)
-        y_std[y_std == 0.0] = 1.0
+        y_std[np.isclose(y_std, 0.0)] = 1.0
         y /= y_std
     else:
         x_std = np.ones(X.shape[1])
@@ -149,7 +149,7 @@ def _svd_flip_1d(u, v):
     biggest_abs_val_idx = np.argmax(np.abs(u))
     sign = np.sign(u[biggest_abs_val_idx])
     u *= sign
-    v *= sign
+    v[:] *= sign
 
 
 class _PLS(
@@ -265,7 +265,7 @@ class _PLS(
         norm_y_weights = self._norm_y_weights
 
         # Scale (in place)
-        Xk, yk, self._x_mean, self._y_mean, self._x_std, self._y_std = _center_scale_xy(
+        xk, yk, self._x_mean, self._y_mean, self._x_std, self._y_std = _center_scale_xy(
             X, y, self.scale
         )
 
@@ -295,7 +295,7 @@ class _PLS(
                         y_weights,
                         n_iter_,
                     ) = _get_first_singular_vectors_power_method(
-                        Xk,
+                        xk,
                         yk,
                         mode=self.mode,
                         max_iter=self.max_iter,
@@ -311,13 +311,13 @@ class _PLS(
                 self.n_iter_.append(n_iter_)
 
             elif self.algorithm == "svd":
-                x_weights, y_weights = _get_first_singular_vectors_svd(Xk, yk)
+                x_weights, y_weights = _get_first_singular_vectors_svd(xk, yk)
 
             # inplace sign flip for consistency across solvers and archs
             _svd_flip_1d(x_weights, y_weights)
 
             # compute scores, i.e. the projections of X and y
-            x_scores = np.dot(Xk, x_weights)
+            x_scores = np.dot(xk, x_weights)
             if norm_y_weights:
                 y_ss = 1
             else:
@@ -325,8 +325,8 @@ class _PLS(
             y_scores = np.dot(yk, y_weights) / y_ss
 
             # Deflation: subtract rank-one approx to obtain Xk+1 and yk+1
-            x_loadings = np.dot(x_scores, Xk) / np.dot(x_scores, x_scores)
-            Xk -= np.outer(x_scores, x_loadings)
+            x_loadings = np.dot(x_scores, xk) / np.dot(x_scores, x_scores)
+            xk -= np.outer(x_scores, x_loadings)
 
             if self.deflation_mode == "canonical":
                 # regress yk on y_score
@@ -432,10 +432,10 @@ class _PLS(
         check_is_fitted(self)
         X = check_array(X, input_name="X", dtype=FLOAT_DTYPES)
         # From pls space to original space
-        X_reconstructed = np.matmul(X, self.x_loadings_.T)
+        x_reconstructed = np.matmul(X, self.x_loadings_.T)
         # Denormalize
-        X_reconstructed *= self._x_std
-        X_reconstructed += self._x_mean
+        x_reconstructed *= self._x_std
+        x_reconstructed += self._x_mean
 
         if y is not None:
             y = check_array(y, input_name="y", dtype=FLOAT_DTYPES)
@@ -444,9 +444,9 @@ class _PLS(
             # Denormalize
             y_reconstructed *= self._y_std
             y_reconstructed += self._y_mean
-            return X_reconstructed, y_reconstructed
+            return x_reconstructed, y_reconstructed
 
-        return X_reconstructed
+        return x_reconstructed
 
     def predict(self, X, copy=True):
         """Predict targets of given samples.
@@ -1033,11 +1033,11 @@ class PLSSVD(ClassNamePrefixFeaturesOutMixin, TransformerMixin, BaseEstimator):
 
         # Compute SVD of cross-covariance matrix
         C = np.dot(X.T, y)
-        U, s, Vt = svd(C, full_matrices=False)
+        U, _, vt = svd(C, full_matrices=False)
         U = U[:, :n_components]
-        Vt = Vt[:n_components]
-        U, Vt = svd_flip(U, Vt)
-        V = Vt.T
+        vt = vt[:n_components]
+        U, vt = svd_flip(U, vt)
+        V = vt.T
 
         self.x_weights_ = U
         self.y_weights_ = V
@@ -1065,8 +1065,8 @@ class PLSSVD(ClassNamePrefixFeaturesOutMixin, TransformerMixin, BaseEstimator):
         """
         check_is_fitted(self)
         X = validate_data(self, X, dtype=np.float64, reset=False)
-        Xr = (X - self._x_mean) / self._x_std
-        x_scores = np.dot(Xr, self.x_weights_)
+        xr = (X - self._x_mean) / self._x_std
+        x_scores = np.dot(xr, self.x_weights_)
         if y is not None:
             y = check_array(y, input_name="y", ensure_2d=False, dtype=np.float64)
             if y.ndim == 1:
