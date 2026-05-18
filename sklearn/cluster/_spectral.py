@@ -168,7 +168,7 @@ def discretize(
             t_svd = vectors_discrete.T @ vectors
 
             try:
-                U, S, Vh = np.linalg.svd(t_svd)
+                U, S, vh = np.linalg.svd(t_svd)
             except LinAlgError:
                 svd_restarts += 1
                 print("SVD did not converge, randomizing and trying again")
@@ -180,7 +180,7 @@ def discretize(
             else:
                 # otherwise calculate rotation and continue
                 last_objective_value = ncut_value
-                rotation = np.dot(Vh.T, U.T)
+                rotation = np.dot(vh.T, U.T)
 
     if not has_converged:
         raise LinAlgError("SVD did not converge")
@@ -626,8 +626,6 @@ class SpectralClustering(ClusterMixin, BaseEstimator):
             StrOptions({"auto"}),
         ],
         "assign_labels": [StrOptions({"kmeans", "discretize", "cluster_qr"})],
-        "degree": [Interval(Real, 0, None, closed="left")],
-        "coef0": [Interval(Real, None, None, closed="neither")],
         "kernel_params": [dict, None],
         "n_jobs": [Integral, None],
         "verbose": ["verbose"],
@@ -646,8 +644,6 @@ class SpectralClustering(ClusterMixin, BaseEstimator):
         n_neighbors=10,
         eigen_tol="auto",
         assign_labels="kmeans",
-        degree=3,
-        coef0=1,
         kernel_params=None,
         n_jobs=None,
         verbose=False,
@@ -662,8 +658,6 @@ class SpectralClustering(ClusterMixin, BaseEstimator):
         self.n_neighbors = n_neighbors
         self.eigen_tol = eigen_tol
         self.assign_labels = assign_labels
-        self.degree = degree
-        self.coef0 = coef0
         self.kernel_params = kernel_params
         self.n_jobs = n_jobs
         self.verbose = verbose
@@ -724,13 +718,11 @@ class SpectralClustering(ClusterMixin, BaseEstimator):
         elif self.affinity == "precomputed":
             self.affinity_matrix_ = X
         else:
-            params = self.kernel_params
-            if params is None:
-                params = {}
+            params = dict(self.kernel_params) if self.kernel_params else {}
             if not callable(self.affinity):
                 params["gamma"] = self.gamma
-                params["degree"] = self.degree
-                params["coef0"] = self.coef0
+                params.setdefault("degree", 3)
+                params.setdefault("coef0", 1)
             self.affinity_matrix_ = pairwise_kernels(
                 X, metric=self.affinity, filter_params=True, **params
             )

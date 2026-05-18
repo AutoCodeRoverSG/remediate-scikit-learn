@@ -462,7 +462,7 @@ class DBSCAN(ClusterMixin, BaseEstimator):
         core_samples = np.asarray(n_neighbors >= self.min_samples, dtype=np.uint8)
         dbscan_inner(core_samples, neighborhoods, labels)
 
-        self.core_sample_indices_ = np.where(core_samples)[0]
+        self.core_sample_indices_ = np.nonzero(core_samples)[0]
         self.labels_ = labels
 
         if len(self.core_sample_indices_):
