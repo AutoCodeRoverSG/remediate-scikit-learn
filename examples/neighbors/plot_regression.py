@@ -22,13 +22,13 @@ import numpy as np
 
 from sklearn import neighbors
 
-rng = np.random.RandomState(0)
-X_train = np.sort(5 * rng.rand(40, 1), axis=0)
+rng = np.random.default_rng(0)
+X_train = np.sort(5 * rng.random((40, 1)), axis=0)
 X_test = np.linspace(0, 5, 500)[:, np.newaxis]
 y = np.sin(X_train).ravel()
 
 # Add noise to targets
-y[::5] += 1 * (0.5 - np.random.rand(8))
+y[::5] += 1 * (0.5 - rng.random(8))
 
 # %%
 # Fit regression model

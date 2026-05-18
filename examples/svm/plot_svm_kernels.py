@@ -117,7 +117,8 @@ def plot_training_data_with_decision_boundary(
     clf = svm.SVC(kernel=kernel, gamma=2).fit(X, y)
 
     # Settings for plotting
-    if ax is None:
+    created_ax = ax is None
+    if created_ax:
         _, ax = plt.subplots(figsize=(4, 3))
     x_min, x_max, y_min, y_max = -3, 3, -3, 3
     ax.set(xlim=(x_min, x_max), ylim=(y_min, y_max))
@@ -157,7 +158,7 @@ def plot_training_data_with_decision_boundary(
     else:
         ax.set_title(kernel)
 
-    if ax is None:
+    if created_ax:
         plt.show()
 
 
@@ -287,12 +288,12 @@ plot_training_data_with_decision_boundary("sigmoid")
 # pattern. HEre we demonstrate how different kernels work on such a dataset.
 
 xx, yy = np.meshgrid(np.linspace(-3, 3, 500), np.linspace(-3, 3, 500))
-np.random.seed(0)
-X = np.random.randn(300, 2)
+rng = np.random.default_rng(0)
+X = rng.standard_normal((300, 2))
 y = np.logical_xor(X[:, 0] > 0, X[:, 1] > 0)
 
 _, ax = plt.subplots(2, 2, figsize=(8, 8))
-args = dict(long_title=False, support_vectors=False)
+args = {"long_title": False, "support_vectors": False}
 plot_training_data_with_decision_boundary("linear", ax[0, 0], **args)
 plot_training_data_with_decision_boundary("poly", ax[0, 1], **args)
 plot_training_data_with_decision_boundary("rbf", ax[1, 0], **args)

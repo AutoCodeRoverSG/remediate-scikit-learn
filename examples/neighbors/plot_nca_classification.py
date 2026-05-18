@@ -49,14 +49,16 @@ classifiers = [
         [
             ("scaler", StandardScaler()),
             ("knn", KNeighborsClassifier(n_neighbors=n_neighbors)),
-        ]
+        ],
+        memory=None,
     ),
     Pipeline(
         [
             ("scaler", StandardScaler()),
             ("nca", NeighborhoodComponentsAnalysis()),
             ("knn", KNeighborsClassifier(n_neighbors=n_neighbors)),
-        ]
+        ],
+        memory=None,
     ),
 ]
 
