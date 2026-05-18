@@ -109,7 +109,7 @@ plt.annotate(
     xy=(1.0 / 3, 1.0 / 3),
     xytext=(1.0 / 3, 0.23),
     xycoords="data",
-    arrowprops=dict(facecolor="black", shrink=0.05),
+    arrowprops={"facecolor": "black", "shrink": 0.05},
     horizontalalignment="center",
     verticalalignment="center",
 )
@@ -119,7 +119,7 @@ plt.annotate(
     xy=(0.5, 0.0),
     xytext=(0.5, 0.1),
     xycoords="data",
-    arrowprops=dict(facecolor="black", shrink=0.05),
+    arrowprops={"facecolor": "black", "shrink": 0.05},
     horizontalalignment="center",
     verticalalignment="center",
 )
@@ -128,7 +128,7 @@ plt.annotate(
     xy=(0.0, 0.5),
     xytext=(0.1, 0.5),
     xycoords="data",
-    arrowprops=dict(facecolor="black", shrink=0.05),
+    arrowprops={"facecolor": "black", "shrink": 0.05},
     horizontalalignment="center",
     verticalalignment="center",
 )
@@ -137,7 +137,7 @@ plt.annotate(
     xy=(0.5, 0.5),
     xytext=(0.6, 0.6),
     xycoords="data",
-    arrowprops=dict(facecolor="black", shrink=0.05),
+    arrowprops={"facecolor": "black", "shrink": 0.05},
     horizontalalignment="center",
     verticalalignment="center",
 )
@@ -146,7 +146,7 @@ plt.annotate(
     xy=(0, 0),
     xytext=(0.1, 0.1),
     xycoords="data",
-    arrowprops=dict(facecolor="black", shrink=0.05),
+    arrowprops={"facecolor": "black", "shrink": 0.05},
     horizontalalignment="center",
     verticalalignment="center",
 )
@@ -155,7 +155,7 @@ plt.annotate(
     xy=(1, 0),
     xytext=(1, 0.1),
     xycoords="data",
-    arrowprops=dict(facecolor="black", shrink=0.05),
+    arrowprops={"facecolor": "black", "shrink": 0.05},
     horizontalalignment="center",
     verticalalignment="center",
 )
@@ -164,7 +164,7 @@ plt.annotate(
     xy=(0, 1),
     xytext=(0.1, 1),
     xycoords="data",
-    arrowprops=dict(facecolor="black", shrink=0.05),
+    arrowprops={"facecolor": "black", "shrink": 0.05},
     horizontalalignment="center",
     verticalalignment="center",
 )
