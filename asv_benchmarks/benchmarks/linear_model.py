@@ -29,7 +29,7 @@ class LogisticRegressionBenchmark(Predictor, Estimator, Benchmark):
         super().setup_cache()
 
     def make_data(self, params):
-        representation, solver, n_jobs = params
+        representation, *_ = params
 
         if Benchmark.data_size == "large":
             if representation == "sparse":
@@ -45,7 +45,7 @@ class LogisticRegressionBenchmark(Predictor, Estimator, Benchmark):
         return data
 
     def make_estimator(self, params):
-        representation, solver, n_jobs = params
+        _, solver, n_jobs = params
 
         l1_ratio = 0 if solver == "lbfgs" else 1
 
@@ -78,7 +78,7 @@ class RidgeBenchmark(Predictor, Estimator, Benchmark):
         super().setup_cache()
 
     def make_data(self, params):
-        representation, solver = params
+        representation, _ = params
 
         if representation == "dense":
             data = _synth_regression_dataset(n_samples=500000, n_features=100)
@@ -90,7 +90,7 @@ class RidgeBenchmark(Predictor, Estimator, Benchmark):
         return data
 
     def make_estimator(self, params):
-        representation, solver = params
+        _, solver = params
 
         estimator = Ridge(solver=solver, fit_intercept=False, random_state=0)
 
@@ -187,7 +187,7 @@ class ElasticNetBenchmark(Predictor, Estimator, Benchmark):
         super().setup_cache()
 
     def make_data(self, params):
-        representation, precompute = params
+        representation, _ = params
 
         if representation == "dense":
             data = _synth_regression_dataset(n_samples=1000000, n_features=100)
@@ -199,7 +199,7 @@ class ElasticNetBenchmark(Predictor, Estimator, Benchmark):
         return data
 
     def make_estimator(self, params):
-        representation, precompute = params
+        _, precompute = params
 
         estimator = ElasticNet(precompute=precompute, alpha=0.001, random_state=0)
 
@@ -228,7 +228,7 @@ class LassoBenchmark(Predictor, Estimator, Benchmark):
         super().setup_cache()
 
     def make_data(self, params):
-        representation, precompute = params
+        representation, _ = params
 
         if representation == "dense":
             data = _synth_regression_dataset(n_samples=1000000, n_features=100)
@@ -240,7 +240,7 @@ class LassoBenchmark(Predictor, Estimator, Benchmark):
         return data
 
     def make_estimator(self, params):
-        representation, precompute = params
+        _, precompute = params
 
         estimator = Lasso(precompute=precompute, alpha=0.001, random_state=0)
 
