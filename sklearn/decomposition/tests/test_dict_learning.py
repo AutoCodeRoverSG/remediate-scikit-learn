@@ -996,8 +996,8 @@ def test_cd_work_on_joblib_memmapped_data(monkeypatch):
         partial(Parallel, max_nbytes=100),
     )
 
-    rng = np.random.RandomState(0)
-    X_train = rng.randn(10, 10)
+    rng = np.random.default_rng(0)
+    X_train = rng.standard_normal((10, 10))
 
     dict_learner = DictionaryLearning(
         n_components=5,

@@ -807,10 +807,10 @@ class PCA(_BasePCA):
         check_is_fitted(self)
         xp, _ = get_namespace(X)
         X = validate_data(self, X, dtype=[xp.float64, xp.float32], reset=False)
-        Xr = X - self.mean_
+        xr = X - self.mean_
         n_features = X.shape[1]
         precision = self.get_precision()
-        log_like = -0.5 * xp.sum(Xr * (Xr @ precision), axis=1)
+        log_like = -0.5 * xp.sum(xr * (xr @ precision), axis=1)
         log_like -= 0.5 * (n_features * log(2.0 * np.pi) - fast_logdet(precision))
         return log_like
 

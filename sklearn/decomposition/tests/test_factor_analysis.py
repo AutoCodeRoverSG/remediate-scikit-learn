@@ -14,16 +14,16 @@ from sklearn.utils._testing import assert_almost_equal, assert_array_almost_equa
 
 def test_factor_analysis(global_random_seed):
     # Test FactorAnalysis ability to recover the data covariance structure
-    rng = np.random.RandomState(global_random_seed)
+    rng = np.random.default_rng(global_random_seed)
     n_samples, n_features, n_components = 20, 5, 3
 
     # Some random settings for the generative model
-    W = rng.randn(n_components, n_features)
+    W = rng.standard_normal((n_components, n_features))
     # latent variable of dim 3, 20 of it
-    h = rng.randn(n_samples, n_components)
+    h = rng.standard_normal((n_samples, n_components))
     # using gamma to model different noise variance
     # per component
-    noise = rng.gamma(1, size=n_features) * rng.randn(n_samples, n_features)
+    noise = rng.gamma(1, size=n_features) * rng.standard_normal((n_samples, n_features))
 
     # generate observations
     # wlog, mean is 0
@@ -35,8 +35,8 @@ def test_factor_analysis(global_random_seed):
         fa.fit(X)
         fas.append(fa)
 
-        X_t = fa.transform(X)
-        assert X_t.shape == (n_samples, n_components)
+        x_t = fa.transform(X)
+        assert x_t.shape == (n_samples, n_components)
 
         assert_almost_equal(fa.loglike_[-1], fa.score_samples(X).sum())
         assert_almost_equal(fa.score_samples(X).mean(), fa.score(X))
