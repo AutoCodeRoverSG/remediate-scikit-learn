@@ -444,8 +444,8 @@ class BaseGradientBoosting(BaseEnsemble, metaclass=ABCMeta):
         sample_weight,
         sample_mask,
         random_state,
-        X_csc=None,
-        X_csr=None,
+        x_csc=None,
+        x_csr=None,
     ):
         """Fit another stage of ``n_trees_per_iteration_`` trees."""
         original_y = y
@@ -496,17 +496,17 @@ class BaseGradientBoosting(BaseEnsemble, metaclass=ABCMeta):
                 # no inplace multiplication!
                 sample_weight = sample_weight * sample_mask.astype(np.float64)
 
-            X = X_csc if X_csc is not None else X
+            X = x_csc if x_csc is not None else X
             tree.fit(
                 X, neg_g_view[:, k], sample_weight=sample_weight, check_input=False
             )
 
             # update tree leaves
-            X_for_tree_update = X_csr if X_csr is not None else X
+            x_for_tree_update = x_csr if x_csr is not None else X
             _update_terminal_regions(
                 self._loss,
                 tree.tree_,
-                X_for_tree_update,
+                x_for_tree_update,
                 y,
                 neg_g_view[:, k],
                 raw_predictions,
@@ -548,7 +548,7 @@ class BaseGradientBoosting(BaseEnsemble, metaclass=ABCMeta):
         self.init_ = self.init
         if self.init_ is None:
             if is_classifier(self):
-                self.init_ = DummyClassifier(strategy="prior")
+                self.init_ = DummyClassifier(strategy="prior", random_state=self.random_state)
             elif isinstance(self._loss, (AbsoluteError, HuberLoss)):
                 self.init_ = DummyRegressor(strategy="quantile", quantile=0.5)
             elif isinstance(self._loss, PinballLoss):
@@ -698,8 +698,8 @@ class BaseGradientBoosting(BaseEnsemble, metaclass=ABCMeta):
         if self.n_iter_no_change is not None:
             stratify = y if is_classifier(self) else None
             (
-                X_train,
-                X_val,
+                x_train,
+                x_val,
                 y_train,
                 y_val,
                 sample_weight_train,
@@ -724,10 +724,10 @@ class BaseGradientBoosting(BaseEnsemble, metaclass=ABCMeta):
                         "seed."
                     )
         else:
-            X_train, y_train, sample_weight_train = X, y, sample_weight
-            X_val = y_val = sample_weight_val = None
+            x_train, y_train, sample_weight_train = X, y, sample_weight
+            x_val = y_val = sample_weight_val = None
 
-        n_samples = X_train.shape[0]
+        n_samples = x_train.shape[0]
 
         # First time calling fit.
         if not self._is_fitted():
@@ -743,7 +743,7 @@ class BaseGradientBoosting(BaseEnsemble, metaclass=ABCMeta):
             else:
                 # XXX clean this once we have a support_sample_weight tag
                 if sample_weight_is_none:
-                    self.init_.fit(X_train, y_train)
+                    self.init_.fit(x_train, y_train)
                 else:
                     msg = (
                         "The initial estimator {} does not support sample "
@@ -751,7 +751,7 @@ class BaseGradientBoosting(BaseEnsemble, metaclass=ABCMeta):
                     )
                     try:
                         self.init_.fit(
-                            X_train, y_train, sample_weight=sample_weight_train
+                            x_train, y_train, sample_weight=sample_weight_train
                         )
                     except TypeError as e:
                         if "unexpected keyword argument 'sample_weight'" in str(e):
@@ -770,7 +770,7 @@ class BaseGradientBoosting(BaseEnsemble, metaclass=ABCMeta):
                             raise
 
                 raw_predictions = _init_raw_predictions(
-                    X_train, self.init_, self._loss, is_classifier(self)
+                    x_train, self.init_, self._loss, is_classifier(self)
                 )
 
             begin_at_stage = 0
@@ -792,24 +792,24 @@ class BaseGradientBoosting(BaseEnsemble, metaclass=ABCMeta):
             # The requirements of _raw_predict
             # are more constrained than fit. It accepts only CSR
             # matrices. Finite values have already been checked in _validate_data.
-            X_train = check_array(
-                X_train,
+            x_train = check_array(
+                x_train,
                 dtype=np.float32,
                 order="C",
                 accept_sparse="csr",
                 ensure_all_finite=False,
             )
-            raw_predictions = self._raw_predict(X_train)
+            raw_predictions = self._raw_predict(x_train)
             self._resize_state()
 
         # fit the boosting stages
         n_stages = self._fit_stages(
-            X_train,
+            x_train,
             y_train,
             raw_predictions,
             sample_weight_train,
             self._rng,
-            X_val,
+            x_val,
             y_val,
             sample_weight_val,
             begin_at_stage,
@@ -834,8 +834,8 @@ class BaseGradientBoosting(BaseEnsemble, metaclass=ABCMeta):
         y,
         raw_predictions,
         sample_weight,
-        random_state,
-        X_val,
+        rng,
+        x_val,
         y_val,
         sample_weight_val,
         begin_at_stage=0,
@@ -857,14 +857,14 @@ class BaseGradientBoosting(BaseEnsemble, metaclass=ABCMeta):
             verbose_reporter = VerboseReporter(verbose=self.verbose)
             verbose_reporter.init(self, begin_at_stage)
 
-        X_csc = csc_array(X) if issparse(X) else None
-        X_csr = csr_array(X) if issparse(X) else None
+        x_csc = csc_array(X) if issparse(X) else None
+        x_csr = csr_array(X) if issparse(X) else None
 
         if self.n_iter_no_change is not None:
             loss_history = np.full(self.n_iter_no_change, np.inf)
             # We create a generator to get the predictions for X_val after
             # the addition of each successive stage
-            y_val_pred_iter = self._staged_raw_predict(X_val, check_input=False)
+            y_val_pred_iter = self._staged_raw_predict(x_val, check_input=False)
 
         # Older versions of GBT had its own loss functions. With the new common
         # private loss function submodule _loss, we often are a factor of 2
@@ -888,7 +888,7 @@ class BaseGradientBoosting(BaseEnsemble, metaclass=ABCMeta):
         for i in range(begin_at_stage, self.n_estimators):
             # subsampling
             if do_oob:
-                sample_mask = _random_sample_mask(n_samples, n_inbag, random_state)
+                sample_mask = _random_sample_mask(n_samples, n_inbag, rng)
                 y_oob_masked = y[~sample_mask]
                 sample_weight_oob_masked = sample_weight[~sample_mask]
                 if i == 0:  # store the initial loss to compute the OOB score
@@ -906,9 +906,9 @@ class BaseGradientBoosting(BaseEnsemble, metaclass=ABCMeta):
                 raw_predictions,
                 sample_weight,
                 sample_mask,
-                random_state,
-                X_csc=X_csc,
-                X_csr=X_csr,
+                random_state=rng,
+                x_csc=x_csc,
+                x_csr=x_csr,
             )
 
             # track loss
