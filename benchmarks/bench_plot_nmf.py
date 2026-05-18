@@ -228,19 +228,21 @@ class _PGNMF(NMF):
     def transform(self, X):
         check_is_fitted(self)
         H = self.components_
-        W, _, self.n_iter_ = self._fit_transform(X, H=H, update_H=False)
+        W, _, self.n_iter_ = self._fit_transform(X, h=H, update_h=False)
         return W
 
     def inverse_transform(self, w):
         check_is_fitted(self)
         return np.dot(w, self.components_)
 
-    def fit_transform(self, X, y=None, W=None, H=None):
-        W, H, self.n_iter = self._fit_transform(X, W=W, H=H, update_H=True)
+    def fit_transform(self, X, y=None, w=None, h=None, **kwargs):
+        w = kwargs.get("W", w)
+        h = kwargs.get("H", h)
+        W, H, self.n_iter = self._fit_transform(X, w=w, h=h, update_h=True)
         self.components_ = H
         return W
 
-    def _fit_transform(self, X, y=None, W=None, H=None, update_H=True):
+    def _fit_transform(self, X, y=None, w=None, h=None, update_h=True):
         X = check_array(X, accept_sparse=("csr", "csc"))
         check_non_negative(X, "NMF (input X)")
 
@@ -266,22 +268,22 @@ class _PGNMF(NMF):
             )
 
         # check W and H, or initialize them
-        if self.init == "custom" and update_H:
-            _check_init(H, (n_components, n_features), "NMF (input H)")
-            _check_init(W, (n_samples, n_components), "NMF (input W)")
-        elif not update_H:
-            _check_init(H, (n_components, n_features), "NMF (input H)")
-            W = np.zeros((n_samples, n_components))
+        if self.init == "custom" and update_h:
+            _check_init(h, (n_components, n_features), "NMF (input H)")
+            _check_init(w, (n_samples, n_components), "NMF (input W)")
+        elif not update_h:
+            _check_init(h, (n_components, n_features), "NMF (input H)")
+            w = np.zeros((n_samples, n_components))
         else:
-            W, H = _initialize_nmf(
+            w, h = _initialize_nmf(
                 X, n_components, init=self.init, random_state=self.random_state
             )
 
-        if update_H:  # fit_transform
-            W, H, n_iter = _fit_projected_gradient(
+        if update_h:  # fit_transform
+            w, h, n_iter = _fit_projected_gradient(
                 X,
-                W,
-                H,
+                w,
+                h,
                 self.tol,
                 self.max_iter,
                 self.nls_max_iter,
@@ -291,14 +293,14 @@ class _PGNMF(NMF):
         else:  # transform
             w_t, _, n_iter = _nls_subproblem(
                 X.T,
-                H.T,
-                W.T,
+                h.T,
+                w.T,
                 self.tol,
                 self.nls_max_iter,
                 alpha=self.alpha,
                 l1_ratio=self.l1_ratio,
             )
-            W = w_t.T
+            w = w_t.T
 
         if n_iter == self.max_iter and self.tol > 0:
             warnings.warn(
@@ -307,7 +309,7 @@ class _PGNMF(NMF):
                 ConvergenceWarning,
             )
 
-        return W, H, n_iter
+        return w, h, n_iter
 
 
 #################
@@ -350,12 +352,12 @@ def plot_results(results_df, plot_name):
 @ignore_warnings(category=ConvergenceWarning)
 # use joblib to cache the results.
 # X_shape is specified in arguments for avoiding hashing X
-@mem.cache(ignore=["X", "W0", "H0"])
+@mem.cache(ignore=["X", "w0", "h0"])
 def bench_one(
-    name, X, W0, H0, X_shape, clf_type, clf_params, init, n_components, random_state
+    name, X, w0, h0, x_shape, clf_type, clf_params, init, n_components, random_state
 ):
-    W = W0.copy()
-    H = H0.copy()
+    W = w0.copy()
+    H = h0.copy()
 
     clf = clf_type(**clf_params)
     st = time()
@@ -375,7 +377,9 @@ def run_bench(X, clfs, plot_name, n_components, tol, alpha, l1_ratio):
         print("Training %s:" % name)
         for rs, init in enumerate(("nndsvd", "nndsvdar", "random")):
             print("    %s %s: " % (init, " " * (8 - len(init))), end="")
-            W, H = _initialize_nmf(X, n_components, init, 1e-6, rs)
+            W, H = _initialize_nmf(
+                X, n_components, init, 1e-6, random_state=rs
+            )
 
             for max_iter in iter_range:
                 clf_params["alpha"] = alpha
