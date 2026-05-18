@@ -110,9 +110,9 @@ def test_incremental_pca_check_projection(global_random_seed):
 
 def test_incremental_pca_inverse(global_random_seed):
     # Test that the projection of data can be inverted.
-    rng = np.random.RandomState(global_random_seed)
+    rng = np.random.default_rng(global_random_seed)
     n, p = 50, 3
-    X = rng.randn(n, p)  # spherical data
+    X = rng.standard_normal((n, p))  # spherical data
     X[:, 1] *= 0.00001  # make middle component relatively small
     X += [5, 4, 3]  # make a large mean
 
@@ -155,20 +155,21 @@ def test_incremental_pca_validation():
 def test_n_samples_equal_n_components():
     # Ensures no warning is raised when n_samples==n_components
     # Non-regression test for gh-19050
+    rng = np.random.default_rng(0)
     ipca = IncrementalPCA(n_components=5)
     with warnings.catch_warnings():
         warnings.simplefilter("error", RuntimeWarning)
-        ipca.partial_fit(np.random.randn(5, 7))
+        ipca.partial_fit(rng.standard_normal((5, 7)))
     with warnings.catch_warnings():
         warnings.simplefilter("error", RuntimeWarning)
-        ipca.fit(np.random.randn(5, 7))
+        ipca.fit(rng.standard_normal((5, 7)))
 
 
 def test_n_components_none():
     # Ensures that n_components == None is handled correctly
-    rng = np.random.RandomState(1999)
+    rng = np.random.default_rng(1999)
     for n_samples, n_features in [(50, 10), (10, 50)]:
-        X = rng.rand(n_samples, n_features)
+        X = rng.random((n_samples, n_features))
         ipca = IncrementalPCA(n_components=None)
 
         # First partial_fit call, ipca.n_components_ is inferred from
@@ -184,12 +185,12 @@ def test_n_components_none():
 
 def test_incremental_pca_set_params():
     # Test that components_ sign is stable over batch sizes.
-    rng = np.random.RandomState(1999)
+    rng = np.random.default_rng(1999)
     n_samples = 100
     n_features = 20
-    X = rng.randn(n_samples, n_features)
-    X2 = rng.randn(n_samples, n_features)
-    X3 = rng.randn(n_samples, n_features)
+    X = rng.standard_normal((n_samples, n_features))
+    X2 = rng.standard_normal((n_samples, n_features))
+    X3 = rng.standard_normal((n_samples, n_features))
     ipca = IncrementalPCA(n_components=20)
     ipca.fit(X)
     # Decreasing number of components
@@ -207,10 +208,10 @@ def test_incremental_pca_set_params():
 
 def test_incremental_pca_num_features_change():
     # Test that changing n_components will raise an error.
-    rng = np.random.RandomState(1999)
+    rng = np.random.default_rng(1999)
     n_samples = 100
-    X = rng.randn(n_samples, 20)
-    X2 = rng.randn(n_samples, 50)
+    X = rng.standard_normal((n_samples, 20))
+    X2 = rng.standard_normal((n_samples, 50))
     ipca = IncrementalPCA(n_components=None)
     ipca.fit(X)
     with pytest.raises(ValueError):
@@ -219,10 +220,10 @@ def test_incremental_pca_num_features_change():
 
 def test_incremental_pca_batch_signs(global_random_seed):
     # Test that components_ sign is stable over batch sizes.
-    rng = np.random.RandomState(global_random_seed)
+    rng = np.random.default_rng(global_random_seed)
     n_samples = 100
     n_features = 3
-    X = rng.randn(n_samples, n_features)
+    X = rng.standard_normal((n_samples, n_features))
     all_components = []
     batch_sizes = np.arange(10, 20)
     for batch_size in batch_sizes:
@@ -236,9 +237,9 @@ def test_incremental_pca_batch_signs(global_random_seed):
 def test_incremental_pca_partial_fit_small_batch():
     # Test that there is no minimum batch size after the first partial_fit
     # Non-regression test
-    rng = np.random.RandomState(1999)
+    rng = np.random.default_rng(1999)
     n, p = 50, 3
-    X = rng.randn(n, p)  # spherical data
+    X = rng.standard_normal((n, p))  # spherical data
     X[:, 1] *= 0.00001  # make middle component relatively small
     X += [5, 4, 3]  # make a large mean
 
@@ -256,10 +257,10 @@ def test_incremental_pca_partial_fit_small_batch():
 
 def test_incremental_pca_batch_values(global_random_seed):
     # Test that components_ values are stable over batch sizes.
-    rng = np.random.RandomState(global_random_seed)
+    rng = np.random.default_rng(global_random_seed)
     n_samples = 100
     n_features = 3
-    X = rng.randn(n_samples, n_features)
+    X = rng.standard_normal((n_samples, n_features))
     all_components = []
     batch_sizes = np.arange(20, 40, 3)
     for batch_size in batch_sizes:
@@ -272,10 +273,10 @@ def test_incremental_pca_batch_values(global_random_seed):
 
 def test_incremental_pca_batch_rank():
     # Test sample size in each batch is always larger or equal to n_components
-    rng = np.random.RandomState(1999)
+    rng = np.random.default_rng(1999)
     n_samples = 100
     n_features = 20
-    X = rng.randn(n_samples, n_features)
+    X = rng.standard_normal((n_samples, n_features))
     all_components = []
     batch_sizes = np.arange(20, 90, 3)
     for batch_size in batch_sizes:
