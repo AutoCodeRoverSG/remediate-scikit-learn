@@ -493,12 +493,12 @@ def load_descr(descr_file_name, *, descr_module=DESCR_MODULE, encoding="utf-8"):
 
 @validate_params(
     {
-        "return_X_y": ["boolean"],
+        "return_x_y": ["boolean"],
         "as_frame": ["boolean"],
     },
     prefer_skip_nested_validation=True,
 )
-def load_wine(*, return_X_y=False, as_frame=False):
+def load_wine(*, return_x_y=False, as_frame=False, **kwargs):
     """Load and return the wine dataset (classification).
 
     .. versionadded:: 0.18
@@ -575,6 +575,9 @@ def load_wine(*, return_X_y=False, as_frame=False):
     >>> list(data.target_names)
     [np.str_('class_0'), np.str_('class_1'), np.str_('class_2')]
     """
+    # Support legacy parameter name return_X_y for backward compatibility
+    if "return_X_y" in kwargs:
+        return_x_y = kwargs.pop("return_X_y")
 
     data, target, target_names, fdescr = load_csv_data(
         data_file_name="wine_data.csv", descr_file_name="wine_data.rst"
@@ -605,7 +608,7 @@ def load_wine(*, return_X_y=False, as_frame=False):
             "load_wine", data, target, feature_names, target_columns
         )
 
-    if return_X_y:
+    if return_x_y:
         return data, target
 
     return Bunch(
@@ -622,7 +625,7 @@ def load_wine(*, return_X_y=False, as_frame=False):
     {"return_X_y": ["boolean"], "as_frame": ["boolean"]},
     prefer_skip_nested_validation=True,
 )
-def load_iris(*, return_X_y=False, as_frame=False):
+def load_iris(*, return_X_y=False, as_frame=False):  # NOSONAR
     """Load and return the iris dataset (classification).
 
     The iris dataset is a classic and very easy multi-class classification
@@ -751,7 +754,7 @@ def load_iris(*, return_X_y=False, as_frame=False):
     {"return_X_y": ["boolean"], "as_frame": ["boolean"]},
     prefer_skip_nested_validation=True,
 )
-def load_breast_cancer(*, return_X_y=False, as_frame=False):
+def load_breast_cancer(*, return_X_y=False, as_frame=False):  # NOSONAR
     """Load and return the breast cancer Wisconsin dataset (classification).
 
     The breast cancer dataset is a classic and very easy binary classification

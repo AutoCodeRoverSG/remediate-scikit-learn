@@ -43,7 +43,7 @@ def _split_sparse_columns(
         Subset of arff data with only the include columns indicated by the
         include_columns argument.
     """
-    arff_data_new: ArffSparseDataType = (list(), list(), list())
+    arff_data_new: ArffSparseDataType = ([], [], [])
     reindexed_columns = {
         column_idx: array_idx for array_idx, column_idx in enumerate(include_columns)
     }
@@ -170,7 +170,7 @@ def _liac_arff_parser(
     return_type = _arff.COO if output_arrays_type == "sparse" else _arff.DENSE_GEN
     # we should not let LIAC-ARFF to encode the nominal attributes with NumPy
     # arrays to have only numerical values.
-    encode_nominal = not (output_arrays_type == "pandas")
+    encode_nominal = output_arrays_type != "pandas"
     arff_container = _arff.load(
         stream, return_type=return_type, encode_nominal=encode_nominal
     )
@@ -260,12 +260,12 @@ def _liac_arff_parser(
             X = data[:, feature_indices_to_select]
             y = data[:, target_indices_to_select]
         elif isinstance(arff_data, tuple):
-            arff_data_X = _split_sparse_columns(arff_data, feature_indices_to_select)
+            arff_data_x = _split_sparse_columns(arff_data, feature_indices_to_select)
             num_obs = max(arff_data[1]) + 1
-            X_shape = (num_obs, len(feature_indices_to_select))
+            x_shape = (num_obs, len(feature_indices_to_select))
             X = sp.sparse.coo_array(
-                (arff_data_X[0], (arff_data_X[1], arff_data_X[2])),
-                shape=X_shape,
+                (arff_data_x[0], (arff_data_x[1], arff_data_x[2])),
+                shape=x_shape,
                 dtype=np.float64,
             )
             X = _align_api_if_sparse(X.tocsr())
@@ -407,7 +407,7 @@ def _pandas_arff_parser(
         # and not raise a ParserError. Instead, we set the columns after reading the
         # file and raise a ParserError if the number of columns does not match the
         # number of columns in the metadata given by OpenML.
-        frame.columns = [name for name in openml_columns_info]
+        frame.columns = list(openml_columns_info)
     except ValueError as exc:
         raise pd.errors.ParserError(
             "The number of columns provided by OpenML does not match the number of "
