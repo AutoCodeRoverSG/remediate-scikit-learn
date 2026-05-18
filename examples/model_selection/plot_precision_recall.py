@@ -111,13 +111,15 @@ from sklearn.model_selection import train_test_split
 X, y = load_iris(return_X_y=True)
 
 # Add noisy features
-random_state = np.random.RandomState(0)
+random_state = np.random.default_rng(0)
 n_samples, n_features = X.shape
-X = np.concatenate([X, random_state.randn(n_samples, 200 * n_features)], axis=1)
+X = np.concatenate(
+    [X, random_state.standard_normal((n_samples, 200 * n_features))], axis=1
+)
 
 # Limit to the two first classes, and split into training and test
 X_train, X_test, y_train, y_test = train_test_split(
-    X[y < 2], y[y < 2], test_size=0.5, random_state=random_state
+    X[y < 2], y[y < 2], test_size=0.5, random_state=0
 )
 
 # %%
@@ -128,7 +130,9 @@ from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import LinearSVC
 
-classifier = make_pipeline(StandardScaler(), LinearSVC(random_state=random_state))
+classifier = make_pipeline(
+    StandardScaler(), LinearSVC(random_state=0), memory=None
+)
 classifier.fit(X_train, y_train)
 
 # %%
@@ -178,7 +182,9 @@ _ = display.ax_.set_title("2-class Precision-Recall curve")
 
 from sklearn.model_selection import cross_validate
 
-classifier = make_pipeline(StandardScaler(), LinearSVC(random_state=random_state))
+classifier = make_pipeline(
+    StandardScaler(), LinearSVC(random_state=0), memory=None
+)
 cv_results = cross_validate(
     classifier, X_train, y_train, return_estimator=True, return_indices=True
 )
@@ -206,7 +212,7 @@ n_classes = Y.shape[1]
 
 # Split into training and test
 X_train, X_test, Y_train, Y_test = train_test_split(
-    X, Y, test_size=0.5, random_state=random_state
+    X, Y, test_size=0.5, random_state=0
 )
 
 # %%
@@ -215,7 +221,7 @@ X_train, X_test, Y_train, Y_test = train_test_split(
 from sklearn.multiclass import OneVsRestClassifier
 
 classifier = OneVsRestClassifier(
-    make_pipeline(StandardScaler(), LinearSVC(random_state=random_state))
+    make_pipeline(StandardScaler(), LinearSVC(random_state=0), memory=None)
 )
 classifier.fit(X_train, Y_train)
 y_score = classifier.decision_function(X_test)
@@ -227,9 +233,9 @@ y_score = classifier.decision_function(X_test)
 from sklearn.metrics import average_precision_score, precision_recall_curve
 
 # For each class
-precision = dict()
-recall = dict()
-average_precision = dict()
+precision = {}
+recall = {}
+average_precision = {}
 for i in range(n_classes):
     precision[i], recall[i], _ = precision_recall_curve(Y_test[:, i], y_score[:, i])
     average_precision[i] = average_precision_score(Y_test[:, i], y_score[:, i])
