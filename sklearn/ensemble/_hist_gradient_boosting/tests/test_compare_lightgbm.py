@@ -59,7 +59,6 @@ def test_same_predictions_regression(
     #   iterations.
     pytest.importorskip("lightgbm")
 
-    rng = np.random.RandomState(seed=seed)
     max_iter = 1
     max_bins = 255
 
@@ -74,9 +73,13 @@ def test_same_predictions_regression(
     if n_samples > 255:
         # bin data and convert it to float32 so that the estimator doesn't
         # treat it as pre-binned
-        X = _BinMapper(n_bins=max_bins + 1).fit_transform(X).astype(np.float32)
+        X = (
+            _BinMapper(n_bins=max_bins + 1, random_state=42)
+            .fit_transform(X)
+            .astype(np.float32)
+        )
 
-    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=rng)
+    X_train, X_test, y_train, _ = train_test_split(X, y, random_state=seed)
 
     est_sklearn = HistGradientBoostingRegressor(
         loss=loss,
@@ -133,7 +136,6 @@ def test_same_predictions_classification(
     # Same as test_same_predictions_regression but for classification
     pytest.importorskip("lightgbm")
 
-    rng = np.random.RandomState(seed=seed)
     max_iter = 1
     n_classes = 2
     max_bins = 255
@@ -150,9 +152,9 @@ def test_same_predictions_classification(
     if n_samples > 255:
         # bin data and convert it to float32 so that the estimator doesn't
         # treat it as pre-binned
-        X = _BinMapper(n_bins=max_bins + 1).fit_transform(X).astype(np.float32)
+        X = _BinMapper(n_bins=max_bins + 1, random_state=seed).fit_transform(X).astype(np.float32)
 
-    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=rng)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=seed)
 
     est_sklearn = HistGradientBoostingClassifier(
         loss="log_loss",
@@ -206,7 +208,7 @@ def test_same_predictions_multiclass_classification(
     # Same as test_same_predictions_regression but for classification
     pytest.importorskip("lightgbm")
 
-    rng = np.random.RandomState(seed=seed)
+    rng = np.random.default_rng(seed)
     n_classes = 3
     max_iter = 1
     max_bins = 255
@@ -225,9 +227,11 @@ def test_same_predictions_multiclass_classification(
     if n_samples > 255:
         # bin data and convert it to float32 so that the estimator doesn't
         # treat it as pre-binned
-        X = _BinMapper(n_bins=max_bins + 1).fit_transform(X).astype(np.float32)
+        X = _BinMapper(n_bins=max_bins + 1, random_state=seed).fit_transform(X).astype(np.float32)
 
-    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=rng)
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, random_state=int(rng.integers(2**31))
+    )
 
     est_sklearn = HistGradientBoostingClassifier(
         loss="log_loss",
