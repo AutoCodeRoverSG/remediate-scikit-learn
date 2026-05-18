@@ -21,7 +21,7 @@ def get_versions(versions_file):
         A dictionary with the versions of the packages.
     """
     with open(versions_file, "r") as f:
-        return dict(line.strip().split("=") for line in f)
+        return {k: v for line in f for k, v in [line.strip().split("=")]}
 
 
 def get_step_message(log, start, end, title, message, details):
@@ -257,7 +257,7 @@ def update_linter_fails_label(linting_failed, issue):
         except GithubException as exception:
             # The exception is ignored if raised because the issue did not have the
             # label already
-            if not exception.message == "Label does not exist":
+            if exception.message != "Label does not exist":
                 raise
 
 
@@ -320,7 +320,7 @@ if __name__ == "__main__":
             # try again without the details.
             message = get_message(
                 log_file,
-                repo=repo,
+                repo_str=repo_str,
                 pr_number=pr_number,
                 sha=sha,
                 run_id=run_id,

@@ -29,6 +29,9 @@ from sklearn.utils import shuffle as sh
 
 print(__doc__)
 
+NORMAL_LABEL = b"normal."
+LEGEND_LOC = "lower right"
+
 
 def print_outlier_ratio(y):
     """
@@ -94,7 +97,7 @@ for dat in datasets:
         lb = LabelBinarizer()
         x1 = lb.fit_transform(X[:, 1].astype(str))
         X = np.c_[X[:, :1], x1, X[:, 2:]]
-        y = (y != b"normal.").astype(int)
+        y = (y != NORMAL_LABEL).astype(int)
         print_outlier_ratio(y)
 
     if dat == "SA":
@@ -103,11 +106,11 @@ for dat in datasets:
         x2 = lb.fit_transform(X[:, 2].astype(str))
         x3 = lb.fit_transform(X[:, 3].astype(str))
         X = np.c_[X[:, :1], x1, x2, x3, X[:, 4:]]
-        y = (y != b"normal.").astype(int)
+        y = (y != NORMAL_LABEL).astype(int)
         print_outlier_ratio(y)
 
     if dat in ("http", "smtp"):
-        y = (y != b"normal.").astype(int)
+        y = (y != NORMAL_LABEL).astype(int)
         print_outlier_ratio(y)
 
     n_samples, n_features = X.shape
@@ -135,9 +138,9 @@ for dat in datasets:
         ax[0].hist(scoring, bins, color="black")
         ax[0].set_title("Decision function for %s dataset" % dat)
         ax[1].hist(scoring[y_test == 0], bins, color="b", label="normal data")
-        ax[1].legend(loc="lower right")
+        ax[1].legend(loc=LEGEND_LOC)
         ax[2].hist(scoring[y_test == 1], bins, color="r", label="outliers")
-        ax[2].legend(loc="lower right")
+        ax[2].legend(loc=LEGEND_LOC)
 
     # Show ROC Curves
     predict_time = time() - tstart
@@ -159,6 +162,6 @@ ax_roc.set_ylim([-0.05, 1.05])
 ax_roc.set_xlabel("False Positive Rate")
 ax_roc.set_ylabel("True Positive Rate")
 ax_roc.set_title("Receiver operating characteristic (ROC) curves")
-ax_roc.legend(loc="lower right")
+ax_roc.legend(loc=LEGEND_LOC)
 fig_roc.tight_layout()
 plt.show()
