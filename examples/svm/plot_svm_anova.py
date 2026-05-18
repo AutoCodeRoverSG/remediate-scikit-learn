@@ -23,7 +23,7 @@ from sklearn.datasets import load_iris
 X, y = load_iris(return_X_y=True)
 
 # Add non-informative features
-rng = np.random.RandomState(0)
+rng = np.random.default_rng(0)
 X = np.hstack((X, 2 * rng.random((X.shape[0], 36))))
 
 # %%
@@ -42,7 +42,8 @@ clf = Pipeline(
         ("anova", SelectPercentile(f_classif)),
         ("scaler", StandardScaler()),
         ("svc", SVC(gamma="auto")),
-    ]
+    ],
+    memory=None,
 )
 
 # %%
@@ -52,8 +53,8 @@ import matplotlib.pyplot as plt
 
 from sklearn.model_selection import cross_val_score
 
-score_means = list()
-score_stds = list()
+score_means = []
+score_stds = []
 percentiles = (1, 3, 6, 10, 15, 20, 30, 40, 60, 80, 100)
 
 for percentile in percentiles:
