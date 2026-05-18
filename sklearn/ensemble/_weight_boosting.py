@@ -76,7 +76,7 @@ class BaseWeightBoosting(BaseEnsemble, metaclass=ABCMeta):
         estimator=None,
         *,
         n_estimators=50,
-        estimator_params=tuple(),
+        estimator_params=(),
         learning_rate=1.0,
         random_state=None,
     ):
@@ -156,7 +156,7 @@ class BaseWeightBoosting(BaseEnsemble, metaclass=ABCMeta):
         random_state = check_random_state(self.random_state)
         epsilon = np.finfo(sample_weight.dtype).eps
 
-        zero_weight_mask = sample_weight == 0.0
+        zero_weight_mask = np.isclose(sample_weight, 0.0)
         for iboost in range(self.n_estimators):
             # avoid extremely small sample weight, for details see issue #20320
             sample_weight = np.clip(sample_weight, a_min=epsilon, a_max=None)
@@ -164,7 +164,7 @@ class BaseWeightBoosting(BaseEnsemble, metaclass=ABCMeta):
             sample_weight[zero_weight_mask] = 0.0
 
             # Boosting step
-            sample_weight, estimator_weight, estimator_error = self._boost(
+            sample_weight, estimator_weight, estimator_error = self._boost(  # NOSONAR
                 iboost, X, y, sample_weight, random_state
             )
 
@@ -560,7 +560,7 @@ class AdaBoostClassifier(
         )
 
         # Only boost the weights if it will fit again
-        if not iboost == self.n_estimators - 1:
+        if iboost != self.n_estimators - 1:
             # Only boost positive weights
             sample_weight = np.exp(
                 np.log(sample_weight)
@@ -1056,7 +1056,7 @@ class AdaBoostRegressor(_RoutingNotSupportedMixin, RegressorMixin, BaseWeightBoo
         # Boost weight using AdaBoost.R2 alg
         estimator_weight = self.learning_rate * np.log(1.0 / beta)
 
-        if not iboost == self.n_estimators - 1:
+        if iboost != self.n_estimators - 1:
             sample_weight[sample_mask] *= np.power(
                 beta, (1.0 - masked_error_vector) * self.learning_rate
             )
