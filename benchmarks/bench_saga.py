@@ -27,6 +27,8 @@ from sklearn.preprocessing import LabelBinarizer, LabelEncoder
 from sklearn.utils.extmath import safe_sparse_dot, softmax
 from sklearn.utils.parallel import Parallel, delayed
 
+TIME_LABEL = "Time (s)"
+
 
 def fit_single(
     solver,
@@ -34,7 +36,7 @@ def fit_single(
     y,
     penalty="l2",
     single_target=True,
-    C=1,
+    c=1,
     max_iter=10,
     skip_slow=False,
     dtype=np.float64,
@@ -69,13 +71,13 @@ def fit_single(
 
     if penalty == "l2":
         l1_ratio = 0
-        alpha = 1.0 / (C * n_samples)
+        alpha = 1.0 / (c * n_samples)
         beta = 0
         lightning_penalty = None
     else:
         l1_ratio = 1
         alpha = 0.0
-        beta = 1.0 / (C * n_samples)
+        beta = 1.0 / (c * n_samples)
         lightning_penalty = "l1"
 
     for this_max_iter in range(1, max_iter + 1, 2):
@@ -100,7 +102,7 @@ def fit_single(
         else:
             lr = LogisticRegression(
                 solver=solver,
-                C=C,
+                C=c,
                 l1_ratio=l1_ratio,
                 fit_intercept=False,
                 tol=0,
@@ -213,7 +215,7 @@ def exp(
             penalty=penalty,
             single_target=single_target,
             dtype=dtype,
-            C=1,
+            c=1,
             max_iter=max_iter,
             skip_slow=skip_slow,
         )
@@ -226,17 +228,17 @@ def exp(
     for dtype_name in dtypes_mapping.keys():
         for solver in solvers:
             if not (skip_slow and solver == "lightning" and penalty == "l1"):
-                lr, times, train_scores, test_scores, accuracies = out[idx]
-                this_res = dict(
-                    solver=solver,
-                    penalty=penalty,
-                    dtype=dtype_name,
-                    single_target=single_target,
-                    times=times,
-                    train_scores=train_scores,
-                    test_scores=test_scores,
-                    accuracies=accuracies,
-                )
+                _, times, train_scores, test_scores, accuracies = out[idx]
+                this_res = {
+                    "solver": solver,
+                    "penalty": penalty,
+                    "dtype": dtype_name,
+                    "single_target": single_target,
+                    "times": times,
+                    "train_scores": train_scores,
+                    "test_scores": test_scores,
+                    "accuracies": accuracies,
+                }
                 res.append(this_res)
             idx += 1
 
@@ -281,7 +283,7 @@ def plot(outname=None):
                 alpha=alpha[dtype],
                 linestyle=linestyles[dtype],
             )
-        ax.set_xlabel("Time (s)")
+        ax.set_xlabel(TIME_LABEL)
         ax.set_ylabel("Training objective (relative to min)")
         ax.set_yscale("log")
 
@@ -306,7 +308,7 @@ def plot(outname=None):
                 linestyle=linestyles[dtype],
             )
 
-        ax.set_xlabel("Time (s)")
+        ax.set_xlabel(TIME_LABEL)
         ax.set_ylabel("Test objective (relative to min)")
         ax.set_yscale("log")
 
@@ -330,7 +332,7 @@ def plot(outname=None):
                 linestyle=linestyles[dtype],
             )
 
-        ax.set_xlabel("Time (s)")
+        ax.set_xlabel(TIME_LABEL)
         ax.set_ylabel("Test accuracy")
         ax.legend()
         name = "single_target" if single_target else "multi_target"
