@@ -19,8 +19,8 @@ from sklearn.utils import check_random_state
 from sklearn.utils.extmath import svd_flip
 
 
-def assert_matrix_orthogonal(M):
-    K = np.dot(M.T, M)
+def assert_matrix_orthogonal(m):
+    K = np.dot(m.T, m)
     assert_array_almost_equal(K, np.diag(np.diag(K)))
 
 
@@ -44,23 +44,23 @@ def test_pls_canonical_basics():
     U = pls._y_scores
     Q = pls.y_loadings_
     # Need to scale first
-    Xc, yc, x_mean, y_mean, x_std, y_std = _center_scale_xy(
+    xc, yc, _, _, _, _ = _center_scale_xy(
         X.copy(), y.copy(), scale=True
     )
-    assert_array_almost_equal(Xc, np.dot(T, P.T))
+    assert_array_almost_equal(xc, np.dot(T, P.T))
     assert_array_almost_equal(yc, np.dot(U, Q.T))
 
     # Check that rotations on training data lead to scores
-    Xt = pls.transform(X)
-    assert_array_almost_equal(Xt, pls._x_scores)
-    Xt, yt = pls.transform(X, y)
-    assert_array_almost_equal(Xt, pls._x_scores)
+    xt = pls.transform(X)
+    assert_array_almost_equal(xt, pls._x_scores)
+    xt, yt = pls.transform(X, y)
+    assert_array_almost_equal(xt, pls._x_scores)
     assert_array_almost_equal(yt, pls._y_scores)
 
     # Check that inverse_transform works
-    X_back = pls.inverse_transform(Xt)
-    assert_array_almost_equal(X_back, X)
-    _, y_back = pls.inverse_transform(Xt, yt)
+    x_back = pls.inverse_transform(xt)
+    assert_array_almost_equal(x_back, X)
+    _, y_back = pls.inverse_transform(xt, yt)
     assert_array_almost_equal(y_back, y)
 
 
@@ -73,12 +73,12 @@ def test_sanity_check_pls_regression():
     y = d.target
 
     pls = PLSRegression(n_components=X.shape[1])
-    X_trans, _ = pls.fit_transform(X, y)
+    x_trans, _ = pls.fit_transform(X, y)
 
     # FIXME: one would expect y_trans == pls.y_scores_ but this is not
     # the case.
     # xref: https://github.com/scikit-learn/scikit-learn/issues/22420
-    assert_allclose(X_trans, pls.x_scores_)
+    assert_allclose(x_trans, pls.x_scores_)
 
     expected_x_weights = np.array(
         [
@@ -353,14 +353,14 @@ def test_convergence_fail():
         pls_nipals.fit(X, y)
 
 
-@pytest.mark.parametrize("Est", (PLSSVD, PLSRegression, PLSCanonical))
-def test_attributes_shapes(Est):
+@pytest.mark.parametrize("estimator", (PLSSVD, PLSRegression, PLSCanonical))
+def test_attributes_shapes(estimator):
     # Make sure attributes are of the correct shape depending on n_components
     d = load_linnerud()
     X = d.data
     y = d.target
     n_components = 2
-    pls = Est(n_components=n_components)
+    pls = estimator(n_components=n_components)
     pls.fit(X, y)
     assert all(
         attr.shape[1] == n_components for attr in (pls.x_weights_, pls.y_weights_)
