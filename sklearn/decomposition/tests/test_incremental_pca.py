@@ -289,9 +289,9 @@ def test_incremental_pca_batch_rank():
 
 def test_incremental_pca_partial_fit(global_random_seed):
     # Test that fit and partial_fit get equivalent results.
-    rng = np.random.RandomState(global_random_seed)
+    rng = np.random.default_rng(global_random_seed)
     n, p = 50, 3
-    X = rng.randn(n, p)  # spherical data
+    X = rng.standard_normal((n, p))  # spherical data
     X[:, 1] *= 0.00001  # make middle component relatively small
     X += [5, 4, 3]  # make a large mean
 
@@ -319,10 +319,10 @@ def test_incremental_pca_against_pca_iris():
 
 def test_incremental_pca_against_pca_random_data(global_random_seed):
     # Test that IncrementalPCA and PCA are approximate (to a sign flip).
-    rng = np.random.RandomState(global_random_seed)
+    rng = np.random.default_rng(global_random_seed)
     n_samples = 100
     n_features = 3
-    X = rng.randn(n_samples, n_features) + 5 * rng.rand(1, n_features)
+    X = rng.standard_normal((n_samples, n_features)) + 5 * rng.random((1, n_features))
 
     y_pca = PCA(n_components=3).fit_transform(X)
     y_ipca = IncrementalPCA(n_components=3, batch_size=25).fit_transform(X)
@@ -351,15 +351,20 @@ def test_explained_variances():
 def test_singular_values(global_random_seed):
     # Check that the IncrementalPCA output has the correct singular values
 
-    rng = np.random.RandomState(global_random_seed)
     n_samples = 1000
     n_features = 100
 
     X = datasets.make_low_rank_matrix(
-        n_samples, n_features, tail_strength=0.0, effective_rank=10, random_state=rng
+        n_samples,
+        n_features,
+        tail_strength=0.0,
+        effective_rank=10,
+        random_state=global_random_seed,
     )
 
-    pca = PCA(n_components=10, svd_solver="full", random_state=rng).fit(X)
+    pca = PCA(
+        n_components=10, svd_solver="full", random_state=global_random_seed
+    ).fit(X)
     ipca = IncrementalPCA(n_components=10, batch_size=150).fit(X)
     assert_array_almost_equal(pca.singular_values_, ipca.singular_values_, 2)
 
@@ -382,15 +387,18 @@ def test_singular_values(global_random_seed):
     )
 
     # Set the singular values and see what we get back
-    rng = np.random.RandomState(global_random_seed)
     n_samples = 100
     n_features = 110
 
     X = datasets.make_low_rank_matrix(
-        n_samples, n_features, tail_strength=0.0, effective_rank=3, random_state=rng
+        n_samples,
+        n_features,
+        tail_strength=0.0,
+        effective_rank=3,
+        random_state=global_random_seed,
     )
 
-    pca = PCA(n_components=3, svd_solver="full", random_state=rng)
+    pca = PCA(n_components=3, svd_solver="full", random_state=global_random_seed)
     ipca = IncrementalPCA(n_components=3, batch_size=100)
 
     x_pca = pca.fit_transform(X)
@@ -443,9 +451,9 @@ def test_incremental_pca_partial_fit_float_division():
     # Test to ensure float division is used in all versions of Python
     # (non-regression test for issue #9489)
 
-    rng = np.random.RandomState(0)
-    A = rng.randn(5, 3) + 2
-    B = rng.randn(7, 3) + 5
+    rng = np.random.default_rng(0)
+    A = rng.standard_normal((5, 3)) + 2
+    B = rng.standard_normal((7, 3)) + 5
 
     pca = IncrementalPCA(n_components=2)
     pca.partial_fit(A)
@@ -467,8 +475,8 @@ def test_incremental_pca_partial_fit_float_division():
 def test_incremental_pca_fit_overflow_error():
     # Test for overflow error on Windows OS
     # (non-regression test for issue #17693)
-    rng = np.random.RandomState(0)
-    A = rng.rand(500000, 2)
+    rng = np.random.default_rng(0)
+    A = rng.random((500000, 2))
 
     ipca = IncrementalPCA(n_components=2, batch_size=10000)
     ipca.fit(A)

@@ -275,8 +275,8 @@ class SparsePCA(_BaseSparsePCA):
 
     _parameter_constraints: dict = {
         **_BaseSparsePCA._parameter_constraints,
-        "U_init": [None, np.ndarray],
-        "V_init": [None, np.ndarray],
+        "u_init": [None, np.ndarray],
+        "v_init": [None, np.ndarray],
     }
 
     def __init__(
@@ -289,8 +289,8 @@ class SparsePCA(_BaseSparsePCA):
         tol=1e-8,
         method="lars",
         n_jobs=None,
-        U_init=None,
-        V_init=None,
+        u_init=None,
+        v_init=None,
         verbose=False,
         random_state=None,
     ):
@@ -305,14 +305,14 @@ class SparsePCA(_BaseSparsePCA):
             verbose=verbose,
             random_state=random_state,
         )
-        self.U_init = U_init
-        self.V_init = V_init
+        self.u_init = u_init
+        self.v_init = v_init
 
     def _fit(self, X, n_components, random_state):
         """Specialized `fit` for SparsePCA."""
 
-        code_init = self.V_init.T if self.V_init is not None else None
-        dict_init = self.U_init.T if self.U_init is not None else None
+        code_init = self.v_init.T if self.v_init is not None else None
+        dict_init = self.u_init.T if self.u_init is not None else None
         code, dictionary, E, self.n_iter_ = dict_learning(
             X.T,
             n_components,

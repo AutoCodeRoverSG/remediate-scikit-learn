@@ -125,7 +125,7 @@ def test_initialization(global_random_seed):
     U_init = rng.randn(5, 3)
     V_init = rng.randn(3, 4)
     model = SparsePCA(
-        n_components=3, U_init=U_init, V_init=V_init, max_iter=0, random_state=rng
+        n_components=3, u_init=U_init, v_init=V_init, max_iter=0, random_state=rng
     )
     model.fit(rng.randn(5, 4))
 
