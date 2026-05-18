@@ -160,14 +160,14 @@ def test_weights_regressor():
         [("mean", reg1), ("median", reg2), ("quantile", reg3)], weights=[1, 2, 10]
     )
 
-    X_r_train, X_r_test, y_r_train, y_r_test = train_test_split(
+    x_r_train, x_r_test, y_r_train, _ = train_test_split(
         X_r, y_r, test_size=0.25
     )
 
-    reg1_pred = reg1.fit(X_r_train, y_r_train).predict(X_r_test)
-    reg2_pred = reg2.fit(X_r_train, y_r_train).predict(X_r_test)
-    reg3_pred = reg3.fit(X_r_train, y_r_train).predict(X_r_test)
-    ereg_pred = ereg.fit(X_r_train, y_r_train).predict(X_r_test)
+    reg1_pred = reg1.fit(x_r_train, y_r_train).predict(x_r_test)
+    reg2_pred = reg2.fit(x_r_train, y_r_train).predict(x_r_test)
+    reg3_pred = reg3.fit(x_r_train, y_r_train).predict(x_r_test)
+    ereg_pred = ereg.fit(x_r_train, y_r_train).predict(x_r_test)
 
     avg = np.average(
         np.asarray([reg1_pred, reg2_pred, reg3_pred]), axis=0, weights=[1, 2, 10]
@@ -180,10 +180,10 @@ def test_weights_regressor():
     ereg_weights_equal = VotingRegressor(
         [("mean", reg1), ("median", reg2), ("quantile", reg3)], weights=[1, 1, 1]
     )
-    ereg_weights_none.fit(X_r_train, y_r_train)
-    ereg_weights_equal.fit(X_r_train, y_r_train)
-    ereg_none_pred = ereg_weights_none.predict(X_r_test)
-    ereg_equal_pred = ereg_weights_equal.predict(X_r_test)
+    ereg_weights_none.fit(x_r_train, y_r_train)
+    ereg_weights_equal.fit(x_r_train, y_r_train)
+    ereg_none_pred = ereg_weights_none.predict(x_r_test)
+    ereg_equal_pred = ereg_weights_equal.predict(x_r_test)
     assert_almost_equal(ereg_none_pred, ereg_equal_pred, decimal=2)
 
 
@@ -360,7 +360,7 @@ def test_sample_weight(global_random_seed):
     # check that _fit_single_estimator will raise the right error
     # it should raise the original error if this is not linked to sample_weight
     class ClassifierErrorFit(ClassifierMixin, BaseEstimator):
-        def fit(self, X_scaled, y, sample_weight):
+        def fit(self, x_scaled, y, sample_weight):
             raise TypeError("Error unrelated to sample_weight.")
 
     clf = ClassifierErrorFit()
@@ -552,11 +552,11 @@ def test_none_estimator_with_weights(X, y, voter):
     # https://github.com/scikit-learn/scikit-learn/issues/13777
     voter = clone(voter)
     # Scaled to solve ConvergenceWarning throw by Logistic Regression
-    X_scaled = StandardScaler().fit_transform(X)
-    voter.fit(X_scaled, y, sample_weight=np.ones(y.shape))
+    x_scaled = StandardScaler().fit_transform(X)
+    voter.fit(x_scaled, y, sample_weight=np.ones(y.shape))
     voter.set_params(lr="drop")
-    voter.fit(X_scaled, y, sample_weight=np.ones(y.shape))
-    y_pred = voter.predict(X_scaled)
+    voter.fit(x_scaled, y, sample_weight=np.ones(y.shape))
+    y_pred = voter.predict(x_scaled)
     assert y_pred.shape == y.shape
 
 
@@ -669,10 +669,10 @@ def test_get_features_names_out_classifier(kwargs, expected_names):
         **kwargs,
     )
     voting.fit(X, y)
-    X_trans = voting.transform(X)
+    x_trans = voting.transform(X)
     names_out = voting.get_feature_names_out()
 
-    assert X_trans.shape[1] == len(expected_names)
+    assert x_trans.shape[1] == len(expected_names)
     assert_array_equal(names_out, expected_names)
 
 
@@ -704,10 +704,10 @@ def test_get_features_names_out_classifier_error():
 
 
 @pytest.mark.parametrize(
-    "Estimator, Child",
+    "estimator, child",
     [(VotingClassifier, ConsumingClassifier), (VotingRegressor, ConsumingRegressor)],
 )
-def test_routing_passed_metadata_not_supported(Estimator, Child):
+def test_routing_passed_metadata_not_supported(estimator, child):
     """Test that the right error message is raised when metadata is passed while
     not supported when `enable_metadata_routing=False`."""
 
@@ -717,17 +717,17 @@ def test_routing_passed_metadata_not_supported(Estimator, Child):
     with pytest.raises(
         ValueError, match="is only supported if enable_metadata_routing=True"
     ):
-        Estimator(["clf", Child()]).fit(X, y, sample_weight=[1, 1, 1], metadata="a")
+        estimator(["clf", child()]).fit(X, y, sample_weight=[1, 1, 1], metadata="a")
 
 
 @pytest.mark.parametrize(
-    "Estimator, Child",
+    "estimator, child",
     [(VotingClassifier, ConsumingClassifier), (VotingRegressor, ConsumingRegressor)],
 )
 @config_context(enable_metadata_routing=True)
-def test_get_metadata_routing_without_fit(Estimator, Child):
+def test_get_metadata_routing_without_fit(estimator, child):
     # Test that metadata_routing() doesn't raise when called before fit.
-    est = Estimator([("sub_est", Child())])
+    est = estimator([("sub_est", child())])
     est.get_metadata_routing()
 
 
