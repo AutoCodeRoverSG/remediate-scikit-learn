@@ -346,9 +346,9 @@ def test_nmf_sparse_transform(estimator, solver, csc_container):
 
 @pytest.mark.parametrize("init", ["random", "nndsvd"])
 @pytest.mark.parametrize("solver", ("cd", "mu"))
-@pytest.mark.parametrize("alpha_W", (0.0, 1.0))
+@pytest.mark.parametrize("alpha_w", (0.0, 1.0))
 @pytest.mark.parametrize("alpha_h", (0.0, 1.0, "same"))
-def test_non_negative_factorization_consistency(init, solver, alpha_W, alpha_h):
+def test_non_negative_factorization_consistency(init, solver, alpha_w, alpha_h):
     # Test that the function is called in the same way, either directly
     # or through the NMF class
     max_iter = 500
@@ -356,24 +356,24 @@ def test_non_negative_factorization_consistency(init, solver, alpha_W, alpha_h):
     A = np.abs(rng.randn(10, 10))
     A[:, 2 * np.arange(5)] = 0
 
-    W_nmf, H, _ = non_negative_factorization(
+    w_nmf, H, _ = non_negative_factorization(
         A,
         init=init,
         solver=solver,
         max_iter=max_iter,
-        alpha_W=alpha_W,
+        alpha_W=alpha_w,
         alpha_H=alpha_h,
         random_state=1,
         tol=1e-2,
     )
-    W_nmf_2, H, _ = non_negative_factorization(
+    w_nmf_2, H, _ = non_negative_factorization(
         A,
         H=H,
         update_H=False,
         init=init,
         solver=solver,
         max_iter=max_iter,
-        alpha_W=alpha_W,
+        alpha_W=alpha_w,
         alpha_H=alpha_h,
         random_state=1,
         tol=1e-2,
@@ -383,16 +383,16 @@ def test_non_negative_factorization_consistency(init, solver, alpha_W, alpha_h):
         init=init,
         solver=solver,
         max_iter=max_iter,
-        alpha_W=alpha_W,
+        alpha_W=alpha_w,
         alpha_H=alpha_h,
         random_state=1,
         tol=1e-2,
     )
-    W_cls = model_class.fit_transform(A)
-    W_cls_2 = model_class.transform(A)
+    w_cls = model_class.fit_transform(A)
+    w_cls_2 = model_class.transform(A)
 
-    assert_allclose(W_nmf, W_cls)
-    assert_allclose(W_nmf_2, W_cls_2)
+    assert_allclose(w_nmf, w_cls)
+    assert_allclose(w_nmf_2, w_cls_2)
 
 
 def test_non_negative_factorization_checking():
@@ -415,31 +415,31 @@ def test_non_negative_factorization_checking():
         nnmf(A, A, 0 * A, 2, init="custom")
 
 
-def _beta_divergence_dense(X, W, H, beta):
+def _beta_divergence_dense(X, w, h, beta):
     """Compute the beta-divergence of X and W.H for dense array only.
 
     Used as a reference for testing nmf._beta_divergence.
     """
-    WH = np.dot(W, H)
+    WH = np.dot(w, h)
 
     if beta == 2:
         return squared_norm(X - WH) / 2
 
-    WH_Xnonzero = WH[X != 0]
-    X_nonzero = X[X != 0]
-    np.maximum(WH_Xnonzero, 1e-9, out=WH_Xnonzero)
+    wh_xnonzero = WH[X != 0]
+    x_nonzero = X[X != 0]
+    np.maximum(wh_xnonzero, 1e-9, out=wh_xnonzero)
 
     if beta == 1:
-        res = np.sum(X_nonzero * np.log(X_nonzero / WH_Xnonzero))
+        res = np.sum(x_nonzero * np.log(x_nonzero / wh_xnonzero))
         res += WH.sum() - X.sum()
 
     elif beta == 0:
-        div = X_nonzero / WH_Xnonzero
+        div = x_nonzero / wh_xnonzero
         res = np.sum(div) - X.size - np.sum(np.log(div))
     else:
-        res = (X_nonzero**beta).sum()
+        res = (x_nonzero**beta).sum()
         res += (beta - 1) * (WH**beta).sum()
-        res -= beta * (X_nonzero * (WH_Xnonzero ** (beta - 1))).sum()
+        res -= beta * (x_nonzero * (wh_xnonzero ** (beta - 1))).sum()
         res /= beta * (beta - 1)
 
     return res
@@ -457,13 +457,13 @@ def test_beta_divergence(csr_container):
     rng = np.random.mtrand.RandomState(42)
     X = rng.randn(n_samples, n_features)
     np.clip(X, 0, None, out=X)
-    X_csr = csr_container(X)
+    x_csr = csr_container(X)
     W, H = nmf._initialize_nmf(X, n_components, init="random", random_state=42)
 
     for beta in beta_losses:
         ref = _beta_divergence_dense(X, W, H, beta)
         loss = nmf._beta_divergence(X, W, H, beta)
-        loss_csr = nmf._beta_divergence(X_csr, W, H, beta)
+        loss_csr = nmf._beta_divergence(x_csr, W, H, beta)
 
         assert_almost_equal(ref, loss, decimal=7)
         assert_almost_equal(ref, loss_csr, decimal=7)
