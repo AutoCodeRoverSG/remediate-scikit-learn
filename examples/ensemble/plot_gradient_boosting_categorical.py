@@ -95,8 +95,12 @@ from sklearn.pipeline import make_pipeline
 dropper = make_column_transformer(
     ("drop", make_column_selector(dtype_include="category")), remainder="passthrough"
 )
-hist_dropped = make_pipeline(dropper, HistGradientBoostingRegressor(random_state=42))
-hist_dropped
+hist_dropped = make_pipeline(
+    dropper,
+    HistGradientBoostingRegressor(random_state=42),
+    memory=None,
+)
+print(hist_dropped)
 
 # %%
 # Gradient boosting estimator with one-hot encoding
@@ -115,9 +119,11 @@ one_hot_encoder = make_column_transformer(
 )
 
 hist_one_hot = make_pipeline(
-    one_hot_encoder, HistGradientBoostingRegressor(random_state=42)
+    one_hot_encoder,
+    HistGradientBoostingRegressor(random_state=42),
+    memory=None,
 )
-hist_one_hot
+print(hist_one_hot)
 
 # %%
 # Gradient boosting estimator with ordinal encoding
@@ -139,9 +145,11 @@ ordinal_encoder = make_column_transformer(
 )
 
 hist_ordinal = make_pipeline(
-    ordinal_encoder, HistGradientBoostingRegressor(random_state=42)
+    ordinal_encoder,
+    HistGradientBoostingRegressor(random_state=42),
+    memory=None,
 )
-hist_ordinal
+print(hist_ordinal)
 
 # %%
 # Gradient boosting estimator with target encoding
@@ -174,9 +182,11 @@ target_encoder = make_column_transformer(
 )
 
 hist_target = make_pipeline(
-    target_encoder, HistGradientBoostingRegressor(random_state=42)
+    target_encoder,
+    HistGradientBoostingRegressor(random_state=42),
+    memory=None,
 )
-hist_target
+print(hist_target)
 
 # %%
 # Gradient boosting estimator with native categorical support
@@ -203,7 +213,7 @@ hist_target
 hist_native = HistGradientBoostingRegressor(
     random_state=42, categorical_features="from_dtype"
 )
-hist_native
+print(hist_native)
 
 # %%
 # Model comparison
@@ -236,7 +246,7 @@ import matplotlib.ticker as ticker
 
 
 def plot_performance_tradeoff(results, title):
-    fig, ax = plt.subplots()
+    _, ax = plt.subplots()
     markers = ["s", "o", "^", "x", "D"]
 
     for idx, (name, result) in enumerate(results):
