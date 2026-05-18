@@ -36,15 +36,18 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, stratify=y, random_sta
 # Let's have a quick first look at the generated dataset.
 import matplotlib.pyplot as plt
 
+FEATURE_0_LABEL = "Feature #0"
+FEATURE_1_LABEL = "Feature #1"
+
 _, (train_ax, test_ax) = plt.subplots(ncols=2, sharex=True, sharey=True, figsize=(8, 4))
 
 train_ax.scatter(X_train[:, 0], X_train[:, 1], c=y_train)
-train_ax.set_ylabel("Feature #1")
-train_ax.set_xlabel("Feature #0")
+train_ax.set_ylabel(FEATURE_1_LABEL)
+train_ax.set_xlabel(FEATURE_0_LABEL)
 train_ax.set_title("Training data")
 
 test_ax.scatter(X_test[:, 0], X_test[:, 1], c=y_test)
-test_ax.set_xlabel("Feature #0")
+test_ax.set_xlabel(FEATURE_0_LABEL)
 _ = test_ax.set_title("Testing data")
 
 # %%
@@ -71,8 +74,8 @@ fig, (orig_data_ax, pca_proj_ax, kernel_pca_proj_ax) = plt.subplots(
 )
 
 orig_data_ax.scatter(X_test[:, 0], X_test[:, 1], c=y_test)
-orig_data_ax.set_ylabel("Feature #1")
-orig_data_ax.set_xlabel("Feature #0")
+orig_data_ax.set_ylabel(FEATURE_1_LABEL)
+orig_data_ax.set_xlabel(FEATURE_0_LABEL)
 orig_data_ax.set_title("Testing data")
 
 pca_proj_ax.scatter(X_test_pca[:, 0], X_test_pca[:, 1], c=y_test)
@@ -130,18 +133,18 @@ fig, (orig_data_ax, pca_back_proj_ax, kernel_pca_back_proj_ax) = plt.subplots(
 )
 
 orig_data_ax.scatter(X_test[:, 0], X_test[:, 1], c=y_test)
-orig_data_ax.set_ylabel("Feature #1")
-orig_data_ax.set_xlabel("Feature #0")
+orig_data_ax.set_ylabel(FEATURE_1_LABEL)
+orig_data_ax.set_xlabel(FEATURE_0_LABEL)
 orig_data_ax.set_title("Original test data")
 
 pca_back_proj_ax.scatter(X_reconstructed_pca[:, 0], X_reconstructed_pca[:, 1], c=y_test)
-pca_back_proj_ax.set_xlabel("Feature #0")
+pca_back_proj_ax.set_xlabel(FEATURE_0_LABEL)
 pca_back_proj_ax.set_title("Reconstruction via PCA")
 
 kernel_pca_back_proj_ax.scatter(
     X_reconstructed_kernel_pca[:, 0], X_reconstructed_kernel_pca[:, 1], c=y_test
 )
-kernel_pca_back_proj_ax.set_xlabel("Feature #0")
+kernel_pca_back_proj_ax.set_xlabel(FEATURE_0_LABEL)
 _ = kernel_pca_back_proj_ax.set_title("Reconstruction via KernelPCA")
 
 # %%

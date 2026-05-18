@@ -11,11 +11,13 @@ from sklearn.datasets._twenty_newsgroups import CACHE_NAME
 from sklearn.utils._testing import SkipTest, check_skip_network
 from sklearn.utils.fixes import np_base_version, parse_version, sp_version
 
+SKIP_DATASET_DOCTESTS_MSG = "Skipping dataset loading doctests"
+
 
 def setup_labeled_faces():
     data_home = get_data_home()
     if not exists(join(data_home, "lfw_home")):
-        raise SkipTest("Skipping dataset loading doctests")
+        raise SkipTest(SKIP_DATASET_DOCTESTS_MSG)
 
 
 def setup_rcv1():
@@ -29,14 +31,14 @@ def setup_rcv1():
 def setup_twenty_newsgroups():
     cache_path = _pkl_filepath(get_data_home(), CACHE_NAME)
     if not exists(cache_path):
-        raise SkipTest("Skipping dataset loading doctests")
+        raise SkipTest(SKIP_DATASET_DOCTESTS_MSG)
 
 
 def setup_working_with_text_data():
     check_skip_network()
     cache_path = _pkl_filepath(get_data_home(), CACHE_NAME)
     if not exists(cache_path):
-        raise SkipTest("Skipping dataset loading doctests")
+        raise SkipTest(SKIP_DATASET_DOCTESTS_MSG)
 
 
 def setup_loading_other_datasets():
