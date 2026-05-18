@@ -170,14 +170,14 @@ def test_nodes_values(monotonic_cst, seed):
     rng = np.random.RandomState(seed)
     n_samples = 1000
     n_features = 1
-    X_binned = rng.randint(0, 255, size=(n_samples, n_features), dtype=np.uint8)
-    X_binned = np.asfortranarray(X_binned)
+    x_binned = rng.randint(0, 255, size=(n_samples, n_features), dtype=np.uint8)
+    x_binned = np.asfortranarray(x_binned)
 
     gradients = rng.normal(size=n_samples).astype(G_H_DTYPE)
     hessians = np.ones(shape=1, dtype=G_H_DTYPE)
 
     grower = TreeGrower(
-        X_binned, gradients, hessians, monotonic_cst=[monotonic_cst], shrinkage=0.1
+        x_binned, gradients, hessians, monotonic_cst=[monotonic_cst], shrinkage=0.1
     )
     grower.grow()
 
@@ -190,7 +190,7 @@ def test_nodes_values(monotonic_cst, seed):
 
     # We pass undefined binning_thresholds because we won't use predict anyway
     predictor = grower.make_predictor(
-        binning_thresholds=np.zeros((X_binned.shape[1], X_binned.max() + 1))
+        binning_thresholds=np.zeros((x_binned.shape[1], x_binned.max() + 1))
     )
 
     # The consistency of the bounds can only be checked on the tree grower

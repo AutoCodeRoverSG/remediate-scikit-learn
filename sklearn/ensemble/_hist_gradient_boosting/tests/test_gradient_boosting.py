@@ -1435,9 +1435,9 @@ def test_unknown_category_that_are_negative():
 
     Non-regression test for #24274.
     """
-    rng = np.random.RandomState(42)
+    rng = np.random.default_rng(42)
     n_samples = 1000
-    X = np.c_[rng.rand(n_samples), rng.randint(4, size=n_samples)]
+    X = np.c_[rng.random(n_samples), rng.integers(4, size=n_samples)]
     y = np.zeros(shape=n_samples)
     y[X[:, 1] % 2 == 0] = 1
 
@@ -1463,11 +1463,11 @@ def test_unknown_category_that_are_negative():
     ],
 )
 @pytest.mark.parametrize("sample_weight", [False, True])
-def test_X_val_in_fit(gradient_boosting, make_x_y, sample_weight, global_random_seed):
+def test_x_val_in_fit(gradient_boosting, make_x_y, sample_weight, global_random_seed):
     """Test that passing X_val, y_val in fit is same as validation fraction."""
-    rng = np.random.RandomState(42)
+    rng = np.random.default_rng(42)
     n_samples = 100
-    X, y = make_x_y(n_samples=n_samples, random_state=rng)
+    X, y = make_x_y(n_samples=n_samples, random_state=0)
     if sample_weight:
         sample_weight = np.abs(rng.normal(size=n_samples))
         data = (X, y, sample_weight)
@@ -1518,7 +1518,7 @@ def test_X_val_in_fit(gradient_boosting, make_x_y, sample_weight, global_random_
     assert_allclose(m2.predict(X), m1.predict(X))
 
 
-def test_X_val_raises_missing_y_val():
+def test_x_val_raises_missing_y_val():
     """Test that an error is raised if X_val given but y_val None."""
     X, y = make_classification(n_samples=4)
     X, x_val = X[:2], X[2:]
@@ -1535,7 +1535,7 @@ def test_X_val_raises_missing_y_val():
         HistGradientBoostingClassifier().fit(X, y, y_val=y_val)
 
 
-def test_X_val_raises_with_early_stopping_false():
+def test_x_val_raises_with_early_stopping_false():
     """Test that an error is raised if X_val given but early_stopping is False."""
     X, y = make_regression(n_samples=4)
     X, x_val = X[:2], X[2:]
@@ -1560,12 +1560,12 @@ def test_dataframe_categorical_results_same_as_ndarray(
     """Check that pandas categorical give the same results as ndarray."""
     pytest.importorskip(dataframe_lib)
 
-    rng = np.random.RandomState(42)
+    rng = np.random.default_rng(42)
     n_samples = 5_000
     n_cardinality = 50
     max_bins = 100
-    f_num = rng.rand(n_samples)
-    f_cat = rng.randint(n_cardinality, size=n_samples)
+    f_num = rng.random(n_samples)
+    f_cat = rng.integers(n_cardinality, size=n_samples)
 
     # Make f_cat an informative feature
     y = (f_cat % 3 == 0) & (f_num > 0.2)
@@ -1619,12 +1619,12 @@ def test_dataframe_categorical_errors(dataframe_lib, hist_gradient_boosting):
     msg = "Categorical feature 'f_cat' is expected to have a cardinality <= 16"
     hist = hist_gradient_boosting(categorical_features="from_dtype", max_bins=16)
 
-    rng = np.random.RandomState(42)
-    f_cat = rng.randint(0, high=100, size=100).astype(str)
+    rng = np.random.default_rng(42)
+    f_cat = rng.integers(0, high=100, size=100).astype(str)
     x_df = _convert_container(
         f_cat[:, None], dataframe_lib, ["f_cat"], categorical_feature_names=["f_cat"]
     )
-    y = rng.randint(0, high=2, size=100)
+    y = rng.integers(0, high=2, size=100)
 
     with pytest.raises(ValueError, match=msg):
         hist.fit(x_df, y)
@@ -1634,9 +1634,9 @@ def test_dataframe_categorical_errors(dataframe_lib, hist_gradient_boosting):
 def test_categorical_different_order_same_model(dataframe_lib):
     """Check that the order of the categorical gives same model."""
     pytest.importorskip(dataframe_lib)
-    rng = np.random.RandomState(42)
+    rng = np.random.default_rng(42)
     n_samples = 1_000
-    f_ints = rng.randint(low=0, high=2, size=n_samples)
+    f_ints = rng.integers(low=0, high=2, size=n_samples)
 
     # Construct a target with some noise
     y = f_ints.copy()
@@ -1712,8 +1712,9 @@ def test_different_bitness_pickle():
     def pickle_dump_with_different_bitness():
         f = io.BytesIO()
         p = pickle.Pickler(f)
-        p.dispatch_table = copyreg.dispatch_table.copy()
-        p.dispatch_table[TreePredictor] = reduce_predictor_with_different_bitness
+        dispatch_table = copyreg.dispatch_table.copy()
+        dispatch_table[TreePredictor] = reduce_predictor_with_different_bitness
+        p.dispatch_table = dispatch_table
 
         p.dump(clf)
         f.seek(0)
@@ -1745,8 +1746,9 @@ def test_different_bitness_joblib_pickle():
     def joblib_dump_with_different_bitness():
         f = io.BytesIO()
         p = NumpyPickler(f)
-        p.dispatch_table = copyreg.dispatch_table.copy()
-        p.dispatch_table[TreePredictor] = reduce_predictor_with_different_bitness
+        dispatch_table = copyreg.dispatch_table.copy()
+        dispatch_table[TreePredictor] = reduce_predictor_with_different_bitness
+        p.dispatch_table = dispatch_table
 
         p.dump(clf)
         f.seek(0)
