@@ -130,7 +130,7 @@ def test_height_linkage_tree():
     X = rng.randn(50, 100)
     connectivity = grid_to_graph(*mask.shape)
     for linkage_func in _TREE_BUILDERS.values():
-        children, n_nodes, n_leaves, _ = linkage_func(
+        children, n_nodes, n_leaves, parent = linkage_func(
             X.T, connectivity=connectivity
         )
         n_nodes = 2 * X.shape[1] - 1
@@ -251,14 +251,14 @@ def test_agglomerative_clustering(global_random_seed, lil_container):
         n_clusters=10, connectivity=connectivity, linkage="complete"
     )
     clustering.fit(X)
-    x_dist = pairwise_distances(X)
+    X_dist = pairwise_distances(X)
     clustering2 = AgglomerativeClustering(
         n_clusters=10,
         connectivity=connectivity,
         metric="precomputed",
         linkage="complete",
     )
-    clustering2.fit(x_dist)
+    clustering2.fit(X_dist)
     assert_array_equal(clustering.labels_, clustering2.labels_)
 
 
@@ -268,8 +268,8 @@ def test_agglomerative_clustering_memory_mapped():
     Non-regression test for issue #19875.
     """
     rng = np.random.RandomState(0)
-    x_mm = create_memmap_backed_data(rng.randn(50, 100))
-    AgglomerativeClustering(metric="euclidean", linkage="single").fit(x_mm)
+    Xmm = create_memmap_backed_data(rng.randn(50, 100))
+    AgglomerativeClustering(metric="euclidean", linkage="single").fit(Xmm)
 
 
 def test_ward_agglomeration(global_random_seed):
@@ -282,11 +282,11 @@ def test_ward_agglomeration(global_random_seed):
     agglo.fit(X)
     assert np.size(np.unique(agglo.labels_)) == 5
 
-    x_red = agglo.transform(X)
-    assert x_red.shape[1] == 5
-    x_full = agglo.inverse_transform(x_red)
-    assert np.unique(x_full[0]).size == 5
-    assert_array_almost_equal(agglo.transform(x_full), x_red)
+    X_red = agglo.transform(X)
+    assert X_red.shape[1] == 5
+    X_full = agglo.inverse_transform(X_red)
+    assert np.unique(X_full[0]).size == 5
+    assert_array_almost_equal(agglo.transform(X_full), X_red)
 
     # Check that fitting with no samples raises a ValueError
     with pytest.raises(ValueError):
@@ -331,7 +331,7 @@ def test_sparse_scikit_vs_scipy(global_random_seed):
     # matrices are well handled
     connectivity = np.ones((n, n))
     for linkage in _TREE_BUILDERS.keys():
-        for _ in range(5):
+        for i in range(5):
             X = 0.1 * rng.normal(size=(n, p))
             X -= 4.0 * np.arange(n)[:, np.newaxis]
             X -= X.mean(axis=1)[:, np.newaxis]
