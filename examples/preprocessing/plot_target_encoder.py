@@ -111,7 +111,9 @@ for name, categorical_preprocessor in categorical_preprocessors:
         ]
     )
     pipe = make_pipeline(
-        preprocessor, HistGradientBoostingRegressor(random_state=0, max_iter=max_iter)
+        preprocessor,
+        HistGradientBoostingRegressor(random_state=0, max_iter=max_iter),
+        memory=None,
     )
     evaluate_model_and_store(name, pipe)
 
@@ -124,7 +126,7 @@ for name, categorical_preprocessor in categorical_preprocessors:
 # which only supports up to 255 unique categories. In our dataset, the most of
 # the categorical features have more than 255 unique categories:
 n_unique_categories = df[categorical_features].nunique().sort_values(ascending=False)
-n_unique_categories
+print(n_unique_categories)
 
 # %%
 # To workaround the limitation above, we group the categorical features into
@@ -158,6 +160,7 @@ mixed_pipe = make_pipeline(
     HistGradientBoostingRegressor(
         random_state=0, max_iter=max_iter, categorical_features=low_cardinality_features
     ),
+    memory=None,
 )
 mixed_pipe
 
