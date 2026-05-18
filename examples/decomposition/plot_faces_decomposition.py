@@ -21,12 +21,11 @@ matrix decomposition (dimension reduction) methods from the module
 import logging
 
 import matplotlib.pyplot as plt
-from numpy.random import RandomState
 
 from sklearn import cluster, decomposition
 from sklearn.datasets import fetch_olivetti_faces
 
-rng = RandomState(0)
+rng = 0
 
 # Display progress logs on stdout
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")

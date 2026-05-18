@@ -83,7 +83,7 @@ for subplot, (D, title) in enumerate(
     plt.title("Sparse coding against %s dictionary" % title)
     plt.plot(y, lw=lw, linestyle="--", label="Original signal")
     # Do a wavelet approximation
-    for title, algo, alpha, n_nonzero, color in estimators:
+    for est_title, algo, alpha, n_nonzero, color in estimators:
         coder = SparseCoder(
             dictionary=D,
             transform_n_nonzero_coefs=n_nonzero,
@@ -98,7 +98,7 @@ for subplot, (D, title) in enumerate(
             x,
             color=color,
             lw=lw,
-            label="%s: %s nonzero coefs,\n%.2f error" % (title, density, squared_error),
+            label="%s: %s nonzero coefs,\n%.2f error" % (est_title, density, squared_error),
         )
 
     # Soft thresholding debiasing

@@ -31,7 +31,7 @@ from scipy.linalg import cholesky, toeplitz
 
 from sklearn.covariance import OAS, LedoitWolf
 
-np.random.seed(0)
+rng = np.random.default_rng(0)
 # %%
 n_features = 100
 # simulation covariance matrix (AR(1) process)
@@ -47,7 +47,7 @@ lw_shrinkage = np.zeros((n_samples_range.size, repeat))
 oa_shrinkage = np.zeros((n_samples_range.size, repeat))
 for i, n_samples in enumerate(n_samples_range):
     for j in range(repeat):
-        X = np.dot(np.random.normal(size=(n_samples, n_features)), coloring_matrix.T)
+        X = np.dot(rng.normal(size=(n_samples, n_features)), coloring_matrix.T)
 
         lw = LedoitWolf(store_precision=False, assume_centered=True)
         lw.fit(X)

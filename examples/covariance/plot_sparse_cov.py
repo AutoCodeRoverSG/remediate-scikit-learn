@@ -64,9 +64,9 @@ from sklearn.datasets import make_sparse_spd_matrix
 n_samples = 60
 n_features = 20
 
-prng = np.random.RandomState(1)
+prng = np.random.default_rng(1)
 prec = make_sparse_spd_matrix(
-    n_features, alpha=0.98, smallest_coef=0.4, largest_coef=0.7, random_state=prng
+    n_features, alpha=0.98, smallest_coef=0.4, largest_coef=0.7, random_state=1
 )
 cov = linalg.inv(prec)
 d = np.sqrt(np.diag(cov))

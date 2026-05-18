@@ -46,7 +46,8 @@ pipe = Pipeline(
         # the reduce_dim stage is populated by the param_grid
         ("reduce_dim", "passthrough"),
         ("classify", LinearSVC(dual=False, max_iter=10000)),
-    ]
+    ],
+    memory=None,
 )
 
 N_FEATURES_OPTIONS = [2, 4, 8]
