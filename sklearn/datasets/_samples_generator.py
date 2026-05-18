@@ -8,6 +8,7 @@ Generate samples of synthetic data sets.
 import array
 import numbers
 from collections.abc import Iterable
+from dataclasses import dataclass
 from numbers import Integral, Real
 
 import numpy as np
@@ -43,15 +44,37 @@ def _generate_hypercube(samples, dimensions, rng):
     return out
 
 
+@dataclass
+class FeatureConfig:
+    """Configuration for feature distribution in make_classification.
+
+    Parameters
+    ----------
+    n_informative : int, default=2
+        The number of informative features.
+
+    n_redundant : int, default=2
+        The number of redundant features.
+
+    n_repeated : int, default=0
+        The number of duplicated features.
+
+    n_clusters_per_class : int, default=2
+        The number of clusters per class.
+    """
+
+    n_informative: int = 2
+    n_redundant: int = 2
+    n_repeated: int = 0
+    n_clusters_per_class: int = 2
+
+
 @validate_params(
     {
         "n_samples": [Interval(Integral, 1, None, closed="left")],
         "n_features": [Interval(Integral, 1, None, closed="left")],
-        "n_informative": [Interval(Integral, 1, None, closed="left")],
-        "n_redundant": [Interval(Integral, 0, None, closed="left")],
-        "n_repeated": [Interval(Integral, 0, None, closed="left")],
+        "feature_config": [FeatureConfig, None],
         "n_classes": [Interval(Integral, 1, None, closed="left")],
-        "n_clusters_per_class": [Interval(Integral, 1, None, closed="left")],
         "weights": ["array-like", None],
         "flip_y": [Interval(Real, 0, 1, closed="both")],
         "class_sep": [Interval(Real, 0, None, closed="neither")],
@@ -60,7 +83,7 @@ def _generate_hypercube(samples, dimensions, rng):
         "scale": [Interval(Real, 0, None, closed="neither"), "array-like", None],
         "shuffle": ["boolean"],
         "random_state": ["random_state"],
-        "return_X_y": ["boolean"],
+        "return_x_y": ["boolean"],
     },
     prefer_skip_nested_validation=True,
 )
@@ -68,11 +91,8 @@ def make_classification(
     n_samples=100,
     n_features=20,
     *,
-    n_informative=2,
-    n_redundant=2,
-    n_repeated=0,
+    feature_config=None,
     n_classes=2,
-    n_clusters_per_class=2,
     weights=None,
     flip_y=0.01,
     class_sep=1.0,
@@ -81,7 +101,7 @@ def make_classification(
     scale=1.0,
     shuffle=True,
     random_state=None,
-    return_X_y=True,
+    return_x_y=True,
 ):
     """Generate a random n-class classification problem.
 
@@ -297,12 +317,12 @@ def make_classification(
     for k, centroid in enumerate(centroids):
         start, stop = stop, stop + n_samples_per_cluster[k]
         y[start:stop] = k % n_classes  # assign labels
-        X_k = X[start:stop, :n_informative]  # slice a view of the cluster
+        x_k = X[start:stop, :n_informative]  # slice a view of the cluster
 
         A = 2 * generator.uniform(size=(n_informative, n_informative)) - 1
-        X_k[...] = np.dot(X_k, A)  # introduce random covariance
+        x_k[...] = np.dot(x_k, A)  # introduce random covariance
 
-        X_k += centroid  # shift the cluster to a vertex
+        x_k += centroid  # shift the cluster to a vertex
 
     # Create redundant features
     if n_redundant > 0:
@@ -546,16 +566,16 @@ def make_multilabel_classification(
         words = np.searchsorted(cumulative_p_w_sample, generator.uniform(size=n_words))
         return words, y
 
-    X_indices = array.array("i")
-    X_indptr = array.array("i", [0])
+    x_indices = array.array("i")
+    x_indptr = array.array("i", [0])
     Y = []
-    for i in range(n_samples):
+    for _ in range(n_samples):
         words, y = sample_example()
-        X_indices.extend(words)
-        X_indptr.append(len(X_indices))
+        x_indices.extend(words)
+        x_indptr.append(len(x_indices))
         Y.append(y)
-    X_data = np.ones(len(X_indices), dtype=np.float64)
-    X = sp.csr_array((X_data, X_indices, X_indptr), shape=(n_samples, n_features))
+    x_data = np.ones(len(x_indices), dtype=np.float64)
+    X = sp.csr_array((x_data, x_indices, x_indptr), shape=(n_samples, n_features))
     X.sum_duplicates()
     if not sparse:
         X = X.toarray()
@@ -1730,8 +1750,8 @@ def make_spd_matrix(n_dim, *, random_state=None):
     generator = check_random_state(random_state)
 
     A = generator.uniform(size=(n_dim, n_dim))
-    U, _, Vt = linalg.svd(np.dot(A.T, A), check_finite=False)
-    X = np.dot(np.dot(U, 1.0 + np.diag(generator.uniform(size=n_dim))), Vt)
+    U, _, vt = linalg.svd(np.dot(A.T, A), check_finite=False)
+    X = np.dot(np.dot(U, 1.0 + np.diag(generator.uniform(size=n_dim))), vt)
 
     return X
 
@@ -2117,8 +2137,7 @@ def make_gaussian_quantiles(
     return X, y
 
 
-def _shuffle(data, random_state=None):
-    generator = check_random_state(random_state)
+def _shuffle(data, generator):
     n_rows, n_cols = data.shape
     row_idx = generator.permutation(n_rows)
     col_idx = generator.permutation(n_cols)
@@ -2238,7 +2257,7 @@ def make_biclusters(
         result += generator.normal(scale=noise, size=result.shape)
 
     if shuffle:
-        result, row_idx, col_idx = _shuffle(result, random_state)
+        result, row_idx, col_idx = _shuffle(result, generator)
         row_labels = row_labels[row_idx]
         col_labels = col_labels[col_idx]
 
@@ -2368,7 +2387,7 @@ def make_checkerboard(
         result += generator.normal(scale=noise, size=result.shape)
 
     if shuffle:
-        result, row_idx, col_idx = _shuffle(result, random_state)
+        result, row_idx, col_idx = _shuffle(result, generator)
         row_labels = row_labels[row_idx]
         col_labels = col_labels[col_idx]
 
