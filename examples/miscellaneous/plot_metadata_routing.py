@@ -56,12 +56,12 @@ from sklearn.utils.metadata_routing import (
 from sklearn.utils.validation import check_is_fitted
 
 n_samples, n_features = 100, 4
-rng = np.random.RandomState(42)
-X = rng.rand(n_samples, n_features)
-y = rng.randint(0, 2, size=n_samples)
-my_groups = rng.randint(0, 10, size=n_samples)
-my_weights = rng.rand(n_samples)
-my_other_weights = rng.rand(n_samples)
+rng = np.random.default_rng(42)
+X = rng.random((n_samples, n_features))
+y = rng.integers(0, 2, size=n_samples)
+my_groups = rng.integers(0, 10, size=n_samples)
+my_weights = rng.random(n_samples)
+my_other_weights = rng.random(n_samples)
 
 # %%
 # Metadata routing is only available if explicitly enabled:
@@ -97,6 +97,7 @@ def print_routing(obj):
 
 class ExampleClassifier(ClassifierMixin, BaseEstimator):
     def fit(self, X, y, sample_weight=None):
+        """Fit the classifier on training data X with labels y and optional sample_weight."""
         check_metadata(self, sample_weight=sample_weight)
         # all classifiers need to expose a classes_ attribute once they're fit.
         self.classes_ = np.array([0, 1])
@@ -498,23 +499,23 @@ class SimplePipeline(ClassifierMixin, BaseEstimator):
         self.transformer_ = clone(self.transformer).fit(
             X, y, **routed_params.transformer.fit
         )
-        X_transformed = self.transformer_.transform(
+        x_transformed = self.transformer_.transform(
             X, **routed_params.transformer.transform
         )
 
         self.classifier_ = clone(self.classifier).fit(
-            X_transformed, y, **routed_params.classifier.fit
+            x_transformed, y, **routed_params.classifier.fit
         )
         return self
 
     def predict(self, X, **predict_params):
         routed_params = process_routing(self, "predict", **predict_params)
 
-        X_transformed = self.transformer_.transform(
+        x_transformed = self.transformer_.transform(
             X, **routed_params.transformer.transform
         )
         return self.classifier_.predict(
-            X_transformed, **routed_params.classifier.predict
+            x_transformed, **routed_params.classifier.predict
         )
 
 
@@ -539,6 +540,7 @@ class SimplePipeline(ClassifierMixin, BaseEstimator):
 
 class ExampleTransformer(TransformerMixin, BaseEstimator):
     def fit(self, X, y, sample_weight=None):
+        # X and y are passed by the pipeline's fit method as required by the API.
         check_metadata(self, sample_weight=sample_weight)
         return self
 
@@ -623,10 +625,10 @@ reg.fit(X, y, sample_weight=my_weights)
 class WeightedMetaRegressor(MetaEstimatorMixin, RegressorMixin, BaseEstimator):
     # show warning to remind user to explicitly set the value with
     # `.set_{method}_request(sample_weight={boolean})`
-    __metadata_request__fit = {"sample_weight": metadata_routing.WARN}
 
     def __init__(self, estimator):
         self.estimator = estimator
+        self.set_fit_request(sample_weight=metadata_routing.WARN)
 
     def fit(self, X, y, sample_weight=None, **fit_params):
         routed_params = process_routing(
@@ -669,6 +671,7 @@ class ExampleRegressor(RegressorMixin, BaseEstimator):
     __metadata_request__fit = {"sample_weight": metadata_routing.WARN}
 
     def fit(self, X, y, sample_weight=None):
+        """Fit the model to training data X and target y with optional sample_weight."""
         check_metadata(self, sample_weight=sample_weight)
         return self
 

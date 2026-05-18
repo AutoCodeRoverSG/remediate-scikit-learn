@@ -77,18 +77,18 @@ class SimplePipeline(BaseEstimator):
     def fit(self, X, y, **fit_params):
         self.steps_ = []
         params = process_routing(self, "fit", **fit_params)
-        X_transformed = X
+        x_transformed = X
         for i, step in enumerate(self.steps[:-1]):
             transformer = clone(step).fit(
-                X_transformed, y, **params.get(f"step_{i}").fit
+                x_transformed, y, **params.get(f"step_{i}").fit
             )
             self.steps_.append(transformer)
-            X_transformed = transformer.transform(
-                X_transformed, **params.get(f"step_{i}").transform
+            x_transformed = transformer.transform(
+                x_transformed, **params.get(f"step_{i}").transform
             )
 
         self.steps_.append(
-            clone(self.steps[-1]).fit(X_transformed, y, **params.predictor.fit)
+            clone(self.steps[-1]).fit(x_transformed, y, **params.predictor.fit)
         )
         return self
 
