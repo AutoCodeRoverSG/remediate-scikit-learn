@@ -338,7 +338,8 @@ def test_sample_weight(global_random_seed):
     assert_array_almost_equal(
         eclf1.predict_proba(X_scaled), eclf2.predict_proba(X_scaled)
     )
-    sample_weight = np.random.RandomState(global_random_seed).uniform(size=(len(y),))
+    rng = np.random.default_rng(global_random_seed)
+    sample_weight = rng.uniform(size=(len(y),))
     eclf3 = VotingClassifier(estimators=[("lr", clf1)], voting="soft")
     eclf3.fit(X_scaled, y, sample_weight=sample_weight)
     clf1.fit(X_scaled, y, sample_weight)
@@ -732,26 +733,26 @@ def test_get_metadata_routing_without_fit(estimator, child):
 
 
 @pytest.mark.parametrize(
-    "Estimator, Child",
+    "estimator_cls, child_cls",
     [(VotingClassifier, ConsumingClassifier), (VotingRegressor, ConsumingRegressor)],
 )
 @pytest.mark.parametrize("prop", ["sample_weight", "metadata"])
 @config_context(enable_metadata_routing=True)
-def test_metadata_routing_for_voting_estimators(Estimator, Child, prop):
+def test_metadata_routing_for_voting_estimators(estimator_cls, child_cls, prop):
     """Test that metadata is routed correctly for Voting*."""
     X = np.array([[0, 1], [2, 2], [4, 6]])
     y = [1, 2, 3]
     sample_weight, metadata = [1, 1, 1], "a"
 
-    est = Estimator(
+    est = estimator_cls(
         [
             (
                 "sub_est1",
-                Child(registry=_Registry()).set_fit_request(**{prop: True}),
+                child_cls(registry=_Registry()).set_fit_request(**{prop: True}),
             ),
             (
                 "sub_est2",
-                Child(registry=_Registry()).set_fit_request(**{prop: True}),
+                child_cls(registry=_Registry()).set_fit_request(**{prop: True}),
             ),
         ]
     )
@@ -771,21 +772,21 @@ def test_metadata_routing_for_voting_estimators(Estimator, Child, prop):
 
 
 @pytest.mark.parametrize(
-    "Estimator, Child",
+    "estimator_cls, child_cls",
     [(VotingClassifier, ConsumingClassifier), (VotingRegressor, ConsumingRegressor)],
 )
 @config_context(enable_metadata_routing=True)
-def test_metadata_routing_error_for_voting_estimators(Estimator, Child):
+def test_metadata_routing_error_for_voting_estimators(estimator_cls, child_cls):
     """Test that the right error is raised when metadata is not requested."""
     X = np.array([[0, 1], [2, 2], [4, 6]])
     y = [1, 2, 3]
     sample_weight, metadata = [1, 1, 1], "a"
 
-    est = Estimator([("sub_est", Child())])
+    est = estimator_cls([("sub_est", child_cls())])
 
     error_message = (
         "[sample_weight, metadata] are passed but are not explicitly set as requested"
-        f" or not requested for {Child.__name__}.fit"
+        f" or not requested for {child_cls.__name__}.fit"
     )
 
     with pytest.raises(ValueError, match=re.escape(error_message)):

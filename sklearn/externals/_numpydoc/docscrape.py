@@ -115,21 +115,25 @@ class NumpyDocString(Mapping):
 
     """
 
+    _EXTENDED_SUMMARY = "Extended Summary"
+    _OTHER_PARAMETERS = "Other Parameters"
+    _SEE_ALSO = "See Also"
+
     sections = {
         "Signature": "",
         "Summary": [""],
-        "Extended Summary": [],
+        _EXTENDED_SUMMARY: [],
         "Parameters": [],
         "Attributes": [],
         "Methods": [],
         "Returns": [],
         "Yields": [],
         "Receives": [],
-        "Other Parameters": [],
+        _OTHER_PARAMETERS: [],
         "Raises": [],
         "Warns": [],
         "Warnings": [],
-        "See Also": [],
+        _SEE_ALSO: [],
         "Notes": [],
         "References": "",
         "Examples": "",
@@ -266,8 +270,7 @@ class NumpyDocString(Mapping):
     _funcbacktick = r"`(?P<name>(?:~\w+\.)?[a-zA-Z0-9_\.-]+)`"
     _funcplain = r"(?P<name2>[a-zA-Z0-9_\.-]+)"
     _funcname = r"(" + _role + _funcbacktick + r"|" + _funcplain + r")"
-    _funcnamenext = _funcname.replace("role", "rolenext")
-    _funcnamenext = _funcnamenext.replace("name", "namenext")
+    _funcnamenext = _funcname.replace("role", "rolenext").replace("name", "namenext")
     _description = r"(?P<description>\s*:(\s+(?P<desc>\S+.*))?)?\s*$"
     _func_rgx = re.compile(r"^\s*" + _funcname + r"\s*")
     _line_rgx = re.compile(
@@ -381,7 +384,7 @@ class NumpyDocString(Mapping):
             self["Summary"] = summary
 
         if not self._is_at_section():
-            self["Extended Summary"] = self._read_to_next_section()
+            self[self._EXTENDED_SUMMARY] = self._read_to_next_section()
 
     def _parse(self):
         self._doc.reset()
@@ -406,7 +409,7 @@ class NumpyDocString(Mapping):
                         % (section, "\n".join(self._doc._str))
                     )
 
-            if section in ("Parameters", "Other Parameters", "Attributes", "Methods"):
+            if section in ("Parameters", self._OTHER_PARAMETERS, "Attributes", "Methods"):
                 self[section] = self._parse_param_list(content)
             elif section in ("Returns", "Yields", "Raises", "Warns", "Receives"):
                 self[section] = self._parse_param_list(
@@ -414,8 +417,8 @@ class NumpyDocString(Mapping):
                 )
             elif section.startswith(".. index::"):
                 self["index"] = self._parse_index(section, content)
-            elif section == "See Also":
-                self["See Also"] = self._parse_see_also(content)
+            elif section == self._SEE_ALSO:
+                self[self._SEE_ALSO] = self._parse_see_also(content)
             else:
                 self[section] = content
 
@@ -466,8 +469,8 @@ class NumpyDocString(Mapping):
         return []
 
     def _str_extended_summary(self):
-        if self["Extended Summary"]:
-            return self["Extended Summary"] + [""]
+        if self[self._EXTENDED_SUMMARY]:
+            return self[self._EXTENDED_SUMMARY] + [""]
         return []
 
     def _str_param_list(self, name):
@@ -495,13 +498,13 @@ class NumpyDocString(Mapping):
         return out
 
     def _str_see_also(self, func_role):
-        if not self["See Also"]:
+        if not self[self._SEE_ALSO]:
             return []
         out = []
-        out += self._str_header("See Also")
+        out += self._str_header(self._SEE_ALSO)
         out += [""]
         last_had_desc = True
-        for funcs, desc in self["See Also"]:
+        for funcs, desc in self[self._SEE_ALSO]:
             assert isinstance(funcs, list)
             links = []
             for func, role in funcs:
@@ -555,7 +558,7 @@ class NumpyDocString(Mapping):
             "Returns",
             "Yields",
             "Receives",
-            "Other Parameters",
+            self._OTHER_PARAMETERS,
             "Raises",
             "Warns",
         ):
@@ -597,7 +600,7 @@ class FunctionDoc(NumpyDocString):
     def __str__(self):
         out = ""
 
-        func, func_name = self.get_func()
+        _, func_name = self.get_func()
 
         roles = {"func": "function", "meth": "method"}
 
