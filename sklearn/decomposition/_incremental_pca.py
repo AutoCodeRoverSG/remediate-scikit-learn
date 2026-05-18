@@ -183,7 +183,10 @@ class IncrementalPCA(_BasePCA):
     (1797, 7)
     """
 
-    __metadata_request__partial_fit = {"check_input": metadata_routing.UNUSED}
+    # The trailing underscores avoid Python's name mangling for double
+    # leading underscores, while keeping the __metadata_request__ substring
+    # that the metadata routing system searches for in class attributes.
+    __metadata_request__partial_fit__ = {"check_input": metadata_routing.UNUSED}
 
     _parameter_constraints: dict = {
         "n_components": [Interval(Integral, 1, None, closed="left"), None],
@@ -243,10 +246,10 @@ class IncrementalPCA(_BasePCA):
         for batch in gen_batches(
             n_samples, self.batch_size_, min_batch_size=self.n_components or 0
         ):
-            X_batch = X[batch]
-            if sparse.issparse(X_batch):
-                X_batch = X_batch.toarray()
-            self.partial_fit(X_batch, check_input=False)
+            x_batch = X[batch]
+            if sparse.issparse(x_batch):
+                x_batch = x_batch.toarray()
+            self.partial_fit(x_batch, check_input=False)
 
         return self
 
@@ -297,7 +300,7 @@ class IncrementalPCA(_BasePCA):
                 self.n_components_ = min(n_samples, n_features)
             else:
                 self.n_components_ = self.components_.shape[0]
-        elif not self.n_components <= n_features:
+        elif self.n_components > n_features:
             raise ValueError(
                 "n_components=%r invalid for n_features=%d, need "
                 "more rows than columns for IncrementalPCA "
@@ -356,13 +359,13 @@ class IncrementalPCA(_BasePCA):
                 )
             )
 
-        U, S, Vt = linalg.svd(X, full_matrices=False, check_finite=False)
-        U, Vt = svd_flip(U, Vt, u_based_decision=False)
+        U, S, vt = linalg.svd(X, full_matrices=False, check_finite=False)
+        U, vt = svd_flip(U, vt, u_based_decision=False)
         explained_variance = S**2 / (n_total_samples - 1)
         explained_variance_ratio = S**2 / np.sum(col_var * n_total_samples)
 
         self.n_samples_seen_ = n_total_samples
-        self.components_ = Vt[: self.n_components_]
+        self.components_ = vt[: self.n_components_]
         self.singular_values_ = S[: self.n_components_]
         self.mean_ = col_mean
         self.var_ = col_var

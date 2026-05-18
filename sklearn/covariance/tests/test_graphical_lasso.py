@@ -242,7 +242,7 @@ def test_graphical_lasso_cv_alphas_invalid_array(alphas, err_type, err_msg):
             [0.0, 0.0, 0.1, 0.7],
         ]
     )
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
     X = rng.multivariate_normal(mean=[0, 0, 0, 0], cov=true_cov, size=200)
 
     with pytest.raises(err_type, match=err_msg):
@@ -261,7 +261,7 @@ def test_graphical_lasso_cv_scores(global_random_seed):
             [0.0, 0.0, 0.1, 0.7],
         ]
     )
-    rng = np.random.RandomState(global_random_seed)
+    rng = np.random.default_rng(global_random_seed)
     X = rng.multivariate_normal(mean=[0, 0, 0, 0], cov=true_cov, size=200)
     cov = GraphicalLassoCV(cv=splits, alphas=n_alphas, n_refinements=n_refinements).fit(
         X
