@@ -33,7 +33,7 @@ import numpy as np
 from sklearn.cluster import KMeans, MiniBatchKMeans
 from sklearn.utils import check_random_state, shuffle
 
-random_state = np.random.RandomState(0)
+random_state = np.random.default_rng(0)
 
 # Number of run (with randomly generated dataset) for each strategy so as
 # to be able to compute an estimate of the standard deviation
@@ -53,7 +53,7 @@ n_clusters = grid_size**2
 def make_data(random_state, n_samples_per_center, grid_size, scale):
     random_state = check_random_state(random_state)
     centers = np.array([[i, j] for i in range(grid_size) for j in range(grid_size)])
-    n_clusters_true, n_features = centers.shape
+    n_clusters_true, _ = centers.shape
 
     noise = random_state.normal(
         scale=scale, size=(n_samples_per_center, centers.shape[1])

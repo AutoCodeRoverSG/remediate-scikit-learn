@@ -34,6 +34,8 @@ separating the objects one from the other, and not from the background.
 # -----------------
 import numpy as np
 
+rng = np.random.default_rng(0)
+
 l = 100
 x, y = np.indices((l, l))
 
@@ -60,7 +62,7 @@ img = circle1 + circle2 + circle3 + circle4
 mask = img.astype(bool)
 
 img = img.astype(float)
-img += 1 + 0.2 * np.random.randn(*img.shape)
+img += 1 + 0.2 * rng.standard_normal(img.shape)
 
 # %%
 # Convert the image into a graph with the value of the gradient on the
@@ -102,7 +104,7 @@ img = circle1 + circle2
 mask = img.astype(bool)
 img = img.astype(float)
 
-img += 1 + 0.2 * np.random.randn(*img.shape)
+img += 1 + 0.2 * rng.standard_normal(img.shape)
 
 graph = image.img_to_graph(img, mask=mask)
 graph.data = np.exp(-graph.data / graph.data.std())
