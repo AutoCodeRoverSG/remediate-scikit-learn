@@ -31,17 +31,17 @@ steps = [
     ("preprocessing", StandardScaler()),
     ("classifier", LogisticRegression()),
 ]
-pipe = Pipeline(steps)
+pipe = Pipeline(steps, memory=None)
 
 # %%
 # To visualize the diagram, the default is `display='diagram'`.
 set_config(display="diagram")
-pipe  # click on the diagram below to see the details of each step
+print(pipe)  # click on the diagram below to see the details of each step
 
 # %%
 # To view the text pipeline, change to `display='text'`.
 set_config(display="text")
-pipe
+print(pipe)
 
 # %%
 # Put back the default display
@@ -65,8 +65,8 @@ steps = [
     ("polynomial", PolynomialFeatures(degree=3)),
     ("classifier", LogisticRegression(C=2.0)),
 ]
-pipe = Pipeline(steps)
-pipe  # click on the diagram below to see the details of each step
+pipe = Pipeline(steps, memory=None)
+print(pipe)  # click on the diagram below to see the details of each step
 
 # %%
 # Displaying a Pipeline and Dimensionality Reduction and Classifier
@@ -81,8 +81,8 @@ from sklearn.pipeline import Pipeline
 from sklearn.svm import SVC
 
 steps = [("reduce_dim", PCA(n_components=4)), ("classifier", SVC(kernel="linear"))]
-pipe = Pipeline(steps)
-pipe  # click on the diagram below to see the details of each step
+pipe = Pipeline(steps, memory=None)
+print(pipe)  # click on the diagram below to see the details of each step
 
 # %%
 # Displaying a Complex Pipeline Chaining a Column Transformer
@@ -124,8 +124,8 @@ preprocessor = ColumnTransformer(
     ]
 )
 
-pipe = make_pipeline(preprocessor, LogisticRegression(max_iter=500))
-pipe  # click on the diagram below to see the details of each step
+pipe = make_pipeline(preprocessor, LogisticRegression(max_iter=500), memory=None)
+print(pipe)  # click on the diagram below to see the details of each step
 
 # %%
 # Displaying a Grid Search over a Pipeline with a Classifier
@@ -169,7 +169,8 @@ preprocessor = ColumnTransformer(
 )
 
 pipe = Pipeline(
-    steps=[("preprocessor", preprocessor), ("classifier", RandomForestClassifier())]
+    steps=[("preprocessor", preprocessor), ("classifier", RandomForestClassifier())],
+    memory=None,
 )
 
 param_grid = {
