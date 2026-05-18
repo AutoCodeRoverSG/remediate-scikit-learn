@@ -60,10 +60,10 @@ def test_outlier_data(outlier_type):
     label = _OUTLIER_ENCODING[outlier_type]["label"]
     prob = _OUTLIER_ENCODING[outlier_type]["prob"]
 
-    X_outlier = X.copy()
-    X_outlier[0] = [outlier, 1]
-    X_outlier[5] = [outlier, outlier]
-    model = HDBSCAN(copy=False).fit(X_outlier)
+    x_outlier = X.copy()
+    x_outlier[0] = [outlier, 1]
+    x_outlier[5] = [outlier, outlier]
+    model = HDBSCAN(copy=False).fit(x_outlier)
 
     (missing_labels_idx,) = (model.labels_ == label).nonzero()
     assert_array_equal(missing_labels_idx, [0, 5])
@@ -72,7 +72,7 @@ def test_outlier_data(outlier_type):
     assert_array_equal(missing_probs_idx, [0, 5])
 
     clean_indices = list(range(1, 5)) + list(range(6, 200))
-    clean_model = HDBSCAN(copy=False).fit(X_outlier[clean_indices])
+    clean_model = HDBSCAN(copy=False).fit(x_outlier[clean_indices])
     assert_array_equal(clean_model.labels_, model.labels_[clean_indices])
 
 
@@ -82,10 +82,10 @@ def test_hdbscan_distance_matrix():
     appropriate errors when needed.
     """
     D = euclidean_distances(X)
-    D_original = D.copy()
+    d_original = D.copy()
     labels = HDBSCAN(metric="precomputed", copy=True).fit_predict(D)
 
-    assert_allclose(D, D_original)
+    assert_allclose(D, d_original)
     check_label_quality(labels)
 
     msg = r"The precomputed distance matrix.*has shape"
@@ -193,11 +193,11 @@ def test_dbscan_clustering_outlier_data(cut_distance):
     missing_label = _OUTLIER_ENCODING["missing"]["label"]
     infinite_label = _OUTLIER_ENCODING["infinite"]["label"]
 
-    X_outlier = X.copy()
-    X_outlier[0] = [np.inf, 1]
-    X_outlier[2] = [1, np.nan]
-    X_outlier[5] = [np.inf, np.nan]
-    model = HDBSCAN(copy=False).fit(X_outlier)
+    x_outlier = X.copy()
+    x_outlier[0] = [np.inf, 1]
+    x_outlier[2] = [1, np.nan]
+    x_outlier[5] = [np.inf, np.nan]
+    model = HDBSCAN(copy=False).fit(x_outlier)
     labels = model.dbscan_clustering(cut_distance=cut_distance)
 
     missing_labels_idx = np.flatnonzero(labels == missing_label)
@@ -207,7 +207,7 @@ def test_dbscan_clustering_outlier_data(cut_distance):
     assert_array_equal(infinite_labels_idx, [0])
 
     clean_idx = list(set(range(200)) - set(missing_labels_idx + infinite_labels_idx))
-    clean_model = HDBSCAN(copy=False).fit(X_outlier[clean_idx])
+    clean_model = HDBSCAN(copy=False).fit(x_outlier[clean_idx])
     clean_labels = clean_model.dbscan_clustering(cut_distance=cut_distance)
     assert_array_equal(clean_labels, labels[clean_idx])
 
@@ -275,28 +275,28 @@ def test_hdbscan_sparse(csr_container):
     dense_labels = HDBSCAN(copy=False).fit(X).labels_
     check_label_quality(dense_labels)
 
-    _X_sparse = csr_container(X)
-    X_sparse = _X_sparse.copy()
-    sparse_labels = HDBSCAN(copy=False).fit(X_sparse).labels_
+    _x_sparse = csr_container(X)
+    x_sparse = _x_sparse.copy()
+    sparse_labels = HDBSCAN(copy=False).fit(x_sparse).labels_
     assert_array_equal(dense_labels, sparse_labels)
 
     # Compare that the sparse and dense non-precomputed routines return the same labels
     # where the 0th observation contains the outlier.
     for outlier_val, outlier_type in ((np.inf, "infinite"), (np.nan, "missing")):
-        X_dense = X.copy()
-        X_dense[0, 0] = outlier_val
-        dense_labels = HDBSCAN(copy=False).fit(X_dense).labels_
+        x_dense = X.copy()
+        x_dense[0, 0] = outlier_val
+        dense_labels = HDBSCAN(copy=False).fit(x_dense).labels_
         check_label_quality(dense_labels)
         assert dense_labels[0] == _OUTLIER_ENCODING[outlier_type]["label"]
 
-        X_sparse = _X_sparse.copy()
-        X_sparse[0, 0] = outlier_val
-        sparse_labels = HDBSCAN(copy=False).fit(X_sparse).labels_
+        x_sparse = _x_sparse.copy()
+        x_sparse[0, 0] = outlier_val
+        sparse_labels = HDBSCAN(copy=False).fit(x_sparse).labels_
         assert_array_equal(dense_labels, sparse_labels)
 
     msg = "Sparse data matrices only support algorithm `brute`."
     with pytest.raises(ValueError, match=msg):
-        HDBSCAN(metric="euclidean", algorithm="ball_tree", copy=False).fit(X_sparse)
+        HDBSCAN(metric="euclidean", algorithm="ball_tree", copy=False).fit(x_sparse)
 
 
 @pytest.mark.parametrize("algorithm", ALGORITHMS)
@@ -465,12 +465,12 @@ def test_hdbscan_precomputed_dense_nan():
     Tests that HDBSCAN correctly raises an error when providing precomputed
     distances with `np.nan` values.
     """
-    X_nan = X.copy()
-    X_nan[0, 0] = np.nan
+    x_nan = X.copy()
+    x_nan[0, 0] = np.nan
     msg = "np.nan values found in precomputed-dense"
     hdb = HDBSCAN(metric="precomputed", copy=False)
     with pytest.raises(ValueError, match=msg):
-        hdb.fit(X_nan)
+        hdb.fit(x_nan)
 
 
 @pytest.mark.parametrize("allow_single_cluster", [True, False])
@@ -505,8 +505,8 @@ def test_labelling_distinct(global_random_seed, allow_single_cluster, epsilon):
         cluster_selection_epsilon=epsilon,
     )
 
-    first_with_label = {_y: np.where(y == _y)[0][0] for _y in list(set(y))}
-    y_to_labels = {_y: labels[first_with_label[_y]] for _y in list(set(y))}
+    first_with_label = {_y: np.where(y == _y)[0][0] for _y in set(y)}
+    y_to_labels = {_y: labels[first_with_label[_y]] for _y in set(y)}
     aligned_target = np.vectorize(y_to_labels.get)(y)
     assert_array_equal(labels, aligned_target)
 
@@ -562,14 +562,14 @@ def test_hdbscan_error_precomputed_and_store_centers(store_centers):
     """
     rng = np.random.RandomState(0)
     X = rng.random((100, 2))
-    X_dist = euclidean_distances(X)
+    x_dist = euclidean_distances(X)
     err_msg = "Cannot store centers when using a precomputed distance matrix."
     with pytest.raises(ValueError, match=err_msg):
         HDBSCAN(
             metric="precomputed",
             store_centers=store_centers,
             copy=False,
-        ).fit(X_dist)
+        ).fit(x_dist)
 
 
 @pytest.mark.parametrize("valid_algo", ["auto", "brute"])
