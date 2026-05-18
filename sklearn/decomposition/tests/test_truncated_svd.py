@@ -83,10 +83,10 @@ def test_inverse_transform(algo, x_sparse):
 
 def test_integers(x_sparse):
     n_samples = x_sparse.shape[0]
-    Xint = x_sparse.astype(np.int64)
+    x_int = x_sparse.astype(np.int64)
     tsvd = TruncatedSVD(n_components=6)
-    Xtrans = tsvd.fit_transform(Xint)
-    assert Xtrans.shape == (n_samples, tsvd.n_components)
+    x_trans = tsvd.fit_transform(x_int)
+    assert x_trans.shape == (n_samples, tsvd.n_components)
 
 
 @pytest.mark.parametrize("kind", ("dense", "sparse"))
@@ -143,16 +143,16 @@ def test_singular_values_consistency(solver, global_random_seed):
     pca = TruncatedSVD(n_components=2, algorithm=solver, random_state=rng).fit(X)
 
     # Compare to the Frobenius norm
-    X_pca = pca.transform(X)
+    x_pca = pca.transform(X)
     assert_allclose(
         np.sum(pca.singular_values_**2.0),
-        np.linalg.norm(X_pca, "fro") ** 2.0,
+        np.linalg.norm(x_pca, "fro") ** 2.0,
         rtol=1e-2,
     )
 
     # Compare to the 2-norms of the score vectors
     assert_allclose(
-        pca.singular_values_, np.sqrt(np.sum(X_pca**2.0, axis=0)), rtol=1e-2
+        pca.singular_values_, np.sqrt(np.sum(x_pca**2.0, axis=0)), rtol=1e-2
     )
 
 
@@ -166,14 +166,14 @@ def test_singular_values_expected(solver, global_random_seed):
     X = rng.randn(n_samples, n_features)
 
     pca = TruncatedSVD(n_components=3, algorithm=solver, random_state=rng)
-    X_pca = pca.fit_transform(X)
+    x_pca = pca.fit_transform(X)
 
-    X_pca /= np.sqrt(np.sum(X_pca**2.0, axis=0))
-    X_pca[:, 0] *= 3.142
-    X_pca[:, 1] *= 2.718
+    x_pca /= np.sqrt(np.sum(x_pca**2.0, axis=0))
+    x_pca[:, 0] *= 3.142
+    x_pca[:, 1] *= 2.718
 
-    X_hat_pca = np.dot(X_pca, pca.components_)
-    pca.fit(X_hat_pca)
+    x_hat_pca = np.dot(x_pca, pca.components_)
+    pca.fit(x_hat_pca)
     assert_allclose(pca.singular_values_, [3.142, 2.718, 1.0], rtol=1e-14)
 
 
