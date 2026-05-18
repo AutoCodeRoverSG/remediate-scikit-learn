@@ -583,7 +583,7 @@ Lo...
     # don't want ellipsis
     full_repr = lr.__repr__(n_char_max=float("inf"))
     n_nonblank = len("".join(full_repr.split()))
-    assert lr.__repr__(N_CHAR_MAX=n_nonblank) == full_repr
+    assert lr.__repr__(n_char_max=n_nonblank) == full_repr
     assert "..." not in full_repr
 
     # test with N_CHAR_MAX == number of non-blank characters - 10: the left and
@@ -595,7 +595,7 @@ LogisticRegression(C=1.0, class_weight=None, dual=False, fit_intercept=True,
                    multi_class='warn', n_jobs=None, random_state=None,
                    solver='warn', tol=0.0001, verbose=0, warm_start=False)"""
     expected = expected[1:]  # remove first \n
-    assert lr.__repr__(N_CHAR_MAX=n_nonblank - 10) == expected
+    assert lr.__repr__(n_char_max=n_nonblank - 10) == expected
 
     # test with N_CHAR_MAX == number of non-blank characters - 10: the left and
     # right side of the ellispsis are on the same line. In this case we don't
@@ -607,7 +607,7 @@ LogisticRegression(C=1.0, class_weight=None, dual=False, fit_intercept=True,
                    multi_class='warn', n_jobs=None, random_state=None,
                    solver='warn', tol=0.0001, verbose=0, warm_start=False)"""
     expected = expected[1:]  # remove first \n
-    assert lr.__repr__(N_CHAR_MAX=n_nonblank - 4) == expected
+    assert lr.__repr__(n_char_max=n_nonblank - 4) == expected
 
     # test with N_CHAR_MAX == number of non-blank characters - 2: the left and
     # right side of the ellispsis are on the same line, but adding the ellipsis
@@ -618,7 +618,7 @@ LogisticRegression(C=1.0, class_weight=None, dual=False, fit_intercept=True,
                    multi_class='warn', n_jobs=None, random_state=None,
                    solver='warn', tol=0.0001, verbose=0, warm_start=False)"""
     expected = expected[1:]  # remove first \n
-    assert lr.__repr__(N_CHAR_MAX=n_nonblank - 2) == expected
+    assert lr.__repr__(n_char_max=n_nonblank - 2) == expected
 
 
 def test_builtin_prettyprinter():
