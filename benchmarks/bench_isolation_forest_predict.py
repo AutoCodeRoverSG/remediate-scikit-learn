@@ -61,10 +61,10 @@ def get_data(
     X_test = np.r_[X + 2, X - 2]
 
     n_outliers = int(np.floor(contamination * n_samples_test))
-    X_outliers = rng.uniform(low=-4, high=4, size=(n_outliers, n_features))
+    x_outliers = rng.uniform(low=-4, high=4, size=(n_outliers, n_features))
 
     outlier_idx = rng.choice(np.arange(0, n_samples_test), n_outliers, replace=False)
-    X_test[outlier_idx, :] = X_outliers
+    X_test[outlier_idx, :] = x_outliers
 
     return X_train, X_test
 
