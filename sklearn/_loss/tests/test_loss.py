@@ -1045,7 +1045,7 @@ def test_specific_fit_intercept_only(loss, func, random_dist, global_random_seed
     We test the functional for specific, meaningful distributions, e.g.
     squared error estimates the expectation of a probability distribution.
     """
-    rng = np.random.RandomState(global_random_seed)
+    rng = np.random.default_rng(global_random_seed)
     if random_dist == "binomial":
         y_train = rng.binomial(1, 0.5, size=100)
     else:
@@ -1072,12 +1072,12 @@ def test_specific_fit_intercept_only(loss, func, random_dist, global_random_seed
 
 def test_multinomial_loss_fit_intercept_only():
     """Test that fit_intercept_only returns the mean functional for CCE."""
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
     n_classes = 4
     loss = HalfMultinomialLoss(n_classes=n_classes)
     # Same logic as test_specific_fit_intercept_only. Here inverse link
     # function = softmax and link function = log - symmetry term.
-    y_train = rng.randint(0, n_classes + 1, size=100).astype(np.float64)
+    y_train = rng.integers(0, n_classes + 1, size=100).astype(np.float64)
     baseline_prediction = loss.fit_intercept_only(y_true=y_train)
     assert baseline_prediction.shape == (n_classes,)
     p = np.zeros(n_classes, dtype=y_train.dtype)
@@ -1125,11 +1125,11 @@ def test_multinomial_cy_gradient(global_random_seed):
 
 def test_binomial_and_multinomial_loss(global_random_seed):
     """Test that multinomial loss with n_classes = 2 is the same as binomial loss."""
-    rng = np.random.RandomState(global_random_seed)
+    rng = np.random.default_rng(global_random_seed)
     n_samples = 20
     binom = HalfBinomialLoss()
     multinom = HalfMultinomialLoss(n_classes=2)
-    y_train = rng.randint(0, 2, size=n_samples).astype(np.float64)
+    y_train = rng.integers(0, 2, size=n_samples).astype(np.float64)
     raw_prediction = rng.normal(size=n_samples)
     raw_multinom = np.empty((n_samples, 2))
     raw_multinom[:, 0] = -0.5 * raw_prediction
@@ -1274,7 +1274,7 @@ def test_init_gradient_and_hessian_raises(loss, params, err_msg):
     """Test that init_gradient_and_hessian raises errors for invalid input."""
     loss = loss()
     with pytest.raises((ValueError, TypeError), match=err_msg):
-        gradient, hessian = loss.init_gradient_and_hessian(n_samples=5, **params)
+        _, _ = loss.init_gradient_and_hessian(n_samples=5, **params)
 
 
 @pytest.mark.parametrize(
@@ -1431,7 +1431,7 @@ def test_loss_array_api(
     y_true_xp = xp.asarray(y_true, device=device)
     raw_prediction_xp = xp.asarray(raw_prediction, device=device)
     if use_sample_weight:
-        rng = np.random.RandomState(random_seed)
+        rng = np.random.default_rng(random_seed)
         sample_weight_np = (
             rng.uniform(-1, 5, size=n_samples).clip(0, None).astype(dtype_name)
         )

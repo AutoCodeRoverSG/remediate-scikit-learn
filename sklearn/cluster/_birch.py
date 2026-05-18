@@ -25,21 +25,21 @@ from sklearn.utils.extmath import row_norms
 from sklearn.utils.validation import check_is_fitted, validate_data
 
 
-def _iterate_sparse_X(X):
+def _iterate_sparse_x(X):
     """This little hack returns a densified row when iterating over a sparse
     matrix, instead of constructing a sparse matrix for every row that is
     expensive.
     """
     n_samples = X.shape[0]
-    X_indices = X.indices
-    X_data = X.data
-    X_indptr = X.indptr
+    x_indices = X.indices
+    x_data = X.data
+    x_indptr = X.indptr
 
     for i in range(n_samples):
         row = np.zeros(X.shape[1])
-        startptr, endptr = X_indptr[i], X_indptr[i + 1]
-        nonzero_indices = X_indices[startptr:endptr]
-        row[nonzero_indices] = X_data[startptr:endptr]
+        startptr, endptr = x_indptr[i], x_indptr[i + 1]
+        nonzero_indices = x_indices[startptr:endptr]
+        row[nonzero_indices] = x_data[startptr:endptr]
         yield row
 
 
@@ -534,7 +534,7 @@ class Birch(
         threshold = self.threshold
         branching_factor = self.branching_factor
 
-        n_samples, n_features = X.shape
+        _, n_features = X.shape
 
         # If partial_fit is called for the first time or fit is called, we
         # start a new tree.
@@ -563,7 +563,7 @@ class Birch(
         if not sparse.issparse(X):
             iter_func = iter
         else:
-            iter_func = _iterate_sparse_X
+            iter_func = _iterate_sparse_x
 
         for sample in iter_func(X):
             subcluster = _CFSubcluster(linear_sum=sample)
