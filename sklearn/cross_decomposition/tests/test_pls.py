@@ -367,14 +367,14 @@ def test_attributes_shapes(estimator):
     )
 
 
-@pytest.mark.parametrize("Est", (PLSRegression, PLSCanonical, CCA))
-def test_univariate_equivalence(Est):
+@pytest.mark.parametrize("estimator_class", (PLSRegression, PLSCanonical, CCA))
+def test_univariate_equivalence(estimator_class):
     # Ensure 2D y with 1 column is equivalent to 1D y
     d = load_linnerud()
     X = d.data
     y = d.target
 
-    est = Est(n_components=1)
+    est = estimator_class(n_components=1)
     one_d_coeff = est.fit(X, y[:, 0]).coef_
     two_d_coeff = est.fit(X, y[:, :1]).coef_
 
@@ -382,35 +382,35 @@ def test_univariate_equivalence(Est):
     assert_array_almost_equal(one_d_coeff, two_d_coeff)
 
 
-@pytest.mark.parametrize("Est", (PLSRegression, PLSCanonical, CCA, PLSSVD))
-def test_copy(Est):
+@pytest.mark.parametrize("estimator", (PLSRegression, PLSCanonical, CCA, PLSSVD))
+def test_copy(estimator):
     # check that the "copy" keyword works
     d = load_linnerud()
     X = d.data
     y = d.target
-    X_orig = X.copy()
+    x_orig = X.copy()
 
     # copy=True won't modify inplace
-    pls = Est(copy=True).fit(X, y)
-    assert_array_equal(X, X_orig)
+    pls = estimator(copy=True).fit(X, y)
+    assert_array_equal(X, x_orig)
 
     # copy=False will modify inplace
     with pytest.raises(AssertionError):
-        Est(copy=False).fit(X, y)
-        assert_array_almost_equal(X, X_orig)
+        estimator(copy=False).fit(X, y)
+        assert_array_almost_equal(X, x_orig)
 
-    if Est is PLSSVD:
+    if estimator is PLSSVD:
         return  # PLSSVD does not support copy param in predict or transform
 
-    X_orig = X.copy()
+    x_orig = X.copy()
     with pytest.raises(AssertionError):
         pls.transform(X, y, copy=False)
-        assert_array_almost_equal(X, X_orig)
+        assert_array_almost_equal(X, x_orig)
 
-    X_orig = X.copy()
+    x_orig = X.copy()
     with pytest.raises(AssertionError):
         pls.predict(X, copy=False)
-        assert_array_almost_equal(X, X_orig)
+        assert_array_almost_equal(X, x_orig)
 
     # Make sure copy=True gives same transform and predictions as predict=False
     assert_array_almost_equal(
@@ -453,29 +453,29 @@ def _generate_test_scale_and_stability_datasets():
         yield X, y
 
 
-@pytest.mark.parametrize("Est", (CCA, PLSCanonical, PLSRegression, PLSSVD))
+@pytest.mark.parametrize("est", (CCA, PLSCanonical, PLSRegression, PLSSVD))
 @pytest.mark.parametrize("X, y", _generate_test_scale_and_stability_datasets())
-def test_scale_and_stability(Est, X, y):
+def test_scale_and_stability(est, X, y):
     """scale=True is equivalent to scale=False on centered/scaled data
     This allows to check numerical stability over platforms as well"""
     # Avoid in-place modification of X and y to avoid side effects in other tests.
     X, y = X.copy(), y.copy()
-    X_s, y_s, *_ = _center_scale_xy(X, y)
+    x_s, y_s, *_ = _center_scale_xy(X, y)
 
-    X_score, y_score = Est(scale=True).fit_transform(X, y)
-    X_s_score, y_s_score = Est(scale=False).fit_transform(X_s, y_s)
+    x_score, y_score = est(scale=True).fit_transform(X, y)
+    x_s_score, y_s_score = est(scale=False).fit_transform(x_s, y_s)
 
-    assert_allclose(X_s_score, X_score, atol=1e-4)
+    assert_allclose(x_s_score, x_score, atol=1e-4)
     assert_allclose(y_s_score, y_score, atol=1e-4)
 
 
-@pytest.mark.parametrize("Estimator", (PLSSVD, PLSRegression, PLSCanonical, CCA))
-def test_n_components_upper_bounds(Estimator):
+@pytest.mark.parametrize("estimator", (PLSSVD, PLSRegression, PLSCanonical, CCA))
+def test_n_components_upper_bounds(estimator):
     """Check the validation of `n_components` upper bounds for `PLS` regressors."""
     rng = np.random.RandomState(0)
     X = rng.randn(10, 5)
     y = rng.randn(10, 3)
-    est = Estimator(n_components=10)
+    est = estimator(n_components=10)
     err_msg = "`n_components` upper bound is .*. Got 10 instead. Reduce `n_components`."
     with pytest.raises(ValueError, match=err_msg):
         est.fit(X, y)
@@ -571,8 +571,8 @@ def test_pls_constant_y():
     assert_allclose(pls.x_rotations_, 0)
 
 
-@pytest.mark.parametrize("PLSEstimator", [PLSRegression, PLSCanonical, CCA])
-def test_pls_coef_shape(PLSEstimator):
+@pytest.mark.parametrize("pls_estimator", [PLSRegression, PLSCanonical, CCA])
+def test_pls_coef_shape(pls_estimator):
     """Check the shape of `coef_` attribute.
 
     Non-regression test for:
@@ -582,21 +582,21 @@ def test_pls_coef_shape(PLSEstimator):
     X = d.data
     y = d.target
 
-    pls = PLSEstimator(copy=True).fit(X, y)
+    pls = pls_estimator(copy=True).fit(X, y)
 
     n_targets, n_features = y.shape[1], X.shape[1]
     assert pls.coef_.shape == (n_targets, n_features)
 
 
 @pytest.mark.parametrize("scale", [True, False])
-@pytest.mark.parametrize("PLSEstimator", [PLSRegression, PLSCanonical, CCA])
-def test_pls_prediction(PLSEstimator, scale):
+@pytest.mark.parametrize("pls_estimator", [PLSRegression, PLSCanonical, CCA])
+def test_pls_prediction(pls_estimator, scale):
     """Check the behaviour of the prediction function."""
     d = load_linnerud()
     X = d.data
     y = d.target
 
-    pls = PLSEstimator(copy=True, scale=scale).fit(X, y)
+    pls = pls_estimator(copy=True, scale=scale).fit(X, y)
     y_pred = pls.predict(X, copy=True)
 
     y_mean = y.mean(axis=0)
