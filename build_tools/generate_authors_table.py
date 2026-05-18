@@ -76,11 +76,11 @@ def get_contributors():
         members.extend(reply.json())
 
     # keep only the logins
-    core_devs = set(c["login"] for c in core_devs)
-    documentation_team = set(c["login"] for c in documentation_team)
-    contributor_experience_team = set(c["login"] for c in contributor_experience_team)
-    comm_team = set(c["login"] for c in comm_team)
-    members = set(c["login"] for c in members)
+    core_devs = {c["login"] for c in core_devs}
+    documentation_team = {c["login"] for c in documentation_team}
+    contributor_experience_team = {c["login"] for c in contributor_experience_team}
+    comm_team = {c["login"] for c in comm_team}
+    members = {c["login"] for c in members}
 
     # add missing contributors with GitHub accounts
     members |= {"dubourg", "mbrucher", "thouis", "jarrodmillman"}
