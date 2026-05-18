@@ -169,8 +169,8 @@ def _class_cov(X, y, priors, shrinkage=None, covariance_estimator=None):
     classes = np.unique(y)
     cov = np.zeros(shape=(X.shape[1], X.shape[1]))
     for idx, group in enumerate(classes):
-        Xg = X[y == group, :]
-        cov += priors[idx] * np.atleast_2d(_cov(Xg, shrinkage, covariance_estimator))
+        xg = X[y == group, :]
+        cov += priors[idx] * np.atleast_2d(_cov(xg, shrinkage, covariance_estimator))
     return cov
 
 
@@ -548,11 +548,11 @@ class LinearDiscriminantAnalysis(
             X, y, self.priors_, shrinkage, covariance_estimator
         )
 
-        Sw = self.covariance_  # within scatter
-        St = _cov(X, shrinkage, covariance_estimator)  # total scatter
-        Sb = St - Sw  # between scatter
+        sw = self.covariance_  # within scatter
+        st = _cov(X, shrinkage, covariance_estimator)  # total scatter
+        sb = st - sw  # between scatter
 
-        evals, evecs = linalg.eigh(Sb, Sw)
+        evals, evecs = linalg.eigh(sb, sw)
         self.explained_variance_ratio_ = np.sort(evals / np.sum(evals))[::-1][
             : self._max_components
         ]
@@ -589,29 +589,29 @@ class LinearDiscriminantAnalysis(
         if self.store_covariance:
             self.covariance_ = _class_cov(X, y, self.priors_)
 
-        Xc = []
+        xc = []
         for idx, group in enumerate(self.classes_):
-            Xg = X[y == group]
-            Xc.append(Xg - self.means_[idx, :])
+            xg = X[y == group]
+            xc.append(xg - self.means_[idx, :])
 
         self.xbar_ = self.priors_ @ self.means_
 
-        Xc = xp.concat(Xc, axis=0)
+        xc = xp.concat(xc, axis=0)
 
         # 1) within (univariate) scaling by with classes std-dev
-        std = xp.std(Xc, axis=0)
+        std = xp.std(xc, axis=0)
         # avoid division by zero in normalization
         std[std == 0] = 1.0
         fac = xp.asarray(1.0 / (n_samples - n_classes), dtype=X.dtype, device=device(X))
 
         # 2) Within variance scaling
-        X = xp.sqrt(fac) * (Xc / std)
+        X = xp.sqrt(fac) * (xc / std)
         # SVD of centered (within)scaled data
-        _, S, Vt = svd(X, full_matrices=False)
+        _, S, vt = svd(X, full_matrices=False)
 
         rank = xp.sum(xp.astype(S > self.tol, xp.int32))
         # Scaling of within covariance is: V' 1/S
-        scalings = (Vt[:rank, :] / std).T / S[:rank]
+        scalings = (vt[:rank, :] / std).T / S[:rank]
         fac = 1.0 if n_classes == 1 else 1.0 / (n_classes - 1)
 
         # 3) Between variance scaling
@@ -622,7 +622,7 @@ class LinearDiscriminantAnalysis(
         # Centers are living in a space with n_classes-1 dim (maximum)
         # Use SVD to find projection in the space spanned by the
         # (n_classes) centers
-        _, S, Vt = svd(X, full_matrices=False)
+        _, S, vt = svd(X, full_matrices=False)
 
         if self._max_components == 0:
             self.explained_variance_ratio_ = xp.empty((0,), dtype=S.dtype)
@@ -632,7 +632,7 @@ class LinearDiscriminantAnalysis(
             ]
 
         rank = xp.sum(xp.astype(S > self.tol * S[0], xp.int32))
-        self.scalings_ = scalings @ Vt.T[:, :rank]
+        self.scalings_ = scalings @ vt.T[:, :rank]
         coef = (self.means_ - self.xbar_) @ self.scalings_
         self.intercept_ = -0.5 * xp.sum(coef**2, axis=1) + xp.log(self.priors_)
         self.coef_ = coef @ self.scalings_.T
@@ -759,11 +759,11 @@ class LinearDiscriminantAnalysis(
         X = validate_data(self, X, reset=False)
 
         if self.solver == "svd":
-            X_new = (X - self.xbar_) @ self.scalings_
+            x_new = (X - self.xbar_) @ self.scalings_
         elif self.solver == "eigen":
-            X_new = X @ self.scalings_
+            x_new = X @ self.scalings_
 
-        return X_new[:, : self._max_components]
+        return x_new[:, : self._max_components]
 
     def predict_proba(self, X):
         """Estimate probability.
@@ -1019,8 +1019,6 @@ class QuadraticDiscriminantAnalysis(
         X : array-like of shape (n_samples, n_features)
             Training data.
         """
-        n_samples, n_features = X.shape
-
         cov = _cov(X, self.shrinkage, self.covariance_estimator)
         scaling, rotation = linalg.eigh(cov)  # scalings are eigenvalues
         rotation = rotation[:, np.argsort(scaling)[::-1]]  # sort eigenvectors
