@@ -302,12 +302,12 @@ def test_gamma():
 def test_quantile_asymmetric_error(quantile):
     """Test quantile regression for asymmetric distributed targets."""
     n_samples = 10_000
-    rng = np.random.RandomState(42)
+    rng = np.random.default_rng(42)
     # take care that X @ coef + intercept > 0
     X = np.concatenate(
         (
-            np.abs(rng.randn(n_samples)[:, None]),
-            -rng.randint(2, size=(n_samples, 1)),
+            np.abs(rng.standard_normal(n_samples)[:, None]),
+            -rng.integers(2, size=(n_samples, 1)),
         ),
         axis=1,
     )
@@ -348,20 +348,20 @@ def test_poisson_y_positive(y):
 def test_poisson():
     # For Poisson distributed target, Poisson loss should give better results
     # than least squares measured in Poisson deviance as metric.
-    rng = np.random.RandomState(42)
+    rng = np.random.default_rng(42)
     n_train, n_test, n_features = 500, 100, 100
     X = make_low_rank_matrix(
-        n_samples=n_train + n_test, n_features=n_features, random_state=rng
+        n_samples=n_train + n_test, n_features=n_features, random_state=42
     )
     # We create a log-linear Poisson model and downscale coef as it will get
     # exponentiated.
     coef = rng.uniform(low=-2, high=2, size=n_features) / np.max(X, axis=0)
     y = rng.poisson(lam=np.exp(X @ coef))
     X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=n_test, random_state=rng
+        X, y, test_size=n_test, random_state=42
     )
-    gbdt_pois = HistGradientBoostingRegressor(loss="poisson", random_state=rng)
-    gbdt_ls = HistGradientBoostingRegressor(loss="squared_error", random_state=rng)
+    gbdt_pois = HistGradientBoostingRegressor(loss="poisson", random_state=42)
+    gbdt_ls = HistGradientBoostingRegressor(loss="squared_error", random_state=42)
     gbdt_pois.fit(X_train, y_train)
     gbdt_ls.fit(X_train, y_train)
     dummy = DummyRegressor(strategy="mean").fit(X_train, y_train)
@@ -379,10 +379,9 @@ def test_binning_train_validation_are_separated():
     # Make sure training and validation data are binned separately.
     # See issue 13926
 
-    rng = np.random.RandomState(0)
     validation_fraction = 0.2
     gb = HistGradientBoostingClassifier(
-        early_stopping=True, validation_fraction=validation_fraction, random_state=rng
+        early_stopping=True, validation_fraction=validation_fraction, random_state=0
     )
     gb.fit(X_classification, y_classification)
     mapper_training_data = gb._bin_mapper
@@ -410,7 +409,7 @@ def test_missing_values_trivial():
 
     n_samples = 100
     n_features = 1
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
 
     X = rng.normal(size=(n_samples, n_features))
     mask = rng.binomial(1, 0.5, size=X.shape).astype(bool)
@@ -439,7 +438,7 @@ def test_missing_values_resilience(
     # Make sure the estimators can deal with missing values and still yield
     # decent predictions
 
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
     n_samples = 1000
     n_features = 2
     if problem == "regression":
@@ -447,7 +446,7 @@ def test_missing_values_resilience(
             n_samples=n_samples,
             n_features=n_features,
             n_informative=n_features,
-            random_state=rng,
+            random_state=0,
         )
         gb = HistGradientBoostingRegressor()
         expected_min_score = expected_min_score_regression
@@ -458,7 +457,7 @@ def test_missing_values_resilience(
             n_informative=n_features,
             n_redundant=0,
             n_repeated=0,
-            random_state=rng,
+            random_state=0,
         )
         gb = HistGradientBoostingClassifier()
         expected_min_score = expected_min_score_classification
@@ -1578,15 +1577,15 @@ def test_dataframe_categorical_results_same_as_ndarray(
         categorical_feature_names=["f_cat"],
     )
 
-    X_train, X_test, x_train_df, x_test_df, y_train, y_test = train_test_split(
+    x_train, x_test, x_train_df, x_test_df, y_train, y_test = train_test_split(
         X, x_df, y, random_state=0
     )
 
-    hist_kwargs = dict(max_iter=10, max_bins=max_bins, random_state=0)
+    hist_kwargs = {"max_iter": 10, "max_bins": max_bins, "random_state": 0}
     hist_np = hist_gradient_boosting(
         categorical_features=[False, True], **hist_kwargs
     )
-    hist_np.fit(X_train, y_train)
+    hist_np.fit(x_train, y_train)
 
     hist_pd = hist_gradient_boosting(
         categorical_features="from_dtype", **hist_kwargs
@@ -1601,32 +1600,32 @@ def test_dataframe_categorical_results_same_as_ndarray(
     for predictor_1, predictor_2 in zip(hist_np._predictors, hist_pd._predictors):
         assert len(predictor_1[0].nodes) == len(predictor_2[0].nodes)
 
-    score_np = hist_np.score(X_test, y_test)
+    score_np = hist_np.score(x_test, y_test)
     score_pd = hist_pd.score(x_test_df, y_test)
     assert score_np == pytest.approx(score_pd)
-    assert_allclose(hist_np.predict(X_test), hist_pd.predict(x_test_df))
+    assert_allclose(hist_np.predict(x_test), hist_pd.predict(x_test_df))
 
 
 @pytest.mark.parametrize("dataframe_lib", ["pandas", "polars"])
 @pytest.mark.parametrize(
-    "HistGradientBoosting",
+    "hist_gradient_boosting",
     [HistGradientBoostingClassifier, HistGradientBoostingRegressor],
 )
-def test_dataframe_categorical_errors(dataframe_lib, HistGradientBoosting):
+def test_dataframe_categorical_errors(dataframe_lib, hist_gradient_boosting):
     """Check error cases for pandas categorical feature."""
     pytest.importorskip(dataframe_lib)
     msg = "Categorical feature 'f_cat' is expected to have a cardinality <= 16"
-    hist = HistGradientBoosting(categorical_features="from_dtype", max_bins=16)
+    hist = hist_gradient_boosting(categorical_features="from_dtype", max_bins=16)
 
     rng = np.random.RandomState(42)
     f_cat = rng.randint(0, high=100, size=100).astype(str)
-    X_df = _convert_container(
+    x_df = _convert_container(
         f_cat[:, None], dataframe_lib, ["f_cat"], categorical_feature_names=["f_cat"]
     )
     y = rng.randint(0, high=2, size=100)
 
     with pytest.raises(ValueError, match=msg):
-        hist.fit(X_df, y)
+        hist.fit(x_df, y)
 
 
 @pytest.mark.parametrize("dataframe_lib", ["pandas", "polars"])
