@@ -32,20 +32,20 @@ from sklearn.utils.estimator_checks import (
 )
 from sklearn.utils.parallel import Parallel
 
-rng_global = np.random.RandomState(0)
+rng_global = np.random.default_rng(0)
 n_samples, n_features = 10, 8
-X = rng_global.randn(n_samples, n_features)
+X = rng_global.standard_normal((n_samples, n_features))
 
 
 # TODO: remove mark once loky bug is fixed:
 # https://github.com/joblib/loky/issues/458
 @pytest.mark.thread_unsafe
 def test_sparse_encode_shapes_omp():
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
     algorithms = ["omp", "lasso_lars", "lasso_cd", "lars", "threshold"]
     for n_components, n_samples in itertools.product([1, 5], [1, 9]):
-        X_ = rng.randn(n_samples, n_features)
-        dictionary = rng.randn(n_components, n_features)
+        X_ = rng.standard_normal((n_samples, n_features))
+        dictionary = rng.standard_normal((n_components, n_features))
         for algorithm, n_jobs in itertools.product(algorithms, [1, 2]):
             code = sparse_encode(X_, dictionary, algorithm=algorithm, n_jobs=n_jobs)
             assert code.shape == (n_samples, n_components)
@@ -94,7 +94,7 @@ def test_max_iter():
     n_components = resolution // subsampling
 
     # Compute a wavelet dictionary
-    D_multi = np.r_[
+    d_multi = np.r_[
         tuple(
             ricker_matrix(
                 width=w, resolution=resolution, n_components=n_components // 5
@@ -112,7 +112,7 @@ def test_max_iter():
     # check that the underlying model fails to converge
     with pytest.warns(ConvergenceWarning):
         model = SparseCoder(
-            D_multi, transform_algorithm=transform_algorithm, transform_max_iter=1
+            d_multi, transform_algorithm=transform_algorithm, transform_max_iter=1
         )
         model.fit_transform(X)
 
@@ -120,7 +120,7 @@ def test_max_iter():
     with warnings.catch_warnings():
         warnings.simplefilter("error", ConvergenceWarning)
         model = SparseCoder(
-            D_multi, transform_algorithm=transform_algorithm, transform_max_iter=500
+            d_multi, transform_algorithm=transform_algorithm, transform_max_iter=500
         )
         model.fit_transform(X)
 
@@ -283,7 +283,7 @@ def test_dict_learning_split():
         n_components, transform_algorithm="threshold", random_state=0
     )
     code = dico.fit(X).transform(X)
-    Xr = dico.inverse_transform(code)
+    xr = dico.inverse_transform(code)
 
     dico.split_sign = True
     split_code = dico.transform(X)
@@ -292,8 +292,8 @@ def test_dict_learning_split():
         split_code[:, :n_components] - split_code[:, n_components:], code
     )
 
-    Xr2 = dico.inverse_transform(split_code)
-    assert_array_almost_equal(Xr, Xr2)
+    xr2 = dico.inverse_transform(split_code)
+    assert_array_almost_equal(xr, xr2)
 
 
 def test_dict_learning_online_shapes():
@@ -527,7 +527,7 @@ def test_dict_learning_online_partial_fit():
     dict2 = MiniBatchDictionaryLearning(
         n_components, alpha=1, dict_init=V, random_state=0
     )
-    for i in range(10):
+    for _ in range(10):
         for sample in X:
             dict2.partial_fit(sample[np.newaxis, :])
 
@@ -579,10 +579,10 @@ def test_sparse_encode_input():
     rng = np.random.RandomState(0)
     V = rng.randn(n_components, n_features)  # random init
     V /= np.sum(V**2, axis=1)[:, np.newaxis]
-    Xf = check_array(X, order="F")
+    xf = check_array(X, order="F")
     for algo in ("lasso_lars", "lasso_cd", "lars", "omp", "threshold"):
         a = sparse_encode(X, V, algorithm=algo)
-        b = sparse_encode(Xf, V, algorithm=algo)
+        b = sparse_encode(xf, V, algorithm=algo)
         assert_array_almost_equal(a, b)
 
 
@@ -613,10 +613,10 @@ def test_sparse_coder_estimator():
         dictionary=V, transform_algorithm="lasso_lars", transform_alpha=0.001
     )
     code = coder.fit_transform(X)
-    Xr = coder.inverse_transform(code)
+    x_reconstructed = coder.inverse_transform(code)
     assert not np.all(code == 0)
     assert np.sqrt(np.sum((np.dot(code, V) - X) ** 2)) < 0.1
-    np.testing.assert_allclose(Xr, np.dot(code, V))
+    np.testing.assert_allclose(x_reconstructed, np.dot(code, V))
 
 
 def test_sparse_coder_estimator_clone():
@@ -705,13 +705,13 @@ def test_update_dict():
 
     # full batch update
     newd_batch = dictionary.copy()
-    _update_dict(newd_batch, X, code)
+    _update_dict(newd_batch, X, code, random_state=rng)
 
     # online update
     A = np.dot(code.T, code)
     B = np.dot(X.T, code)
     newd_online = dictionary.copy()
-    _update_dict(newd_online, X, code, A, B)
+    _update_dict(newd_online, X, code, A, B, random_state=rng)
 
     assert_allclose(newd_batch, newd_online)
 
