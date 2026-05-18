@@ -243,7 +243,7 @@ class TreeGrower:
 
     def __init__(
         self,
-        X_binned,
+        x_binned,
         gradients,
         hessians,
         max_leaf_nodes=None,
@@ -259,12 +259,14 @@ class TreeGrower:
         interaction_cst=None,
         l2_regularization=0.0,
         feature_fraction_per_split=1.0,
-        rng=np.random.default_rng(),
+        rng=None,
         shrinkage=1.0,
         n_threads=None,
     ):
+        if rng is None:
+            rng = np.random.default_rng(seed=0)
         self._validate_parameters(
-            X_binned,
+            x_binned,
             min_gain_to_split,
             min_hessian_to_split,
         )
@@ -275,13 +277,13 @@ class TreeGrower:
 
         if isinstance(n_bins_non_missing, numbers.Integral):
             n_bins_non_missing = np.array(
-                [n_bins_non_missing] * X_binned.shape[1], dtype=np.uint32
+                [n_bins_non_missing] * x_binned.shape[1], dtype=np.uint32
             )
         else:
             n_bins_non_missing = np.asarray(n_bins_non_missing, dtype=np.uint32)
 
         if isinstance(has_missing_values, bool):
-            has_missing_values = [has_missing_values] * X_binned.shape[1]
+            has_missing_values = [has_missing_values] * x_binned.shape[1]
         has_missing_values = np.asarray(has_missing_values, dtype=np.uint8)
 
         # `monotonic_cst` validation is done in _validate_monotonic_cst
@@ -289,7 +291,7 @@ class TreeGrower:
         # needed when using the public API.
         if monotonic_cst is None:
             monotonic_cst = np.full(
-                shape=X_binned.shape[1],
+                shape=x_binned.shape[1],
                 fill_value=MonotonicConstraint.NO_CST,
                 dtype=np.int8,
             )
@@ -298,7 +300,7 @@ class TreeGrower:
         self.with_monotonic_cst = np.any(monotonic_cst != MonotonicConstraint.NO_CST)
 
         if is_categorical is None:
-            is_categorical = np.zeros(shape=X_binned.shape[1], dtype=np.uint8)
+            is_categorical = np.zeros(shape=x_binned.shape[1], dtype=np.uint8)
         else:
             is_categorical = np.asarray(is_categorical, dtype=np.uint8)
 
@@ -311,11 +313,11 @@ class TreeGrower:
 
         hessians_are_constant = hessians.shape[0] == 1
         self.histogram_builder = HistogramBuilder(
-            X_binned, n_bins, gradients, hessians, hessians_are_constant, n_threads
+            x_binned, n_bins, gradients, hessians, hessians_are_constant, n_threads
         )
         missing_values_bin_idx = n_bins - 1
         self.splitter = Splitter(
-            X_binned=X_binned,
+            X_binned=x_binned,
             n_bins_non_missing=n_bins_non_missing,
             missing_values_bin_idx=missing_values_bin_idx,
             has_missing_values=has_missing_values,
@@ -330,7 +332,7 @@ class TreeGrower:
             rng=rng,
             n_threads=n_threads,
         )
-        self.X_binned = X_binned
+        self.x_binned = x_binned
         self.max_leaf_nodes = max_leaf_nodes
         self.max_depth = max_depth
         self.min_samples_leaf = min_samples_leaf
@@ -343,7 +345,7 @@ class TreeGrower:
         self.interaction_cst = interaction_cst
         self.l2_regularization = l2_regularization
         self.shrinkage = shrinkage
-        self.n_features = X_binned.shape[1]
+        self.n_features = x_binned.shape[1]
         self.n_threads = n_threads
         self.splittable_nodes = []
         self.finalized_leaves = []
@@ -356,7 +358,7 @@ class TreeGrower:
 
     def _validate_parameters(
         self,
-        X_binned,
+        x_binned,
         min_gain_to_split,
         min_hessian_to_split,
     ):
@@ -364,9 +366,9 @@ class TreeGrower:
 
         Also validate parameters passed to splitter.
         """
-        if X_binned.dtype != np.uint8:
+        if x_binned.dtype != np.uint8:
             raise NotImplementedError("X_binned must be of type uint8.")
-        if not X_binned.flags.f_contiguous:
+        if not x_binned.flags.f_contiguous:
             raise ValueError(
                 "X_binned should be passed as Fortran contiguous "
                 "array for maximum efficiency."
@@ -423,7 +425,7 @@ class TreeGrower:
         self.total_compute_hist_time += time() - tic
 
         tic = time()
-        n_samples = self.X_binned.shape[0]
+        n_samples = self.x_binned.shape[0]
         depth = 0
         histogram_array = np.asarray(histograms[arbitrary_feature])
         sum_gradients = histogram_array["sum_gradients"].sum()
