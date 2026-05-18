@@ -28,9 +28,9 @@ def test_kernel_pca(global_random_seed):
      - that fit_transform is equivalent to fit+transform
      - that the shapes of transforms and inverse transforms are correct
     """
-    rng = np.random.RandomState(global_random_seed)
-    x_fit = rng.random_sample((5, 4))
-    x_pred = rng.random_sample((2, 4))
+    rng = np.random.default_rng(global_random_seed)
+    x_fit = rng.random((5, 4))
+    x_pred = rng.random((2, 4))
 
     def histogram(x, y, **kwargs):
         # Histogram kernel implemented as a callable.
@@ -341,8 +341,8 @@ def test_gridsearch_pipeline_precomputed():
     )
     param_grid = {"Perceptron__max_iter": np.arange(1, 5)}
     grid_search = GridSearchCV(pipeline, cv=3, param_grid=param_grid)
-    X_kernel = rbf_kernel(X, gamma=2.0)
-    grid_search.fit(X_kernel, y)
+    x_kernel = rbf_kernel(X, gamma=2.0)
+    grid_search.fit(x_kernel, y)
     assert grid_search.best_score_ == 1
 
 
@@ -367,10 +367,10 @@ def test_nested_circles():
     kpca = KernelPCA(
         kernel="rbf", n_components=2, fit_inverse_transform=True, gamma=2.0
     )
-    X_kpca = kpca.fit_transform(X)
+    x_kpca = kpca.fit_transform(X)
 
     # The data is perfectly linearly separable in that space
-    train_score = Perceptron(max_iter=5).fit(X_kpca, y).score(X_kpca, y)
+    train_score = Perceptron(max_iter=5).fit(x_kpca, y).score(x_kpca, y)
     assert train_score == 1.0
 
 
@@ -451,20 +451,20 @@ def test_kernel_pca_solvers_equivalence(n_components):
     X, _ = make_circles(
         n_samples=(n_train + n_test), factor=0.3, noise=0.05, random_state=0
     )
-    X_fit, X_pred = X[:n_train, :], X[n_train:, :]
+    x_fit, x_pred = X[:n_train, :], X[n_train:, :]
 
     # reference (full)
     ref_pred = (
         KernelPCA(n_components, eigen_solver="dense", random_state=0)
-        .fit(X_fit)
-        .transform(X_pred)
+        .fit(x_fit)
+        .transform(x_pred)
     )
 
     # arpack
     a_pred = (
         KernelPCA(n_components, eigen_solver="arpack", random_state=0)
-        .fit(X_fit)
-        .transform(X_pred)
+        .fit(x_fit)
+        .transform(x_pred)
     )
     # check that the result is still correct despite the approx
     assert_array_almost_equal(np.abs(a_pred), np.abs(ref_pred))
@@ -472,8 +472,8 @@ def test_kernel_pca_solvers_equivalence(n_components):
     # randomized
     r_pred = (
         KernelPCA(n_components, eigen_solver="randomized", random_state=0)
-        .fit(X_fit)
-        .transform(X_pred)
+        .fit(x_fit)
+        .transform(x_pred)
     )
     # check that the result is still correct despite the approximation
     assert_array_almost_equal(np.abs(r_pred), np.abs(ref_pred))
@@ -491,9 +491,9 @@ def test_kernel_pca_inverse_transform_reconstruction():
     kpca = KernelPCA(
         n_components=20, kernel="rbf", fit_inverse_transform=True, alpha=1e-3
     )
-    X_trans = kpca.fit_transform(X)
-    X_reconst = kpca.inverse_transform(X_trans)
-    assert np.linalg.norm(X - X_reconst) / np.linalg.norm(X) < 1e-1
+    x_trans = kpca.fit_transform(X)
+    x_reconst = kpca.inverse_transform(x_trans)
+    assert np.linalg.norm(X - x_reconst) / np.linalg.norm(X) < 1e-1
 
 
 def test_kernel_pca_raise_not_fitted_error():
@@ -510,7 +510,7 @@ def test_32_64_decomposition_shape():
     Non regression test for
     https://github.com/scikit-learn/scikit-learn/issues/18146
     """
-    X, y = make_blobs(
+    X, _ = make_blobs(
         n_samples=30, centers=[[0, 0, 0], [1, 1, 1]], random_state=0, cluster_std=0.1
     )
     X = StandardScaler().fit_transform(X)
@@ -552,10 +552,10 @@ def test_kernel_pca_inverse_correct_gamma(global_random_seed):
     assert kpca1.gamma_ == expected_gamma
     assert kpca2.gamma_ == expected_gamma
 
-    X1_recon = kpca1.inverse_transform(kpca1.transform(X))
-    X2_recon = kpca2.inverse_transform(kpca1.transform(X))
+    x1_recon = kpca1.inverse_transform(kpca1.transform(X))
+    x2_recon = kpca2.inverse_transform(kpca1.transform(X))
 
-    assert_allclose(X1_recon, X2_recon)
+    assert_allclose(x1_recon, x2_recon)
 
 
 def test_kernel_pca_pandas_output():
