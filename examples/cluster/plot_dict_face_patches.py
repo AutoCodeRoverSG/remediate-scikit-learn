@@ -44,8 +44,7 @@ from sklearn.cluster import MiniBatchKMeans
 from sklearn.feature_extraction.image import extract_patches_2d
 
 print("Learning the dictionary... ")
-rng = np.random.RandomState(0)
-kmeans = MiniBatchKMeans(n_clusters=81, random_state=rng, verbose=True, n_init=3)
+kmeans = MiniBatchKMeans(n_clusters=81, random_state=0, verbose=True, n_init=3)
 patch_size = (20, 20)
 
 buffer = []
@@ -55,7 +54,7 @@ t0 = time.time()
 index = 0
 for _ in range(6):
     for img in faces.images:
-        data = extract_patches_2d(img, patch_size, max_patches=50, random_state=rng)
+        data = extract_patches_2d(img, patch_size, max_patches=50, random_state=0)
         data = np.reshape(data, (len(data), -1))
         buffer.append(data)
         index += 1

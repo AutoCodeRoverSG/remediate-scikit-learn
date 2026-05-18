@@ -71,6 +71,8 @@ def index(redirects, index_map, k):
     return index_map.setdefault(k, len(index_map))
 
 
+PROGRESS_MSG = "[%s] line: %08d"
+
 DBPEDIA_RESOURCE_PREFIX_LEN = len("http://dbpedia.org/resource/")
 SHORTNAME_SLICE = slice(DBPEDIA_RESOURCE_PREFIX_LEN + 1, -1)
 
@@ -91,7 +93,7 @@ def get_redirects(redirects_filename):
             continue
         redirects[short_name(split[0])] = short_name(split[2])
         if l % 1000000 == 0:
-            print("[%s] line: %08d" % (datetime.now().isoformat(), l))
+            print(PROGRESS_MSG % (datetime.now().isoformat(), l))
 
     # compute the transitive closure
     print("Computing the transitive closure of the redirect relation")
@@ -107,7 +109,7 @@ def get_redirects(redirects_filename):
             seen.add(target)
         redirects[source] = transitive_target
         if l % 1000000 == 0:
-            print("[%s] line: %08d" % (datetime.now().isoformat(), l))
+            print(PROGRESS_MSG % (datetime.now().isoformat(), l))
 
     return redirects
 
@@ -140,7 +142,7 @@ def get_adjacency_matrix(redirects_filename, page_links_filename, limit=None):
         j = index(redirects, index_map, short_name(split[2]))
         links.append((i, j))
         if l % 1000000 == 0:
-            print("[%s] line: %08d" % (datetime.now().isoformat(), l))
+            print(PROGRESS_MSG % (datetime.now().isoformat(), l))
 
         if limit is not None and l >= limit - 1:
             break
