@@ -17,8 +17,8 @@ def make_gen_reg_scorers(caller):
     caller.train_scorer = r2_score
 
 
-def neg_mean_data_error(X, U, V):
-    return -np.sqrt(((X - U.dot(V)) ** 2).mean())
+def neg_mean_data_error(X, u, v):
+    return -np.sqrt(((X - u.dot(v)) ** 2).mean())
 
 
 def make_dict_learning_scorers(caller):
@@ -36,8 +36,8 @@ def make_dict_learning_scorers(caller):
     )
 
 
-def explained_variance_ratio(Xt, X):
-    return np.var(Xt, axis=0).sum() / np.var(X, axis=0).sum()
+def explained_variance_ratio(x_trans, X):
+    return np.var(x_trans, axis=0).sum() / np.var(X, axis=0).sum()
 
 
 def make_pca_scorers(caller):
