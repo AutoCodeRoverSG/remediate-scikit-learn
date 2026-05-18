@@ -248,16 +248,16 @@ def test_regression_synthetic(global_random_seed):
 
 
 @pytest.mark.parametrize(
-    "GradientBoosting, X, y",
+    "gradient_boosting, X, y",
     [
         (GradientBoostingRegressor, X_reg, y_reg),
         (GradientBoostingClassifier, iris.data, iris.target),
     ],
 )
-def test_feature_importances(GradientBoosting, X, y):
+def test_feature_importances(gradient_boosting, X, y):
     # smoke test to check that the gradient boosting expose an attribute
     # feature_importances_
-    gbdt = GradientBoosting()
+    gbdt = gradient_boosting()
     assert not hasattr(gbdt, "feature_importances_")
     gbdt.fit(X, y)
     assert hasattr(gbdt, "feature_importances_")
@@ -343,7 +343,7 @@ def test_feature_importance_regression(
     """
     california = fetch_california_housing_fxt()
     X, y = california.data, california.target
-    X_train, X_test, y_train, y_test = train_test_split(
+    X_train, _, y_train, _ = train_test_split(
         X, y, random_state=global_random_seed
     )
 
@@ -448,13 +448,13 @@ def test_staged_predict_proba():
     assert_array_almost_equal(clf.predict_proba(X_test), staged_proba)
 
 
-@pytest.mark.parametrize("Estimator", GRADIENT_BOOSTING_ESTIMATORS)
-def test_staged_functions_defensive(Estimator, global_random_seed):
+@pytest.mark.parametrize("estimator_class", GRADIENT_BOOSTING_ESTIMATORS)
+def test_staged_functions_defensive(estimator_class, global_random_seed):
     # test that staged_functions make defensive copies
     rng = np.random.RandomState(global_random_seed)
     X = rng.uniform(size=(10, 3))
     y = (4 * X[:, 0]).astype(int) + 1  # don't predict zeros
-    estimator = Estimator()
+    estimator = estimator_class()
     estimator.fit(X, y)
     for func in ["predict", "decision_function", "predict_proba"]:
         staged_func = getattr(estimator, "staged_" + func, None)
@@ -598,10 +598,10 @@ def test_mem_layout():
     assert 100 == len(clf.estimators_)
 
 
-@pytest.mark.parametrize("GradientBoostingEstimator", GRADIENT_BOOSTING_ESTIMATORS)
-def test_oob_improvement(GradientBoostingEstimator):
+@pytest.mark.parametrize("gradient_boosting_estimator", GRADIENT_BOOSTING_ESTIMATORS)
+def test_oob_improvement(gradient_boosting_estimator):
     # Test if oob improvement has correct shape and regression test.
-    estimator = GradientBoostingEstimator(
+    estimator = gradient_boosting_estimator(
         n_estimators=100, random_state=1, subsample=0.5
     )
     estimator.fit(X, y)
@@ -614,18 +614,20 @@ def test_oob_improvement(GradientBoostingEstimator):
     )
 
 
-@pytest.mark.parametrize("GradientBoostingEstimator", GRADIENT_BOOSTING_ESTIMATORS)
-def test_oob_scores(GradientBoostingEstimator):
+@pytest.mark.parametrize(
+    "gradient_boosting_estimator", GRADIENT_BOOSTING_ESTIMATORS
+)
+def test_oob_scores(gradient_boosting_estimator):
     # Test if oob scores has correct shape and regression test.
     X, y = datasets.make_hastie_10_2(n_samples=100, random_state=1)
-    estimator = GradientBoostingEstimator(
+    estimator = gradient_boosting_estimator(
         n_estimators=100, random_state=1, subsample=0.5
     )
     estimator.fit(X, y)
     assert estimator.oob_scores_.shape[0] == 100
     assert estimator.oob_scores_[-1] == pytest.approx(estimator.oob_score_)
 
-    estimator = GradientBoostingEstimator(
+    estimator = gradient_boosting_estimator(
         n_estimators=100,
         random_state=1,
         subsample=0.5,
@@ -637,7 +639,7 @@ def test_oob_scores(GradientBoostingEstimator):
 
 
 @pytest.mark.parametrize(
-    "GradientBoostingEstimator, oob_attribute",
+    "gradient_boosting_estimator, oob_attribute",
     [
         (GradientBoostingClassifier, "oob_improvement_"),
         (GradientBoostingClassifier, "oob_scores_"),
@@ -647,12 +649,12 @@ def test_oob_scores(GradientBoostingEstimator):
         (GradientBoostingRegressor, "oob_score_"),
     ],
 )
-def test_oob_attributes_error(GradientBoostingEstimator, oob_attribute):
+def test_oob_attributes_error(gradient_boosting_estimator, oob_attribute):
     """
     Check that we raise an AttributeError when the OOB statistics were not computed.
     """
     X, y = datasets.make_hastie_10_2(n_samples=100, random_state=1)
-    estimator = GradientBoostingEstimator(
+    estimator = gradient_boosting_estimator(
         n_estimators=100,
         random_state=1,
         subsample=1.0,
@@ -721,7 +723,7 @@ def test_verbose_output():
     )
     assert true_header == header
 
-    n_lines = sum(1 for l in verbose_output.readlines())
+    n_lines = sum(1 for _ in verbose_output.readlines())
     # one for 1-10 and then 9 for 20-100
     assert 10 + 9 == n_lines
 
@@ -750,26 +752,26 @@ def test_more_verbose_output():
     )
     assert true_header == header
 
-    n_lines = sum(1 for l in verbose_output.readlines())
+    n_lines = sum(1 for _ in verbose_output.readlines())
     # 100 lines for n_estimators==100
     assert 100 == n_lines
 
 
-@pytest.mark.parametrize("Cls", GRADIENT_BOOSTING_ESTIMATORS)
-def test_warm_start(Cls, global_random_seed):
+@pytest.mark.parametrize("estimator_cls", GRADIENT_BOOSTING_ESTIMATORS)
+def test_warm_start(estimator_cls, global_random_seed):
     # Test if warm start equals fit.
     X, y = datasets.make_hastie_10_2(n_samples=100, random_state=global_random_seed)
-    est = Cls(n_estimators=200, max_depth=1, random_state=global_random_seed)
+    est = estimator_cls(n_estimators=200, max_depth=1, random_state=global_random_seed)
     est.fit(X, y)
 
-    est_ws = Cls(
+    est_ws = estimator_cls(
         n_estimators=100, max_depth=1, warm_start=True, random_state=global_random_seed
     )
     est_ws.fit(X, y)
     est_ws.set_params(n_estimators=200)
     est_ws.fit(X, y)
 
-    if Cls is GradientBoostingRegressor:
+    if estimator_cls is GradientBoostingRegressor:
         assert_allclose(est_ws.predict(X), est.predict(X))
     else:
         # Random state is preserved and hence predict_proba must also be
