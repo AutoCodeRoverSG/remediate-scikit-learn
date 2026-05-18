@@ -54,15 +54,15 @@ def test_iforest_sparse(global_random_seed, sparse_container):
     X_train, X_test = train_test_split(diabetes.data[:50], random_state=rng)
     grid = ParameterGrid({"max_samples": [0.5, 1.0], "bootstrap": [True, False]})
 
-    X_train_sparse = sparse_container(X_train)
-    X_test_sparse = sparse_container(X_test)
+    x_train_sparse = sparse_container(X_train)
+    x_test_sparse = sparse_container(X_test)
 
     for params in grid:
         # Trained on sparse format
         sparse_classifier = IsolationForest(
             n_estimators=10, random_state=global_random_seed, **params
-        ).fit(X_train_sparse)
-        sparse_results = sparse_classifier.predict(X_test_sparse)
+        ).fit(x_train_sparse)
+        sparse_results = sparse_classifier.predict(x_test_sparse)
 
         # Trained on dense format
         dense_classifier = IsolationForest(
@@ -115,7 +115,7 @@ def test_max_samples_attribute():
     assert clf.max_samples_ == X.shape[0]
 
     clf = IsolationForest(max_samples=0.4).fit(X)
-    assert clf.max_samples_ == 0.4 * X.shape[0]
+    assert clf.max_samples_ == int(0.4 * X.shape[0])
 
 
 def test_iforest_parallel_regression(global_random_seed):
@@ -148,8 +148,8 @@ def test_iforest_performance(global_random_seed):
     X_train = X[:1000]
 
     # Generate some abnormal novel observations
-    X_outliers = rng.uniform(low=-1, high=1, size=(200, 2))
-    X_test = np.vstack((X[1000:], X_outliers))
+    x_outliers = rng.uniform(low=-1, high=1, size=(200, 2))
+    X_test = np.vstack((X[1000:], x_outliers))
     y_test = np.array([0] * 200 + [1] * 200)
 
     # fit the model
@@ -187,7 +187,7 @@ def test_max_samples_consistency():
 def test_iforest_subsampled_features():
     # It tests non-regression for #5732 which failed at predict.
     rng = check_random_state(0)
-    X_train, X_test, y_train, y_test = train_test_split(
+    X_train, X_test, y_train, _ = train_test_split(
         diabetes.data[:50], diabetes.target[:50], random_state=rng
     )
     clf = IsolationForest(max_features=0.8)
@@ -290,29 +290,29 @@ def test_iforest_with_uniform_data():
     iforest = IsolationForest()
     iforest.fit(X)
 
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
 
     assert all(iforest.predict(X) == 1)
-    assert all(iforest.predict(rng.randn(100, 10)) == 1)
+    assert all(iforest.predict(rng.standard_normal((100, 10))) == 1)
     assert all(iforest.predict(X + 1) == 1)
     assert all(iforest.predict(X - 1) == 1)
 
     # 2-d array where columns contain the same value across rows
-    X = np.repeat(rng.randn(1, 10), 100, 0)
+    X = np.repeat(rng.standard_normal((1, 10)), 100, 0)
     iforest = IsolationForest()
     iforest.fit(X)
 
     assert all(iforest.predict(X) == 1)
-    assert all(iforest.predict(rng.randn(100, 10)) == 1)
+    assert all(iforest.predict(rng.standard_normal((100, 10))) == 1)
     assert all(iforest.predict(np.ones((100, 10))) == 1)
 
     # Single row
-    X = rng.randn(1, 10)
+    X = rng.standard_normal((1, 10))
     iforest = IsolationForest()
     iforest.fit(X)
 
     assert all(iforest.predict(X) == 1)
-    assert all(iforest.predict(rng.randn(100, 10)) == 1)
+    assert all(iforest.predict(rng.standard_normal((100, 10))) == 1)
     assert all(iforest.predict(np.ones((100, 10))) == 1)
 
 
@@ -335,9 +335,9 @@ def test_iforest_preserve_feature_names():
     Non-regression test for Issue #25844
     """
     pd = pytest.importorskip("pandas")
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
 
-    X = pd.DataFrame(data=rng.randn(4), columns=["a"])
+    X = pd.DataFrame(data=rng.standard_normal(4), columns=["a"])
     model = IsolationForest(random_state=0, contamination=0.05)
 
     with warnings.catch_warnings():
@@ -361,8 +361,8 @@ def test_iforest_sparse_input_float_contamination(sparse_container):
         n_estimators=5, contamination=contamination, random_state=0
     ).fit(X)
 
-    X_decision = iforest.decision_function(X)
-    assert (X_decision < 0).sum() / X.shape[0] == pytest.approx(contamination)
+    x_decision = iforest.decision_function(X)
+    assert (x_decision < 0).sum() / X.shape[0] == pytest.approx(contamination)
 
 
 @pytest.mark.parametrize("n_jobs", [1, 2])

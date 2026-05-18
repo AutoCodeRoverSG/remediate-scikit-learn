@@ -1896,7 +1896,7 @@ def test_missing_value_is_predictive(Forest, criterion, global_random_seed):
     # Require a minimum 0.3 gap between `forest_predictive` and
     # `forest_non_predictive`: meaningful for R2/accuracy, but robust in tests.
 
-    X_non_predictive = rng.randn(n_samples, 2)
+    x_non_predictive = rng.randn(n_samples, 2)
     y = rng.rand(n_samples) < 0.5
 
     # Create a predictive feature using `y` and with some noise
@@ -1906,25 +1906,25 @@ def test_missing_value_is_predictive(Forest, criterion, global_random_seed):
     predictive_feature[y ^ noise_mask] = np.nan
     assert np.isnan(predictive_feature).any()
 
-    X_predictive = X_non_predictive.copy()
-    X_predictive[:, 1] = predictive_feature
+    x_predictive = x_non_predictive.copy()
+    x_predictive[:, 1] = predictive_feature
 
     (
-        X_predictive_train,
-        X_predictive_test,
-        X_non_predictive_train,
-        X_non_predictive_test,
+        x_predictive_train,
+        x_predictive_test,
+        x_non_predictive_train,
+        x_non_predictive_test,
         y_train,
         y_test,
-    ) = train_test_split(X_predictive, X_non_predictive, y, random_state=0)
+    ) = train_test_split(x_predictive, x_non_predictive, y, random_state=0)
     forest_predictive = Forest(random_state=0, criterion=criterion)
-    forest_predictive.fit(X_predictive_train, y_train)
+    forest_predictive.fit(x_predictive_train, y_train)
     forest_non_predictive = Forest(random_state=0, criterion=criterion)
-    forest_non_predictive.fit(X_non_predictive_train, y_train)
+    forest_non_predictive.fit(x_non_predictive_train, y_train)
 
-    predictive_test_score = forest_predictive.score(X_predictive_test, y_test)
+    predictive_test_score = forest_predictive.score(x_predictive_test, y_test)
     non_predictive_test_score = forest_non_predictive.score(
-        X_non_predictive_test, y_test
+        x_non_predictive_test, y_test
     )
 
     assert predictive_test_score >= non_predictive_test_score + expected_score_gap
