@@ -1410,22 +1410,22 @@ def test_class_weights():
     assert_allclose(clf.decision_function(X), clf_class_weighted.decision_function(X))
 
     # Make imbalanced dataset
-    X_imb = np.concatenate((X[~y_is_1], X[y_is_1][:10]))
+    x_imb = np.concatenate((X[~y_is_1], X[y_is_1][:10]))
     y_imb = np.concatenate((y[~y_is_1], y[y_is_1][:10]))
 
     # class_weight="balanced" is the same as sample_weights to be
     # inversely proportional to n_samples / (n_classes * np.bincount(y))
     clf_balanced = clone(clf).set_params(class_weight="balanced")
-    clf_balanced.fit(X_imb, y_imb)
+    clf_balanced.fit(x_imb, y_imb)
 
     class_weight = y_imb.shape[0] / (2 * np.bincount(y_imb))
     sample_weight = class_weight[y_imb]
     clf_sample_weight = clone(clf).set_params(class_weight=None)
-    clf_sample_weight.fit(X_imb, y_imb, sample_weight=sample_weight)
+    clf_sample_weight.fit(x_imb, y_imb, sample_weight=sample_weight)
 
     assert_allclose(
-        clf_balanced.decision_function(X_imb),
-        clf_sample_weight.decision_function(X_imb),
+        clf_balanced.decision_function(x_imb),
+        clf_sample_weight.decision_function(x_imb),
     )
 
 
@@ -1448,25 +1448,25 @@ def test_unknown_category_that_are_negative():
 
     # Check that negative values from the second column are treated like a
     # missing category
-    X_test_neg = np.asarray([[1, -2], [3, -4]])
-    X_test_nan = np.asarray([[1, np.nan], [3, np.nan]])
+    x_test_neg = np.asarray([[1, -2], [3, -4]])
+    x_test_nan = np.asarray([[1, np.nan], [3, np.nan]])
 
-    assert_allclose(hist.predict(X_test_neg), hist.predict(X_test_nan))
+    assert_allclose(hist.predict(x_test_neg), hist.predict(x_test_nan))
 
 
 @pytest.mark.parametrize(
-    ("GradientBoosting", "make_X_y"),
+    ("gradient_boosting", "make_x_y"),
     [
         (HistGradientBoostingClassifier, make_classification),
         (HistGradientBoostingRegressor, make_regression),
     ],
 )
 @pytest.mark.parametrize("sample_weight", [False, True])
-def test_X_val_in_fit(GradientBoosting, make_X_y, sample_weight, global_random_seed):
+def test_X_val_in_fit(gradient_boosting, make_x_y, sample_weight, global_random_seed):
     """Test that passing X_val, y_val in fit is same as validation fraction."""
     rng = np.random.RandomState(42)
     n_samples = 100
-    X, y = make_X_y(n_samples=n_samples, random_state=rng)
+    X, y = make_x_y(n_samples=n_samples, random_state=rng)
     if sample_weight:
         sample_weight = np.abs(rng.normal(size=n_samples))
         data = (X, y, sample_weight)
@@ -1476,7 +1476,7 @@ def test_X_val_in_fit(GradientBoosting, make_X_y, sample_weight, global_random_s
     rng_seed = global_random_seed
 
     # Fit with validation fraction and early stopping.
-    m1 = GradientBoosting(
+    m1 = gradient_boosting(
         early_stopping=True,
         validation_fraction=0.5,
         random_state=rng_seed,
@@ -1488,7 +1488,7 @@ def test_X_val_in_fit(GradientBoosting, make_X_y, sample_weight, global_random_s
     # We do the same as in the fit method.
     stratify = y if isinstance(m1, HistGradientBoostingClassifier) else None
     random_seed = rng.randint(np.iinfo(np.uint32).max, dtype="u8")
-    X_train, X_val, y_train, y_val, *sw = train_test_split(
+    x_train, x_val, y_train, y_val, *sw = train_test_split(
         *data,
         test_size=0.5,
         stratify=stratify,
@@ -1500,15 +1500,15 @@ def test_X_val_in_fit(GradientBoosting, make_X_y, sample_weight, global_random_s
     else:
         sample_weight_train = None
         sample_weight_val = None
-    m2 = GradientBoosting(
+    m2 = gradient_boosting(
         early_stopping=True,
         random_state=rng_seed,
     )
     m2.fit(
-        X_train,
+        x_train,
         y_train,
         sample_weight=sample_weight_train,
-        x_val=X_val,
+        x_val=x_val,
         y_val=y_val,
         sample_weight_val=sample_weight_val,
     )
@@ -1520,13 +1520,13 @@ def test_X_val_in_fit(GradientBoosting, make_X_y, sample_weight, global_random_s
 def test_X_val_raises_missing_y_val():
     """Test that an error is raised if X_val given but y_val None."""
     X, y = make_classification(n_samples=4)
-    X, X_val = X[:2], X[2:]
+    X, x_val = X[:2], X[2:]
     y, y_val = y[:2], y[2:]
     with pytest.raises(
         ValueError,
         match="X_val is provided, but y_val was not provided",
     ):
-        HistGradientBoostingClassifier().fit(X, y, x_val=X_val)
+        HistGradientBoostingClassifier().fit(X, y, x_val=x_val)
     with pytest.raises(
         ValueError,
         match="y_val is provided, but X_val was not provided",
@@ -1537,24 +1537,24 @@ def test_X_val_raises_missing_y_val():
 def test_X_val_raises_with_early_stopping_false():
     """Test that an error is raised if X_val given but early_stopping is False."""
     X, y = make_regression(n_samples=4)
-    X, X_val = X[:2], X[2:]
+    X, x_val = X[:2], X[2:]
     y, y_val = y[:2], y[2:]
     with pytest.raises(
         ValueError,
         match="X_val and y_val are passed to fit while at the same time",
     ):
         HistGradientBoostingRegressor(early_stopping=False).fit(
-            X, y, X_val=X_val, y_val=y_val
+            X, y, X_val=x_val, y_val=y_val
         )
 
 
 @pytest.mark.parametrize("dataframe_lib", ["pandas", "polars"])
 @pytest.mark.parametrize(
-    "HistGradientBoosting",
+    "hist_gradient_boosting",
     [HistGradientBoostingClassifier, HistGradientBoostingRegressor],
 )
 def test_dataframe_categorical_results_same_as_ndarray(
-    dataframe_lib, HistGradientBoosting
+    dataframe_lib, hist_gradient_boosting
 ):
     """Check that pandas categorical give the same results as ndarray."""
     pytest.importorskip(dataframe_lib)
@@ -1571,23 +1571,27 @@ def test_dataframe_categorical_results_same_as_ndarray(
 
     X = np.c_[f_num, f_cat]
     f_cat = [f"cat{c:0>3}" for c in f_cat]
-    X_df = _convert_container(
+    x_df = _convert_container(
         np.asarray([f_num, f_cat]).T,
         dataframe_lib,
         ["f_num", "f_cat"],
         categorical_feature_names=["f_cat"],
     )
 
-    X_train, X_test, X_train_df, X_test_df, y_train, y_test = train_test_split(
-        X, X_df, y, random_state=0
+    X_train, X_test, x_train_df, x_test_df, y_train, y_test = train_test_split(
+        X, x_df, y, random_state=0
     )
 
     hist_kwargs = dict(max_iter=10, max_bins=max_bins, random_state=0)
-    hist_np = HistGradientBoosting(categorical_features=[False, True], **hist_kwargs)
+    hist_np = hist_gradient_boosting(
+        categorical_features=[False, True], **hist_kwargs
+    )
     hist_np.fit(X_train, y_train)
 
-    hist_pd = HistGradientBoosting(categorical_features="from_dtype", **hist_kwargs)
-    hist_pd.fit(X_train_df, y_train)
+    hist_pd = hist_gradient_boosting(
+        categorical_features="from_dtype", **hist_kwargs
+    )
+    hist_pd.fit(x_train_df, y_train)
 
     # Check categories are correct and sorted
     categories = hist_pd._preprocessor.named_transformers_["encoder"].categories_[0]
@@ -1598,9 +1602,9 @@ def test_dataframe_categorical_results_same_as_ndarray(
         assert len(predictor_1[0].nodes) == len(predictor_2[0].nodes)
 
     score_np = hist_np.score(X_test, y_test)
-    score_pd = hist_pd.score(X_test_df, y_test)
+    score_pd = hist_pd.score(x_test_df, y_test)
     assert score_np == pytest.approx(score_pd)
-    assert_allclose(hist_np.predict(X_test), hist_pd.predict(X_test_df))
+    assert_allclose(hist_np.predict(X_test), hist_pd.predict(x_test_df))
 
 
 @pytest.mark.parametrize("dataframe_lib", ["pandas", "polars"])
