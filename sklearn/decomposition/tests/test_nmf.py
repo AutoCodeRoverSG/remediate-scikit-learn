@@ -478,23 +478,23 @@ def test_special_sparse_dot(csr_container):
     rng = np.random.mtrand.RandomState(42)
     X = rng.randn(n_samples, n_features)
     np.clip(X, 0, None, out=X)
-    X_csr = csr_container(X)
+    x_csr = csr_container(X)
 
     W = np.abs(rng.randn(n_samples, n_components))
     H = np.abs(rng.randn(n_components, n_features))
 
-    WH_safe = nmf._special_sparse_dot(W, H, X_csr)
+    wh_safe = nmf._special_sparse_dot(W, H, x_csr)
     WH = nmf._special_sparse_dot(W, H, X)
 
     # test that both results have same values, in X_csr nonzero elements
-    ii, jj = X_csr.nonzero()
-    WH_safe_data = np.asarray(WH_safe[ii, jj]).ravel()
-    assert_array_almost_equal(WH_safe_data, WH[ii, jj], decimal=10)
+    ii, jj = x_csr.nonzero()
+    wh_safe_data = np.asarray(wh_safe[ii, jj]).ravel()
+    assert_array_almost_equal(wh_safe_data, WH[ii, jj], decimal=10)
 
     # test that WH_safe and X_csr have the same sparse structure
-    assert_array_equal(WH_safe.indices, X_csr.indices)
-    assert_array_equal(WH_safe.indptr, X_csr.indptr)
-    assert_array_equal(WH_safe.shape, X_csr.shape)
+    assert_array_equal(wh_safe.indices, x_csr.indices)
+    assert_array_equal(wh_safe.indptr, x_csr.indptr)
+    assert_array_equal(wh_safe.shape, x_csr.shape)
 
 
 @pytest.mark.filterwarnings("ignore::sklearn.exceptions.ConvergenceWarning")
@@ -513,7 +513,7 @@ def test_nmf_multiplicative_update_sparse(csr_container):
     rng = np.random.mtrand.RandomState(1337)
     X = rng.randn(n_samples, n_features)
     X = np.abs(X)
-    X_csr = csr_container(X)
+    x_csr = csr_container(X)
     W0, H0 = nmf._initialize_nmf(X, n_components, init="random", random_state=42)
 
     for beta_loss in (-1.2, 0, 0.2, 1.0, 2.0, 2.5):
@@ -537,7 +537,7 @@ def test_nmf_multiplicative_update_sparse(csr_container):
         # Compare with sparse X
         W, H = W0.copy(), H0.copy()
         W2, H2, _ = non_negative_factorization(
-            X_csr,
+            x_csr,
             W,
             H,
             n_components,
@@ -559,7 +559,7 @@ def test_nmf_multiplicative_update_sparse(csr_container):
         beta_loss -= 1.0e-5
         W, H = W0.copy(), H0.copy()
         W3, H3, _ = non_negative_factorization(
-            X_csr,
+            x_csr,
             W,
             H,
             n_components,
@@ -588,7 +588,7 @@ def test_nmf_negative_beta_loss(csr_container):
     rng = np.random.mtrand.RandomState(42)
     X = rng.randn(n_samples, n_features)
     np.clip(X, 0, None, out=X)
-    X_csr = csr_container(X)
+    x_csr = csr_container(X)
 
     def _assert_nmf_no_nan(X, beta_loss):
         W, H, _ = non_negative_factorization(
@@ -611,7 +611,7 @@ def test_nmf_negative_beta_loss(csr_container):
 
     for beta_loss in (0.2, 1.0, 1.2, 2.0, 2.5):
         _assert_nmf_no_nan(X, beta_loss)
-        _assert_nmf_no_nan(X_csr, beta_loss)
+        _assert_nmf_no_nan(x_csr, beta_loss)
 
 
 @pytest.mark.parametrize("beta_loss", [-0.5, 0.0])
@@ -629,10 +629,10 @@ def test_minibatch_nmf_negative_beta_loss(beta_loss):
 
 
 @pytest.mark.parametrize(
-    ["Estimator", "solver"],
+    ["estimator_cls", "solver"],
     [[NMF, {"solver": "cd"}], [NMF, {"solver": "mu"}], [MiniBatchNMF, {}]],
 )
-def test_nmf_regularization(Estimator, solver):
+def test_nmf_regularization(estimator_cls, solver):
     # Test the effect of L1 and L2 regularizations
     n_samples = 6
     n_features = 5
@@ -642,14 +642,14 @@ def test_nmf_regularization(Estimator, solver):
 
     # L1 regularization should increase the number of zeros
     l1_ratio = 1.0
-    regul = Estimator(
+    regul = estimator_cls(
         n_components=n_components,
         alpha_W=0.5,
         l1_ratio=l1_ratio,
         random_state=42,
         **solver,
     )
-    model = Estimator(
+    model = estimator_cls(
         n_components=n_components,
         alpha_W=0.0,
         l1_ratio=l1_ratio,
@@ -657,32 +657,32 @@ def test_nmf_regularization(Estimator, solver):
         **solver,
     )
 
-    W_regul = regul.fit_transform(X)
-    W_model = model.fit_transform(X)
+    w_regul = regul.fit_transform(X)
+    w_model = model.fit_transform(X)
 
-    H_regul = regul.components_
-    H_model = model.components_
+    h_regul = regul.components_
+    h_model = model.components_
 
     eps = np.finfo(np.float64).eps
-    W_regul_n_zeros = W_regul[W_regul <= eps].size
-    W_model_n_zeros = W_model[W_model <= eps].size
-    H_regul_n_zeros = H_regul[H_regul <= eps].size
-    H_model_n_zeros = H_model[H_model <= eps].size
+    w_regul_n_zeros = w_regul[w_regul <= eps].size
+    w_model_n_zeros = w_model[w_model <= eps].size
+    h_regul_n_zeros = h_regul[h_regul <= eps].size
+    h_model_n_zeros = h_model[h_model <= eps].size
 
-    assert W_regul_n_zeros > W_model_n_zeros
-    assert H_regul_n_zeros > H_model_n_zeros
+    assert w_regul_n_zeros > w_model_n_zeros
+    assert h_regul_n_zeros > h_model_n_zeros
 
     # L2 regularization should decrease the sum of the squared norm
     # of the matrices W and H
     l1_ratio = 0.0
-    regul = Estimator(
+    regul = estimator_cls(
         n_components=n_components,
         alpha_W=0.5,
         l1_ratio=l1_ratio,
         random_state=42,
         **solver,
     )
-    model = Estimator(
+    model = estimator_cls(
         n_components=n_components,
         alpha_W=0.0,
         l1_ratio=l1_ratio,
@@ -690,15 +690,15 @@ def test_nmf_regularization(Estimator, solver):
         **solver,
     )
 
-    W_regul = regul.fit_transform(X)
-    W_model = model.fit_transform(X)
+    w_regul = regul.fit_transform(X)
+    w_model = model.fit_transform(X)
 
-    H_regul = regul.components_
-    H_model = model.components_
+    h_regul = regul.components_
+    h_model = model.components_
 
-    assert (linalg.norm(W_model)) ** 2.0 + (linalg.norm(H_model)) ** 2.0 > (
-        linalg.norm(W_regul)
-    ) ** 2.0 + (linalg.norm(H_regul)) ** 2.0
+    assert (linalg.norm(w_model)) ** 2.0 + (linalg.norm(h_model)) ** 2.0 > (
+        linalg.norm(w_regul)
+    ) ** 2.0 + (linalg.norm(h_regul)) ** 2.0
 
 
 @pytest.mark.filterwarnings("ignore::sklearn.exceptions.ConvergenceWarning")
