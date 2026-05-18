@@ -57,13 +57,13 @@ lw = 2
 # Outliers only in the y direction
 # --------------------------------
 
-np.random.seed(0)
+rng = np.random.default_rng(0)
 n_samples = 200
 # Linear model y = 3*x + N(2, 0.1**2)
-x = np.random.randn(n_samples)
+x = rng.standard_normal(n_samples)
 w = 3.0
 c = 2.0
-noise = 0.1 * np.random.randn(n_samples)
+noise = 0.1 * rng.standard_normal(n_samples)
 y = w * x + c + noise
 # 10% outliers
 y[-20:] += -20 * x[-20:]
@@ -92,10 +92,10 @@ _ = plt.title("Corrupt y")
 # Outliers in the X direction
 # ---------------------------
 
-np.random.seed(0)
+rng = np.random.default_rng(0)
 # Linear model y = 3*x + N(2, 0.1**2)
-x = np.random.randn(n_samples)
-noise = 0.1 * np.random.randn(n_samples)
+x = rng.standard_normal(n_samples)
+noise = 0.1 * rng.standard_normal(n_samples)
 y = 3 * x + 2 + noise
 # 10% outliers
 x[-20:] = 9.9

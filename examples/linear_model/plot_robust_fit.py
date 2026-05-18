@@ -46,14 +46,14 @@ from sklearn.metrics import mean_squared_error
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import PolynomialFeatures
 
-np.random.seed(42)
+rng = np.random.default_rng(42)
 
-X = np.random.normal(size=400)
+X = rng.normal(size=400)
 y = np.sin(X)
 # Make sure that it X is 2D
 X = X[:, np.newaxis]
 
-X_test = np.random.normal(size=200)
+X_test = rng.normal(size=200)
 y_test = np.sin(X_test)
 X_test = X_test[:, np.newaxis]
 
@@ -96,7 +96,7 @@ for title, this_X, this_y in [
     plt.plot(this_X[:, 0], this_y, "b+")
 
     for name, estimator in estimators:
-        model = make_pipeline(PolynomialFeatures(3), estimator)
+        model = make_pipeline(PolynomialFeatures(3), estimator, memory=None)
         model.fit(this_X, this_y)
         mse = mean_squared_error(model.predict(X_test), y_test)
         y_plot = model.predict(x_plot[:, np.newaxis])
@@ -111,7 +111,7 @@ for title, this_X, this_y in [
 
     legend_title = "Error of Mean\nAbsolute Deviation\nto Non-corrupt Data"
     legend = plt.legend(
-        loc="upper right", frameon=False, title=legend_title, prop=dict(size="x-small")
+        loc="upper right", frameon=False, title=legend_title, prop={"size": "x-small"}
     )
     plt.xlim(-4, 10.2)
     plt.ylim(-2, 10.2)

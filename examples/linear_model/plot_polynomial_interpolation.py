@@ -63,7 +63,7 @@ x_plot = np.linspace(-1, 11, 100)
 # To make it interesting, we only give a small subset of points to train on.
 
 x_train = np.linspace(0, 10, 100)
-rng = np.random.RandomState(0)
+rng = np.random.default_rng(0)
 x_train = np.sort(rng.choice(x_train, size=20, replace=False))
 y_train = f(x_train)
 
@@ -88,13 +88,13 @@ ax.scatter(x_train, y_train, label="training points")
 
 # polynomial features
 for degree in [3, 4, 5]:
-    model = make_pipeline(PolynomialFeatures(degree), Ridge(alpha=1e-3))
+    model = make_pipeline(PolynomialFeatures(degree), Ridge(alpha=1e-3), memory=None)
     model.fit(X_train, y_train)
     y_plot = model.predict(X_plot)
     ax.plot(x_plot, y_plot, label=f"degree {degree}")
 
 # B-spline with 4 + 3 - 1 = 6 basis functions
-model = make_pipeline(SplineTransformer(n_knots=4, degree=3), Ridge(alpha=1e-3))
+model = make_pipeline(SplineTransformer(n_knots=4, degree=3), Ridge(alpha=1e-3), memory=None)
 model.fit(X_train, y_train)
 
 y_plot = model.predict(X_plot)
@@ -193,7 +193,7 @@ for transformer, label in [
         "periodic spline",
     ),
 ]:
-    model = make_pipeline(transformer, Ridge(alpha=1e-3))
+    model = make_pipeline(transformer, Ridge(alpha=1e-3), memory=None)
     model.fit(X_train, y_train)
     y_plot_ext = model.predict(X_plot_ext)
     ax.plot(x_plot_ext, y_plot_ext, label=label)
