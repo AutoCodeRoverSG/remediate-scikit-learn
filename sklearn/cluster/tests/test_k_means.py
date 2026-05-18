@@ -707,19 +707,19 @@ def test_predict_dense_sparse(Estimator, init, X_csr):
 @pytest.mark.parametrize("array_constr", data_containers, ids=data_containers_ids)
 @pytest.mark.parametrize("dtype", [np.int32, np.int64])
 @pytest.mark.parametrize("init", ["k-means++", "ndarray"])
-@pytest.mark.parametrize("Estimator", [KMeans, MiniBatchKMeans])
-def test_integer_input(Estimator, array_constr, dtype, init, global_random_seed):
+@pytest.mark.parametrize("estimator", [KMeans, MiniBatchKMeans])
+def test_integer_input(estimator, array_constr, dtype, init, global_random_seed):
     # Check that KMeans and MiniBatchKMeans work with integer input.
-    X_dense = np.array([[0, 0], [10, 10], [12, 9], [-1, 1], [2, 0], [8, 10]])
-    X = array_constr(X_dense, dtype=dtype)
+    x_dense = np.array([[0, 0], [10, 10], [12, 9], [-1, 1], [2, 0], [8, 10]])
+    X = array_constr(x_dense, dtype=dtype)
 
     n_init = 1 if init == "ndarray" else 10
-    init = X_dense[:2] if init == "ndarray" else init
+    init = x_dense[:2] if init == "ndarray" else init
 
-    km = Estimator(
+    km = estimator(
         n_clusters=2, init=init, n_init=n_init, random_state=global_random_seed
     )
-    if Estimator is MiniBatchKMeans:
+    if estimator is MiniBatchKMeans:
         km.set_params(batch_size=2)
 
     km.fit(X)
@@ -731,34 +731,34 @@ def test_integer_input(Estimator, array_constr, dtype, init, global_random_seed)
     assert_allclose(v_measure_score(km.labels_, expected_labels), 1.0)
 
     # Same with partial_fit (#14314)
-    if Estimator is MiniBatchKMeans:
+    if estimator is MiniBatchKMeans:
         km = clone(km).partial_fit(X)
         assert km.cluster_centers_.dtype == np.float64
 
 
-@pytest.mark.parametrize("Estimator", [KMeans, MiniBatchKMeans])
-def test_transform(Estimator, global_random_seed):
+@pytest.mark.parametrize("estimator", [KMeans, MiniBatchKMeans])
+def test_transform(estimator, global_random_seed):
     # Check the transform method
-    km = Estimator(n_clusters=n_clusters, random_state=global_random_seed).fit(X)
+    km = estimator(n_clusters=n_clusters, random_state=global_random_seed).fit(X)
 
     # Transorfming cluster_centers_ should return the pairwise distances
     # between centers
-    Xt = km.transform(km.cluster_centers_)
-    assert_allclose(Xt, pairwise_distances(km.cluster_centers_))
+    x_trans = km.transform(km.cluster_centers_)
+    assert_allclose(x_trans, pairwise_distances(km.cluster_centers_))
     # In particular, diagonal must be 0
-    assert_array_equal(Xt.diagonal(), np.zeros(n_clusters))
+    assert_array_equal(x_trans.diagonal(), np.zeros(n_clusters))
 
     # Transforming X should return the pairwise distances between X and the
     # centers
-    Xt = km.transform(X)
-    assert_allclose(Xt, pairwise_distances(X, km.cluster_centers_))
+    x_trans = km.transform(X)
+    assert_allclose(x_trans, pairwise_distances(X, km.cluster_centers_))
 
 
-@pytest.mark.parametrize("Estimator", [KMeans, MiniBatchKMeans])
-def test_fit_transform(Estimator, global_random_seed):
+@pytest.mark.parametrize("estimator", [KMeans, MiniBatchKMeans])
+def test_fit_transform(estimator, global_random_seed):
     # Check equivalence between fit.transform and fit_transform
-    X1 = Estimator(random_state=global_random_seed, n_init=1).fit(X).transform(X)
-    X2 = Estimator(random_state=global_random_seed, n_init=1).fit_transform(X)
+    X1 = estimator(random_state=global_random_seed, n_init=1).fit(X).transform(X)
+    X2 = estimator(random_state=global_random_seed, n_init=1).fit_transform(X)
     assert_allclose(X1, X2)
 
 
@@ -797,7 +797,7 @@ def test_k_means_function(global_random_seed):
     [X] + X_as_any_csr,
     ids=data_containers_ids,
 )
-@pytest.mark.parametrize("Estimator", [KMeans, MiniBatchKMeans])
+@pytest.mark.parametrize("estimator", [KMeans, MiniBatchKMeans])
 @pytest.mark.skipif(
     not any(i for i in threadpool_info() if i["user_api"] == "blas"),
     reason=(
@@ -805,12 +805,12 @@ def test_k_means_function(global_random_seed):
         "threadpoolctl."
     ),
 )
-def test_float_precision(Estimator, input_data, global_random_seed):
+def test_float_precision(estimator, input_data, global_random_seed):
     # Check that the results are the same for single and double precision.
-    km = Estimator(n_init=1, random_state=global_random_seed)
+    km = estimator(n_init=1, random_state=global_random_seed)
 
     inertia = {}
-    Xt = {}
+    x_transformed = {}
     centers = {}
     labels = {}
 
@@ -819,7 +819,7 @@ def test_float_precision(Estimator, input_data, global_random_seed):
         km.fit(X)
 
         inertia[dtype] = km.inertia_
-        Xt[dtype] = km.transform(X)
+        x_transformed[dtype] = km.transform(X)
         centers[dtype] = km.cluster_centers_
         labels[dtype] = km.labels_
 
@@ -827,7 +827,7 @@ def test_float_precision(Estimator, input_data, global_random_seed):
         assert km.cluster_centers_.dtype == dtype
 
         # same with partial_fit
-        if Estimator is MiniBatchKMeans:
+        if estimator is MiniBatchKMeans:
             km.partial_fit(X[0:3])
             assert km.cluster_centers_.dtype == dtype
 
@@ -835,7 +835,11 @@ def test_float_precision(Estimator, input_data, global_random_seed):
     # 64 bit comes from an accumulation of rounding errors.
     rtol = 1e-4
     assert_allclose(inertia[np.float32], inertia[np.float64], rtol=rtol)
-    assert_allclose(Xt[np.float32], Xt[np.float64], atol=Xt[np.float64].max() * rtol)
+    assert_allclose(
+        x_transformed[np.float32],
+        x_transformed[np.float64],
+        atol=x_transformed[np.float64].max() * rtol,
+    )
     assert_allclose(
         centers[np.float32], centers[np.float64], atol=centers[np.float64].max() * rtol
     )
@@ -843,16 +847,16 @@ def test_float_precision(Estimator, input_data, global_random_seed):
 
 
 @pytest.mark.parametrize("dtype", [np.int32, np.int64, np.float32, np.float64])
-@pytest.mark.parametrize("Estimator", [KMeans, MiniBatchKMeans])
-def test_centers_not_mutated(Estimator, dtype):
+@pytest.mark.parametrize("estimator", [KMeans, MiniBatchKMeans])
+def test_centers_not_mutated(estimator, dtype):
     # Check that KMeans and MiniBatchKMeans won't mutate the user provided
     # init centers silently even if input data and init centers have the same
     # type.
-    X_new_type = X.astype(dtype, copy=False)
+    x_new_type = X.astype(dtype, copy=False)
     centers_new_type = centers.astype(dtype, copy=False)
 
-    km = Estimator(init=centers_new_type, n_clusters=n_clusters, n_init=1)
-    km.fit(X_new_type)
+    km = estimator(init=centers_new_type, n_clusters=n_clusters, n_init=1)
+    km.fit(x_new_type)
 
     assert not np.may_share_memory(km.cluster_centers_, centers_new_type)
 
@@ -902,7 +906,7 @@ def test_weighted_vs_repeated(global_random_seed):
     sample_weight = np.random.RandomState(global_random_seed).randint(
         1, 5, size=n_samples
     )
-    X_repeat = np.repeat(X, sample_weight, axis=0)
+    x_repeat = np.repeat(X, sample_weight, axis=0)
 
     km = KMeans(
         init=centers, n_init=1, n_clusters=n_clusters, random_state=global_random_seed
@@ -910,7 +914,7 @@ def test_weighted_vs_repeated(global_random_seed):
 
     km_weighted = clone(km).fit(X, sample_weight=sample_weight)
     repeated_labels = np.repeat(km_weighted.labels_, sample_weight)
-    km_repeated = clone(km).fit(X_repeat)
+    km_repeated = clone(km).fit(x_repeat)
 
     assert_array_equal(km_repeated.labels_, repeated_labels)
     assert_allclose(km_weighted.inertia_, km_repeated.inertia_)
