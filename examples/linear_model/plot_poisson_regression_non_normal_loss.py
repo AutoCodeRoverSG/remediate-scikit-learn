@@ -52,7 +52,7 @@ import pandas as pd
 from sklearn.datasets import fetch_openml
 
 df = fetch_openml(data_id=41214, as_frame=True).frame
-df
+print(df)
 
 # %%
 # The number of claims (``ClaimNb``) is a positive integer that can be modeled
@@ -307,7 +307,8 @@ poisson_gbrt = Pipeline(
             "regressor",
             HistGradientBoostingRegressor(loss="poisson", max_leaf_nodes=128),
         ),
-    ]
+    ],
+    memory=None,
 )
 poisson_gbrt.fit(
     df_train, df_train["Frequency"], regressor__sample_weight=df_train["Exposure"]

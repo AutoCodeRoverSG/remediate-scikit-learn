@@ -37,13 +37,13 @@ def true_fun(X):
     return np.cos(1.5 * np.pi * X)
 
 
-np.random.seed(0)
+rng = np.random.default_rng(0)
 
 n_samples = 30
 degrees = [1, 4, 15]
 
-X = np.sort(np.random.rand(n_samples))
-y = true_fun(X) + np.random.randn(n_samples) * 0.1
+X = np.sort(rng.random(n_samples))
+y = true_fun(X) + rng.standard_normal(n_samples) * 0.1
 
 plt.figure(figsize=(14, 5))
 for i in range(len(degrees)):
@@ -56,7 +56,8 @@ for i in range(len(degrees)):
         [
             ("polynomial_features", polynomial_features),
             ("linear_regression", linear_regression),
-        ]
+        ],
+        memory=None,
     )
     pipeline.fit(X[:, np.newaxis], y)
 
