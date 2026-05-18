@@ -283,8 +283,7 @@ class DummyCheckerArrayTransformer(TransformerMixin, BaseEstimator):
         return X
 
     def inverse_transform(self, X):
-        assert isinstance(X, np.ndarray)
-        return X
+        return self.transform(X)
 
 
 class DummyCheckerListRegressor(DummyRegressor):
@@ -292,9 +291,9 @@ class DummyCheckerListRegressor(DummyRegressor):
         assert isinstance(X, list)
         return super().fit(X, y, sample_weight)
 
-    def predict(self, X):
+    def predict(self, X, return_std=False):
         assert isinstance(X, list)
-        return super().predict(X)
+        return super().predict(X, return_std=return_std)
 
 
 def test_transform_target_regressor_ensure_y_array():
@@ -370,7 +369,7 @@ def test_transform_target_regressor_route_pipeline():
     )
     estimators = [("normalize", StandardScaler()), ("est", regr)]
 
-    pip = Pipeline(estimators)
+    pip = Pipeline(estimators, memory=None)
     pip.fit(X, y, **{"est__check_input": False})
 
     assert regr.transformer_.fit_counter == 1
