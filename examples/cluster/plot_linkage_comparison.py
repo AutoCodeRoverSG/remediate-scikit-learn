@@ -46,8 +46,8 @@ noisy_circles = datasets.make_circles(
 )
 noisy_moons = datasets.make_moons(n_samples=n_samples, noise=0.05, random_state=170)
 blobs = datasets.make_blobs(n_samples=n_samples, random_state=170)
-rng = np.random.RandomState(170)
-no_structure = rng.rand(n_samples, 2), None
+rng = np.random.default_rng(170)
+no_structure = rng.random((n_samples, 2)), None
 
 # Anisotropicly distributed data
 X, y = datasets.make_blobs(n_samples=n_samples, random_state=170)

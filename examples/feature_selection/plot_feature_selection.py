@@ -32,7 +32,7 @@ from sklearn.model_selection import train_test_split
 X, y = load_iris(return_X_y=True)
 
 # Some noisy data not correlated
-E = np.random.RandomState(42).uniform(0, 0.1, size=(X.shape[0], 20))
+E = np.random.default_rng(42).uniform(0, 0.1, size=(X.shape[0], 20))
 
 # Add the noisy data to the informative features
 X = np.hstack((X, E))
@@ -80,7 +80,7 @@ from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.svm import LinearSVC
 
-clf = make_pipeline(MinMaxScaler(), LinearSVC())
+clf = make_pipeline(MinMaxScaler(), LinearSVC(), memory=None)
 clf.fit(X_train, y_train)
 print(
     "Classification accuracy without selecting features: {:.3f}".format(
@@ -93,7 +93,7 @@ svm_weights /= svm_weights.sum()
 
 # %%
 # After univariate feature selection
-clf_selected = make_pipeline(SelectKBest(f_classif, k=4), MinMaxScaler(), LinearSVC())
+clf_selected = make_pipeline(SelectKBest(f_classif, k=4), MinMaxScaler(), LinearSVC(), memory=None)
 clf_selected.fit(X_train, y_train)
 print(
     "Classification accuracy after univariate feature selection: {:.3f}".format(

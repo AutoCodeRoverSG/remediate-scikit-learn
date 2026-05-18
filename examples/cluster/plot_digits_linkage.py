@@ -46,14 +46,14 @@ np.random.seed(0)
 
 # ----------------------------------------------------------------------
 # Visualize the clustering
-def plot_clustering(X_red, labels, title=None):
-    x_min, x_max = np.min(X_red, axis=0), np.max(X_red, axis=0)
-    X_red = (X_red - x_min) / (x_max - x_min)
+def plot_clustering(x_red, labels, title=None):
+    x_min, x_max = np.min(x_red, axis=0), np.max(x_red, axis=0)
+    x_red = (x_red - x_min) / (x_max - x_min)
 
     plt.figure(figsize=(6, 4))
     for digit in digits.target_names:
         plt.scatter(
-            *X_red[y == digit].T,
+            *x_red[y == digit].T,
             marker=f"${digit}$",
             s=50,
             c=plt.cm.nipy_spectral(labels[y == digit] / 10),

@@ -31,9 +31,9 @@ import numpy as np
 
 from sklearn.feature_selection import f_regression, mutual_info_regression
 
-np.random.seed(0)
-X = np.random.rand(1000, 3)
-y = X[:, 0] + np.sin(6 * np.pi * X[:, 1]) + 0.1 * np.random.randn(1000)
+rng = np.random.default_rng(0)
+X = rng.random((1000, 3))
+y = X[:, 0] + np.sin(6 * np.pi * X[:, 1]) + 0.1 * rng.standard_normal(1000)
 
 f_test, _ = f_regression(X, y)
 f_test /= np.max(f_test)

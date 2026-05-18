@@ -56,11 +56,12 @@ class InductiveClusterer(ClusterMixin, BaseEstimator):
         self.classifier = classifier
 
     def fit(self, X, y=None):
+        # y is intentionally ignored in unsupervised clustering
         self.clusterer_ = clone(self.clusterer)
         self.classifier_ = clone(self.classifier)
-        y = self.clusterer_.fit_predict(X)
-        self.classifier_.fit(X, y)
-        self.labels_ = y
+        cluster_labels = self.clusterer_.fit_predict(X)
+        self.classifier_.fit(X, cluster_labels)
+        self.labels_ = cluster_labels
         return self
 
     @available_if(_classifier_has("predict"))

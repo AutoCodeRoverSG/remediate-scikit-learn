@@ -37,7 +37,7 @@ tuning the kernel hyperparameters.
 # :math:`2 \pi`. We will reuse this information later in this example.
 import numpy as np
 
-rng = np.random.RandomState(0)
+rng = np.random.default_rng(0)
 data = np.linspace(0, 30, num=1_000).reshape(-1, 1)
 target = np.sin(data).ravel()
 
@@ -49,7 +49,7 @@ target = np.sin(data).ravel()
 # - only samples from the beginning of the signal will be available.
 training_sample_indices = rng.choice(np.arange(0, 400), size=40, replace=False)
 training_data = data[training_sample_indices]
-training_noisy_target = target[training_sample_indices] + 0.5 * rng.randn(
+training_noisy_target = target[training_sample_indices] + 0.5 * rng.standard_normal(
     len(training_sample_indices)
 )
 
@@ -57,7 +57,9 @@ training_noisy_target = target[training_sample_indices] + 0.5 * rng.randn(
 # Let's plot the true signal and the noisy measurements available for training.
 import matplotlib.pyplot as plt
 
-plt.plot(data, target, label="True signal", linewidth=2)
+TRUE_SIGNAL_LABEL = "True signal"
+
+plt.plot(data, target, label=TRUE_SIGNAL_LABEL, linewidth=2)
 plt.scatter(
     training_data,
     training_noisy_target,
@@ -83,7 +85,7 @@ from sklearn.linear_model import Ridge
 
 ridge = Ridge().fit(training_data, training_noisy_target)
 
-plt.plot(data, target, label="True signal", linewidth=2)
+plt.plot(data, target, label=TRUE_SIGNAL_LABEL, linewidth=2)
 plt.scatter(
     training_data,
     training_noisy_target,
@@ -137,7 +139,7 @@ print(
 )
 
 # %%
-plt.plot(data, target, label="True signal", linewidth=2, linestyle="dashed")
+plt.plot(data, target, label=TRUE_SIGNAL_LABEL, linewidth=2, linestyle="dashed")
 plt.scatter(
     training_data,
     training_noisy_target,
@@ -210,7 +212,7 @@ predictions_kr = kernel_ridge_tuned.predict(data)
 print(f"Time for KernelRidge predict: {time.time() - start_time:.3f} seconds")
 
 # %%
-plt.plot(data, target, label="True signal", linewidth=2, linestyle="dashed")
+plt.plot(data, target, label=TRUE_SIGNAL_LABEL, linewidth=2, linestyle="dashed")
 plt.scatter(
     training_data,
     training_noisy_target,
@@ -281,7 +283,7 @@ print(
 )
 
 # %%
-plt.plot(data, target, label="True signal", linewidth=2, linestyle="dashed")
+plt.plot(data, target, label=TRUE_SIGNAL_LABEL, linewidth=2, linestyle="dashed")
 plt.scatter(
     training_data,
     training_noisy_target,
@@ -353,7 +355,7 @@ mean_predictions_gpr, std_predictions_gpr = gaussian_process.predict(
 )
 
 # %%
-plt.plot(data, target, label="True signal", linewidth=2, linestyle="dashed")
+plt.plot(data, target, label=TRUE_SIGNAL_LABEL, linewidth=2, linestyle="dashed")
 plt.scatter(
     training_data,
     training_noisy_target,
