@@ -33,7 +33,7 @@ from sklearn.utils.validation import check_is_fitted, validate_data
 __all__ = ["FastICA", "fastica"]
 
 
-def _gs_decorrelation(w, W, j):
+def _gs_decorrelation(w, w_matrix, j):
     """
     Orthonormalize w wrt the first j rows of W.
 
@@ -54,7 +54,7 @@ def _gs_decorrelation(w, W, j):
     Assumes that W is orthogonal
     w changed in place
     """
-    w -= np.linalg.multi_dot([w, W[:j].T, W[:j]])
+    w -= np.linalg.multi_dot([w, w_matrix[:j].T, w_matrix[:j]])
     return w
 
 
