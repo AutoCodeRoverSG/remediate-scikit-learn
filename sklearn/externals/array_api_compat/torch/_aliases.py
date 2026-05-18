@@ -278,7 +278,7 @@ def _axis_none_keepdims(x, ndim, keepdims):
     # (https://github.com/pytorch/pytorch/issues/71209)
     # Note that this is only valid for the axis=None case.
     if keepdims:
-        for i in range(ndim):
+        for _ in range(ndim):
             x = torch.unsqueeze(x, 0)
     return x
 
@@ -466,8 +466,8 @@ def var(x: Array,
     # https://github.com/pytorch/pytorch/issues/61492. We don't try to
     # implement it here for now.
 
-    # if isinstance(correction, float):
-    #     correction = int(correction)
+    
+    
 
     # https://github.com/pytorch/pytorch/issues/29137
     if axis == ():
@@ -731,7 +731,7 @@ def unique_all(x: Array) -> UniqueAllResult:
     # return UniqueAllResult(values, indices, inverse_indices, counts)
 
 def unique_counts(x: Array) -> UniqueCountsResult:
-    values, counts = torch.unique(x, return_counts=True)
+    values, counts = torch.unique(x, return_counts=True, dim=None)
 
     # torch.unique incorrectly gives a 0 count for nan values.
     # https://github.com/pytorch/pytorch/issues/94106
@@ -739,7 +739,7 @@ def unique_counts(x: Array) -> UniqueCountsResult:
     return UniqueCountsResult(values, counts)
 
 def unique_inverse(x: Array) -> UniqueInverseResult:
-    values, inverse = torch.unique(x, return_inverse=True)
+    values, inverse = torch.unique(x, return_inverse=True, dim=None)
     return UniqueInverseResult(values, inverse)
 
 def unique_values(x: Array) -> Array:

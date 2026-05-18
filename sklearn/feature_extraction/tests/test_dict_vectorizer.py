@@ -56,17 +56,17 @@ def test_feature_selection():
 
 
 def test_one_of_k():
-    D_in = [
+    d_in = [
         {"version": "1", "ham": 2},
         {"version": "2", "spam": 0.3},
         {"version=3": True, "spam": -1},
     ]
     v = DictVectorizer()
-    X = v.fit_transform(D_in)
+    X = v.fit_transform(d_in)
     assert X.shape == (3, 5)
 
-    D_out = v.inverse_transform(X)
-    assert D_out[0] == {"version=1": 1, "ham": 2}
+    d_out = v.inverse_transform(X)
+    assert d_out[0] == {"version=1": 1, "ham": 2}
 
     names = v.get_feature_names_out()
     assert "version=2" in names
@@ -74,28 +74,28 @@ def test_one_of_k():
 
 
 def test_iterable_value():
-    D_names = ["ham", "spam", "version=1", "version=2", "version=3"]
-    X_expected = [
+    d_names = ["ham", "spam", "version=1", "version=2", "version=3"]
+    x_expected = [
         [2.0, 0.0, 2.0, 1.0, 0.0],
         [0.0, 0.3, 0.0, 1.0, 0.0],
         [0.0, -1.0, 0.0, 0.0, 1.0],
     ]
-    D_in = [
+    d_in = [
         {"version": ["1", "2", "1"], "ham": 2},
         {"version": "2", "spam": 0.3},
         {"version=3": True, "spam": -1},
     ]
     v = DictVectorizer()
-    X = v.fit_transform(D_in)
+    X = v.fit_transform(d_in)
     X = X.toarray()
-    assert_array_equal(X, X_expected)
+    assert_array_equal(X, x_expected)
 
-    D_out = v.inverse_transform(X)
-    assert D_out[0] == {"version=1": 2, "version=2": 1, "ham": 2}
+    d_out = v.inverse_transform(X)
+    assert d_out[0] == {"version=1": 2, "version=2": 1, "ham": 2}
 
     names = v.get_feature_names_out()
 
-    assert_array_equal(names, D_names)
+    assert_array_equal(names, d_names)
 
 
 def test_iterable_not_string_error():
