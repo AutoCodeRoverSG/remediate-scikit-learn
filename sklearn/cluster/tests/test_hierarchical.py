@@ -53,7 +53,7 @@ from sklearn.utils.fixes import LIL_CONTAINERS
 
 def test_linkage_misc():
     # Misc tests on linkage
-    rng = np.random.RandomState(42)
+    rng = np.random.default_rng(42)
     X = rng.normal(size=(5, 5))
 
     with pytest.raises(ValueError):
@@ -78,11 +78,11 @@ def test_linkage_misc():
 
 def test_structured_linkage_tree():
     # Check that we obtain the correct solution for structured linkage trees.
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
     mask = np.ones([10, 10], dtype=bool)
     # Avoiding a mask with only 'True' entries
     mask[4:7, 4:7] = 0
-    X = rng.randn(50, 100)
+    X = rng.standard_normal((50, 100))
     connectivity = grid_to_graph(*mask.shape)
     for tree_builder in _TREE_BUILDERS.values():
         children, n_components, n_leaves, parent = tree_builder(
@@ -567,32 +567,32 @@ def test_ward_linkage_tree_return_distance(global_random_seed):
     n_samples, n_features = np.shape(X)
     connectivity_X = np.ones((n_samples, n_samples))
 
-    out_X_unstructured = ward_tree(X, return_distance=True)
-    out_X_structured = ward_tree(X, connectivity=connectivity_X, return_distance=True)
+    out_x_unstructured = ward_tree(X, return_distance=True)
+    out_x_structured = ward_tree(X, connectivity=connectivity_X, return_distance=True)
 
     # check that the labels are the same
-    assert_array_equal(linkage_X_ward[:, :2], out_X_unstructured[0])
-    assert_array_equal(linkage_X_ward[:, :2], out_X_structured[0])
+    assert_array_equal(linkage_X_ward[:, :2], out_x_unstructured[0])
+    assert_array_equal(linkage_X_ward[:, :2], out_x_structured[0])
 
     # check that the distances are correct
-    assert_array_almost_equal(linkage_X_ward[:, 2], out_X_unstructured[4])
-    assert_array_almost_equal(linkage_X_ward[:, 2], out_X_structured[4])
+    assert_array_almost_equal(linkage_X_ward[:, 2], out_x_unstructured[4])
+    assert_array_almost_equal(linkage_X_ward[:, 2], out_x_structured[4])
 
     linkage_options = ["complete", "average", "single"]
-    X_linkage_truth = [linkage_X_complete, linkage_X_average]
-    for linkage, X_truth in zip(linkage_options, X_linkage_truth):
-        out_X_unstructured = linkage_tree(X, return_distance=True, linkage=linkage)
-        out_X_structured = linkage_tree(
+    x_linkage_truth = [linkage_X_complete, linkage_X_average]
+    for linkage, x_truth in zip(linkage_options, x_linkage_truth):
+        out_x_unstructured = linkage_tree(X, return_distance=True, linkage=linkage)
+        out_x_structured = linkage_tree(
             X, connectivity=connectivity_X, linkage=linkage, return_distance=True
         )
 
         # check that the labels are the same
-        assert_array_equal(X_truth[:, :2], out_X_unstructured[0])
-        assert_array_equal(X_truth[:, :2], out_X_structured[0])
+        assert_array_equal(x_truth[:, :2], out_x_unstructured[0])
+        assert_array_equal(x_truth[:, :2], out_x_structured[0])
 
         # check that the distances are correct
-        assert_array_almost_equal(X_truth[:, 2], out_X_unstructured[4])
-        assert_array_almost_equal(X_truth[:, 2], out_X_structured[4])
+        assert_array_almost_equal(x_truth[:, 2], out_x_unstructured[4])
+        assert_array_almost_equal(x_truth[:, 2], out_x_structured[4])
 
 
 def test_connectivity_fixing_non_lil():
@@ -738,7 +738,7 @@ def test_agglomerative_clustering_with_distance_threshold(linkage, global_random
         # test if the clusters produced match the point in the linkage tree
         # where the distance exceeds the threshold
         tree_builder = _TREE_BUILDERS[linkage]
-        children, n_components, n_leaves, parent, distances = tree_builder(
+        children, _, n_leaves, _, distances = tree_builder(
             X, connectivity=conn, n_clusters=None, return_distance=True
         )
         num_clusters_at_threshold = (
@@ -861,13 +861,13 @@ def test_precomputed_connectivity_metric_with_2_connected_components():
     rng = np.random.RandomState(0)
     X = rng.randn(5, 10)
 
-    X_dist = pairwise_distances(X)
+    x_dist = pairwise_distances(X)
     clusterer_precomputed = AgglomerativeClustering(
         metric="precomputed", connectivity=connectivity_matrix, linkage="complete"
     )
     msg = "Completing it to avoid stopping the tree early"
     with pytest.warns(UserWarning, match=msg):
-        clusterer_precomputed.fit(X_dist)
+        clusterer_precomputed.fit(x_dist)
 
     clusterer = AgglomerativeClustering(
         connectivity=connectivity_matrix, linkage="complete"
@@ -879,8 +879,8 @@ def test_precomputed_connectivity_metric_with_2_connected_components():
     assert_array_equal(clusterer.children_, clusterer_precomputed.children_)
 
 
-@pytest.mark.parametrize("Clustering", [AgglomerativeClustering, FeatureAgglomeration])
-def test_agglomeration_ward_constrained_metric(Clustering):
+@pytest.mark.parametrize("clustering_cls", [AgglomerativeClustering, FeatureAgglomeration])
+def test_agglomeration_ward_constrained_metric(clustering_cls):
     """Check that we raise an error when 'euclidean' or 'l2' are not passed with
     ward linkage."""
     rng = np.random.RandomState(0)
@@ -889,7 +889,7 @@ def test_agglomeration_ward_constrained_metric(Clustering):
     X = rng.randn(n_samples, 50)
     connectivity = grid_to_graph(*mask.shape)
 
-    clustering = Clustering(
+    clustering = clustering_cls(
         n_clusters=10,
         connectivity=connectivity.toarray(),
         metric="manhattan",
@@ -899,9 +899,9 @@ def test_agglomeration_ward_constrained_metric(Clustering):
         clustering.fit(X)
 
 
-@pytest.mark.parametrize("Clustering", [AgglomerativeClustering, FeatureAgglomeration])
+@pytest.mark.parametrize("clustering_cls", [AgglomerativeClustering, FeatureAgglomeration])
 @pytest.mark.parametrize("metric", ["euclidean", "l2"])
-def test_agglomeration_ward_euclidean(Clustering, metric):
+def test_agglomeration_ward_euclidean(clustering_cls, metric):
     """Check that we can pass 'euclidean' and 'l2' as metric with Ward linkage."""
     rng = np.random.RandomState(0)
     mask = np.ones([10, 10], dtype=bool)
@@ -909,7 +909,7 @@ def test_agglomeration_ward_euclidean(Clustering, metric):
     X = rng.randn(n_samples, 100)
     connectivity = grid_to_graph(*mask.shape)
 
-    clustering = Clustering(
+    clustering = clustering_cls(
         n_clusters=10,
         connectivity=connectivity.toarray(),
         metric=metric,
