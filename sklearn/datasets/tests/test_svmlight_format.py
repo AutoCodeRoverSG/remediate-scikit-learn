@@ -231,7 +231,7 @@ def test_load_large_qid():
             for i in range(1, 40 * 1000 * 1000)
         )
     )
-    X, y, qid = load_svmlight_file(BytesIO(data), query_id=True)
+    _, y, qid = load_svmlight_file(BytesIO(data), query_id=True)
     assert_array_equal(y[-4:], [3, 2, 3, 2])
     assert_array_equal(np.unique(qid), np.arange(1, 40 * 1000 * 1000))
 
@@ -257,16 +257,16 @@ def test_invalid_filename():
 
 @pytest.mark.parametrize("csr_container", CSR_CONTAINERS)
 def test_dump(csr_container):
-    X_sparse, y_dense = _load_svmlight_local_test_file(datafile)
-    X_dense = X_sparse.toarray()
+    x_sparse, y_dense = _load_svmlight_local_test_file(datafile)
+    x_dense = x_sparse.toarray()
     y_sparse = csr_container(np.atleast_2d(y_dense))
 
     # slicing a csr_matrix can unsort its .indices, so test that we sort
     # those correctly
-    X_sliced = X_sparse[np.arange(X_sparse.shape[0])]
+    x_sliced = x_sparse[np.arange(x_sparse.shape[0])]
     y_sliced = y_sparse[np.arange(y_sparse.shape[0])]
 
-    for X in (X_sparse, X_dense, X_sliced):
+    for X in (x_sparse, x_dense, x_sliced):
         for y in (y_sparse, y_dense, y_sliced):
             for zero_based in (True, False):
                 for dtype in [np.float32, np.float64, np.int32, np.int64]:
@@ -284,10 +284,10 @@ def test_dump(csr_container):
                     # where X.astype(dtype) overflows. The result is
                     # then platform dependent and X_dense.astype(dtype) may be
                     # different from X_sparse.astype(dtype).asarray().
-                    X_input = X.astype(dtype)
+                    x_input = X.astype(dtype)
 
                     dump_svmlight_file(
-                        X_input, y, f, comment="test", zero_based=zero_based
+                        x_input, y, f, comment="test", zero_based=zero_based
                     )
                     f.seek(0)
 
@@ -305,21 +305,21 @@ def test_dump(csr_container):
                     assert X2.dtype == dtype
                     assert_array_equal(X2.sorted_indices().indices, X2.indices)
 
-                    X2_dense = X2.toarray()
-                    if sp.issparse(X_input):
-                        X_input_dense = X_input.toarray()
+                    x2_dense = X2.toarray()
+                    if sp.issparse(x_input):
+                        x_input_dense = x_input.toarray()
                     else:
-                        X_input_dense = X_input
+                        x_input_dense = x_input
 
                     if dtype == np.float32:
                         # allow a rounding error at the last decimal place
-                        assert_array_almost_equal(X_input_dense, X2_dense, 4)
+                        assert_array_almost_equal(x_input_dense, x2_dense, 4)
                         assert_array_almost_equal(
                             y_dense.astype(dtype, copy=False), y2, 4
                         )
                     else:
                         # allow a rounding error at the last decimal place
-                        assert_array_almost_equal(X_input_dense, X2_dense, 15)
+                        assert_array_almost_equal(x_input_dense, x2_dense, 15)
                         assert_array_almost_equal(
                             y_dense.astype(dtype, copy=False), y2, 15
                         )
@@ -441,7 +441,7 @@ def test_load_with_long_qid():
     3 qid:9223372036854775807  0:1440446648 1:72048431380967004 2:236784985"""
     X, y, qid = load_svmlight_file(BytesIO(data), query_id=True)
 
-    true_X = [
+    true_x = [
         [1, 2, 3],
         [1440446648, 72048431380967004, 236784985],
         [1440446648, 72048431380967004, 236784985],
@@ -449,37 +449,37 @@ def test_load_with_long_qid():
     ]
 
     true_y = [1, 0, 0, 3]
-    trueQID = [0, 72048431380967004, -9223372036854775807, 9223372036854775807]
+    true_qid = [0, 72048431380967004, -9223372036854775807, 9223372036854775807]
     assert_array_equal(y, true_y)
-    assert_array_equal(X.toarray(), true_X)
-    assert_array_equal(qid, trueQID)
+    assert_array_equal(X.toarray(), true_x)
+    assert_array_equal(qid, true_qid)
 
     f = BytesIO()
     dump_svmlight_file(X, y, f, query_id=qid, zero_based=True)
     f.seek(0)
     X, y, qid = load_svmlight_file(f, query_id=True, zero_based=True)
     assert_array_equal(y, true_y)
-    assert_array_equal(X.toarray(), true_X)
-    assert_array_equal(qid, trueQID)
+    assert_array_equal(X.toarray(), true_x)
+    assert_array_equal(qid, true_qid)
 
     f.seek(0)
     X, y = load_svmlight_file(f, query_id=False, zero_based=True)
     assert_array_equal(y, true_y)
-    assert_array_equal(X.toarray(), true_X)
+    assert_array_equal(X.toarray(), true_x)
 
 
 @pytest.mark.parametrize("csr_container", CSR_CONTAINERS)
 def test_load_zeros(csr_container):
     f = BytesIO()
-    true_X = csr_container(np.zeros(shape=(3, 4)))
+    true_x = csr_container(np.zeros(shape=(3, 4)))
     true_y = np.array([0, 1, 0])
-    dump_svmlight_file(true_X, true_y, f)
+    dump_svmlight_file(true_x, true_y, f)
 
     for zero_based in ["auto", True, False]:
         f.seek(0)
         X, y = load_svmlight_file(f, n_features=4, zero_based=zero_based)
         assert_array_almost_equal(y, true_y)
-        assert_array_almost_equal(X.toarray(), true_X.toarray())
+        assert_array_almost_equal(X.toarray(), true_x.toarray())
 
 
 @pytest.mark.parametrize("sparsity", [0, 0.1, 0.5, 0.99, 1])
