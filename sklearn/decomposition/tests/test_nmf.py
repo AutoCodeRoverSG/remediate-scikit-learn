@@ -785,7 +785,7 @@ def test_nmf_underflow():
 )
 def test_nmf_dtype_match(estimator, solver, dtype_in, dtype_out):
     # Check that NMF preserves dtype (float32 and float64)
-    X = np.random.RandomState(0).randn(20, 15).astype(dtype_in, copy=False)
+    X = np.random.default_rng(0).standard_normal((20, 15)).astype(dtype_in, copy=False)
     np.abs(X, out=X)
 
     nmf = estimator(
@@ -807,7 +807,7 @@ def test_nmf_dtype_match(estimator, solver, dtype_in, dtype_out):
 )
 def test_nmf_float32_float64_consistency(estimator, solver):
     # Check that the result of NMF is the same between float32 and float64
-    X = np.random.RandomState(0).randn(50, 7)
+    X = np.random.default_rng(0).standard_normal((50, 7))
     np.abs(X, out=X)
     nmf32 = estimator(random_state=0, tol=1e-3, **solver)
     W32 = nmf32.fit_transform(X.astype(np.float32))
@@ -821,10 +821,10 @@ def test_nmf_float32_float64_consistency(estimator, solver):
 def test_nmf_custom_init_dtype_error(estimator):
     # Check that an error is raise if custom H and/or W don't have the same
     # dtype as X.
-    rng = np.random.RandomState(0)
-    X = rng.random_sample((20, 15))
-    H = rng.random_sample((15, 15)).astype(np.float32)
-    W = rng.random_sample((20, 15))
+    rng = np.random.default_rng(0)
+    X = rng.random((20, 15))
+    H = rng.random((15, 15)).astype(np.float32)
+    W = rng.random((20, 15))
 
     with pytest.raises(TypeError, match="should have the same dtype as X"):
         estimator(init="custom").fit(X, H=H, W=W)
@@ -898,8 +898,8 @@ def test_minibatch_nmf_partial_fit():
 
 def test_feature_names_out():
     """Check feature names out for NMF."""
-    random_state = np.random.RandomState(0)
-    X = np.abs(random_state.randn(10, 4))
+    rng = np.random.default_rng(0)
+    X = np.abs(rng.standard_normal((10, 4)))
     nmf = NMF(n_components=3).fit(X)
 
     names = nmf.get_feature_names_out()
@@ -908,7 +908,7 @@ def test_feature_names_out():
 
 def test_minibatch_nmf_verbose():
     # Check verbose mode of MiniBatchNMF for better coverage.
-    A = np.random.RandomState(0).random_sample((100, 10))
+    A = np.random.default_rng(0).random((100, 10))
     nmf = MiniBatchNMF(tol=1e-2, random_state=0, verbose=1)
     old_stdout = sys.stdout
     sys.stdout = StringIO()
@@ -922,10 +922,10 @@ def test_minibatch_nmf_verbose():
 def test_nmf_n_components_auto(estimator):
     # Check that n_components is correctly inferred
     # from the provided custom initialization.
-    rng = np.random.RandomState(0)
-    X = rng.random_sample((6, 5))
-    W = rng.random_sample((6, 2))
-    H = rng.random_sample((2, 5))
+    rng = np.random.default_rng(0)
+    X = rng.random((6, 5))
+    W = rng.random((6, 2))
+    H = rng.random((2, 5))
     est = estimator(
         n_components="auto",
         init="custom",
@@ -939,10 +939,10 @@ def test_nmf_n_components_auto(estimator):
 def test_nmf_non_negative_factorization_n_components_auto():
     # Check that n_components is correctly inferred from the provided
     # custom initialization.
-    rng = np.random.RandomState(0)
-    X = rng.random_sample((6, 5))
-    w_init = rng.random_sample((6, 2))
-    h_init = rng.random_sample((2, 5))
+    rng = np.random.default_rng(0)
+    X = rng.random((6, 5))
+    w_init = rng.random((6, 2))
+    h_init = rng.random((2, 5))
     W, H, _ = non_negative_factorization(
         X, W=w_init, H=h_init, init="custom", n_components="auto"
     )
@@ -954,9 +954,9 @@ def test_nmf_n_components_auto_no_h_update():
     # Tests that non_negative_factorization does not fail when setting
     # n_components="auto" also tests that the inferred n_component
     # value is the right one.
-    rng = np.random.RandomState(0)
-    X = rng.random_sample((6, 5))
-    h_true = rng.random_sample((2, 5))
+    rng = np.random.default_rng(0)
+    X = rng.random((6, 5))
+    h_true = rng.random((2, 5))
     W, H, _ = non_negative_factorization(
         X, H=h_true, n_components="auto", update_H=False
     )  # should not fail
@@ -967,10 +967,10 @@ def test_nmf_n_components_auto_no_h_update():
 def test_nmf_w_h_not_used_warning():
     # Check that warnings are raised if user provided W and H are not used
     # and initialization overrides value of W or H
-    rng = np.random.RandomState(0)
-    X = rng.random_sample((6, 5))
-    w_init = rng.random_sample((6, 2))
-    h_init = rng.random_sample((2, 5))
+    rng = np.random.default_rng(0)
+    X = rng.random((6, 5))
+    w_init = rng.random((6, 2))
+    h_init = rng.random((2, 5))
     with pytest.warns(
         RuntimeWarning,
         match="When init!='custom', provided W or H are ignored",
@@ -998,16 +998,16 @@ def test_nmf_w_h_not_used_warning():
 def test_nmf_custom_init_shape_error():
     # Check that an informative error is raised when custom initialization does not
     # have the right shape
-    rng = np.random.RandomState(0)
-    X = rng.random_sample((6, 5))
-    H = rng.random_sample((2, 5))
+    rng = np.random.default_rng(0)
+    X = rng.random((6, 5))
+    H = rng.random((2, 5))
     nmf = NMF(n_components=2, init="custom", random_state=0)
 
     with pytest.raises(ValueError, match="Array with wrong first dimension passed"):
-        nmf.fit(X, H=H, W=rng.random_sample((5, 2)))
+        nmf.fit(X, H=H, W=rng.random((5, 2)))
 
     with pytest.raises(ValueError, match="Array with wrong second dimension passed"):
-        nmf.fit(X, H=H, W=rng.random_sample((6, 3)))
+        nmf.fit(X, H=H, W=rng.random((6, 3)))
 
 
 @pytest.mark.parametrize("init", (None, "nndsvd", "nndsvda", "nndsvdar", "random"))
