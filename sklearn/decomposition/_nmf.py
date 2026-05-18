@@ -366,7 +366,7 @@ def _initialize_nmf(X, n_components, init=None, eps=1e-6, random_state=None):
     return W, H
 
 
-def _update_coordinate_descent(X, w, ht, l1_reg, l2_reg, shuffle, random_state):
+def _update_coordinate_descent(X, w, ht, l1_reg, l2_reg, shuffle, rng):
     """Helper function for _fit_coordinate_descent.
 
     Update W to minimize the objective function, iterating once over all
@@ -388,7 +388,7 @@ def _update_coordinate_descent(X, w, ht, l1_reg, l2_reg, shuffle, random_state):
         x_ht -= l1_reg
 
     if shuffle:
-        permutation = random_state.permutation(n_components)
+        permutation = rng.permutation(n_components)
     else:
         permutation = np.arange(n_components)
     # The following seems to be required on 64-bit Windows w/ Python 3.5.
@@ -406,7 +406,7 @@ def _fit_coordinate_descent(
     l1_reg_h=0,
     l2_reg_w=0,
     l2_reg_h=0,
-    update_H=True,
+    update_h=True,
     verbose=0,
     shuffle=False,
     random_state=None,
@@ -496,7 +496,7 @@ def _fit_coordinate_descent(
             X, w, ht, l1_reg_w, l2_reg_w, shuffle, rng
         )
         # Update H
-        if update_H:
+        if update_h:
             violation += _update_coordinate_descent(
                 X.T, ht, w, l1_reg_h, l2_reg_h, shuffle, rng
             )
@@ -520,11 +520,11 @@ def _fit_coordinate_descent(
 
 def _multiplicative_update_w(
     X,
-    W,
-    H,
+    w,
+    h,
     beta_loss,
-    l1_reg_W,
-    l2_reg_W,
+    l1_reg_w,
+    l2_reg_w,
     gamma,
     H_sum=None,
     HHt=None,
@@ -535,7 +535,7 @@ def _multiplicative_update_w(
     if beta_loss == 2:
         # Numerator
         if XHt is None:
-            XHt = safe_sparse_dot(X, H.T)
+            XHt = safe_sparse_dot(X, h.T)
         if update_H:
             # avoid a copy of XHt, which will be re-computed (update_H=True)
             numerator = XHt
@@ -545,13 +545,13 @@ def _multiplicative_update_w(
 
         # Denominator
         if HHt is None:
-            HHt = np.dot(H, H.T)
-        denominator = np.dot(W, HHt)
+            HHt = np.dot(h, h.T)
+        denominator = np.dot(w, HHt)
 
     else:
         # Numerator
         # if X is sparse, compute WH only where X is non zero
-        WH_safe_X = _special_sparse_dot(W, H, X)
+        WH_safe_X = _special_sparse_dot(w, h, X)
         if sp.issparse(X):
             WH_safe_X_data = WH_safe_X.data
             X_data = X.data
@@ -582,12 +582,12 @@ def _multiplicative_update_w(
             WH_safe_X_data *= X_data
 
         # here numerator = dot(X * (dot(W, H) ** (beta_loss - 2)), H.T)
-        numerator = safe_sparse_dot(WH_safe_X, H.T)
+        numerator = safe_sparse_dot(WH_safe_X, h.T)
 
         # Denominator
         if beta_loss == 1:
             if H_sum is None:
-                H_sum = np.sum(H, axis=1)  # shape(n_components, )
+                H_sum = np.sum(h, axis=1)  # shape(n_components, )
             denominator = H_sum[np.newaxis, :]
 
         else:
@@ -595,23 +595,23 @@ def _multiplicative_update_w(
             if sp.issparse(X):
                 # memory efficient computation
                 # (compute row by row, avoiding the dense matrix WH)
-                WHHt = np.empty(W.shape)
+                WHHt = np.empty(w.shape)
                 for i in range(X.shape[0]):
-                    WHi = np.dot(W[i, :], H)
+                    WHi = np.dot(w[i, :], h)
                     if beta_loss - 1 < 0:
                         WHi[WHi < EPSILON] = EPSILON
                     WHi **= beta_loss - 1
-                    WHHt[i, :] = np.dot(WHi, H.T)
+                    WHHt[i, :] = np.dot(WHi, h.T)
             else:
                 WH **= beta_loss - 1
-                WHHt = np.dot(WH, H.T)
+                WHHt = np.dot(WH, h.T)
             denominator = WHHt
 
     # Add L1 and L2 regularization
-    if l1_reg_W > 0:
-        denominator += l1_reg_W
-    if l2_reg_W > 0:
-        denominator = denominator + l2_reg_W * W
+    if l1_reg_w > 0:
+        denominator += l1_reg_w
+    if l2_reg_w > 0:
+        denominator = denominator + l2_reg_w * w
     denominator[denominator == 0] = EPSILON
 
     numerator /= denominator
@@ -621,9 +621,9 @@ def _multiplicative_update_w(
     if gamma != 1:
         delta_W **= gamma
 
-    W *= delta_W
+    w *= delta_W
 
-    return W, H_sum, HHt, XHt
+    return w, H_sum, HHt, XHt
 
 
 def _multiplicative_update_h(
@@ -831,8 +831,8 @@ def _fit_multiplicative_update(
             W,
             H,
             beta_loss=beta_loss,
-            l1_reg_W=l1_reg_W,
-            l2_reg_W=l2_reg_W,
+            l1_reg_w=l1_reg_W,
+            l2_reg_w=l2_reg_W,
             gamma=gamma,
             H_sum=H_sum,
             HHt=HHt,
@@ -1696,7 +1696,7 @@ class NMF(_BaseNMF):
                 l1_reg_H,
                 l2_reg_W,
                 l2_reg_H,
-                update_H=update_H,
+                update_h=update_H,
                 verbose=self.verbose,
                 shuffle=self.shuffle,
                 random_state=self.random_state,
