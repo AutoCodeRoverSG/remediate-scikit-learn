@@ -367,9 +367,9 @@ def test_inverse_transform(
 def test_fastica_errors():
     n_features = 3
     n_samples = 10
-    rng = np.random.RandomState(0)
-    X = rng.random_sample((n_samples, n_features))
-    w_init = rng.randn(n_features + 1, n_features + 1)
+    rng = np.random.default_rng(0)
+    X = rng.random((n_samples, n_features))
+    w_init = rng.standard_normal((n_features + 1, n_features + 1))
     with pytest.raises(ValueError, match=r"alpha must be in \[1,2\]"):
         fastica(X, fun_args={"alpha": 0})
     with pytest.raises(
@@ -383,8 +383,8 @@ def test_fastica_whiten_unit_variance(global_random_seed):
 
     Bug #13056
     """
-    rng = np.random.RandomState(global_random_seed)
-    X = rng.random_sample((100, 10))
+    rng = np.random.default_rng(global_random_seed)
+    X = rng.random((100, 10))
     n_components = X.shape[1]
     ica = FastICA(n_components=n_components, whiten="unit-variance", random_state=0)
     x_t = ica.fit_transform(X)
@@ -397,8 +397,8 @@ def test_fastica_whiten_unit_variance(global_random_seed):
 def test_fastica_output_shape(whiten, return_x_mean):
     n_features = 3
     n_samples = 10
-    rng = np.random.RandomState(0)
-    X = rng.random_sample((n_samples, n_features))
+    rng = np.random.default_rng(0)
+    X = rng.random((n_samples, n_features))
 
     expected_len = 3 + return_x_mean
 
@@ -414,7 +414,7 @@ def test_fastica_output_shape(whiten, return_x_mean):
 @pytest.mark.parametrize("add_noise", [True, False])
 def test_fastica_simple_different_solvers(add_noise, global_random_seed):
     """Test FastICA is consistent between whiten_solvers."""
-    rng = np.random.RandomState(global_random_seed)
+    rng = np.random.default_rng(global_random_seed)
     n_samples = 1000
     # Generate two sources:
     s1 = (2 * np.sin(np.linspace(0, 100, n_samples)) > 0) - 1
@@ -424,12 +424,12 @@ def test_fastica_simple_different_solvers(add_noise, global_random_seed):
     s1, s2 = s
 
     # Mixing angle
-    phi = rng.rand() * 2 * np.pi
+    phi = rng.random() * 2 * np.pi
     mixing = np.array([[np.cos(phi), np.sin(phi)], [np.sin(phi), -np.cos(phi)]])
     m = np.dot(mixing, s)
 
     if add_noise:
-        m += 0.1 * rng.randn(2, 1000)
+        m += 0.1 * rng.standard_normal((2, 1000))
 
     center_and_norm(m)
 
@@ -448,8 +448,8 @@ def test_fastica_simple_different_solvers(add_noise, global_random_seed):
 
 def test_fastica_eigh_low_rank_warning(global_random_seed):
     """Test FastICA eigh solver raises warning for low-rank data."""
-    rng = np.random.RandomState(global_random_seed)
-    A = rng.randn(10, 2)
+    rng = np.random.default_rng(global_random_seed)
+    A = rng.standard_normal((10, 2))
     X = A @ A.T
     ica = FastICA(random_state=0, whiten="unit-variance", whiten_solver="eigh")
     msg = "There are some small singular values"
