@@ -24,8 +24,8 @@ def _make_training_data(n_bins=256, constant_hessian=True):
 
     # Generate some test data directly binned so as to test the grower code
     # independently of the binning logic.
-    X_binned = rng.randint(0, n_bins - 1, size=(n_samples, 2), dtype=X_BINNED_DTYPE)
-    X_binned = np.asfortranarray(X_binned)
+    x_binned = rng.randint(0, n_bins - 1, size=(n_samples, 2), dtype=X_BINNED_DTYPE)
+    x_binned = np.asfortranarray(x_binned)
 
     def true_decision_function(input_features):
         """Ground truth decision function
@@ -39,7 +39,7 @@ def _make_training_data(n_bins=256, constant_hessian=True):
         else:
             return -1 if input_features[1] <= n_bins // 3 else 1
 
-    target = np.array([true_decision_function(x) for x in X_binned], dtype=Y_DTYPE)
+    target = np.array([true_decision_function(x) for x in x_binned], dtype=Y_DTYPE)
 
     # Assume a square loss applied to an initial model that always predicts 0
     # (hardcoded for this test):
@@ -47,7 +47,7 @@ def _make_training_data(n_bins=256, constant_hessian=True):
     shape_hessians = 1 if constant_hessian else all_gradients.shape
     all_hessians = np.ones(shape=shape_hessians, dtype=G_H_DTYPE)
 
-    return X_binned, all_gradients, all_hessians
+    return x_binned, all_gradients, all_hessians
 
 
 def _check_children_consistency(parent, left, right):
@@ -83,10 +83,10 @@ def _check_children_consistency(parent, left, right):
     ],
 )
 def test_grow_tree(n_bins, constant_hessian, stopping_param, shrinkage):
-    X_binned, all_gradients, all_hessians = _make_training_data(
+    x_binned, all_gradients, all_hessians = _make_training_data(
         n_bins=n_bins, constant_hessian=constant_hessian
     )
-    n_samples = X_binned.shape[0]
+    n_samples = x_binned.shape[0]
 
     if stopping_param == "max_leaf_nodes":
         stopping_param = {"max_leaf_nodes": 3}
@@ -94,7 +94,7 @@ def test_grow_tree(n_bins, constant_hessian, stopping_param, shrinkage):
         stopping_param = {"min_gain_to_split": 0.01}
 
     grower = TreeGrower(
-        X_binned,
+        x_binned,
         all_gradients,
         all_hessians,
         n_bins=n_bins,
@@ -160,9 +160,9 @@ def test_grow_tree(n_bins, constant_hessian, stopping_param, shrinkage):
 def test_predictor_from_grower():
     # Build a tree on the toy 3-leaf dataset to extract the predictor.
     n_bins = 256
-    X_binned, all_gradients, all_hessians = _make_training_data(n_bins=n_bins)
+    x_binned, all_gradients, all_hessians = _make_training_data(n_bins=n_bins)
     grower = TreeGrower(
-        X_binned,
+        x_binned,
         all_gradients,
         all_hessians,
         n_bins=n_bins,
@@ -177,7 +177,7 @@ def test_predictor_from_grower():
     # object to perform predictions at scale
     # We pass undefined binning_thresholds because we won't use predict anyway
     predictor = grower.make_predictor(
-        binning_thresholds=np.zeros((X_binned.shape[1], n_bins))
+        binning_thresholds=np.zeros((x_binned.shape[1], n_bins))
     )
     assert predictor.nodes.shape[0] == 5
     assert predictor.nodes["is_leaf"].sum() == 3
@@ -206,7 +206,7 @@ def test_predictor_from_grower():
     assert np.allclose(predictions, expected_targets)
 
     # Check that training set can be recovered exactly:
-    predictions = predictor.predict_binned(X_binned, missing_values_bin_idx, n_threads)
+    predictions = predictor.predict_binned(x_binned, missing_values_bin_idx, n_threads)
     assert np.allclose(predictions, -all_gradients)
 
 
@@ -230,7 +230,7 @@ def test_min_samples_leaf(n_samples, min_samples_leaf, n_bins, constant_hessian,
     if noise:
         y_scale = y.std()
         y += rng.normal(scale=noise, size=n_samples) * y_scale
-    mapper = _BinMapper(n_bins=n_bins)
+    mapper = _BinMapper(n_bins=n_bins, random_state=42)
     X = mapper.fit_transform(X)
 
     all_gradients = y.astype(G_H_DTYPE)
@@ -269,7 +269,7 @@ def test_min_samples_leaf_root(n_samples, min_samples_leaf):
     # data = linear target, 3 features, 1 irrelevant.
     X = rng.normal(size=(n_samples, 3))
     y = X[:, 0] - X[:, 1]
-    mapper = _BinMapper(n_bins=n_bins)
+    mapper = _BinMapper(n_bins=n_bins, random_state=rng)
     X = mapper.fit_transform(X)
 
     all_gradients = y.astype(G_H_DTYPE)
@@ -308,7 +308,7 @@ def test_max_depth(max_depth):
     # data = linear target, 3 features, 1 irrelevant.
     X = rng.normal(size=(n_samples, 3))
     y = X[:, 0] - X[:, 1]
-    mapper = _BinMapper(n_bins=n_bins)
+    mapper = _BinMapper(n_bins=n_bins, random_state=rng)
     X = mapper.fit_transform(X)
 
     all_gradients = y.astype(G_H_DTYPE)
@@ -324,26 +324,26 @@ def test_max_depth(max_depth):
 
 
 def test_input_validation():
-    X_binned, all_gradients, all_hessians = _make_training_data()
+    x_binned, all_gradients, all_hessians = _make_training_data()
 
-    X_binned_float = X_binned.astype(np.float32)
+    x_binned_float = x_binned.astype(np.float32)
     with pytest.raises(NotImplementedError, match="X_binned must be of type uint8"):
-        TreeGrower(X_binned_float, all_gradients, all_hessians)
+        TreeGrower(x_binned_float, all_gradients, all_hessians)
 
-    X_binned_C_array = np.ascontiguousarray(X_binned)
+    x_binned_c_array = np.ascontiguousarray(x_binned)
     with pytest.raises(
         ValueError, match="X_binned should be passed as Fortran contiguous array"
     ):
-        TreeGrower(X_binned_C_array, all_gradients, all_hessians)
+        TreeGrower(x_binned_c_array, all_gradients, all_hessians)
 
 
 def test_init_parameters_validation():
-    X_binned, all_gradients, all_hessians = _make_training_data()
+    x_binned, all_gradients, all_hessians = _make_training_data()
     with pytest.raises(ValueError, match="min_gain_to_split=-1 must be positive"):
-        TreeGrower(X_binned, all_gradients, all_hessians, min_gain_to_split=-1)
+        TreeGrower(x_binned, all_gradients, all_hessians, min_gain_to_split=-1)
 
     with pytest.raises(ValueError, match="min_hessian_to_split=-1 must be positive"):
-        TreeGrower(X_binned, all_gradients, all_hessians, min_hessian_to_split=-1)
+        TreeGrower(x_binned, all_gradients, all_hessians, min_hessian_to_split=-1)
 
 
 def test_missing_value_predict_only():
