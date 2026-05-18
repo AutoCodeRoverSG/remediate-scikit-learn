@@ -33,18 +33,20 @@ from sklearn.linear_model import SGDOneClassSVM
 from sklearn.pipeline import make_pipeline
 from sklearn.svm import OneClassSVM
 
+LEARNED_FRONTIER = "learned frontier"
+
 font = {"weight": "normal", "size": 15}
 
 matplotlib.rc("font", **font)
 
 random_state = 42
-rng = np.random.RandomState(random_state)
+rng = np.random.default_rng(random_state)
 
 # Generate train data
-X = 0.3 * rng.randn(500, 2)
+X = 0.3 * rng.standard_normal((500, 2))
 X_train = np.r_[X + 2, X - 2]
 # Generate some regular novel observations
-X = 0.3 * rng.randn(20, 2)
+X = 0.3 * rng.standard_normal((20, 2))
 X_test = np.r_[X + 2, X - 2]
 # Generate some abnormal novel observations
 X_outliers = rng.uniform(low=-4, high=4, size=(20, 2))
@@ -68,7 +70,7 @@ transform = Nystroem(gamma=gamma, random_state=random_state)
 clf_sgd = SGDOneClassSVM(
     nu=nu, shuffle=True, fit_intercept=True, random_state=random_state, tol=1e-4
 )
-pipe_sgd = make_pipeline(transform, clf_sgd)
+pipe_sgd = make_pipeline(transform, clf_sgd, memory=None)
 pipe_sgd.fit(X_train)
 y_pred_train_sgd = pipe_sgd.predict(X_train)
 y_pred_test_sgd = pipe_sgd.predict(X_test)
@@ -129,9 +131,9 @@ ax.set(
     ),
 )
 _ = ax.legend(
-    [mlines.Line2D([], [], color="darkred", label="learned frontier"), b1, b2, c],
+    [mlines.Line2D([], [], color="darkred", label=LEARNED_FRONTIER), b1, b2, c],
     [
-        "learned frontier",
+        LEARNED_FRONTIER,
         "training observations",
         "new regular observations",
         "new abnormal observations",
@@ -188,9 +190,9 @@ ax.set(
     ),
 )
 ax.legend(
-    [mlines.Line2D([], [], color="darkred", label="learned frontier"), b1, b2, c],
+    [mlines.Line2D([], [], color="darkred", label=LEARNED_FRONTIER), b1, b2, c],
     [
-        "learned frontier",
+        LEARNED_FRONTIER,
         "training observations",
         "new regular observations",
         "new abnormal observations",
