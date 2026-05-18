@@ -215,13 +215,13 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
 
-clf = make_pipeline(StandardScaler(), LogisticRegression(random_state=0, C=10))
+clf = make_pipeline(StandardScaler(), LogisticRegression(random_state=0, C=10), memory=None)
 
 # %%
 # Expand the estimator diagram below by clicking on "LogisticRegression" and then on
 # "Parameters".
 
-clf
+print(clf)
 
 
 # %%

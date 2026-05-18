@@ -18,11 +18,12 @@ from sklearn.svm import SVR
 # %%
 # Generate sample data
 # --------------------
-X = np.sort(5 * np.random.rand(40, 1), axis=0)
+rng = np.random.default_rng(42)
+X = np.sort(5 * rng.random((40, 1)), axis=0)
 y = np.sin(X).ravel()
 
 # add noise to targets
-y[::5] += 3 * (0.5 - np.random.rand(8))
+y[::5] += 3 * (0.5 - rng.random(8))
 
 # %%
 # Fit regression model

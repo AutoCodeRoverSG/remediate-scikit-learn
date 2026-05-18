@@ -22,8 +22,8 @@ import numpy as np
 from sklearn import svm
 
 # we create 40 separable points
-np.random.seed(0)
-X = np.r_[np.random.randn(20, 2) - [2, 2], np.random.randn(20, 2) + [2, 2]]
+rng = np.random.default_rng(0)
+X = np.r_[rng.standard_normal((20, 2)) - [2, 2], rng.standard_normal((20, 2)) + [2, 2]]
 Y = [0] * 20 + [1] * 20
 
 # figure number
