@@ -149,6 +149,7 @@ __version__ = '2.4.0'
 
 import re
 import csv
+import math
 from typing import TYPE_CHECKING
 from typing import Optional, List, Dict, Any, Iterator, Union, Tuple
 
@@ -163,8 +164,8 @@ _TK_DATA        = '@DATA'
 
 _RE_RELATION     = re.compile(r'^([^\{\}%,\s]*|\".*\"|\'.*\')$', re.UNICODE)
 _RE_ATTRIBUTE    = re.compile(r'^(\".*\"|\'.*\'|[^\{\}%,\s]*)\s+(.+)$', re.UNICODE)
-_RE_QUOTE_CHARS = re.compile(r'["\'\\\s%,\000-\031]', re.UNICODE)
-_RE_ESCAPE_CHARS = re.compile(r'(?=["\'\\%])|[\n\r\t\000-\031]')
+_RE_QUOTE_CHARS = re.compile(r'["\'\\\ %,\000-\031]', re.UNICODE)
+_RE_ESCAPE_CHARS = re.compile(r'(?=["\'\\%])|[\000-\031]')
 _RE_SPARSE_LINE = re.compile(r'^\s*\{.*\}\s*$', re.UNICODE)
 _RE_NONTRIVIAL_DATA = re.compile('["\'{}\\s]', re.UNICODE)
 
@@ -272,7 +273,7 @@ def _escape_sub_callback(match):
 
 def _unquote(v):
     if v[:1] in ('"', "'"):
-        return re.sub(r'\\([0-9]{1,3}|u[0-9a-f]{4}|.)', _escape_sub_callback,
+        return re.sub(r'\\(\d{1,3}|u[0-9a-f]{4}|.)', _escape_sub_callback,
                       v[1:-1])
     elif v in ('?', ''):
         return None
@@ -505,7 +506,8 @@ class DenseGeneratorData:
 
             new_data = []
             for value in inst:
-                if value is None or value == '' or value != value:
+                if value is None or value == '' or (
+                        isinstance(value, float) and math.isnan(value)):
                     s = '?'
                 else:
                     s = encode_string(str(value))
@@ -580,7 +582,7 @@ class COOData:
                     (current_row, col + 1, num_attributes)
                 )
 
-            if v is None or v == '' or v != v:
+            if v is None or v == '' or (isinstance(v, float) and math.isnan(v)):
                 s = '?'
             else:
                 s = encode_string(str(v))
@@ -621,7 +623,7 @@ class LODGeneratorData:
 
             for col in sorted(row):
                 v = row[col]
-                if v is None or v == '' or v != v:
+                if v is None or v == '' or (isinstance(v, float) and math.isnan(v)):
                     s = '?'
                 else:
                     s = encode_string(str(v))
@@ -752,7 +754,7 @@ class ArffDecoder:
         name = str(name.strip('"\''))
 
         # Extracts the final type
-        if type_[:1] == "{" and type_[-1:] == "}":
+        if type_.startswith("{") and type_.endswith("}"):
             try:
                 type_ = _parse_values(type_.strip('{} '))
             except Exception:
@@ -854,6 +856,7 @@ class ArffDecoder:
 
             # COMMENT ---------------------------------------------------------
             elif u_row.startswith(_TK_COMMENT):
+                # Comment lines are intentionally skipped
                 pass
             # -----------------------------------------------------------------
         else:
@@ -974,7 +977,7 @@ class ArffEncoder:
         :param obj: the object containing the ARFF information.
         :return: the ARFF file as an string.
         '''
-        data = [row for row in self.iter_encode(obj)]
+        data = list(self.iter_encode(obj))
 
         return '\n'.join(data)
 
