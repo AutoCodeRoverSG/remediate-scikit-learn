@@ -37,6 +37,7 @@ _SEARCH_NAME = "https://www.openml.org/api/v1/json/data/list/data_name/{}/limit/
 _DATA_INFO = "https://www.openml.org/api/v1/json/data/{}"
 _DATA_FEATURES = "https://www.openml.org/api/v1/json/data/features/{}"
 _DATA_QUALITIES = "https://www.openml.org/api/v1/json/data/qualities/{}"
+_DATASET_NOT_FOUND_MSG = "Dataset with data_id {} not found."
 
 OpenmlQualitiesType = List[Dict[str, str]]
 OpenmlFeaturesType = List[Dict[str, str]]
@@ -364,7 +365,7 @@ def _get_data_description_by_id(
 ) -> Dict[str, Any]:
     # OpenML API function: https://www.openml.org/api_docs#!/data/get_data_id
     url = _DATA_INFO.format(data_id)
-    error_message = "Dataset with data_id {} not found.".format(data_id)
+    error_message = _DATASET_NOT_FOUND_MSG.format(data_id)
     json_data = _get_json_content_from_openml_api(
         url,
         error_message,
@@ -384,7 +385,7 @@ def _get_data_features(
     # OpenML function:
     # https://www.openml.org/api_docs#!/data/get_data_features_id
     url = _DATA_FEATURES.format(data_id)
-    error_message = "Dataset with data_id {} not found.".format(data_id)
+    error_message = _DATASET_NOT_FOUND_MSG.format(data_id)
     json_data = _get_json_content_from_openml_api(
         url,
         error_message,
@@ -404,7 +405,7 @@ def _get_data_qualities(
     # OpenML API function:
     # https://www.openml.org/api_docs#!/data/get_data_qualities_id
     url = _DATA_QUALITIES.format(data_id)
-    error_message = "Dataset with data_id {} not found.".format(data_id)
+    error_message = _DATASET_NOT_FOUND_MSG.format(data_id)
     json_data = _get_json_content_from_openml_api(
         url,
         error_message,
@@ -541,15 +542,15 @@ def _load_arff_response(
         with closing(gzip_file):
             return load_arff_from_gzip_file(gzip_file, **arff_params)
 
-    arff_params: Dict = dict(
-        parser=parser,
-        output_type=output_type,
-        openml_columns_info=openml_columns_info,
-        feature_names_to_select=feature_names_to_select,
-        target_names_to_select=target_names_to_select,
-        shape=shape,
-        read_csv_kwargs=read_csv_kwargs or {},
-    )
+    arff_params: Dict = {
+        "parser": parser,
+        "output_type": output_type,
+        "openml_columns_info": openml_columns_info,
+        "feature_names_to_select": feature_names_to_select,
+        "target_names_to_select": target_names_to_select,
+        "shape": shape,
+        "read_csv_kwargs": read_csv_kwargs or {},
+    }
     try:
         X, y, frame, categories = _open_url_and_load_gzip_file(
             url, data_home, n_retries, delay, arff_params
@@ -764,7 +765,7 @@ def _valid_data_column_names(features_list, target_columns):
         "data_home": [str, os.PathLike, None],
         "target_column": [str, list, None],
         "cache": [bool],
-        "return_X_y": [bool],
+        "return_x_y": [bool],
         "as_frame": [bool, StrOptions({"auto"})],
         "n_retries": [Interval(Integral, 1, None, closed="left")],
         "delay": [Interval(Real, 0.0, None, closed="neither")],
@@ -783,7 +784,7 @@ def fetch_openml(
     data_home: Optional[Union[str, os.PathLike]] = None,
     target_column: Optional[Union[str, List]] = "default-target",
     cache: bool = True,
-    return_X_y: bool = False,
+    return_x_y: bool = False,
     as_frame: Union[str, bool] = "auto",
     n_retries: int = 3,
     delay: float = 1.0,

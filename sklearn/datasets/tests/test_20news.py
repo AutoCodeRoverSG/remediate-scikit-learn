@@ -95,11 +95,11 @@ def test_20news_vectorized(fetch_20newsgroups_vectorized_fxt):
 def test_20news_normalization(fetch_20newsgroups_vectorized_fxt):
     X = fetch_20newsgroups_vectorized_fxt(normalize=False)
     X_ = fetch_20newsgroups_vectorized_fxt(normalize=True)
-    X_norm = X_["data"][:100]
+    x_norm = X_["data"][:100]
     X = X["data"][:100]
 
-    assert_allclose_dense_sparse(X_norm, normalize(X))
-    assert np.allclose(np.linalg.norm(X_norm.todense(), axis=1), 1)
+    assert_allclose_dense_sparse(x_norm, normalize(X))
+    assert np.allclose(np.linalg.norm(x_norm.todense(), axis=1), 1)
 
 
 def test_20news_as_frame(fetch_20newsgroups_vectorized_fxt):
