@@ -267,9 +267,9 @@ def test_spca_feature_names_out(spca_model):
 
 def test_spca_early_stopping(global_random_seed):
     """Check that `tol` and `max_no_improvement` act as early stopping."""
-    rng = np.random.RandomState(global_random_seed)
+    rng = np.random.default_rng(global_random_seed)
     n_samples, n_features = 50, 10
-    X = rng.randn(n_samples, n_features)
+    X = rng.standard_normal((n_samples, n_features))
 
     # vary the tolerance to force the early stopping of one of the model
     model_early_stopped = MiniBatchSparsePCA(
@@ -297,8 +297,8 @@ def test_equivalence_components_pca_spca(global_random_seed):
     Non-regression test for:
     https://github.com/scikit-learn/scikit-learn/issues/23932
     """
-    rng = np.random.RandomState(global_random_seed)
-    X = rng.randn(50, 4)
+    rng = np.random.default_rng(global_random_seed)
+    X = rng.standard_normal((50, 4))
 
     n_components = 2
     pca = PCA(
@@ -319,9 +319,9 @@ def test_equivalence_components_pca_spca(global_random_seed):
 
 def test_sparse_pca_inverse_transform(global_random_seed):
     """Check that `inverse_transform` in `SparsePCA` and `PCA` are similar."""
-    rng = np.random.RandomState(global_random_seed)
+    rng = np.random.default_rng(global_random_seed)
     n_samples, n_features = 10, 5
-    X = rng.randn(n_samples, n_features)
+    X = rng.standard_normal((n_samples, n_features))
 
     n_components = 2
     spca = SparsePCA(
@@ -343,9 +343,9 @@ def test_transform_inverse_transform_round_trip(spca_estimator, global_random_se
     """Check the `transform` and `inverse_transform` round trip with no loss of
     information.
     """
-    rng = np.random.RandomState(global_random_seed)
+    rng = np.random.default_rng(global_random_seed)
     n_samples, n_features = 10, 5
-    X = rng.randn(n_samples, n_features)
+    X = rng.standard_normal((n_samples, n_features))
 
     n_components = n_features
     spca = spca_estimator(

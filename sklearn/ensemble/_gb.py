@@ -1665,7 +1665,7 @@ class GradientBoostingClassifier(ClassifierMixin, BaseGradientBoosting):
         y : generator of ndarray of shape (n_samples,)
             The predicted value of the input samples.
         """
-        if self.n_classes_ == 2:  # n_trees_per_iteration_ = 1
+        if self.n_classes_ == 2:  
             for raw_predictions in self._staged_raw_predict(X):
                 encoded_classes = (raw_predictions.squeeze() >= 0).astype(int)
                 yield self.classes_.take(encoded_classes, axis=0)
