@@ -104,7 +104,7 @@ def test_spectral_clustering_sparse(assign_labels, coo_container, global_random_
 
 def test_precomputed_nearest_neighbors_filtering(global_random_seed):
     # Test precomputed graph filtering when containing too many neighbors
-    X, y = make_blobs(
+    X, _ = make_blobs(
         n_samples=300,
         random_state=global_random_seed,
         centers=[[5, 5, 5], [-5, -5, -5]],
@@ -178,9 +178,9 @@ def test_cluster_qr(global_random_seed):
     # other than the rows of the eigenvectors within spectral clustering,
     # but cluster_qr must still preserve the labels for different dtypes
     # of the generic fixed input even if the labels may be meaningless.
-    random_state = np.random.RandomState(seed=global_random_seed)
+    random_state = np.random.default_rng(seed=global_random_seed)
     n_samples, n_components = 10, 5
-    data = random_state.randn(n_samples, n_components)
+    data = random_state.standard_normal((n_samples, n_components))
     labels_float64 = cluster_qr(data.astype(np.float64))
     # Each sample is assigned a cluster identifier
     assert labels_float64.shape == (n_samples,)
@@ -193,9 +193,9 @@ def test_cluster_qr(global_random_seed):
 
 def test_cluster_qr_permutation_invariance(global_random_seed):
     # cluster_qr must be invariant to sample permutation.
-    random_state = np.random.RandomState(seed=global_random_seed)
+    random_state = np.random.default_rng(seed=global_random_seed)
     n_samples, n_components = 100, 5
-    data = random_state.randn(n_samples, n_components)
+    data = random_state.standard_normal((n_samples, n_components))
     perm = random_state.permutation(n_samples)
     assert np.array_equal(
         cluster_qr(data)[perm],
@@ -207,20 +207,20 @@ def test_cluster_qr_permutation_invariance(global_random_seed):
 @pytest.mark.parametrize("n_samples", [50, 100, 150, 500])
 def test_discretize(n_samples, coo_container, global_random_seed):
     # Test the discretize using a noise assignment matrix
-    random_state = np.random.RandomState(seed=global_random_seed)
+    rng = np.random.default_rng(seed=global_random_seed)
     for n_class in range(2, 10):
         # random class labels
-        y_true = random_state.randint(0, n_class + 1, n_samples)
+        y_true = rng.integers(0, n_class + 1, n_samples)
         y_true = np.array(y_true, float)
         # noise class assignment matrix
         y_indicator = coo_container(
             (np.ones(n_samples), (np.arange(n_samples), y_true)),
             shape=(n_samples, n_class + 1),
         )
-        y_true_noisy = y_indicator.toarray() + 0.1 * random_state.randn(
-            n_samples, n_class + 1
+        y_true_noisy = y_indicator.toarray() + 0.1 * rng.standard_normal(
+            (n_samples, n_class + 1)
         )
-        y_pred = discretize(y_true_noisy, random_state=random_state)
+        y_pred = discretize(y_true_noisy, random_state=global_random_seed)
         assert adjusted_rand_score(y_true, y_pred) > 0.8
 
 
@@ -263,7 +263,7 @@ def test_spectral_clustering_with_arpack_amg_solvers(global_random_seed):
 def test_n_components(global_random_seed):
     # Test that after adding n_components, result is different and
     # n_components = n_clusters by default
-    X, y = make_blobs(
+    X, _ = make_blobs(
         n_samples=20,
         random_state=global_random_seed,
         centers=[[1, 1], [-1, -1]],
@@ -295,7 +295,7 @@ def test_n_components(global_random_seed):
 @pytest.mark.parametrize("assign_labels", ("kmeans", "discretize", "cluster_qr"))
 def test_verbose(assign_labels, capsys):
     # Check verbose mode of KMeans for better coverage.
-    X, y = make_blobs(
+    X, _ = make_blobs(
         n_samples=20, random_state=0, centers=[[1, 1], [-1, -1]], cluster_std=0.01
     )
 
@@ -307,7 +307,7 @@ def test_verbose(assign_labels, capsys):
 
     if assign_labels == "kmeans":
         assert re.search(r"Initialization complete", captured.out)
-        assert re.search(r"Iteration [0-9]+, inertia", captured.out)
+        assert re.search(r"Iteration \d+, inertia", captured.out)
 
 
 def test_spectral_clustering_np_matrix_raises():
@@ -333,4 +333,4 @@ def test_spectral_clustering_not_infinite_loop(capsys, monkeypatch):
     vectors = np.ones((10, 4))
 
     with pytest.raises(LinAlgError, match="SVD did not converge"):
-        discretize(vectors)
+        discretize(vectors, random_state=0)

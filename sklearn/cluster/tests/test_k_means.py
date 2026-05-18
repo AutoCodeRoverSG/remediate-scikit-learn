@@ -1227,10 +1227,10 @@ def test_kmeans_plusplus_dataorder(global_random_seed):
     # Check that memory layout does not effect result
     centers_c, _ = kmeans_plusplus(X, n_clusters, random_state=global_random_seed)
 
-    X_fortran = np.asfortranarray(X)
+    x_fortran = np.asfortranarray(X)
 
     centers_fortran, _ = kmeans_plusplus(
-        X_fortran, n_clusters, random_state=global_random_seed
+        x_fortran, n_clusters, random_state=global_random_seed
     )
 
     assert_allclose(centers_c, centers_fortran)
@@ -1268,13 +1268,13 @@ def test_kmeans_with_array_like_or_np_scalar_init(kwargs):
 
 
 @pytest.mark.parametrize(
-    "Klass, method",
+    "klass, method",
     [(KMeans, "fit"), (MiniBatchKMeans, "fit"), (MiniBatchKMeans, "partial_fit")],
 )
-def test_feature_names_out(Klass, method):
+def test_feature_names_out(klass, method):
     """Check `feature_names_out` for `KMeans` and `MiniBatchKMeans`."""
-    class_name = Klass.__name__.lower()
-    kmeans = Klass()
+    class_name = klass.__name__.lower()
+    kmeans = klass()
     getattr(kmeans, method)(X)
     n_clusters = kmeans.cluster_centers_.shape[0]
 
