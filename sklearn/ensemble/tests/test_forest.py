@@ -107,7 +107,7 @@ FOREST_TRANSFORMERS = {
     "RandomTreesEmbedding": RandomTreesEmbedding,
 }
 
-FOREST_ESTIMATORS: Dict[str, Any] = dict()
+FOREST_ESTIMATORS: Dict[str, Any] = {}
 FOREST_ESTIMATORS.update(FOREST_CLASSIFIERS)
 FOREST_ESTIMATORS.update(FOREST_REGRESSORS)
 FOREST_ESTIMATORS.update(FOREST_TRANSFORMERS)
@@ -122,14 +122,14 @@ REG_CRITERIONS = ("squared_error", "absolute_error", "friedman_mse", "poisson")
 @pytest.mark.parametrize("name", FOREST_CLASSIFIERS)
 def test_classification_toy(name):
     """Check classification on a toy dataset."""
-    ForestClassifier = FOREST_CLASSIFIERS[name]
+    forest_classifier = FOREST_CLASSIFIERS[name]
 
-    clf = ForestClassifier(n_estimators=10, random_state=1)
+    clf = forest_classifier(n_estimators=10, random_state=1)
     clf.fit(X, y)
     assert_array_equal(clf.predict(T), true_result)
     assert 10 == len(clf)
 
-    clf = ForestClassifier(n_estimators=10, max_features=1, random_state=1)
+    clf = forest_classifier(n_estimators=10, max_features=1, random_state=1)
     clf.fit(X, y)
     assert_array_equal(clf.predict(T), true_result)
     assert 10 == len(clf)
@@ -143,14 +143,14 @@ def test_classification_toy(name):
 @pytest.mark.parametrize("criterion", ("gini", "log_loss"))
 def test_iris_criterion(name, criterion):
     # Check consistency on dataset iris.
-    ForestClassifier = FOREST_CLASSIFIERS[name]
+    forest_classifier = FOREST_CLASSIFIERS[name]
 
-    clf = ForestClassifier(n_estimators=10, criterion=criterion, random_state=1)
+    clf = forest_classifier(n_estimators=10, criterion=criterion, random_state=1)
     clf.fit(iris.data, iris.target)
     score = clf.score(iris.data, iris.target)
     assert score > 0.9, "Failed with criterion %s and score = %f" % (criterion, score)
 
-    clf = ForestClassifier(
+    clf = forest_classifier(
         n_estimators=10, criterion=criterion, max_features=2, random_state=1
     )
     clf.fit(iris.data, iris.target)
@@ -166,9 +166,9 @@ def test_iris_criterion(name, criterion):
 )
 def test_regression_criterion(name, criterion):
     # Check consistency on regression dataset.
-    ForestRegressor = FOREST_REGRESSORS[name]
+    forest_reg = FOREST_REGRESSORS[name]
 
-    reg = ForestRegressor(n_estimators=5, criterion=criterion, random_state=1)
+    reg = forest_reg(n_estimators=5, criterion=criterion, random_state=1)
     reg.fit(X_reg, y_reg)
     score = reg.score(X_reg, y_reg)
     assert score > 0.93, (
@@ -179,7 +179,7 @@ def test_regression_criterion(name, criterion):
         )
     )
 
-    reg = ForestRegressor(
+    reg = forest_reg(
         n_estimators=5, criterion=criterion, max_features=6, random_state=1
     )
     reg.fit(X_reg, y_reg)
@@ -278,9 +278,9 @@ def test_regressor_attributes(name):
 @pytest.mark.parametrize("name", FOREST_CLASSIFIERS)
 def test_probability(name):
     # Predict probabilities.
-    ForestClassifier = FOREST_CLASSIFIERS[name]
+    forest_classifier = FOREST_CLASSIFIERS[name]
     with np.errstate(divide="ignore"):
-        clf = ForestClassifier(
+        clf = forest_classifier(
             n_estimators=10, random_state=1, max_features=1, max_depth=1
         )
         clf.fit(iris.data, iris.target)
@@ -309,9 +309,9 @@ def test_importances(dtype, name, criterion):
     X = X_large.astype(dtype, copy=False)
     y = y_large.astype(dtype, copy=False)
 
-    ForestEstimator = FOREST_ESTIMATORS[name]
+    forest_estimator = FOREST_ESTIMATORS[name]
 
-    est = ForestEstimator(n_estimators=10, criterion=criterion, random_state=0)
+    est = forest_estimator(n_estimators=10, criterion=criterion, random_state=0)
     est.fit(X, y)
     importances = est.feature_importances_
 
@@ -330,13 +330,13 @@ def test_importances(dtype, name, criterion):
 
     # Check with sample weights
     sample_weight = check_random_state(0).randint(1, 10, len(X))
-    est = ForestEstimator(n_estimators=10, random_state=0, criterion=criterion)
+    est = forest_estimator(n_estimators=10, random_state=0, criterion=criterion)
     est.fit(X, y, sample_weight=sample_weight)
     importances = est.feature_importances_
     assert np.all(importances >= 0.0)
 
     for scale in [0.5, 100]:
-        est = ForestEstimator(n_estimators=10, random_state=0, criterion=criterion)
+        est = forest_estimator(n_estimators=10, random_state=0, criterion=criterion)
         est.fit(X, y, sample_weight=scale * sample_weight)
         importances_bis = est.feature_importances_
         assert np.abs(importances - importances_bis).mean() < tolerance
@@ -361,11 +361,11 @@ def test_importances_asymptotic():
 
         return entropy
 
-    def mdi_importance(X_m, X, y):
+    def mdi_importance(x_m, X, y):
         n_samples, n_features = X.shape
 
         features = list(range(n_features))
-        features.pop(X_m)
+        features.pop(x_m)
         values = [np.unique(X[:, i]) for i in range(n_features)]
 
         imp = 0.0
@@ -389,8 +389,8 @@ def test_importances_asymptotic():
                     if n_samples_b > 0:
                         children = []
 
-                        for xi in values[X_m]:
-                            mask_xi = X_[:, X_m] == xi
+                        for xi in values[x_m]:
+                            mask_xi = X_[:, x_m] == xi
                             children.append(y_[mask_xi])
 
                         imp += (
@@ -461,8 +461,8 @@ def test_unfitted_feature_importances(name):
         getattr(FOREST_ESTIMATORS[name](), "feature_importances_")
 
 
-@pytest.mark.parametrize("ForestClassifier", FOREST_CLASSIFIERS.values())
-@pytest.mark.parametrize("X_type", ["array", "sparse_csr", "sparse_csc"])
+@pytest.mark.parametrize("forest_classifier_cls", FOREST_CLASSIFIERS.values())
+@pytest.mark.parametrize("x_type", ["array", "sparse_csr", "sparse_csc"])
 @pytest.mark.parametrize(
     "X, y, lower_bound_accuracy",
     [
@@ -489,17 +489,17 @@ def test_unfitted_feature_importances(name):
 )
 @pytest.mark.parametrize("oob_score", [True, partial(f1_score, average="micro")])
 def test_forest_classifier_oob(
-    ForestClassifier, X, y, X_type, lower_bound_accuracy, oob_score
+    forest_classifier_cls, X, y, x_type, lower_bound_accuracy, oob_score
 ):
     """Check that OOB score is close to score on a test set."""
-    X = _convert_container(X, constructor_name=X_type)
+    X = _convert_container(X, constructor_name=x_type)
     X_train, X_test, y_train, y_test = train_test_split(
         X,
         y,
         test_size=0.5,
         random_state=0,
     )
-    classifier = ForestClassifier(
+    classifier = forest_classifier_cls(
         n_estimators=40,
         bootstrap=True,
         oob_score=oob_score,
@@ -530,7 +530,7 @@ def test_forest_classifier_oob(
     assert classifier.oob_decision_function_.shape == expected_shape
 
 
-@pytest.mark.parametrize("ForestRegressor", FOREST_REGRESSORS.values())
+@pytest.mark.parametrize("forest_regressor", FOREST_REGRESSORS.values())
 @pytest.mark.parametrize("X_type", ["array", "sparse_csr", "sparse_csc"])
 @pytest.mark.parametrize(
     "X, y, lower_bound_r2",
@@ -550,7 +550,7 @@ def test_forest_classifier_oob(
     ],
 )
 @pytest.mark.parametrize("oob_score", [True, explained_variance_score])
-def test_forest_regressor_oob(ForestRegressor, X, y, X_type, lower_bound_r2, oob_score):
+def test_forest_regressor_oob(forest_regressor, X, y, X_type, lower_bound_r2, oob_score):
     """Check that forest-based regressor provide an OOB score close to the
     score on a test set."""
     X = _convert_container(X, constructor_name=X_type)
@@ -560,7 +560,7 @@ def test_forest_regressor_oob(ForestRegressor, X, y, X_type, lower_bound_r2, oob
         test_size=0.5,
         random_state=0,
     )
-    regressor = ForestRegressor(
+    regressor = forest_regressor(
         n_estimators=50,
         bootstrap=True,
         oob_score=oob_score,
