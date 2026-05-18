@@ -720,11 +720,11 @@ def test_column_transformer_invalid_transformer():
         def predict(self, X):
             return X
 
-    X_array = np.array([[0, 1, 2], [2, 4, 6]]).T
+    x_array = np.array([[0, 1, 2], [2, 4, 6]]).T
     ct = ColumnTransformer([("trans", NoTrans(), [0])])
     msg = "All estimators should implement fit and transform"
     with pytest.raises(TypeError, match=msg):
-        ct.fit(X_array)
+        ct.fit(x_array)
 
 
 def test_make_column_transformer():
@@ -739,12 +739,12 @@ def test_make_column_transformer():
 
 def test_make_column_transformer_pandas():
     pd = pytest.importorskip("pandas")
-    X_array = np.array([[0, 1, 2], [2, 4, 6]]).T
-    X_df = pd.DataFrame(X_array, columns=["first", "second"])
+    x_array = np.array([[0, 1, 2], [2, 4, 6]]).T
+    x_df = pd.DataFrame(x_array, columns=["first", "second"])
     norm = Normalizer()
-    ct1 = ColumnTransformer([("norm", Normalizer(), X_df.columns)])
-    ct2 = make_column_transformer((norm, X_df.columns))
-    assert_almost_equal(ct1.fit_transform(X_df), ct2.fit_transform(X_df))
+    ct1 = ColumnTransformer([("norm", Normalizer(), x_df.columns)])
+    ct2 = make_column_transformer((norm, x_df.columns))
+    assert_almost_equal(ct1.fit_transform(x_df), ct2.fit_transform(x_df))
 
 
 def test_make_column_transformer_kwargs():
@@ -835,7 +835,7 @@ def test_column_transformer_get_set_params():
 
 
 def test_column_transformer_named_estimators():
-    X_array = np.array([[0.0, 1.0, 2.0], [2.0, 4.0, 6.0]]).T
+    x_array = np.array([[0.0, 1.0, 2.0], [2.0, 4.0, 6.0]]).T
     ct = ColumnTransformer(
         [
             ("trans1", StandardScaler(), [0]),
@@ -843,7 +843,7 @@ def test_column_transformer_named_estimators():
         ]
     )
     assert not hasattr(ct, "transformers_")
-    ct.fit(X_array)
+    ct.fit(x_array)
     assert hasattr(ct, "transformers_")
     assert isinstance(ct.named_transformers_["trans1"], StandardScaler)
     assert isinstance(ct.named_transformers_.trans1, StandardScaler)
@@ -855,27 +855,27 @@ def test_column_transformer_named_estimators():
 
 
 def test_column_transformer_cloning():
-    X_array = np.array([[0.0, 1.0, 2.0], [2.0, 4.0, 6.0]]).T
+    x_array = np.array([[0.0, 1.0, 2.0], [2.0, 4.0, 6.0]]).T
 
     ct = ColumnTransformer([("trans", StandardScaler(), [0])])
-    ct.fit(X_array)
+    ct.fit(x_array)
     assert not hasattr(ct.transformers[0][1], "mean_")
     assert hasattr(ct.transformers_[0][1], "mean_")
 
     ct = ColumnTransformer([("trans", StandardScaler(), [0])])
-    ct.fit_transform(X_array)
+    ct.fit_transform(x_array)
     assert not hasattr(ct.transformers[0][1], "mean_")
     assert hasattr(ct.transformers_[0][1], "mean_")
 
 
 def test_column_transformer_get_feature_names():
-    X_array = np.array([[0.0, 1.0, 2.0], [2.0, 4.0, 6.0]]).T
+    x_array = np.array([[0.0, 1.0, 2.0], [2.0, 4.0, 6.0]]).T
     ct = ColumnTransformer([("trans", Trans(), [0, 1])])
     # raise correct error when not fitted
     with pytest.raises(NotFittedError):
         ct.get_feature_names_out()
     # raise correct error when no feature names are available
-    ct.fit(X_array)
+    ct.fit(x_array)
     msg = re.escape(
         "Transformer trans (type Trans) does not provide get_feature_names_out"
     )
@@ -885,42 +885,42 @@ def test_column_transformer_get_feature_names():
 
 def test_column_transformer_special_strings():
     # one 'drop' -> ignore
-    X_array = np.array([[0.0, 1.0, 2.0], [2.0, 4.0, 6.0]]).T
+    x_array = np.array([[0.0, 1.0, 2.0], [2.0, 4.0, 6.0]]).T
     ct = ColumnTransformer([("trans1", Trans(), [0]), ("trans2", "drop", [1])])
     exp = np.array([[0.0], [1.0], [2.0]])
-    assert_array_equal(ct.fit_transform(X_array), exp)
-    assert_array_equal(ct.fit(X_array).transform(X_array), exp)
+    assert_array_equal(ct.fit_transform(x_array), exp)
+    assert_array_equal(ct.fit(x_array).transform(x_array), exp)
     assert len(ct.transformers_) == 2
     assert ct.transformers_[-1][0] != "remainder"
 
     # all 'drop' -> return shape 0 array
     ct = ColumnTransformer([("trans1", "drop", [0]), ("trans2", "drop", [1])])
-    assert_array_equal(ct.fit(X_array).transform(X_array).shape, (3, 0))
-    assert_array_equal(ct.fit_transform(X_array).shape, (3, 0))
+    assert_array_equal(ct.fit(x_array).transform(x_array).shape, (3, 0))
+    assert_array_equal(ct.fit_transform(x_array).shape, (3, 0))
     assert len(ct.transformers_) == 2
     assert ct.transformers_[-1][0] != "remainder"
 
     # 'passthrough'
-    X_array = np.array([[0.0, 1.0, 2.0], [2.0, 4.0, 6.0]]).T
+    x_array = np.array([[0.0, 1.0, 2.0], [2.0, 4.0, 6.0]]).T
     ct = ColumnTransformer([("trans1", Trans(), [0]), ("trans2", "passthrough", [1])])
-    exp = X_array
-    assert_array_equal(ct.fit_transform(X_array), exp)
-    assert_array_equal(ct.fit(X_array).transform(X_array), exp)
+    exp = x_array
+    assert_array_equal(ct.fit_transform(x_array), exp)
+    assert_array_equal(ct.fit(x_array).transform(x_array), exp)
     assert len(ct.transformers_) == 2
     assert ct.transformers_[-1][0] != "remainder"
 
 
 def test_column_transformer_remainder():
-    X_array = np.array([[0, 1, 2], [2, 4, 6]]).T
+    x_array = np.array([[0, 1, 2], [2, 4, 6]]).T
 
-    X_res_first = np.array([0, 1, 2]).reshape(-1, 1)
-    X_res_second = np.array([2, 4, 6]).reshape(-1, 1)
-    X_res_both = X_array
+    x_res_first = np.array([0, 1, 2]).reshape(-1, 1)
+    x_res_second = np.array([2, 4, 6]).reshape(-1, 1)
+    x_res_both = x_array
 
     # default drop
     ct = ColumnTransformer([("trans1", Trans(), [0])])
-    assert_array_equal(ct.fit_transform(X_array), X_res_first)
-    assert_array_equal(ct.fit(X_array).transform(X_array), X_res_first)
+    assert_array_equal(ct.fit_transform(x_array), x_res_first)
+    assert_array_equal(ct.fit(x_array).transform(x_array), x_res_first)
     assert len(ct.transformers_) == 2
     assert ct.transformers_[-1][0] == "remainder"
     assert ct.transformers_[-1][1] == "drop"
@@ -928,8 +928,8 @@ def test_column_transformer_remainder():
 
     # specify passthrough
     ct = ColumnTransformer([("trans", Trans(), [0])], remainder="passthrough")
-    assert_array_equal(ct.fit_transform(X_array), X_res_both)
-    assert_array_equal(ct.fit(X_array).transform(X_array), X_res_both)
+    assert_array_equal(ct.fit_transform(x_array), x_res_both)
+    assert_array_equal(ct.fit(x_array).transform(x_array), x_res_both)
     assert len(ct.transformers_) == 2
     assert ct.transformers_[-1][0] == "remainder"
     assert isinstance(ct.transformers_[-1][1], FunctionTransformer)
@@ -937,8 +937,8 @@ def test_column_transformer_remainder():
 
     # column order is not preserved (passed through added to end)
     ct = ColumnTransformer([("trans1", Trans(), [1])], remainder="passthrough")
-    assert_array_equal(ct.fit_transform(X_array), X_res_both[:, ::-1])
-    assert_array_equal(ct.fit(X_array).transform(X_array), X_res_both[:, ::-1])
+    assert_array_equal(ct.fit_transform(x_array), x_res_both[:, ::-1])
+    assert_array_equal(ct.fit(x_array).transform(x_array), x_res_both[:, ::-1])
     assert len(ct.transformers_) == 2
     assert ct.transformers_[-1][0] == "remainder"
     assert isinstance(ct.transformers_[-1][1], FunctionTransformer)
@@ -946,8 +946,8 @@ def test_column_transformer_remainder():
 
     # passthrough when all actual transformers are skipped
     ct = ColumnTransformer([("trans1", "drop", [0])], remainder="passthrough")
-    assert_array_equal(ct.fit_transform(X_array), X_res_second)
-    assert_array_equal(ct.fit(X_array).transform(X_array), X_res_second)
+    assert_array_equal(ct.fit_transform(x_array), x_res_second)
+    assert_array_equal(ct.fit(x_array).transform(x_array), x_res_second)
     assert len(ct.transformers_) == 2
     assert ct.transformers_[-1][0] == "remainder"
     assert isinstance(ct.transformers_[-1][1], FunctionTransformer)
