@@ -182,25 +182,25 @@ def _beta_divergence(X, w, h, beta, square_root=False):
         return res
 
 
-def _special_sparse_dot(W, H, X):
+def _special_sparse_dot(w, h, X):
     """Computes np.dot(W, H), only where X is non zero."""
     if sp.issparse(X):
         ii, jj = X.nonzero()
         n_vals = ii.shape[0]
         dot_vals = np.empty(n_vals)
-        n_components = W.shape[1]
+        n_components = w.shape[1]
 
         batch_size = max(n_components, n_vals // n_components)
         for start in range(0, n_vals, batch_size):
             batch = slice(start, start + batch_size)
-            dot_vals[batch] = np.multiply(W[ii[batch], :], H.T[jj[batch], :]).sum(
+            dot_vals[batch] = np.multiply(w[ii[batch], :], h.T[jj[batch], :]).sum(
                 axis=1
             )
 
         WH = sp.coo_array((dot_vals, (ii, jj)), shape=X.shape)
         return _align_api_if_sparse(WH.tocsr())
     else:
-        return np.dot(W, H)
+        return np.dot(w, h)
 
 
 def _beta_loss_to_float(beta_loss):
@@ -366,7 +366,7 @@ def _initialize_nmf(X, n_components, init=None, eps=1e-6, random_state=None):
     return W, H
 
 
-def _update_coordinate_descent(X, W, Ht, l1_reg, l2_reg, shuffle, random_state):
+def _update_coordinate_descent(X, w, ht, l1_reg, l2_reg, shuffle, random_state):
     """Helper function for _fit_coordinate_descent.
 
     Update W to minimize the objective function, iterating once over all
@@ -374,18 +374,18 @@ def _update_coordinate_descent(X, W, Ht, l1_reg, l2_reg, shuffle, random_state):
     _update_coordinate_descent(X.T, Ht, W, ...).
 
     """
-    n_components = Ht.shape[1]
+    n_components = ht.shape[1]
 
-    HHt = np.dot(Ht.T, Ht)
-    XHt = safe_sparse_dot(X, Ht)
+    h_ht = np.dot(ht.T, ht)
+    x_ht = safe_sparse_dot(X, ht)
 
     # L2 regularization corresponds to increase of the diagonal of HHt
     if l2_reg != 0.0:
         # adds l2_reg only on the diagonal
-        HHt.flat[:: n_components + 1] += l2_reg
+        h_ht.flat[:: n_components + 1] += l2_reg
     # L1 regularization corresponds to decrease of each element of XHt
     if l1_reg != 0.0:
-        XHt -= l1_reg
+        x_ht -= l1_reg
 
     if shuffle:
         permutation = random_state.permutation(n_components)
@@ -393,19 +393,19 @@ def _update_coordinate_descent(X, W, Ht, l1_reg, l2_reg, shuffle, random_state):
         permutation = np.arange(n_components)
     # The following seems to be required on 64-bit Windows w/ Python 3.5.
     permutation = np.asarray(permutation, dtype=np.intp)
-    return _update_cdnmf_fast(W, HHt, XHt, permutation)
+    return _update_cdnmf_fast(w, h_ht, x_ht, permutation)
 
 
 def _fit_coordinate_descent(
     X,
-    W,
-    H,
+    w,
+    h,
     tol=1e-4,
     max_iter=200,
-    l1_reg_W=0,
-    l1_reg_H=0,
-    l2_reg_W=0,
-    l2_reg_H=0,
+    l1_reg_w=0,
+    l1_reg_h=0,
+    l2_reg_w=0,
+    l2_reg_h=0,
     update_H=True,
     verbose=0,
     shuffle=False,
@@ -481,8 +481,8 @@ def _fit_coordinate_descent(
        of electronics, communications and computer sciences 92.3: 708-721, 2009.
     """
     # ensure that W and Ht are both in C order in memory and that X is csr
-    W = np.ascontiguousarray(W)
-    Ht = np.ascontiguousarray(H.T)
+    w = np.ascontiguousarray(w)
+    ht = np.ascontiguousarray(h.T)
     if sp.issparse(X) and X.format == "csc":
         X = X.tocsr()
 
@@ -493,12 +493,12 @@ def _fit_coordinate_descent(
 
         # Update W
         violation += _update_coordinate_descent(
-            X, W, Ht, l1_reg_W, l2_reg_W, shuffle, rng
+            X, w, ht, l1_reg_w, l2_reg_w, shuffle, rng
         )
         # Update H
         if update_H:
             violation += _update_coordinate_descent(
-                X.T, Ht, W, l1_reg_H, l2_reg_H, shuffle, rng
+                X.T, ht, w, l1_reg_h, l2_reg_h, shuffle, rng
             )
 
         if n_iter == 1:
@@ -515,7 +515,7 @@ def _fit_coordinate_descent(
                 print("Converged at iteration", n_iter + 1)
             break
 
-    return W, Ht.T, n_iter
+    return w, ht.T, n_iter
 
 
 def _multiplicative_update_w(
