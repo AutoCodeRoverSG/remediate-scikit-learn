@@ -108,7 +108,7 @@ print(
 
 
 feature_names = vectorizer.get_feature_names_out()
-document_names = list(newsgroups.target_names[i] for i in newsgroups.target)
+document_names = [newsgroups.target_names[i] for i in newsgroups.target]
 
 
 def bicluster_ncut(i):
@@ -126,7 +126,7 @@ def bicluster_ncut(i):
     return cut / weight
 
 
-bicluster_ncuts = list(bicluster_ncut(i) for i in range(len(newsgroups.target_names)))
+bicluster_ncuts = [bicluster_ncut(i) for i in range(len(newsgroups.target_names))]
 best_idx = np.argsort(bicluster_ncuts)[:5]
 
 print()
@@ -154,9 +154,9 @@ for idx, cluster in enumerate(best_idx):
         - word_col[out_of_cluster_docs, :].sum(axis=0)
     )
     word_scores = word_scores.ravel()
-    important_words = list(
+    important_words = [
         feature_names[cluster_words[i]] for i in word_scores.argsort()[:-11:-1]
-    )
+    ]
 
     print(f"bicluster {idx} : {n_rows} documents, {n_cols} words")
     print(f"categories   : {cat_string}")

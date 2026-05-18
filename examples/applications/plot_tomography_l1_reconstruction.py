@@ -83,8 +83,8 @@ def build_projection_operator(l_x, n_dir):
     data_unravel_indices = np.arange(l_x**2)
     data_unravel_indices = np.hstack((data_unravel_indices, data_unravel_indices))
     for i, angle in enumerate(angles):
-        Xrot = np.cos(angle) * X - np.sin(angle) * Y
-        inds, w = _weights(Xrot, dx=1, orig=X.min())
+        x_rot = np.cos(angle) * X - np.sin(angle) * Y
+        inds, w = _weights(x_rot, dx=1, orig=X.min())
         mask = np.logical_and(inds >= 0, inds < l_x)
         weights += list(w[mask])
         camera_inds += list(inds[mask] + i * l_x)
@@ -97,12 +97,12 @@ def build_projection_operator(l_x, n_dir):
 
 def generate_synthetic_data():
     """Synthetic binary data"""
-    rs = np.random.RandomState(0)
+    rs = np.random.default_rng(0)
     n_pts = 36
     x, y = np.ogrid[0:l, 0:l]
     mask_outer = (x - l / 2.0) ** 2 + (y - l / 2.0) ** 2 < (l / 2.0) ** 2
     mask = np.zeros((l, l))
-    points = l * rs.rand(2, n_pts)
+    points = l * rs.random((2, n_pts))
     mask[(points[0]).astype(int), (points[1]).astype(int)] = 1
     mask = ndimage.gaussian_filter(mask, sigma=l / n_pts)
     res = np.logical_and(mask > mask.mean(), mask_outer)
@@ -114,7 +114,8 @@ l = 128
 proj_operator = build_projection_operator(l, l // 7)
 data = generate_synthetic_data()
 proj = proj_operator @ data.ravel()[:, np.newaxis]
-proj += 0.15 * np.random.randn(*proj.shape)
+rng = np.random.default_rng(0)
+proj += 0.15 * rng.standard_normal(proj.shape)
 
 # Reconstruction with L2 (Ridge) penalization
 rgr_ridge = Ridge(alpha=0.2)
