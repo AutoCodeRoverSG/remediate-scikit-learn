@@ -1015,8 +1015,8 @@ def test_nmf_custom_init_shape_error():
 @pytest.mark.parametrize("solver", ("cd", "mu"))
 def test_nmf_smoke(init, shape, solver):
     """Smoke test NMF with all inits, solvers on tall/wide arrays."""
-    rng = np.random.RandomState(0)
-    X = np.abs(rng.random_sample(shape))
+    rng = np.random.default_rng(0)
+    X = np.abs(rng.random(shape))
 
     nmf = NMF(n_components=5, init=init, random_state=0, solver=solver)
     W = nmf.fit_transform(X)

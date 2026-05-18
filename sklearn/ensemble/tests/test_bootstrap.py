@@ -64,8 +64,8 @@ def test_get_n_samples_bootstrap():
 def test_n_samples_bootstrap_repeated_weighted_equivalence(max_samples):
     # weighted dataset
     n_samples = 100
-    rng = np.random.RandomState(0)
-    sample_weight = rng.randint(2, 5, n_samples)
+    rng = np.random.default_rng(0)
+    sample_weight = rng.integers(2, 5, n_samples)
     # repeated dataset
     n_samples_repeated = sample_weight.sum()
 
