@@ -131,13 +131,13 @@ def test_nmf_fit_nn_output(estimator, solver, init, alpha_w, alpha_h):
 
 
 @pytest.mark.parametrize(
-    ["Estimator", "solver"],
+    ["estimator", "solver"],
     [[NMF, {"solver": "cd"}], [NMF, {"solver": "mu"}], [MiniBatchNMF, {}]],
 )
-def test_nmf_fit_close(Estimator, solver):
+def test_nmf_fit_close(estimator, solver):
     rng = np.random.mtrand.RandomState(42)
     # Test that the fit is not too far away
-    pnmf = Estimator(
+    pnmf = estimator(
         5,
         init="nndsvdar",
         random_state=0,
@@ -159,15 +159,15 @@ def test_nmf_true_reconstruction():
     max_iter = 1000
 
     rng = np.random.mtrand.RandomState(42)
-    W_true = np.zeros([n_samples, n_components])
-    W_array = np.abs(rng.randn(n_samples))
+    w_true = np.zeros([n_samples, n_components])
+    w_array = np.abs(rng.randn(n_samples))
     for j in range(n_components):
-        W_true[j % n_samples, j] = W_array[j % n_samples]
-    H_true = np.zeros([n_components, n_features])
-    H_array = np.abs(rng.randn(n_components))
+        w_true[j % n_samples, j] = w_array[j % n_samples]
+    h_true = np.zeros([n_components, n_features])
+    h_array = np.abs(rng.randn(n_components))
     for j in range(n_features):
-        H_true[j % n_components, j] = H_array[j % n_components]
-    X = np.dot(W_true, H_true)
+        h_true[j % n_components, j] = h_array[j % n_components]
+    X = np.dot(w_true, h_true)
 
     model = NMF(
         n_components=n_components,
@@ -177,10 +177,10 @@ def test_nmf_true_reconstruction():
         random_state=0,
     )
     transf = model.fit_transform(X)
-    X_calc = np.dot(transf, model.components_)
+    x_calc = np.dot(transf, model.components_)
 
     assert model.reconstruction_err_ < 0.1
-    assert_allclose(X, X_calc)
+    assert_allclose(X, x_calc)
 
     mbmodel = MiniBatchNMF(
         n_components=n_components,
@@ -190,10 +190,10 @@ def test_nmf_true_reconstruction():
         max_iter=max_iter,
     )
     transf = mbmodel.fit_transform(X)
-    X_calc = np.dot(transf, mbmodel.components_)
+    x_calc = np.dot(transf, mbmodel.components_)
 
     assert mbmodel.reconstruction_err_ < 0.1
-    assert_allclose(X, X_calc, atol=1)
+    assert_allclose(X, x_calc, atol=1)
 
 
 @pytest.mark.parametrize("solver", ["cd", "mu"])
@@ -231,22 +231,22 @@ def test_minibatch_nmf_transform():
 
 
 @pytest.mark.parametrize(
-    ["Estimator", "solver"],
+    ["estimator", "solver"],
     [[NMF, {"solver": "cd"}], [NMF, {"solver": "mu"}], [MiniBatchNMF, {}]],
 )
-def test_nmf_transform_custom_init(Estimator, solver):
+def test_nmf_transform_custom_init(estimator, solver):
     # Smoke test that checks if NMF.transform works with custom initialization
     random_state = np.random.RandomState(0)
     A = np.abs(random_state.randn(6, 5))
     n_components = 4
     avg = np.sqrt(A.mean() / n_components)
-    H_init = np.abs(avg * random_state.randn(n_components, 5))
-    W_init = np.abs(avg * random_state.randn(6, n_components))
+    h_init = np.abs(avg * random_state.randn(n_components, 5))
+    w_init = np.abs(avg * random_state.randn(6, n_components))
 
-    m = Estimator(
+    m = estimator(
         n_components=n_components, init="custom", random_state=0, tol=1e-3, **solver
     )
-    m.fit_transform(A, W=W_init, H=H_init)
+    m.fit_transform(A, W=w_init, H=h_init)
     m.transform(A)
 
 
@@ -263,8 +263,8 @@ def test_nmf_inverse_transform(solver):
         max_iter=1000,
     )
     ft = m.fit_transform(A)
-    A_new = m.inverse_transform(ft)
-    assert_array_almost_equal(A, A_new, decimal=2)
+    a_new = m.inverse_transform(ft)
+    assert_array_almost_equal(A, a_new, decimal=2)
 
 
 def test_mbnmf_inverse_transform():
