@@ -298,7 +298,7 @@ def plot_performance_tradeoff(results, title):
         xycoords="axes fraction",
         xytext=(0.09, 0.14),
         textcoords="axes fraction",
-        arrowprops=dict(arrowstyle="->", lw=1.5),
+        arrowprops={"arrowstyle": "->", "lw": 1.5},
     )
     ax.set_xlabel("Time to fit (seconds)")
     ax.set_ylabel("Mean Absolute Percentage Error")

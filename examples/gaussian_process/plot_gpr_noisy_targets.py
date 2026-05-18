@@ -30,16 +30,19 @@ regularization on the assumed training points' covariance matrix.
 # is defined as :math:`f(x) = x \sin(x)`.
 import numpy as np
 
+_LABEL_FUNC = r"$f(x) = x \sin(x)$"
+_YLABEL_FUNC = "$f(x)$"
+
 X = np.linspace(start=0, stop=10, num=1_000).reshape(-1, 1)
 y = np.squeeze(X * np.sin(X))
 
 # %%
 import matplotlib.pyplot as plt
 
-plt.plot(X, y, label=r"$f(x) = x \sin(x)$", linestyle="dotted")
+plt.plot(X, y, label=_LABEL_FUNC, linestyle="dotted")
 plt.legend()
 plt.xlabel("$x$")
-plt.ylabel("$f(x)$")
+plt.ylabel(_YLABEL_FUNC)
 _ = plt.title("True generative process")
 
 # %%
@@ -52,7 +55,7 @@ _ = plt.title("True generative process")
 # In this first example, we will use the true generative process without
 # adding any noise. For training the Gaussian Process regression, we will only
 # select few samples.
-rng = np.random.RandomState(1)
+rng = np.random.default_rng(1)
 training_indices = rng.choice(np.arange(y.size), size=6, replace=False)
 X_train, y_train = X[training_indices], y[training_indices]
 
@@ -74,7 +77,7 @@ gaussian_process.kernel_
 # of the full dataset and plot the 95% confidence interval.
 mean_prediction, std_prediction = gaussian_process.predict(X, return_std=True)
 
-plt.plot(X, y, label=r"$f(x) = x \sin(x)$", linestyle="dotted")
+plt.plot(X, y, label=_LABEL_FUNC, linestyle="dotted")
 plt.scatter(X_train, y_train, label="Observations")
 plt.plot(X, mean_prediction, label="Mean prediction")
 plt.fill_between(
@@ -86,7 +89,7 @@ plt.fill_between(
 )
 plt.legend()
 plt.xlabel("$x$")
-plt.ylabel("$f(x)$")
+plt.ylabel(_YLABEL_FUNC)
 _ = plt.title("Gaussian process regression on noise-free dataset")
 
 # %%
@@ -118,7 +121,7 @@ mean_prediction, std_prediction = gaussian_process.predict(X, return_std=True)
 
 # %%
 # Let's plot the mean prediction and the uncertainty region as before.
-plt.plot(X, y, label=r"$f(x) = x \sin(x)$", linestyle="dotted")
+plt.plot(X, y, label=_LABEL_FUNC, linestyle="dotted")
 plt.errorbar(
     X_train,
     y_train_noisy,
@@ -140,7 +143,7 @@ plt.fill_between(
 )
 plt.legend()
 plt.xlabel("$x$")
-plt.ylabel("$f(x)$")
+plt.ylabel(_YLABEL_FUNC)
 _ = plt.title("Gaussian process regression on a noisy dataset")
 
 # %%

@@ -33,7 +33,10 @@ import numpy as np
 import pandas as pd
 
 n_samples = 10_000
-rng = np.random.RandomState(32)
+rng = np.random.default_rng(32)
+
+COLLEGE_DEGREE = "college degree"
+PARENT_HOURLY_WAGE = "parent hourly wage"
 
 experiences = rng.normal(20, 10, size=n_samples).astype(int)
 experiences[experiences < 0] = 0
@@ -41,21 +44,21 @@ abilities = rng.normal(0, 0.15, size=n_samples)
 parent_hourly_wages = 50 * rng.beta(2, 8, size=n_samples)
 parent_hourly_wages[parent_hourly_wages < 0] = 0
 college_degrees = (
-    9 * abilities + 0.02 * parent_hourly_wages + rng.randn(n_samples) > 0.7
+    9 * abilities + 0.02 * parent_hourly_wages + rng.standard_normal(n_samples) > 0.7
 ).astype(int)
 
 true_coef = pd.Series(
     {
-        "college degree": 2.0,
+        COLLEGE_DEGREE: 2.0,
         "ability": 5.0,
         "experience": 0.2,
-        "parent hourly wage": 1.0,
+        PARENT_HOURLY_WAGE: 1.0,
     }
 )
 hourly_wages = (
     true_coef["experience"] * experiences
-    + true_coef["parent hourly wage"] * parent_hourly_wages
-    + true_coef["college degree"] * college_degrees
+    + true_coef[PARENT_HOURLY_WAGE] * parent_hourly_wages
+    + true_coef[COLLEGE_DEGREE] * college_degrees
     + true_coef["ability"] * abilities
     + rng.normal(0, 1, size=n_samples)
 )
@@ -73,11 +76,11 @@ import seaborn as sns
 
 df = pd.DataFrame(
     {
-        "college degree": college_degrees,
+        COLLEGE_DEGREE: college_degrees,
         "ability": abilities,
         "hourly wage": hourly_wages,
         "experience": experiences,
-        "parent hourly wage": parent_hourly_wages,
+        PARENT_HOURLY_WAGE: parent_hourly_wages,
     }
 )
 
@@ -103,7 +106,7 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import r2_score
 
-features_names = ["experience", "parent hourly wage", "college degree", "ability"]
+features_names = ["experience", PARENT_HOURLY_WAGE, COLLEGE_DEGREE, "ability"]
 
 regressor_with_ability = LinearRegression()
 regressor_with_ability.fit(X_train[features_names], y_train)
@@ -137,7 +140,7 @@ _ = plt.tight_layout()
 # from proxies that inadvertently measure education as well (e.g. by IQ tests).
 # But omitting the "ability" feature from a linear model inflates the estimate
 # via a positive OVB.
-features_names = ["experience", "parent hourly wage", "college degree"]
+features_names = ["experience", PARENT_HOURLY_WAGE, COLLEGE_DEGREE]
 
 regressor_without_ability = LinearRegression()
 regressor_without_ability.fit(X_train[features_names], y_train)

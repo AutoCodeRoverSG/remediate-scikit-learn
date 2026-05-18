@@ -85,8 +85,8 @@ for pair in ([0, 1], [0, 2], [2, 3]):
 
         # Shuffle
         idx = np.arange(X.shape[0])
-        np.random.seed(RANDOM_SEED)
-        np.random.shuffle(idx)
+        rng = np.random.default_rng(RANDOM_SEED)
+        rng.shuffle(idx)
         X = X[idx]
         y = y[idx]
 
