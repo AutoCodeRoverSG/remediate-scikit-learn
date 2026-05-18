@@ -28,18 +28,17 @@ from sklearn.svm import SVC
 # :class:`~sklearn.model_selection.HalvingGridSearchCV` instance, as well as a
 # :class:`~sklearn.model_selection.GridSearchCV` instance.
 
-rng = np.random.RandomState(0)
-X, y = datasets.make_classification(n_samples=1000, random_state=rng)
+X, y = datasets.make_classification(n_samples=1000, random_state=0)
 
 gammas = [1e-1, 1e-2, 1e-3, 1e-4, 1e-5, 1e-6, 1e-7]
 Cs = [1, 10, 100, 1e3, 1e4, 1e5]
 param_grid = {"gamma": gammas, "C": Cs}
 
-clf = SVC(random_state=rng)
+clf = SVC(random_state=0)
 
 tic = time()
 gsh = HalvingGridSearchCV(
-    estimator=clf, param_grid=param_grid, factor=2, random_state=rng
+    estimator=clf, param_grid=param_grid, factor=2, random_state=0
 )
 gsh.fit(X, y)
 gsh_time = time() - tic
