@@ -22,13 +22,15 @@ if __name__ == "__main__":
 
     dimensions = 500 * np.arange(1, n_iter + 1)
 
+    rng = np.random.default_rng(0)
+
     for i in range(n_iter):
         print("Iteration %s of %s" % (i, n_iter))
 
         n_samples, n_features = 10 * i + 3, 10 * i + 3
 
-        X = np.random.randn(n_samples, n_features)
-        Y = np.random.randn(n_samples)
+        X = rng.standard_normal((n_samples, n_features))
+        Y = rng.standard_normal(n_samples)
 
         start = datetime.now()
         ridge = linear_model.Ridge(alpha=1.0)

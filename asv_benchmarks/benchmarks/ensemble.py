@@ -25,7 +25,7 @@ class RandomForestClassifierBenchmark(Predictor, Estimator, Benchmark):
         super().setup_cache()
 
     def make_data(self, params):
-        representation, n_jobs = params
+        representation, _ = params
 
         if representation == "sparse":
             data = _20newsgroups_highdim_dataset()
@@ -35,7 +35,7 @@ class RandomForestClassifierBenchmark(Predictor, Estimator, Benchmark):
         return data
 
     def make_estimator(self, params):
-        representation, n_jobs = params
+        _, n_jobs = params
 
         n_estimators = 500 if Benchmark.data_size == "large" else 100
 

@@ -85,6 +85,10 @@ is not a particular submodule does the hook become useful, e.g., the "Loaders" s
 under `sklearn.datasets`.
 """
 
+_SKLEARN_FEATURE_EXTRACTION = "sklearn.feature_extraction"
+_SKLEARN_METRICS = "sklearn.metrics"
+_SKLEARN_UTILS = "sklearn.utils"
+
 API_REFERENCE = {
     "sklearn": {
         "short_summary": "Settings and information tools.",
@@ -402,7 +406,7 @@ API_REFERENCE = {
             },
         ],
     },
-    "sklearn.feature_extraction": {
+    _SKLEARN_FEATURE_EXTRACTION: {
         "short_summary": "Feature extraction.",
         "description": _get_guide("feature_extraction"),
         "sections": [
@@ -412,7 +416,7 @@ API_REFERENCE = {
             },
             {
                 "title": "From images",
-                "description": _get_submodule("sklearn.feature_extraction", "image"),
+                "description": _get_submodule(_SKLEARN_FEATURE_EXTRACTION, "image"),
                 "autosummary": [
                     "image.PatchExtractor",
                     "image.extract_patches_2d",
@@ -423,7 +427,7 @@ API_REFERENCE = {
             },
             {
                 "title": "From text",
-                "description": _get_submodule("sklearn.feature_extraction", "text"),
+                "description": _get_submodule(_SKLEARN_FEATURE_EXTRACTION, "text"),
                 "autosummary": [
                     "text.CountVectorizer",
                     "text.HashingVectorizer",
@@ -705,7 +709,7 @@ API_REFERENCE = {
             },
         ],
     },
-    "sklearn.metrics": {
+    _SKLEARN_METRICS: {
         "short_summary": "Metrics.",
         "description": _get_guide("model_evaluation", "metrics"),
         "sections": [
@@ -792,7 +796,7 @@ API_REFERENCE = {
             {
                 "title": "Clustering metrics",
                 "description": (
-                    _get_submodule("sklearn.metrics", "cluster")
+                    _get_submodule(_SKLEARN_METRICS, "cluster")
                     + "\n\n"
                     + _get_guide("clustering_evaluation")
                 ),
@@ -827,7 +831,7 @@ API_REFERENCE = {
             {
                 "title": "Pairwise metrics",
                 "description": (
-                    _get_submodule("sklearn.metrics", "pairwise")
+                    _get_submodule(_SKLEARN_METRICS, "pairwise")
                     + "\n\n"
                     + _get_guide("metrics")
                 ),
@@ -1155,7 +1159,7 @@ API_REFERENCE = {
             },
         ],
     },
-    "sklearn.utils": {
+    _SKLEARN_UTILS: {
         "short_summary": "Utilities.",
         "description": _get_guide("developers-utils", is_developer=True),
         "sections": [
@@ -1187,7 +1191,7 @@ API_REFERENCE = {
             },
             {
                 "title": "Input and parameter validation",
-                "description": _get_submodule("sklearn.utils", "validation"),
+                "description": _get_submodule(_SKLEARN_UTILS, "validation"),
                 "autosummary": [
                     "check_X_y",
                     "check_array",
@@ -1204,12 +1208,12 @@ API_REFERENCE = {
             },
             {
                 "title": "Meta-estimators",
-                "description": _get_submodule("sklearn.utils", "metaestimators"),
+                "description": _get_submodule(_SKLEARN_UTILS, "metaestimators"),
                 "autosummary": ["metaestimators.available_if"],
             },
             {
                 "title": "Weight handling based on class labels",
-                "description": _get_submodule("sklearn.utils", "class_weight"),
+                "description": _get_submodule(_SKLEARN_UTILS, "class_weight"),
                 "autosummary": [
                     "class_weight.compute_class_weight",
                     "class_weight.compute_sample_weight",
@@ -1217,7 +1221,7 @@ API_REFERENCE = {
             },
             {
                 "title": "Dealing with multiclass target in classifiers",
-                "description": _get_submodule("sklearn.utils", "multiclass"),
+                "description": _get_submodule(_SKLEARN_UTILS, "multiclass"),
                 "autosummary": [
                     "multiclass.is_multilabel",
                     "multiclass.type_of_target",
@@ -1226,7 +1230,7 @@ API_REFERENCE = {
             },
             {
                 "title": "Optimal mathematical operations",
-                "description": _get_submodule("sklearn.utils", "extmath"),
+                "description": _get_submodule(_SKLEARN_UTILS, "extmath"),
                 "autosummary": [
                     "extmath.density",
                     "extmath.fast_logdet",
@@ -1238,7 +1242,7 @@ API_REFERENCE = {
             },
             {
                 "title": "Working with sparse matrices and arrays",
-                "description": _get_submodule("sklearn.utils", "sparsefuncs"),
+                "description": _get_submodule(_SKLEARN_UTILS, "sparsefuncs"),
                 "autosummary": [
                     "sparsefuncs.incr_mean_variance_axis",
                     "sparsefuncs.inplace_column_scale",
@@ -1251,7 +1255,7 @@ API_REFERENCE = {
             },
             {
                 "title": None,
-                "description": _get_submodule("sklearn.utils", "sparsefuncs_fast"),
+                "description": _get_submodule(_SKLEARN_UTILS, "sparsefuncs_fast"),
                 "autosummary": [
                     "sparsefuncs_fast.inplace_csr_row_normalize_l1",
                     "sparsefuncs_fast.inplace_csr_row_normalize_l2",
@@ -1259,23 +1263,23 @@ API_REFERENCE = {
             },
             {
                 "title": "Working with graphs",
-                "description": _get_submodule("sklearn.utils", "graph"),
+                "description": _get_submodule(_SKLEARN_UTILS, "graph"),
                 "autosummary": ["graph.single_source_shortest_path_length"],
             },
             {
                 "title": "Random sampling",
-                "description": _get_submodule("sklearn.utils", "random"),
+                "description": _get_submodule(_SKLEARN_UTILS, "random"),
                 "autosummary": ["random.sample_without_replacement"],
             },
             {
                 "title": "Auxiliary functions that operate on arrays",
-                "description": _get_submodule("sklearn.utils", "arrayfuncs"),
+                "description": _get_submodule(_SKLEARN_UTILS, "arrayfuncs"),
                 "autosummary": ["arrayfuncs.min_pos"],
             },
             {
                 "title": "Metadata routing",
                 "description": (
-                    _get_submodule("sklearn.utils", "metadata_routing")
+                    _get_submodule(_SKLEARN_UTILS, "metadata_routing")
                     + "\n\n"
                     + _get_guide("metadata_routing")
                 ),
@@ -1289,7 +1293,7 @@ API_REFERENCE = {
             },
             {
                 "title": "Discovering scikit-learn objects",
-                "description": _get_submodule("sklearn.utils", "discovery"),
+                "description": _get_submodule(_SKLEARN_UTILS, "discovery"),
                 "autosummary": [
                     "discovery.all_displays",
                     "discovery.all_estimators",
@@ -1298,7 +1302,7 @@ API_REFERENCE = {
             },
             {
                 "title": "API compatibility checkers",
-                "description": _get_submodule("sklearn.utils", "estimator_checks"),
+                "description": _get_submodule(_SKLEARN_UTILS, "estimator_checks"),
                 "autosummary": [
                     "estimator_checks.check_estimator",
                     "estimator_checks.parametrize_with_checks",
@@ -1307,7 +1311,7 @@ API_REFERENCE = {
             },
             {
                 "title": "Parallel computing",
-                "description": _get_submodule("sklearn.utils", "parallel"),
+                "description": _get_submodule(_SKLEARN_UTILS, "parallel"),
                 "autosummary": [
                     "parallel.Parallel",
                     "parallel.delayed",
