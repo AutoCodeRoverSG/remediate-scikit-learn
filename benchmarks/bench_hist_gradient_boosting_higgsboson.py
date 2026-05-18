@@ -1,5 +1,6 @@
 import argparse
 import os
+import tempfile
 from gzip import GzipFile
 from time import time
 from urllib.request import urlretrieve
@@ -23,7 +24,7 @@ parser.add_argument("--learning-rate", type=float, default=1.0)
 parser.add_argument("--subsample", type=int, default=None)
 parser.add_argument("--max-bins", type=int, default=255)
 parser.add_argument("--no-predict", action="store_true", default=False)
-parser.add_argument("--cache-loc", type=str, default="/tmp")
+parser.add_argument("--cache-loc", type=str, default=tempfile.gettempdir())
 parser.add_argument("--no-interactions", type=bool, default=False)
 parser.add_argument("--max-features", type=float, default=1.0)
 args = parser.parse_args()
@@ -53,7 +54,7 @@ def load_data():
     with GzipFile(filename) as f:
         df = pd.read_csv(f, header=None, dtype=np.float32)
     toc = time()
-    print(f"Loaded {df.values.nbytes / 1e9:0.3f} GB in {toc - tic:0.3f}s")
+    print(f"Loaded {df.to_numpy().nbytes / 1e9:0.3f} GB in {toc - tic:0.3f}s")
     return df
 
 
@@ -78,8 +79,8 @@ def predict(est, data_test, target_test):
 
 
 df = load_data()
-target = df.values[:, 0]
-data = np.ascontiguousarray(df.values[:, 1:])
+target = df.to_numpy()[:, 0]
+data = np.ascontiguousarray(df.to_numpy()[:, 1:])
 data_train, data_test, target_train, target_test = train_test_split(
     data, target, test_size=0.2, random_state=0
 )
