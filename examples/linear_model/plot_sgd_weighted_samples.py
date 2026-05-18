@@ -17,10 +17,10 @@ import numpy as np
 from sklearn import linear_model
 
 # we create 20 points
-np.random.seed(0)
-X = np.r_[np.random.randn(10, 2) + [1, 1], np.random.randn(10, 2)]
+rng = np.random.default_rng(0)
+X = np.r_[rng.standard_normal((10, 2)) + [1, 1], rng.standard_normal((10, 2))]
 y = [1] * 10 + [-1] * 10
-sample_weight = 100 * np.abs(np.random.randn(20))
+sample_weight = 100 * np.abs(rng.standard_normal(20))
 # and assign a bigger weight to the last 10 samples
 sample_weight[:10] *= 10
 

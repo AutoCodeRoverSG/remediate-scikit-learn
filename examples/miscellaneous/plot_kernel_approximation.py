@@ -67,7 +67,7 @@ data_train, targets_train = (data[: n_samples // 2], digits.target[: n_samples /
 
 # Now predict the value of the digit on the second half:
 data_test, targets_test = (data[n_samples // 2 :], digits.target[n_samples // 2 :])
-# data_test = scaler.transform(data_test)
+
 
 # Create a classifier: a support vector classifier
 kernel_svm = svm.SVC(gamma=0.2)
@@ -81,14 +81,16 @@ fourier_approx_svm = pipeline.Pipeline(
     [
         ("feature_map", feature_map_fourier),
         ("svm", svm.LinearSVC(random_state=42)),
-    ]
+    ],
+    memory=None,
 )
 
 nystroem_approx_svm = pipeline.Pipeline(
     [
         ("feature_map", feature_map_nystroem),
         ("svm", svm.LinearSVC(random_state=42)),
-    ]
+    ],
+    memory=None,
 )
 
 # fit and predict using linear and kernel svm:
