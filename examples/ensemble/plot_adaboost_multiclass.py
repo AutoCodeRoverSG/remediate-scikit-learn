@@ -99,7 +99,7 @@ adaboost_clf = AdaBoostClassifier(
 from sklearn.dummy import DummyClassifier
 from sklearn.metrics import accuracy_score
 
-dummy_clf = DummyClassifier()
+dummy_clf = DummyClassifier(random_state=42)
 
 
 def misclassification_error(y_true, y_pred):
@@ -144,15 +144,17 @@ print(
 import matplotlib.pyplot as plt
 import pandas as pd
 
+NUMBER_OF_TREES = "Number of trees"
+
 boosting_errors = pd.DataFrame(
     {
-        "Number of trees": range(1, n_estimators + 1),
+        NUMBER_OF_TREES: range(1, n_estimators + 1),
         "AdaBoost": [
             misclassification_error(y_test, y_pred)
             for y_pred in adaboost_clf.staged_predict(X_test)
         ],
     }
-).set_index("Number of trees")
+).set_index(NUMBER_OF_TREES)
 ax = boosting_errors.plot()
 ax.set_ylabel("Misclassification error on test set")
 ax.set_title("Convergence of AdaBoost algorithm")
@@ -201,20 +203,21 @@ plt.show()
 # `estimator_errors_` and `estimator_weights_` to investigate this link.
 weak_learners_info = pd.DataFrame(
     {
-        "Number of trees": range(1, n_estimators + 1),
+        NUMBER_OF_TREES: range(1, n_estimators + 1),
         "Errors": adaboost_clf.estimator_errors_,
         "Weights": adaboost_clf.estimator_weights_,
     }
-).set_index("Number of trees")
+).set_index(NUMBER_OF_TREES)
 
 axs = weak_learners_info.plot(
     subplots=True, layout=(1, 2), figsize=(10, 4), legend=False, color="tab:blue"
 )
-axs[0, 0].set_ylabel("Train error")
-axs[0, 0].set_title("Weak learner's training error")
-axs[0, 1].set_ylabel("Weight")
-axs[0, 1].set_title("Weak learner's weight")
-fig = axs[0, 0].get_figure()
+axs = axs.flatten()
+axs[0].set_ylabel("Train error")
+axs[0].set_title("Weak learner's training error")
+axs[1].set_ylabel("Weight")
+axs[1].set_title("Weak learner's weight")
+fig = axs[0].get_figure()
 fig.suptitle("Weak learner's errors and weights for the AdaBoostClassifier")
 fig.tight_layout()
 
