@@ -70,17 +70,20 @@ classifiers = {
     "Logistic regression\n(RBF features)": make_pipeline(
         Nystroem(kernel="rbf", gamma=5e-1, n_components=50, random_state=1),
         LogisticRegression(C=10),
+        memory=None,
     ),
     "Gradient Boosting": HistGradientBoostingClassifier(random_state=42),
     "Logistic regression\n(binned features)": make_pipeline(
         KBinsDiscretizer(n_bins=5, quantile_method="averaged_inverted_cdf"),
         PolynomialFeatures(interaction_only=True),
         LogisticRegression(C=10),
+        memory=None,
     ),
     "Logistic regression\n(spline features)": make_pipeline(
         SplineTransformer(n_knots=5),
         PolynomialFeatures(interaction_only=True),
         LogisticRegression(C=10),
+        memory=None,
     ),
 }
 

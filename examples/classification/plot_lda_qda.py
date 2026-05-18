@@ -132,12 +132,12 @@ def plot_result(estimator, X, y, ax):
         levels=[0.5],
     )
     y_pred = estimator.predict(X)
-    X_right, y_right = X[y == y_pred], y[y == y_pred]
-    X_wrong, y_wrong = X[y != y_pred], y[y != y_pred]
-    ax.scatter(X_right[:, 0], X_right[:, 1], c=y_right, s=20, cmap=cmap, alpha=0.5)
+    x_right, y_right = X[y == y_pred], y[y == y_pred]
+    x_wrong, y_wrong = X[y != y_pred], y[y != y_pred]
+    ax.scatter(x_right[:, 0], x_right[:, 1], c=y_right, s=20, cmap=cmap, alpha=0.5)
     ax.scatter(
-        X_wrong[:, 0],
-        X_wrong[:, 1],
+        x_wrong[:, 0],
+        x_wrong[:, 1],
         c=y_wrong,
         s=30,
         cmap=cmap,
