@@ -21,16 +21,16 @@ from sklearn.utils.fixes import CSC_CONTAINERS, CSR_CONTAINERS
 
 
 @pytest.mark.parametrize(
-    ["Estimator", "solver"],
+    ["estimator", "solver"],
     [[NMF, {"solver": "cd"}], [NMF, {"solver": "mu"}], [MiniBatchNMF, {}]],
 )
-def test_convergence_warning(Estimator, solver):
+def test_convergence_warning(estimator, solver):
     convergence_warning = (
         "Maximum number of iterations 1 reached. Increase it to improve convergence."
     )
     A = np.ones((2, 2))
     with pytest.warns(ConvergenceWarning, match=convergence_warning):
-        Estimator(max_iter=1, n_components="auto", **solver).fit(A)
+        estimator(max_iter=1, n_components="auto", **solver).fit(A)
 
 
 def test_initialize_nn_output():
@@ -96,10 +96,10 @@ def test_initialize_variants():
     rng = np.random.mtrand.RandomState(42)
     data = np.abs(rng.randn(10, 10))
     W0, H0 = nmf._initialize_nmf(data, 10, init="nndsvd")
-    Wa, Ha = nmf._initialize_nmf(data, 10, init="nndsvda")
-    War, Har = nmf._initialize_nmf(data, 10, init="nndsvdar", random_state=0)
+    w_a, h_a = nmf._initialize_nmf(data, 10, init="nndsvda")
+    w_ar, h_ar = nmf._initialize_nmf(data, 10, init="nndsvdar", random_state=0)
 
-    for ref, evl in ((W0, Wa), (W0, War), (H0, Ha), (H0, Har)):
+    for ref, evl in ((W0, w_a), (W0, w_ar), (H0, h_a), (H0, h_ar)):
         assert_almost_equal(evl[ref != 0], ref[ref != 0])
 
 
@@ -109,20 +109,20 @@ def test_initialize_variants():
     r" the initialization"
 )
 @pytest.mark.parametrize(
-    ["Estimator", "solver"],
+    ["estimator", "solver"],
     [[NMF, {"solver": "cd"}], [NMF, {"solver": "mu"}], [MiniBatchNMF, {}]],
 )
 @pytest.mark.parametrize("init", (None, "nndsvd", "nndsvda", "nndsvdar", "random"))
-@pytest.mark.parametrize("alpha_W", (0.0, 1.0))
-@pytest.mark.parametrize("alpha_H", (0.0, 1.0, "same"))
-def test_nmf_fit_nn_output(Estimator, solver, init, alpha_W, alpha_H):
+@pytest.mark.parametrize("alpha_w", (0.0, 1.0))
+@pytest.mark.parametrize("alpha_h", (0.0, 1.0, "same"))
+def test_nmf_fit_nn_output(estimator, solver, init, alpha_w, alpha_h):
     # Test that the decomposition does not contain negative values
     A = np.c_[5.0 - np.arange(1, 6), 5.0 + np.arange(1, 6)]
-    model = Estimator(
+    model = estimator(
         n_components=2,
         init=init,
-        alpha_W=alpha_W,
-        alpha_H=alpha_H,
+        alpha_W=alpha_w,
+        alpha_H=alpha_h,
         random_state=0,
         **solver,
     )
