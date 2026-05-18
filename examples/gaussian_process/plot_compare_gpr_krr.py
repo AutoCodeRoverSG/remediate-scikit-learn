@@ -57,12 +57,15 @@ training_noisy_target = target[training_sample_indices] + 0.5 * rng.randn(
 # Let's plot the true signal and the noisy measurements available for training.
 import matplotlib.pyplot as plt
 
+NOISY_MEASUREMENTS_LABEL = "Noisy measurements"
+KERNEL_RIDGE_LABEL = "Kernel ridge"
+
 plt.plot(data, target, label="True signal", linewidth=2)
 plt.scatter(
     training_data,
     training_noisy_target,
     color="black",
-    label="Noisy measurements",
+    label=NOISY_MEASUREMENTS_LABEL,
 )
 plt.legend()
 plt.xlabel("data")
@@ -88,7 +91,7 @@ plt.scatter(
     training_data,
     training_noisy_target,
     color="black",
-    label="Noisy measurements",
+    label=NOISY_MEASUREMENTS_LABEL,
 )
 plt.plot(data, ridge.predict(data), label="Ridge regression")
 plt.legend()
@@ -142,12 +145,12 @@ plt.scatter(
     training_data,
     training_noisy_target,
     color="black",
-    label="Noisy measurements",
+    label=NOISY_MEASUREMENTS_LABEL,
 )
 plt.plot(
     data,
     kernel_ridge.predict(data),
-    label="Kernel ridge",
+    label=KERNEL_RIDGE_LABEL,
     linewidth=2,
     linestyle="dashdot",
 )
@@ -215,12 +218,12 @@ plt.scatter(
     training_data,
     training_noisy_target,
     color="black",
-    label="Noisy measurements",
+    label=NOISY_MEASUREMENTS_LABEL,
 )
 plt.plot(
     data,
     predictions_kr,
-    label="Kernel ridge",
+    label=KERNEL_RIDGE_LABEL,
     linewidth=2,
     linestyle="dashdot",
 )
@@ -286,13 +289,13 @@ plt.scatter(
     training_data,
     training_noisy_target,
     color="black",
-    label="Noisy measurements",
+    label=NOISY_MEASUREMENTS_LABEL,
 )
 # Plot the predictions of the kernel ridge
 plt.plot(
     data,
     predictions_kr,
-    label="Kernel ridge",
+    label=KERNEL_RIDGE_LABEL,
     linewidth=2,
     linestyle="dashdot",
 )
@@ -358,13 +361,13 @@ plt.scatter(
     training_data,
     training_noisy_target,
     color="black",
-    label="Noisy measurements",
+    label=NOISY_MEASUREMENTS_LABEL,
 )
 # Plot the predictions of the kernel ridge
 plt.plot(
     data,
     predictions_kr,
-    label="Kernel ridge",
+    label=KERNEL_RIDGE_LABEL,
     linewidth=2,
     linestyle="dashdot",
 )

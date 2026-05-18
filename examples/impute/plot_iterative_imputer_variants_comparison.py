@@ -79,9 +79,9 @@ def compute_score_for(X, y, imputer=None):
     # because our target estimator and some of the imputers assume
     # that the features have similar scales.
     if imputer is None:
-        estimator = make_pipeline(RobustScaler(), BayesianRidge())
+        estimator = make_pipeline(RobustScaler(), BayesianRidge(), memory=None)
     else:
-        estimator = make_pipeline(RobustScaler(), imputer, BayesianRidge())
+        estimator = make_pipeline(RobustScaler(), imputer, BayesianRidge(), memory=None)
     return cross_val_score(
         estimator, X, y, scoring="neg_mean_squared_error", cv=N_SPLITS
     )
@@ -94,7 +94,7 @@ score_full_data = pd.DataFrame(
 )
 
 # Add a single missing value to each row
-rng = np.random.RandomState(0)
+rng = np.random.default_rng(0)
 X_missing = X_full.copy()
 y_missing = y_full
 missing_samples = np.arange(n_samples)
@@ -128,7 +128,9 @@ named_estimators = [
     (
         "Nystroem + Ridge",
         make_pipeline(
-            Nystroem(kernel="polynomial", degree=2, random_state=0), Ridge(alpha=1e4)
+            Nystroem(kernel="polynomial", degree=2, random_state=0),
+            Ridge(alpha=1e4),
+            memory=None,
         ),
     ),
     (

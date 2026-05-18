@@ -82,10 +82,13 @@ def plot_gpr_samples(gpr_model, n_samples, ax):
 # Dataset and Gaussian process generation
 # ---------------------------------------
 # We will create a training dataset that we will use in the different sections.
-rng = np.random.RandomState(4)
+rng = np.random.default_rng(4)
 X_train = rng.uniform(0, 5, 10).reshape(-1, 1)
 y_train = np.sin((X_train[:, 0] - 2.5) ** 2)
 n_samples = 5
+PRIOR_TITLE = "Samples from prior distribution"
+POSTERIOR_TITLE = "Samples from posterior distribution"
+LEGEND_LOC = "upper left"
 
 # %%
 # Kernel cookbook
@@ -106,14 +109,14 @@ fig, axs = plt.subplots(nrows=2, sharex=True, sharey=True, figsize=(10, 8))
 
 # plot prior
 plot_gpr_samples(gpr, n_samples=n_samples, ax=axs[0])
-axs[0].set_title("Samples from prior distribution")
+axs[0].set_title(PRIOR_TITLE)
 
 # plot posterior
 gpr.fit(X_train, y_train)
 plot_gpr_samples(gpr, n_samples=n_samples, ax=axs[1])
 axs[1].scatter(X_train[:, 0], y_train, color="red", zorder=10, label="Observations")
-axs[1].legend(bbox_to_anchor=(1.05, 1.5), loc="upper left")
-axs[1].set_title("Samples from posterior distribution")
+axs[1].legend(bbox_to_anchor=(1.05, 1.5), loc=LEGEND_LOC)
+axs[1].set_title(POSTERIOR_TITLE)
 
 fig.suptitle("Radial Basis Function kernel", fontsize=18)
 plt.tight_layout()
@@ -137,14 +140,14 @@ fig, axs = plt.subplots(nrows=2, sharex=True, sharey=True, figsize=(10, 8))
 
 # plot prior
 plot_gpr_samples(gpr, n_samples=n_samples, ax=axs[0])
-axs[0].set_title("Samples from prior distribution")
+axs[0].set_title(PRIOR_TITLE)
 
 # plot posterior
 gpr.fit(X_train, y_train)
 plot_gpr_samples(gpr, n_samples=n_samples, ax=axs[1])
 axs[1].scatter(X_train[:, 0], y_train, color="red", zorder=10, label="Observations")
-axs[1].legend(bbox_to_anchor=(1.05, 1.5), loc="upper left")
-axs[1].set_title("Samples from posterior distribution")
+axs[1].legend(bbox_to_anchor=(1.05, 1.5), loc=LEGEND_LOC)
+axs[1].set_title(POSTERIOR_TITLE)
 
 fig.suptitle("Rational Quadratic kernel", fontsize=18)
 plt.tight_layout()
@@ -173,14 +176,14 @@ fig, axs = plt.subplots(nrows=2, sharex=True, sharey=True, figsize=(10, 8))
 
 # plot prior
 plot_gpr_samples(gpr, n_samples=n_samples, ax=axs[0])
-axs[0].set_title("Samples from prior distribution")
+axs[0].set_title(PRIOR_TITLE)
 
 # plot posterior
 gpr.fit(X_train, y_train)
 plot_gpr_samples(gpr, n_samples=n_samples, ax=axs[1])
 axs[1].scatter(X_train[:, 0], y_train, color="red", zorder=10, label="Observations")
-axs[1].legend(bbox_to_anchor=(1.05, 1.5), loc="upper left")
-axs[1].set_title("Samples from posterior distribution")
+axs[1].legend(bbox_to_anchor=(1.05, 1.5), loc=LEGEND_LOC)
+axs[1].set_title(POSTERIOR_TITLE)
 
 fig.suptitle("Exp-Sine-Squared kernel", fontsize=18)
 plt.tight_layout()
@@ -206,14 +209,14 @@ fig, axs = plt.subplots(nrows=2, sharex=True, sharey=True, figsize=(10, 8))
 
 # plot prior
 plot_gpr_samples(gpr, n_samples=n_samples, ax=axs[0])
-axs[0].set_title("Samples from prior distribution")
+axs[0].set_title(PRIOR_TITLE)
 
 # plot posterior
 gpr.fit(X_train, y_train)
 plot_gpr_samples(gpr, n_samples=n_samples, ax=axs[1])
 axs[1].scatter(X_train[:, 0], y_train, color="red", zorder=10, label="Observations")
-axs[1].legend(bbox_to_anchor=(1.05, 1.5), loc="upper left")
-axs[1].set_title("Samples from posterior distribution")
+axs[1].legend(bbox_to_anchor=(1.05, 1.5), loc=LEGEND_LOC)
+axs[1].set_title(POSTERIOR_TITLE)
 
 fig.suptitle("Dot-product kernel", fontsize=18)
 plt.tight_layout()
@@ -237,14 +240,14 @@ fig, axs = plt.subplots(nrows=2, sharex=True, sharey=True, figsize=(10, 8))
 
 # plot prior
 plot_gpr_samples(gpr, n_samples=n_samples, ax=axs[0])
-axs[0].set_title("Samples from prior distribution")
+axs[0].set_title(PRIOR_TITLE)
 
 # plot posterior
 gpr.fit(X_train, y_train)
 plot_gpr_samples(gpr, n_samples=n_samples, ax=axs[1])
 axs[1].scatter(X_train[:, 0], y_train, color="red", zorder=10, label="Observations")
-axs[1].legend(bbox_to_anchor=(1.05, 1.5), loc="upper left")
-axs[1].set_title("Samples from posterior distribution")
+axs[1].legend(bbox_to_anchor=(1.05, 1.5), loc=LEGEND_LOC)
+axs[1].set_title(POSTERIOR_TITLE)
 
 fig.suptitle("Matérn kernel", fontsize=18)
 plt.tight_layout()
