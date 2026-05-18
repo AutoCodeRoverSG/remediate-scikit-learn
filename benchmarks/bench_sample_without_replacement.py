@@ -16,7 +16,7 @@ import numpy as np
 from sklearn.utils.random import sample_without_replacement
 
 
-def compute_time(t_start, delta):
+def compute_time(delta):
     mu_second = 0.0 + 10**6  # number of microseconds in a second
 
     return delta.seconds + delta.microseconds / mu_second
@@ -29,7 +29,7 @@ def bench_sample(sampling, n_population, n_samples):
     sampling(n_population, n_samples)
     delta = datetime.now() - t_start
     # stop time
-    time = compute_time(t_start, delta)
+    time = compute_time(delta)
     return time
 
 
@@ -150,8 +150,9 @@ if __name__ == "__main__":
 
     ###########################################################################
     # Numpy permutation based
+    rng = np.random.default_rng(0)
     sampling_algorithm["numpy-permutation"] = (
-        lambda n_population, n_sample: np.random.permutation(n_population)[:n_sample]
+        lambda n_population, n_sample: rng.permutation(n_population)[:n_sample]
     )
 
     ###########################################################################
