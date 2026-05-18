@@ -29,7 +29,7 @@ import numpy as np
 from sklearn import datasets
 
 digits = datasets.load_digits()
-rng = np.random.RandomState(2)
+rng = np.random.default_rng(2)
 indices = np.arange(len(digits.data))
 rng.shuffle(indices)
 

@@ -35,16 +35,16 @@ from sklearn.preprocessing import KBinsDiscretizer
 
 n_samples = 50_000
 
-rng = np.random.RandomState(42)
-y = rng.randn(n_samples)
-noise = 0.5 * rng.randn(n_samples)
+rng = np.random.default_rng(42)
+y = rng.standard_normal(n_samples)
+noise = 0.5 * rng.standard_normal(n_samples)
 n_categories = 100
 
 kbins = KBinsDiscretizer(
     n_bins=n_categories,
     encode="ordinal",
     strategy="uniform",
-    random_state=rng,
+    random_state=42,
     subsample=None,
 )
 X_informative = kbins.fit_transform((y + noise).reshape(-1, 1))

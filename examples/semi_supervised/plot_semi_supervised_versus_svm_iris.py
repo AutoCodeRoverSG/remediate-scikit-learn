@@ -43,8 +43,8 @@ iris = load_iris()
 X = iris.data[:, :2]
 y = iris.target
 
-rng = np.random.RandomState(42)
-y_rand = rng.rand(y.shape[0])
+rng = np.random.default_rng(42)
+y_rand = rng.random(y.shape[0])
 y_10 = np.copy(y)
 y_10[y_rand > 0.1] = -1  # set random samples to be unlabeled
 y_30 = np.copy(y)
