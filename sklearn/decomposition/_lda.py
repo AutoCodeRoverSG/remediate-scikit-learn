@@ -87,7 +87,7 @@ def _update_doc_distribution(
 
     """
     is_sparse_x = sp.issparse(X)
-    n_samples, n_features = X.shape
+    n_samples, _ = X.shape
     n_topics = exp_topic_word_distr.shape[0]
 
     if random_state:
@@ -106,9 +106,9 @@ def _update_doc_distribution(
     )
 
     if is_sparse_x:
-        X_data = X.data
-        X_indices = X.indices
-        X_indptr = X.indptr
+        x_data = X.data
+        x_indices = X.indices
+        x_indptr = X.indptr
 
     # These cython functions are called in a nested loop on usually very small arrays
     # (length=n_topics). In that case, finding the appropriate signature of the
@@ -121,8 +121,8 @@ def _update_doc_distribution(
 
     for idx_d in range(n_samples):
         if is_sparse_x:
-            ids = X_indices[X_indptr[idx_d] : X_indptr[idx_d + 1]]
-            cnts = X_data[X_indptr[idx_d] : X_indptr[idx_d + 1]]
+            ids = x_indices[x_indptr[idx_d] : x_indptr[idx_d + 1]]
+            cnts = x_data[x_indptr[idx_d] : x_indptr[idx_d + 1]]
         else:
             ids = np.nonzero(X[idx_d, :])[0]
             cnts = X[idx_d, ids]
@@ -357,6 +357,13 @@ class LatentDirichletAllocation(
         "random_state": ["random_state"],
     }
 
+    _convergence_defaults = {
+        "evaluate_every": -1,
+        "perp_tol": 1e-1,
+        "mean_change_tol": 1e-3,
+        "max_doc_update_iter": 100,
+    }
+
     def __init__(
         self,
         n_components=10,
@@ -368,14 +375,11 @@ class LatentDirichletAllocation(
         learning_offset=10.0,
         max_iter=10,
         batch_size=128,
-        evaluate_every=-1,
         total_samples=1e6,
-        perp_tol=1e-1,
-        mean_change_tol=1e-3,
-        max_doc_update_iter=100,
         n_jobs=None,
         verbose=0,
         random_state=None,
+        **kwargs,
     ):
         self.n_components = n_components
         self.doc_topic_prior = doc_topic_prior
@@ -385,14 +389,23 @@ class LatentDirichletAllocation(
         self.learning_offset = learning_offset
         self.max_iter = max_iter
         self.batch_size = batch_size
-        self.evaluate_every = evaluate_every
         self.total_samples = total_samples
-        self.perp_tol = perp_tol
-        self.mean_change_tol = mean_change_tol
-        self.max_doc_update_iter = max_doc_update_iter
         self.n_jobs = n_jobs
         self.verbose = verbose
         self.random_state = random_state
+        for param, default in self._convergence_defaults.items():
+            setattr(self, param, kwargs.pop(param, default))
+        if kwargs:
+            raise TypeError(
+                f"__init__() got unexpected keyword arguments: "
+                f"{list(kwargs.keys())}"
+            )
+
+    @classmethod
+    def _get_param_names(cls):
+        base_params = super()._get_param_names()
+        extra_params = list(cls._convergence_defaults.keys())
+        return sorted(set(base_params + extra_params))
 
     def _init_latent_vars(self, n_features, dtype=np.float64):
         """Initialize latent variables."""
@@ -541,7 +554,6 @@ class LatentDirichletAllocation(
             _dirichlet_expectation_2d(self.components_)
         )
         self.n_batch_iter_ += 1
-        return
 
     def __sklearn_tags__(self):
         tags = super().__sklearn_tags__()
@@ -808,7 +820,7 @@ class LatentDirichletAllocation(
             return score
 
         is_sparse_x = sp.issparse(X)
-        n_samples, n_components = doc_topic_distr.shape
+        n_samples, _ = doc_topic_distr.shape
         n_features = self.components_.shape[1]
         score = 0
 
@@ -818,15 +830,15 @@ class LatentDirichletAllocation(
         topic_word_prior = self.topic_word_prior_
 
         if is_sparse_x:
-            X_data = X.data
-            X_indices = X.indices
-            X_indptr = X.indptr
+            x_data = X.data
+            x_indices = X.indices
+            x_indptr = X.indptr
 
         # E[log p(docs | theta, beta)]
         for idx_d in range(0, n_samples):
             if is_sparse_x:
-                ids = X_indices[X_indptr[idx_d] : X_indptr[idx_d + 1]]
-                cnts = X_data[X_indptr[idx_d] : X_indptr[idx_d + 1]]
+                ids = x_indices[x_indptr[idx_d] : x_indptr[idx_d + 1]]
+                cnts = x_data[x_indptr[idx_d] : x_indptr[idx_d + 1]]
             else:
                 ids = np.nonzero(X[idx_d, :])[0]
                 cnts = X[idx_d, ids]
