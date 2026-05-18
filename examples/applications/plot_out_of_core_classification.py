@@ -95,6 +95,7 @@ class ReutersParser(HTMLParser):
             self.topic_d += data
 
     def start_reuters(self, attributes):
+        # No action needed on opening <REUTERS> tag; reset is handled in _reset.
         pass
 
     def end_reuters(self):
@@ -104,25 +105,25 @@ class ReutersParser(HTMLParser):
         )
         self._reset()
 
-    def start_title(self, attributes):
+    def start_title(self, _):
         self.in_title = 1
 
     def end_title(self):
         self.in_title = 0
 
-    def start_body(self, attributes):
+    def start_body(self, _):
         self.in_body = 1
 
     def end_body(self):
         self.in_body = 0
 
-    def start_topics(self, attributes):
+    def start_topics(self, _):
         self.in_topics = 1
 
     def end_topics(self):
         self.in_topics = 0
 
-    def start_d(self, attributes):
+    def start_d(self, _):
         self.in_topic_d = 1
 
     def end_d(self):
@@ -227,16 +228,16 @@ def get_minibatch(doc_iter, size, pos_class=positive_class):
     ]
     if not len(data):
         return np.asarray([], dtype=int), np.asarray([], dtype=int)
-    X_text, y = zip(*data)
-    return X_text, np.asarray(y, dtype=int)
+    x_text, y = zip(*data)
+    return x_text, np.asarray(y, dtype=int)
 
 
 def iter_minibatches(doc_iter, minibatch_size):
     """Generator of minibatches."""
-    X_text, y = get_minibatch(doc_iter, minibatch_size)
-    while len(X_text):
-        yield X_text, y
-        X_text, y = get_minibatch(doc_iter, minibatch_size)
+    x_text, y = get_minibatch(doc_iter, minibatch_size)
+    while len(x_text):
+        yield x_text, y
+        x_text, y = get_minibatch(doc_iter, minibatch_size)
 
 
 # test data statistics
@@ -349,7 +350,7 @@ def plot_accuracy(x, y, x_legend):
 
 
 rcParams["legend.fontsize"] = 10
-cls_names = list(sorted(cls_stats.keys()))
+cls_names = sorted(cls_stats.keys())
 
 # Plot accuracy evolution
 plt.figure()
@@ -411,7 +412,7 @@ plt.show()
 # Plot prediction times
 plt.figure()
 cls_runtime = []
-cls_names = list(sorted(cls_stats.keys()))
+cls_names = sorted(cls_stats.keys())
 for cls_name, stats in sorted(cls_stats.items()):
     cls_runtime.append(stats["prediction_time"])
 cls_runtime.append(parsing_time)

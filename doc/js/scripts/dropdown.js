@@ -31,12 +31,12 @@ document.addEventListener("DOMContentLoaded", () => {
     );
 
     // Bootstrap tooltip configurations
-    newStateMarker.setAttribute("data-bs-toggle", "tooltip");
-    newStateMarker.setAttribute("data-bs-placement", "top");
-    newStateMarker.setAttribute("data-bs-offset", "0,10");
-    newStateMarker.setAttribute("data-bs-title", "Toggle all dropdowns");
+    newStateMarker.dataset.bsToggle = "tooltip";
+    newStateMarker.dataset.bsPlacement = "top";
+    newStateMarker.dataset.bsOffset = "0,10";
+    newStateMarker.dataset.bsTitle = "Toggle all dropdowns";
     // Enable the tooltip
-    new bootstrap.Tooltip(newStateMarker);
+    newStateMarker._bsTooltipInstance = new bootstrap.Tooltip(newStateMarker);
 
     // Assign the collapse/expand action to the state marker
     newStateMarker.addEventListener("click", () => {
