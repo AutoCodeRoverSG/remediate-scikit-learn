@@ -68,7 +68,7 @@ from sklearn.pipeline import make_pipeline
 from sklearn.svm import LinearSVC
 
 classifiers = {
-    "Linear SVM": make_pipeline(StandardScaler(), LinearSVC(C=0.025)),
+    "Linear SVM": make_pipeline(StandardScaler(), LinearSVC(C=0.025), memory=None),
     "Random Forest": RandomForestClassifier(
         max_depth=5, n_estimators=10, max_features=1, random_state=0
     ),
@@ -108,7 +108,7 @@ for name, clf in classifiers.items():
         y_test,
         ax=ax_roc,
         name=name,
-        curve_kwargs=dict(color=color, linestyle=linestyle),
+        curve_kwargs={"color": color, "linestyle": linestyle},
     )
     DetCurveDisplay.from_estimator(
         clf, X_test, y_test, ax=ax_det, name=name, color=color, linestyle=linestyle

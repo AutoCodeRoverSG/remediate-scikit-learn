@@ -55,8 +55,8 @@ n_samples, n_features = X.shape
 
 # %%
 # We also add noisy features to make the problem harder.
-random_state = np.random.RandomState(0)
-X = np.concatenate([X, random_state.randn(n_samples, 200 * n_features)], axis=1)
+rng = np.random.default_rng(0)
+X = np.concatenate([X, rng.standard_normal((n_samples, 200 * n_features))], axis=1)
 
 # %%
 # Classification and ROC analysis
@@ -76,7 +76,7 @@ from sklearn.model_selection import StratifiedKFold, cross_validate
 
 n_splits = 6
 cv = StratifiedKFold(n_splits=n_splits)
-classifier = LogisticRegression(random_state=random_state).fit(X, y)
+classifier = LogisticRegression(random_state=0).fit(X, y)
 cv_results = cross_validate(
     classifier, X, y, cv=cv, return_estimator=True, return_indices=True
 )
@@ -84,7 +84,7 @@ cv_results = cross_validate(
 prop_cycle = plt.rcParams["axes.prop_cycle"]
 colors = prop_cycle.by_key()["color"]
 curve_kwargs_list = [
-    dict(alpha=0.3, lw=1, color=colors[fold % len(colors)]) for fold in range(n_splits)
+    {"alpha": 0.3, "lw": 1, "color": colors[fold % len(colors)]} for fold in range(n_splits)
 ]
 names = [f"ROC fold {idx}" for idx in range(n_splits)]
 

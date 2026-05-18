@@ -57,15 +57,20 @@ dim = len(X[0])
 n_classes = len(np.unique(y))
 
 # Reduce dimension to 2 with PCA
-pca = make_pipeline(StandardScaler(), PCA(n_components=2, random_state=random_state))
+pca = make_pipeline(
+    StandardScaler(), PCA(n_components=2, random_state=random_state), memory=None
+)
 
 # Reduce dimension to 2 with LinearDiscriminantAnalysis
-lda = make_pipeline(StandardScaler(), LinearDiscriminantAnalysis(n_components=2))
+lda = make_pipeline(
+    StandardScaler(), LinearDiscriminantAnalysis(n_components=2), memory=None
+)
 
 # Reduce dimension to 2 with NeighborhoodComponentAnalysis
 nca = make_pipeline(
     StandardScaler(),
     NeighborhoodComponentsAnalysis(n_components=2, random_state=random_state),
+    memory=None,
 )
 
 # Use a nearest neighbor classifier to evaluate the methods
