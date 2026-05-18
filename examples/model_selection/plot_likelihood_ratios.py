@@ -124,7 +124,7 @@ extract_score(cross_validate(estimator, X, y, scoring=scoring, cv=10))
 # Another option for the dummy model is to always predict the most frequent
 # class, which in this case is "no-disease".
 
-estimator = DummyClassifier(strategy="most_frequent")
+estimator = DummyClassifier(strategy="most_frequent", random_state=0)
 extract_score(cross_validate(estimator, X, y, scoring=scoring, cv=10))
 
 # %%
@@ -210,7 +210,7 @@ for ax, (n, weight) in zip(axs.ravel(), enumerate(weights)):
     populations["y"].append(y)
 
     # down-sample for plotting
-    rng = np.random.RandomState(1)
+    rng = np.random.default_rng(seed=1)
     plot_indices = rng.choice(np.arange(X.shape[0]), size=500, replace=True)
     X_plot, y_plot = X[plot_indices], y[plot_indices]
 
@@ -263,7 +263,7 @@ for prevalence, X, y in zip(
 
 results = pd.DataFrame(results["metrics"], index=results["prevalence"])
 results.index.name = "prevalence"
-results
+print(results)
 
 # %%
 # In the plots below we observe that the class likelihood ratios re-computed
