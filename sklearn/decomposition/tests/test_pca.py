@@ -55,14 +55,14 @@ def test_pca(svd_solver, n_components):
     pca = PCA(n_components=n_components, svd_solver=svd_solver)
 
     # check the shape of fit.transform
-    X_r = pca.fit(X).transform(X)
-    assert X_r.shape[1] == n_components
+    x_r = pca.fit(X).transform(X)
+    assert x_r.shape[1] == n_components
 
     # check the equivalence of fit.transform and fit_transform
-    X_r2 = pca.fit_transform(X)
-    assert_allclose(X_r, X_r2)
-    X_r = pca.transform(X)
-    assert_allclose(X_r, X_r2)
+    x_r2 = pca.fit_transform(X)
+    assert_allclose(x_r, x_r2)
+    x_r = pca.transform(X)
+    assert_allclose(x_r, x_r2)
 
     # Test get_covariance and get_precision
     cov = pca.get_covariance()
@@ -100,13 +100,13 @@ def test_pca_sparse(
     )
     pca.fit(X)
 
-    Xd = X.toarray()
+    x_dense = X.toarray()
     pcad = PCA(
         n_components=n_components,
         svd_solver=svd_solver,
         random_state=global_random_seed,
     )
-    pcad.fit(Xd)
+    pcad.fit(x_dense)
 
     # Fitted attributes equality
     _check_fitted_pca_close(pca, pcad, atol=atol)
@@ -115,10 +115,10 @@ def test_pca_sparse(
     X2 = sparse_container(
         _sparse_random_array((SPARSE_M, SPARSE_N), rng=rng, density=density)
     )
-    X2d = X2.toarray()
+    x2_dense = X2.toarray()
 
-    assert_allclose(pca.transform(X2), pca.transform(X2d), atol=transform_atol)
-    assert_allclose(pca.transform(X2), pcad.transform(X2d), atol=transform_atol)
+    assert_allclose(pca.transform(X2), pca.transform(x2_dense), atol=transform_atol)
+    assert_allclose(pca.transform(X2), pcad.transform(x2_dense), atol=transform_atol)
 
 
 @pytest.mark.parametrize("sparse_container", CSR_CONTAINERS + CSC_CONTAINERS)
@@ -134,11 +134,11 @@ def test_pca_sparse_fit_transform(global_random_seed, sparse_container):
     )
 
     pca_fit.fit(X)
-    transformed_X = pca_fit_transform.fit_transform(X)
+    transformed_x = pca_fit_transform.fit_transform(X)
 
     _check_fitted_pca_close(pca_fit, pca_fit_transform)
-    assert_allclose(transformed_X, pca_fit_transform.transform(X))
-    assert_allclose(transformed_X, pca_fit.transform(X))
+    assert_allclose(transformed_x, pca_fit_transform.transform(X))
+    assert_allclose(transformed_x, pca_fit.transform(X))
     assert_allclose(pca_fit.transform(X2), pca_fit_transform.transform(X2))
 
 
@@ -214,28 +214,28 @@ def test_whitening(solver, copy):
         iterated_power=7,
     )
     # test fit_transform
-    X_whitened = pca.fit_transform(X_.copy())
-    assert X_whitened.shape == (n_samples, n_components)
-    X_whitened2 = pca.transform(X_)
-    assert_allclose(X_whitened, X_whitened2, rtol=5e-4)
+    x_whitened = pca.fit_transform(X_.copy())
+    assert x_whitened.shape == (n_samples, n_components)
+    x_whitened2 = pca.transform(X_)
+    assert_allclose(x_whitened, x_whitened2, rtol=5e-4)
 
-    assert_allclose(X_whitened.std(ddof=1, axis=0), np.ones(n_components))
-    assert_allclose(X_whitened.mean(axis=0), np.zeros(n_components), atol=1e-12)
+    assert_allclose(x_whitened.std(ddof=1, axis=0), np.ones(n_components))
+    assert_allclose(x_whitened.mean(axis=0), np.zeros(n_components), atol=1e-12)
 
     X_ = X.copy()
     pca = PCA(
         n_components=n_components, whiten=False, copy=copy, svd_solver=solver
     ).fit(X_.copy())
-    X_unwhitened = pca.transform(X_)
-    assert X_unwhitened.shape == (n_samples, n_components)
+    x_unwhitened = pca.transform(X_)
+    assert x_unwhitened.shape == (n_samples, n_components)
 
     # in that case the output components still have varying variances
-    assert X_unwhitened.std(axis=0).std() == pytest.approx(74.1, rel=1e-1)
+    assert x_unwhitened.std(axis=0).std() == pytest.approx(74.1, rel=1e-1)
     # we always center, so no test for non-centering.
 
 
 @pytest.mark.parametrize(
-    "other_svd_solver", sorted(list(set(PCA_SOLVERS) - {"full", "auto"}))
+    "other_svd_solver", sorted(set(PCA_SOLVERS) - {"full", "auto"})
 )
 @pytest.mark.parametrize("data_shape", ["tall", "wide"])
 @pytest.mark.parametrize("rank_deficient", [False, True])
@@ -274,10 +274,10 @@ def test_pca_solver_equivalence(
     X_train, X_test = X[:n_samples], X[n_samples:]
 
     if global_dtype == np.float32:
-        tols = dict(atol=3e-2, rtol=1e-5)
+        tols = {"atol": 3e-2, "rtol": 1e-5}
         variance_threshold = 1e-5
     else:
-        tols = dict(atol=1e-10, rtol=1e-12)
+        tols = {"atol": 1e-10, "rtol": 1e-12}
         variance_threshold = 1e-12
 
     extra_other_kwargs = {}
