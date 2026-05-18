@@ -1309,7 +1309,7 @@ def test_sample_weight_init(init, global_random_seed):
     `_init_centroids` is shared across all classes inheriting from _BaseKMeans so
     it's enough to check for KMeans.
     """
-    rng = np.random.RandomState(global_random_seed)
+    rng = np.random.default_rng(global_random_seed)
     X, _ = make_blobs(
         n_samples=200, n_features=10, centers=10, random_state=global_random_seed
     )
@@ -1322,7 +1322,7 @@ def test_sample_weight_init(init, global_random_seed):
         init=init,
         sample_weight=rng.uniform(size=X.shape[0]),
         n_centroids=5,
-        random_state=np.random.RandomState(global_random_seed),
+        random_state=np.random.default_rng(global_random_seed),
     )
     clusters = kmeans._init_centroids(
         X=X,
@@ -1330,7 +1330,7 @@ def test_sample_weight_init(init, global_random_seed):
         init=init,
         sample_weight=np.ones(X.shape[0]),
         n_centroids=5,
-        random_state=np.random.RandomState(global_random_seed),
+        random_state=np.random.default_rng(global_random_seed),
     )
     with pytest.raises(AssertionError):
         assert_allclose(clusters_weighted, clusters)
@@ -1343,7 +1343,7 @@ def test_sample_weight_zero(init, global_random_seed):
     `_init_centroids` is shared across all classes inheriting from _BaseKMeans so
     it's enough to check for KMeans.
     """
-    rng = np.random.RandomState(global_random_seed)
+    rng = np.random.default_rng(global_random_seed)
     X, _ = make_blobs(
         n_samples=100, n_features=5, centers=5, random_state=global_random_seed
     )
@@ -1358,7 +1358,7 @@ def test_sample_weight_zero(init, global_random_seed):
         init=init,
         sample_weight=sample_weight,
         n_centroids=10,
-        random_state=np.random.RandomState(global_random_seed),
+        random_state=np.random.default_rng(global_random_seed),
     )
     # No center should be one of the 0 sample weight point
     # (i.e. be at a distance=0 from it)
