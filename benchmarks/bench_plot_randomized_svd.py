@@ -184,10 +184,11 @@ def get_data(dataset_name):
         sparsity = int(1e6)
         size = int(1e6)
         small_size = int(1e4)
-        data = np.random.normal(0, 1, int(sparsity / 10))
+        rng = np.random.default_rng(0)
+        data = rng.normal(0, 1, int(sparsity / 10))
         data = np.repeat(data, 10)
-        row = np.random.uniform(0, small_size, sparsity)
-        col = np.random.uniform(0, small_size, sparsity)
+        row = rng.uniform(0, small_size, sparsity)
+        col = rng.uniform(0, small_size, sparsity)
         X = sp.sparse.csr_array((data, (row, col)), shape=(size, small_size))
         del data
         del row
@@ -234,7 +235,7 @@ def scatter_time_vs_s(time, norm, point_labels, title):
                     xytext=(0, -80),
                     textcoords="offset points",
                     ha="right",
-                    arrowprops=dict(arrowstyle="->", connectionstyle="arc3"),
+                    arrowprops={"arrowstyle": "->", "connectionstyle": "arc3"},
                     va="bottom",
                     size=11,
                     rotation=90,
@@ -248,7 +249,7 @@ def scatter_time_vs_s(time, norm, point_labels, title):
                     xytext=(0, 30),
                     textcoords="offset points",
                     ha="right",
-                    arrowprops=dict(arrowstyle="->", connectionstyle="arc3"),
+                    arrowprops={"arrowstyle": "->", "connectionstyle": "arc3"},
                     va="bottom",
                     size=11,
                     rotation=90,
@@ -302,7 +303,7 @@ def svd_timing(
     return U, mu, V, call_time
 
 
-def norm_diff(A, norm=2, msg=True, random_state=None):
+def norm_diff(matrix, norm=2, msg=True, random_state=0):
     """
     Compute the norm diff with the original matrix, when randomized
     SVD is called with *params.
@@ -314,31 +315,33 @@ def norm_diff(A, norm=2, msg=True, random_state=None):
         print("... computing %s norm ..." % norm)
     if norm == 2:
         # s = sp.linalg.norm(A, ord=2)  # slow
-        v0 = _init_arpack_v0(min(A.shape), random_state)
-        value = sp.sparse.linalg.svds(A, k=1, return_singular_vectors=False, v0=v0)
+        v0 = _init_arpack_v0(min(matrix.shape), random_state)
+        value = sp.sparse.linalg.svds(
+            matrix, k=1, return_singular_vectors=False, v0=v0
+        )
     else:
-        if sp.sparse.issparse(A):
-            value = sp.sparse.linalg.norm(A, ord=norm)
+        if sp.sparse.issparse(matrix):
+            value = sp.sparse.linalg.norm(matrix, ord=norm)
         else:
-            value = sp.linalg.norm(A, ord=norm)
+            value = sp.linalg.norm(matrix, ord=norm)
     return value
 
 
-def scalable_frobenius_norm_discrepancy(X, U, s, V):
+def scalable_frobenius_norm_discrepancy(X, u, s, v):
     if not sp.sparse.issparse(X) or (
         X.shape[0] * X.shape[1] * X.dtype.itemsize < MAX_MEMORY
     ):
         # if the input is not sparse or sparse but not too big,
         # U.dot(np.diag(s).dot(V)) will fit in RAM
-        A = X - U.dot(np.diag(s).dot(V))
+        A = X - u.dot(np.diag(s).dot(v))
         return norm_diff(A, norm="fro")
 
     print("... computing fro norm by batches...")
     batch_size = 1000
-    Vhat = np.diag(s).dot(V)
+    v_hat = np.diag(s).dot(v)
     cum_norm = 0.0
     for batch in gen_batches(X.shape[0], batch_size):
-        M = X[batch, :] - U[batch, :].dot(Vhat)
+        M = X[batch, :] - u[batch, :].dot(v_hat)
         cum_norm += norm_diff(M, norm="fro", msg=False)
     return np.sqrt(cum_norm)
 
