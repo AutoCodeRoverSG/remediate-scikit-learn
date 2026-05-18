@@ -36,13 +36,16 @@ print(f"The number of bytes taken in RAM is {raccoon_face.nbytes}")
 # shades of gray, at most. We can check the distribution of these values.
 import matplotlib.pyplot as plt
 
+RENDERING_TITLE = "Rendering of the image"
+PIXEL_VALUE_LABEL = "Pixel value"
+
 fig, ax = plt.subplots(ncols=2, figsize=(12, 4))
 
 ax[0].imshow(raccoon_face, cmap=plt.cm.gray)
 ax[0].axis("off")
-ax[0].set_title("Rendering of the image")
+ax[0].set_title(RENDERING_TITLE)
 ax[1].hist(raccoon_face.ravel(), bins=256)
-ax[1].set_xlabel("Pixel value")
+ax[1].set_xlabel(PIXEL_VALUE_LABEL)
 ax[1].set_ylabel("Count of pixels")
 ax[1].set_title("Distribution of the pixel values")
 _ = fig.suptitle("Original image of a raccoon face")
@@ -82,9 +85,9 @@ compressed_raccoon_uniform = encoder.fit_transform(raccoon_face.reshape(-1, 1)).
 fig, ax = plt.subplots(ncols=2, figsize=(12, 4))
 ax[0].imshow(compressed_raccoon_uniform, cmap=plt.cm.gray)
 ax[0].axis("off")
-ax[0].set_title("Rendering of the image")
+ax[0].set_title(RENDERING_TITLE)
 ax[1].hist(compressed_raccoon_uniform.ravel(), bins=256)
-ax[1].set_xlabel("Pixel value")
+ax[1].set_xlabel(PIXEL_VALUE_LABEL)
 ax[1].set_ylabel("Count of pixels")
 ax[1].set_title("Sub-sampled distribution of the pixel values")
 _ = fig.suptitle("Raccoon face compressed using 3 bits and a uniform strategy")
@@ -100,7 +103,7 @@ _ = fig.suptitle("Raccoon face compressed using 3 bits and a uniform strategy")
 
 bin_edges = encoder.bin_edges_[0]
 bin_center = bin_edges[:-1] + (bin_edges[1:] - bin_edges[:-1]) / 2
-bin_center
+print(bin_center)
 
 # %%
 _, ax = plt.subplots()
@@ -130,9 +133,9 @@ compressed_raccoon_kmeans = encoder.fit_transform(raccoon_face.reshape(-1, 1)).r
 fig, ax = plt.subplots(ncols=2, figsize=(12, 4))
 ax[0].imshow(compressed_raccoon_kmeans, cmap=plt.cm.gray)
 ax[0].axis("off")
-ax[0].set_title("Rendering of the image")
+ax[0].set_title(RENDERING_TITLE)
 ax[1].hist(compressed_raccoon_kmeans.ravel(), bins=256)
-ax[1].set_xlabel("Pixel value")
+ax[1].set_xlabel(PIXEL_VALUE_LABEL)
 ax[1].set_ylabel("Number of pixels")
 ax[1].set_title("Distribution of the pixel values")
 _ = fig.suptitle("Raccoon face compressed using 3 bits and a K-means strategy")
@@ -140,7 +143,7 @@ _ = fig.suptitle("Raccoon face compressed using 3 bits and a K-means strategy")
 # %%
 bin_edges = encoder.bin_edges_[0]
 bin_center = bin_edges[:-1] + (bin_edges[1:] - bin_edges[:-1]) / 2
-bin_center
+print(bin_center)
 
 # %%
 _, ax = plt.subplots()

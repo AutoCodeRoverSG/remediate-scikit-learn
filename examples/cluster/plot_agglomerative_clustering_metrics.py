@@ -44,7 +44,7 @@ import numpy as np
 from sklearn.cluster import AgglomerativeClustering
 from sklearn.metrics import pairwise_distances
 
-np.random.seed(0)
+rng = np.random.default_rng(0)
 
 # Generate waveform data
 n_features = 2000
@@ -55,13 +55,13 @@ def sqr(x):
     return np.sign(np.cos(x))
 
 
-X = list()
-y = list()
+X = []
+y = []
 for i, (phi, a) in enumerate([(0.5, 0.15), (0.5, 0.6), (0.3, 0.2)]):
     for _ in range(30):
-        phase_noise = 0.01 * np.random.normal()
-        amplitude_noise = 0.04 * np.random.normal()
-        additional_noise = 1 - 2 * np.random.rand(n_features)
+        phase_noise = 0.01 * rng.normal()
+        amplitude_noise = 0.04 * rng.normal()
+        additional_noise = 1 - 2 * rng.random(n_features)
         # Make the noise sparse
         additional_noise[np.abs(additional_noise) < 0.997] = 0
 
