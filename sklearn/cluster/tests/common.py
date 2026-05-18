@@ -12,7 +12,7 @@ import numpy as np
 def generate_clustered_data(
     seed=0, n_clusters=3, n_features=2, n_samples_per_cluster=20, std=0.4
 ):
-    prng = np.random.RandomState(seed)
+    prng = np.random.default_rng(seed)
 
     # the data is voluntary shifted away from zero to check clustering
     # algorithm robustness with regards to non centered data
@@ -32,6 +32,6 @@ def generate_clustered_data(
     for i in range(n_clusters):
         X = np.r_[
             X,
-            means[i][:n_features] + std * prng.randn(n_samples_per_cluster, n_features),
+            means[i][:n_features] + std * prng.standard_normal((n_samples_per_cluster, n_features)),
         ]
     return X

@@ -30,8 +30,8 @@ class MockBiclustering(BiclusterMixin, BaseEstimator):
     def get_indices(self, i):
         # Overridden to reproduce old get_submatrix test.
         return (
-            np.where([True, True, False, False, True])[0],
-            np.where([False, False, True, True])[0],
+            np.nonzero([True, True, False, False, True])[0],
+            np.nonzero([False, False, True, True])[0],
         )
 
 
