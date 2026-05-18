@@ -38,7 +38,8 @@ pipe = Pipeline(
     [
         ("scaler", MinMaxScaler()),
         ("rfe", RFE(estimator=LogisticRegression(), n_features_to_select=1, step=1)),
-    ]
+    ],
+    memory=None,
 )
 
 pipe.fit(X, y)

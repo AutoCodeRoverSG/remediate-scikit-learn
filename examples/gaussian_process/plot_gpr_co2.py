@@ -152,7 +152,7 @@ noise_kernel = 0.1**2 * RBF(length_scale=0.1) + WhiteKernel(
 co2_kernel = (
     long_term_trend_kernel + seasonal_kernel + irregularities_kernel + noise_kernel
 )
-co2_kernel
+print(co2_kernel)
 
 # %%
 # Model fitting and extrapolation

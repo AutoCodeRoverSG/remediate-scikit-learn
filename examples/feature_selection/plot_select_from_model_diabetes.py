@@ -178,7 +178,9 @@ for tol in [-1e-2, -1e-3, -1e-4]:
         tol=tol,
         n_jobs=2,
     )
-    model = make_pipeline(StandardScaler(), feature_selector, LogisticRegression())
+    model = make_pipeline(
+        StandardScaler(), feature_selector, LogisticRegression(), memory=None
+    )
     model.fit(X, y)
     end = time()
     print(f"\ntol: {tol}")
