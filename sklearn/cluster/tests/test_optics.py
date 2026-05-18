@@ -13,18 +13,18 @@ from sklearn.datasets import make_blobs
 from sklearn.exceptions import DataConversionWarning, EfficiencyWarning
 from sklearn.metrics.cluster import contingency_matrix
 from sklearn.metrics.pairwise import pairwise_distances
-from sklearn.utils import shuffle
+from sklearn.utils import check_random_state, shuffle
 from sklearn.utils._testing import assert_allclose, assert_array_equal
 from sklearn.utils.fixes import CSR_CONTAINERS
 
-rng = np.random.RandomState(0)
+rng = np.random.default_rng(0)
 n_points_per_cluster = 10
-C1 = [-5, -2] + 0.8 * rng.randn(n_points_per_cluster, 2)
-C2 = [4, -1] + 0.1 * rng.randn(n_points_per_cluster, 2)
-C3 = [1, -2] + 0.2 * rng.randn(n_points_per_cluster, 2)
-C4 = [-2, 3] + 0.3 * rng.randn(n_points_per_cluster, 2)
-C5 = [3, -2] + 1.6 * rng.randn(n_points_per_cluster, 2)
-C6 = [5, 6] + 2 * rng.randn(n_points_per_cluster, 2)
+C1 = [-5, -2] + 0.8 * rng.standard_normal((n_points_per_cluster, 2))
+C2 = [4, -1] + 0.1 * rng.standard_normal((n_points_per_cluster, 2))
+C3 = [1, -2] + 0.2 * rng.standard_normal((n_points_per_cluster, 2))
+C4 = [-2, 3] + 0.3 * rng.standard_normal((n_points_per_cluster, 2))
+C5 = [3, -2] + 1.6 * rng.standard_normal((n_points_per_cluster, 2))
+C6 = [5, 6] + 2 * rng.standard_normal((n_points_per_cluster, 2))
 X = np.vstack((C1, C2, C3, C4, C5, C6))
 
 
@@ -211,7 +211,7 @@ def test_bad_extract():
     # Test an extraction of eps too close to original eps
     msg = "Specify an epsilon smaller than 0.15. Got 0.3."
     centers = [[1, 1], [-1, -1], [1, -1]]
-    X, labels_true = make_blobs(
+    X, _ = make_blobs(
         n_samples=750, centers=centers, cluster_std=0.4, random_state=0
     )
 
@@ -224,7 +224,7 @@ def test_bad_extract():
 def test_bad_reachability():
     msg = "All reachability values are inf. Set a larger max_eps."
     centers = [[1, 1], [-1, -1], [1, -1]]
-    X, labels_true = make_blobs(
+    X, _ = make_blobs(
         n_samples=750, centers=centers, cluster_std=0.4, random_state=0
     )
 
@@ -272,23 +272,23 @@ def test_nowarn_if_metric_no_bool():
     # make sure no conversion warning is raised if
     # metric isn't boolean, no matter what the data type is
     pairwise_metric = "minkowski"
-    X_bool = np.random.randint(2, size=(5, 2), dtype=bool)
-    X_num = np.random.randint(2, size=(5, 2), dtype=np.int32)
+    x_bool = np.random.randint(2, size=(5, 2), dtype=bool)
+    x_num = np.random.randint(2, size=(5, 2), dtype=np.int32)
 
     with warnings.catch_warnings():
         warnings.simplefilter("error", DataConversionWarning)
 
         # fit boolean data
-        OPTICS(metric=pairwise_metric).fit(X_bool)
+        OPTICS(metric=pairwise_metric).fit(x_bool)
         # fit numeric data
-        OPTICS(metric=pairwise_metric).fit(X_num)
+        OPTICS(metric=pairwise_metric).fit(x_num)
 
 
 def test_close_extract():
     # Test extract where extraction eps is close to scaled max_eps
 
     centers = [[1, 1], [-1, -1], [1, -1]]
-    X, labels_true = make_blobs(
+    X, _ = make_blobs(
         n_samples=750, centers=centers, cluster_std=0.4, random_state=0
     )
 
@@ -309,7 +309,7 @@ def test_dbscan_optics_parity(eps, min_samples, metric, global_dtype, csr_contai
     # Test that OPTICS clustering labels are <= 5% difference of DBSCAN
 
     centers = [[1, 1], [-1, -1], [1, -1]]
-    X, labels_true = make_blobs(
+    X, _ = make_blobs(
         n_samples=150, centers=centers, cluster_std=0.4, random_state=0
     )
     X = csr_container(X) if csr_container is not None else X
@@ -359,17 +359,17 @@ def test_min_samples_edge_case(global_dtype):
 # try arbitrary minimum sizes
 @pytest.mark.parametrize("min_cluster_size", range(2, X.shape[0] // 10, 23))
 def test_min_cluster_size(min_cluster_size, global_dtype):
-    redX = X[::2].astype(global_dtype, copy=False)  # reduce for speed
-    clust = OPTICS(min_samples=9, min_cluster_size=min_cluster_size).fit(redX)
+    red_x = X[::2].astype(global_dtype, copy=False)  # reduce for speed
+    clust = OPTICS(min_samples=9, min_cluster_size=min_cluster_size).fit(red_x)
     cluster_sizes = np.bincount(clust.labels_[clust.labels_ != -1])
     if cluster_sizes.size:
         assert min(cluster_sizes) >= min_cluster_size
     # check behaviour is the same when min_cluster_size is a fraction
     clust_frac = OPTICS(
         min_samples=9,
-        min_cluster_size=min_cluster_size / redX.shape[0],
+        min_cluster_size=min_cluster_size / red_x.shape[0],
     )
-    clust_frac.fit(redX)
+    clust_frac.fit(red_x)
     assert_array_equal(clust.labels_, clust_frac.labels_)
 
 
@@ -590,7 +590,17 @@ def test_compare_to_ELKI():
     # Tests against known extraction array
     # Does NOT work with metric='euclidean', because sklearn euclidean has
     # worse numeric precision. 'minkowski' is slower but more accurate.
-    clust1 = OPTICS(min_samples=5).fit(X)
+    ref_rng = check_random_state(0)
+    ref_n = 10
+    ref_c1 = [-5, -2] + 0.8 * ref_rng.randn(ref_n, 2)
+    ref_c2 = [4, -1] + 0.1 * ref_rng.randn(ref_n, 2)
+    ref_c3 = [1, -2] + 0.2 * ref_rng.randn(ref_n, 2)
+    ref_c4 = [-2, 3] + 0.3 * ref_rng.randn(ref_n, 2)
+    ref_c5 = [3, -2] + 1.6 * ref_rng.randn(ref_n, 2)
+    ref_c6 = [5, 6] + 2 * ref_rng.randn(ref_n, 2)
+    ref_data = np.vstack((ref_c1, ref_c2, ref_c3, ref_c4, ref_c5, ref_c6))
+
+    clust1 = OPTICS(min_samples=5).fit(ref_data)
 
     assert_array_equal(clust1.ordering_, np.array(o1))
     assert_array_equal(clust1.predecessor_[clust1.ordering_], np.array(p1))
@@ -787,7 +797,7 @@ def test_compare_to_ELKI():
         -1,
         -1,
     ]
-    clust2 = OPTICS(min_samples=5, max_eps=0.5).fit(X)
+    clust2 = OPTICS(min_samples=5, max_eps=0.5).fit(ref_data)
 
     assert_array_equal(clust2.ordering_, np.array(o2))
     assert_array_equal(clust2.predecessor_[clust2.ordering_], np.array(p2))
@@ -816,15 +826,15 @@ def test_extract_dbscan(global_dtype, global_random_seed):
 
 @pytest.mark.parametrize("csr_container", [None] + CSR_CONTAINERS)
 def test_precomputed_dists(global_dtype, csr_container):
-    redX = X[::2].astype(global_dtype, copy=False)
-    dists = pairwise_distances(redX, metric="euclidean")
+    red_x = X[::2].astype(global_dtype, copy=False)
+    dists = pairwise_distances(red_x, metric="euclidean")
     dists = csr_container(dists) if csr_container is not None else dists
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", EfficiencyWarning)
         clust1 = OPTICS(min_samples=10, algorithm="brute", metric="precomputed").fit(
             dists
         )
-    clust2 = OPTICS(min_samples=10, algorithm="brute", metric="euclidean").fit(redX)
+    clust2 = OPTICS(min_samples=10, algorithm="brute", metric="euclidean").fit(red_x)
 
     assert_allclose(clust1.reachability_, clust2.reachability_)
     assert_array_equal(clust1.labels_, clust2.labels_)
@@ -845,12 +855,12 @@ def test_optics_input_not_modified_precomputed_sparse_nodiag(
     np.fill_diagonal(X, 0)
     X = csr_container(X)
     assert all(row != col for row, col in zip(*X.nonzero()))
-    X_copy = X.copy()
+    x_copy = X.copy()
     OPTICS(metric="precomputed").fit(X)
     # Make sure that we did not modify `X` in-place even by creating
     # explicit 0s values.
-    assert X.nnz == X_copy.nnz
-    assert_array_equal(X.toarray(), X_copy.toarray())
+    assert X.nnz == x_copy.nnz
+    assert_array_equal(X.toarray(), x_copy.toarray())
 
 
 def test_optics_predecessor_correction_ordering():
