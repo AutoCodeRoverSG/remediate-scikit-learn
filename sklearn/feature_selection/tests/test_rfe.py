@@ -42,14 +42,14 @@ class MockClassifier(ClassifierMixin, BaseEstimator):
         self.classes_ = sorted(set(y))
         return self
 
-    def predict(self, T):
-        return np.ones(T.shape[0])
+    def predict(self, X):
+        return np.ones(X.shape[0])
 
     predict_proba = predict
     decision_function = predict
     transform = predict
 
-    def score(self, X=None, y=None):
+    def score(self, X=None, y=None, sample_weight=None):
         return 0.0
 
     def get_params(self, deep=True):
@@ -72,7 +72,13 @@ def test_rfe_features_importance():
     X = np.c_[iris.data, generator.normal(size=(len(iris.data), 6))]
     y = iris.target
 
-    clf = RandomForestClassifier(n_estimators=20, random_state=generator, max_depth=2)
+    clf = RandomForestClassifier(
+        n_estimators=20,
+        random_state=generator,
+        max_depth=2,
+        min_samples_leaf=1,
+        max_features="sqrt",
+    )
     rfe = RFE(estimator=clf, n_features_to_select=4, step=0.1)
     rfe.fit(X, y)
     assert len(rfe.ranking_) == X.shape[1]
@@ -92,29 +98,29 @@ def test_rfe(csr_container):
     # Add some irrelevant features. Random seed is set to make sure that
     # irrelevant features are always irrelevant.
     X = np.c_[iris.data, generator.normal(size=(len(iris.data), 6))]
-    X_sparse = csr_container(X)
+    x_sparse = csr_container(X)
     y = iris.target
 
     # dense model
     clf = SVC(kernel="linear")
     rfe = RFE(estimator=clf, n_features_to_select=4, step=0.1)
     rfe.fit(X, y)
-    X_r = rfe.transform(X)
-    clf.fit(X_r, y)
+    x_r = rfe.transform(X)
+    clf.fit(x_r, y)
     assert len(rfe.ranking_) == X.shape[1]
 
     # sparse model
     clf_sparse = SVC(kernel="linear")
     rfe_sparse = RFE(estimator=clf_sparse, n_features_to_select=4, step=0.1)
-    rfe_sparse.fit(X_sparse, y)
-    X_r_sparse = rfe_sparse.transform(X_sparse)
+    rfe_sparse.fit(x_sparse, y)
+    x_r_sparse = rfe_sparse.transform(x_sparse)
 
-    assert X_r.shape == iris.data.shape
-    assert_array_almost_equal(X_r[:10], iris.data[:10])
+    assert x_r.shape == iris.data.shape
+    assert_array_almost_equal(x_r[:10], iris.data[:10])
 
     assert_array_almost_equal(rfe.predict(X), clf.predict(iris.data))
     assert rfe.score(X, y) == clf.score(iris.data, iris.target)
-    assert_array_almost_equal(X_r, X_r_sparse.toarray())
+    assert_array_almost_equal(x_r, x_r_sparse.toarray())
 
 
 def test_RFE_fit_score_params():
@@ -174,10 +180,10 @@ def test_rfe_mockclassifier():
     clf = MockClassifier()
     rfe = RFE(estimator=clf, n_features_to_select=4, step=0.1)
     rfe.fit(X, y)
-    X_r = rfe.transform(X)
-    clf.fit(X_r, y)
+    x_r = rfe.transform(X)
+    clf.fit(x_r, y)
     assert len(rfe.ranking_) == X.shape[1]
-    assert X_r.shape == iris.data.shape
+    assert x_r.shape == iris.data.shape
 
 
 @pytest.mark.parametrize("csr_container", CSR_CONTAINERS)
@@ -198,31 +204,31 @@ def test_rfecv(csr_container):
         assert len(rfecv.cv_results_[key]) == X.shape[1]
 
     assert len(rfecv.ranking_) == X.shape[1]
-    X_r = rfecv.transform(X)
+    x_r = rfecv.transform(X)
 
     # All the noisy variable were filtered out
-    assert_array_equal(X_r, iris.data)
+    assert_array_equal(x_r, iris.data)
 
     # same in sparse
     rfecv_sparse = RFECV(estimator=SVC(kernel="linear"), step=1)
-    X_sparse = csr_container(X)
-    rfecv_sparse.fit(X_sparse, y)
-    X_r_sparse = rfecv_sparse.transform(X_sparse)
-    assert_array_equal(X_r_sparse.toarray(), iris.data)
+    x_sparse = csr_container(X)
+    rfecv_sparse.fit(x_sparse, y)
+    x_r_sparse = rfecv_sparse.transform(x_sparse)
+    assert_array_equal(x_r_sparse.toarray(), iris.data)
 
     # Test using a customized loss function
     scoring = make_scorer(zero_one_loss, greater_is_better=False)
     rfecv = RFECV(estimator=SVC(kernel="linear"), step=1, scoring=scoring)
     ignore_warnings(rfecv.fit)(X, y)
-    X_r = rfecv.transform(X)
-    assert_array_equal(X_r, iris.data)
+    x_r = rfecv.transform(X)
+    assert_array_equal(x_r, iris.data)
 
     # Test using a scorer
     scorer = get_scorer("accuracy")
     rfecv = RFECV(estimator=SVC(kernel="linear"), step=1, scoring=scorer)
     rfecv.fit(X, y)
-    X_r = rfecv.transform(X)
-    assert_array_equal(X_r, iris.data)
+    x_r = rfecv.transform(X)
+    assert_array_equal(x_r, iris.data)
 
     # Test fix on cv_results_
     def test_scorer(estimator, X, y):
@@ -245,21 +251,21 @@ def test_rfecv(csr_container):
         assert len(rfecv.cv_results_[key]) == 6
 
     assert len(rfecv.ranking_) == X.shape[1]
-    X_r = rfecv.transform(X)
-    assert_array_equal(X_r, iris.data)
+    x_r = rfecv.transform(X)
+    assert_array_equal(x_r, iris.data)
 
     rfecv_sparse = RFECV(estimator=SVC(kernel="linear"), step=2)
-    X_sparse = csr_container(X)
-    rfecv_sparse.fit(X_sparse, y)
-    X_r_sparse = rfecv_sparse.transform(X_sparse)
-    assert_array_equal(X_r_sparse.toarray(), iris.data)
+    x_sparse = csr_container(X)
+    rfecv_sparse.fit(x_sparse, y)
+    x_r_sparse = rfecv_sparse.transform(x_sparse)
+    assert_array_equal(x_r_sparse.toarray(), iris.data)
 
     # Verifying that steps < 1 don't blow up.
     rfecv_sparse = RFECV(estimator=SVC(kernel="linear"), step=0.2)
-    X_sparse = csr_container(X)
-    rfecv_sparse.fit(X_sparse, y)
-    X_r_sparse = rfecv_sparse.transform(X_sparse)
-    assert_array_equal(X_r_sparse.toarray(), iris.data)
+    x_sparse = csr_container(X)
+    rfecv_sparse.fit(x_sparse, y)
+    x_r_sparse = rfecv_sparse.transform(x_sparse)
+    assert_array_equal(x_r_sparse.toarray(), iris.data)
 
 
 def test_rfecv_mockclassifier():
@@ -338,7 +344,7 @@ def test_rfe_min_step(global_random_seed):
     X, y = make_friedman1(
         n_samples=50, n_features=n_features, random_state=global_random_seed
     )
-    n_samples, n_features = X.shape
+    _, n_features = X.shape
     estimator = SVR(kernel="linear")
 
     # Test when floor(step * n_features) <= 0
@@ -452,7 +458,9 @@ def test_rfe_cv_groups():
     y = (iris.target > 0).astype(int)
 
     est_groups = RFECV(
-        estimator=RandomForestClassifier(random_state=generator),
+        estimator=RandomForestClassifier(
+            random_state=generator, min_samples_leaf=1, max_features="sqrt"
+        ),
         step=1,
         scoring="accuracy",
         cv=GroupKFold(n_splits=2),
@@ -488,8 +496,8 @@ def test_rfe_wrapped_estimator(importance_getter, selector, expected_n_features)
         (lambda x: x.importance, AttributeError),
     ],
 )
-@pytest.mark.parametrize("Selector", [RFE, RFECV])
-def test_rfe_importance_getter_validation(importance_getter, err_type, Selector):
+@pytest.mark.parametrize("selector", [RFE, RFECV])
+def test_rfe_importance_getter_validation(importance_getter, err_type, selector):
     X, y = make_friedman1(n_samples=50, n_features=10, random_state=42)
     estimator = LinearSVR()
     log_estimator = TransformedTargetRegressor(
@@ -497,7 +505,7 @@ def test_rfe_importance_getter_validation(importance_getter, err_type, Selector)
     )
 
     with pytest.raises(err_type):
-        model = Selector(log_estimator, importance_getter=importance_getter)
+        model = selector(log_estimator, importance_getter=importance_getter)
         model.fit(X, y)
 
 
@@ -578,7 +586,11 @@ def test_rfecv_cv_results_n_features(
     cv_results_n_features,
 ):
     X, y = make_classification(
-        n_samples=20, n_features=n_features, n_informative=n_features, n_redundant=0
+        n_samples=20,
+        n_features=n_features,
+        n_informative=n_features,
+        n_redundant=0,
+        random_state=0,
     )
     rfecv = RFECV(
         estimator=SVC(kernel="linear"),
@@ -595,9 +607,12 @@ def test_rfecv_cv_results_n_features(
 
 @pytest.mark.parametrize("ClsRFE", [RFE, RFECV])
 def test_multioutput(ClsRFE):
-    X = np.random.normal(size=(10, 3))
-    y = np.random.randint(2, size=(10, 2))
-    clf = RandomForestClassifier(n_estimators=5)
+    rng = np.random.default_rng(0)
+    X = rng.normal(size=(10, 3))
+    y = rng.integers(2, size=(10, 2))
+    clf = RandomForestClassifier(
+        n_estimators=5, random_state=0, min_samples_leaf=1, max_features="sqrt"
+    )
     rfe_test = ClsRFE(clf)
     rfe_test.fit(X, y)
 
