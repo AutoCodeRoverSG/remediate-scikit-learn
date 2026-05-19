@@ -287,8 +287,8 @@ def test_precision_recall_f_binary_single_class():
 
     assert precision_score([-1, -1], [-1, -1]) == pytest.approx(0.0)
     assert recall_score([-1, -1], [-1, -1]) == pytest.approx(0.0)
-    assert f1_score([-1, -1], [-1, -1]) == pytest.approx(0.0)
-    assert fbeta_score([-1, -1], [-1, -1], beta=float("inf")) == pytest.approx(0.0)
+    assert_almost_equal(f1_score([-1, -1], [-1, -1]), 0.0)
+    assert_almost_equal(fbeta_score([-1, -1], [-1, -1], beta=float("inf")), 0.0)
     assert fbeta_score([-1, -1], [-1, -1], beta=float("inf")) == pytest.approx(
         fbeta_score([-1, -1], [-1, -1], beta=1e5)
     )
@@ -450,7 +450,7 @@ def test_average_precision_score_tied_values(y_true, y_score):
     # could be swapped around, creating an imperfect sorting. This
     # imperfection should come through in the end score, making it less
     # than one.
-    assert average_precision_score(y_true, y_score) != 1.0
+    assert average_precision_score(y_true, y_score) != pytest.approx(1.0)
 
 
 def test_precision_recall_f_unused_pos_label():
@@ -998,13 +998,13 @@ def test_zero_division_nan_warning(metric, y_true, y_pred):
     """
     with pytest.warns(UndefinedMetricWarning):
         result = metric(y_true, y_pred, zero_division="warn")
-    assert result == 0.0
+    assert result == pytest.approx(0.0)
 
 
 def test_matthews_corrcoef_against_numpy_corrcoef(global_random_seed):
-    rng = np.random.RandomState(global_random_seed)
-    y_true = rng.randint(0, 2, size=20)
-    y_pred = rng.randint(0, 2, size=20)
+    rng = np.random.default_rng(global_random_seed)
+    y_true = rng.integers(0, 2, size=20)
+    y_pred = rng.integers(0, 2, size=20)
 
     assert_almost_equal(
         matthews_corrcoef(y_true, y_pred), np.corrcoef(y_true, y_pred)[0, 1], 10
@@ -1015,10 +1015,10 @@ def test_matthews_corrcoef_against_jurman(global_random_seed):
     # Check that the multiclass matthews_corrcoef agrees with the definition
     # presented in Jurman, Riccadonna, Furlanello, (2012). A Comparison of MCC
     # and CEN Error Measures in MultiClass Prediction
-    rng = np.random.RandomState(global_random_seed)
-    y_true = rng.randint(0, 2, size=20)
-    y_pred = rng.randint(0, 2, size=20)
-    sample_weight = rng.rand(20)
+    rng = np.random.default_rng(global_random_seed)
+    y_true = rng.integers(0, 2, size=20)
+    y_pred = rng.integers(0, 2, size=20)
+    sample_weight = rng.random(20)
 
     C = confusion_matrix(y_true, y_pred, sample_weight=sample_weight)
     N = len(C)
@@ -1051,8 +1051,8 @@ def test_matthews_corrcoef_against_jurman(global_random_seed):
 
 
 def test_matthews_corrcoef(global_random_seed):
-    rng = np.random.RandomState(global_random_seed)
-    y_true = ["a" if i == 0 else "b" for i in rng.randint(0, 2, size=20)]
+    rng = np.random.default_rng(global_random_seed)
+    y_true = ["a" if i == 0 else "b" for i in rng.integers(0, 2, size=20)]
 
     # corrcoef of same vectors must be 1
     assert_almost_equal(matthews_corrcoef(y_true, y_true), 1.0)
@@ -1086,10 +1086,10 @@ def test_matthews_corrcoef(global_random_seed):
 
 
 def test_matthews_corrcoef_multiclass(global_random_seed):
-    rng = np.random.RandomState(global_random_seed)
+    rng = np.random.default_rng(global_random_seed)
     ord_a = ord("a")
     n_classes = 4
-    y_true = [chr(ord_a + i) for i in rng.randint(0, n_classes, size=20)]
+    y_true = [chr(ord_a + i) for i in rng.integers(0, n_classes, size=20)]
 
     # corrcoef of same vectors must be 1
     assert_almost_equal(matthews_corrcoef(y_true, y_true), 1.0)
@@ -1144,7 +1144,7 @@ def test_matthews_corrcoef_multiclass(global_random_seed):
 @pytest.mark.parametrize("n_points", [100, 10000])
 def test_matthews_corrcoef_overflow(n_points, global_random_seed):
     # https://github.com/scikit-learn/scikit-learn/issues/9622
-    rng = np.random.RandomState(global_random_seed)
+    rng = np.random.default_rng(global_random_seed)
 
     def mcc_safe(y_true, y_pred):
         conf_matrix = confusion_matrix(y_true, y_pred)
@@ -1159,8 +1159,8 @@ def test_matthews_corrcoef_overflow(n_points, global_random_seed):
         return mcc_numerator / np.sqrt(mcc_denominator)
 
     def random_ys(n_points):  # binary
-        x_true = rng.random_sample(n_points)
-        x_pred = x_true + 0.2 * (rng.random_sample(n_points) - 0.5)
+        x_true = rng.random(n_points)
+        x_pred = x_true + 0.2 * (rng.random(n_points) - 0.5)
         y_true = x_true > 0.5
         y_pred = x_pred > 0.5
         return y_true, y_pred
@@ -1591,7 +1591,7 @@ def test_multilabel_zero_one_loss_subset():
     y1 = np.array([[0, 1, 1], [1, 0, 1]])
     y2 = np.array([[0, 0, 1], [1, 0, 1]])
 
-    assert zero_one_loss(y1, y2) == 0.5
+    assert zero_one_loss(y1, y2) == pytest.approx(0.5)
     assert zero_one_loss(y1, y1) == 0
     assert zero_one_loss(y2, y2) == 0
     assert zero_one_loss(y2, np.logical_not(y2)) == 1
