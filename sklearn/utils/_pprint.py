@@ -93,8 +93,19 @@ def _changed_params(estimator):
     estimator with non-default values."""
 
     params = estimator.get_params(deep=False)
-    init_params = inspect.signature(estimator.__init__).parameters
-    init_params = {name: param.default for name, param in init_params.items()}
+    init_params = {}
+    for klass in type(estimator).__mro__:
+        init = klass.__dict__.get("__init__")
+        if init is None or init is object.__init__:
+            continue
+        sig = inspect.signature(init)
+        for name, param in sig.parameters.items():
+            if (
+                name != "self"
+                and param.kind != param.VAR_KEYWORD
+                and name not in init_params
+            ):
+                init_params[name] = param.default
 
     def has_changed(k, v):
         if k not in init_params:  # happens if k is part of a **kwargs

@@ -286,10 +286,19 @@ class BaseEstimator(ReprHTMLMixin, _HTMLDocumentationLinkMixin, _MetadataRequest
         """
         out = self.get_params(deep=deep)
 
-        init_default_params = inspect.signature(self.__init__).parameters
-        init_default_params = {
-            name: param.default for name, param in init_default_params.items()
-        }
+        init_default_params = {}
+        for klass in type(self).__mro__:
+            init = klass.__dict__.get("__init__")
+            if init is None or init is object.__init__:
+                continue
+            sig = inspect.signature(init)
+            for name, param in sig.parameters.items():
+                if (
+                    name != "self"
+                    and param.kind != param.VAR_KEYWORD
+                    and name not in init_default_params
+                ):
+                    init_default_params[name] = param.default
 
         def is_non_default(param_name, param_value):
             """Finds the parameters that have been set by the user."""
