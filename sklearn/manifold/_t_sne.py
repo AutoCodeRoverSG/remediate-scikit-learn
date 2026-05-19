@@ -389,7 +389,7 @@ def _gradient_descent(
     gains = np.ones_like(p)
     error = np.finfo(float).max
     best_error = np.finfo(float).max
-    best_iter = i = it
+    best_iter = it
 
     tic = time()
     for i in range(it, max_iter):
@@ -441,19 +441,19 @@ def _gradient_descent(
                     )
                 break
 
-    return p, error, i
+    return p, error, i if it < max_iter else it
 
 
 @validate_params(
     {
         "X": ["array-like", "sparse matrix"],
-        "X_embedded": ["array-like", "sparse matrix"],
+        "x_embedded": ["array-like", "sparse matrix"],
         "n_neighbors": [Interval(Integral, 1, None, closed="left")],
         "metric": [StrOptions(set(_VALID_METRICS) | {"precomputed"}), callable],
     },
     prefer_skip_nested_validation=True,
 )
-def trustworthiness(X, X_embedded, *, n_neighbors=5, metric="euclidean"):
+def trustworthiness(X, x_embedded, *, n_neighbors=5, metric="euclidean"):
     r"""Indicate to what extent the local structure is retained.
 
     The trustworthiness is within [0, 1]. It is defined as
@@ -476,7 +476,7 @@ def trustworthiness(X, X_embedded, *, n_neighbors=5, metric="euclidean"):
         If the metric is 'precomputed' X must be a square distance
         matrix. Otherwise it contains a sample per row.
 
-    X_embedded : {array-like, sparse matrix} of shape (n_samples, n_components)
+    x_embedded : {array-like, sparse matrix} of shape (n_samples, n_components)
         Embedding of the training data in low-dimensional space.
 
     n_neighbors : int, default=5
@@ -527,17 +527,17 @@ def trustworthiness(X, X_embedded, *, n_neighbors=5, metric="euclidean"):
             f"n_neighbors ({n_neighbors}) should be less than n_samples / 2"
             f" ({n_samples / 2})"
         )
-    dist_X = pairwise_distances(X, metric=metric)
+    dist_x = pairwise_distances(X, metric=metric)
     if metric == "precomputed":
-        dist_X = dist_X.copy()
+        dist_x = dist_x.copy()
     # we set the diagonal to np.inf to exclude the points themselves from
     # their own neighborhood
-    np.fill_diagonal(dist_X, np.inf)
-    ind_X = np.argsort(dist_X, axis=1)
+    np.fill_diagonal(dist_x, np.inf)
+    ind_x = np.argsort(dist_x, axis=1)
     # `ind_X[i]` is the index of sorted distances between i and other samples
-    ind_X_embedded = (
+    ind_x_embedded = (
         NearestNeighbors(n_neighbors=n_neighbors)
-        .fit(X_embedded)
+        .fit(x_embedded)
         .kneighbors(return_distance=False)
     )
 
@@ -546,9 +546,9 @@ def trustworthiness(X, X_embedded, *, n_neighbors=5, metric="euclidean"):
     # inverted_index[i][ind_X[i]] = np.arange(1, n_sample + 1)
     inverted_index = np.zeros((n_samples, n_samples), dtype=int)
     ordered_indices = np.arange(n_samples + 1)
-    inverted_index[ordered_indices[:-1, np.newaxis], ind_X] = ordered_indices[1:]
+    inverted_index[ordered_indices[:-1, np.newaxis], ind_x] = ordered_indices[1:]
     ranks = (
-        inverted_index[ordered_indices[:-1, np.newaxis], ind_X_embedded] - n_neighbors
+        inverted_index[ordered_indices[:-1, np.newaxis], ind_x_embedded] - n_neighbors
     )
     t = np.sum(ranks[ranks > 0])
     t = 1.0 - t * (
@@ -807,6 +807,12 @@ class TSNE(ClassNamePrefixFeaturesOutMixin, TransformerMixin, BaseEstimator):
     # Control the number of iterations between progress checks
     _N_ITER_CHECK = 50
 
+    _kwargs_defaults = {
+        "method": "barnes_hut",
+        "angle": 0.5,
+        "n_jobs": None,
+    }
+
     def __init__(
         self,
         n_components=2,
@@ -822,10 +828,17 @@ class TSNE(ClassNamePrefixFeaturesOutMixin, TransformerMixin, BaseEstimator):
         init="pca",
         verbose=0,
         random_state=None,
-        method="barnes_hut",
-        angle=0.5,
-        n_jobs=None,
+        **kwargs,
     ):
+        extra_params = {
+            key: kwargs.pop(key, default)
+            for key, default in self._kwargs_defaults.items()
+        }
+        if kwargs:
+            raise TypeError(
+                f"__init__() got unexpected keyword arguments: "
+                f"{', '.join(sorted(kwargs))}"
+            )
         self.n_components = n_components
         self.perplexity = perplexity
         self.early_exaggeration = early_exaggeration
@@ -838,9 +851,14 @@ class TSNE(ClassNamePrefixFeaturesOutMixin, TransformerMixin, BaseEstimator):
         self.init = init
         self.verbose = verbose
         self.random_state = random_state
-        self.method = method
-        self.angle = angle
-        self.n_jobs = n_jobs
+        self.method = extra_params["method"]
+        self.angle = extra_params["angle"]
+        self.n_jobs = extra_params["n_jobs"]
+
+    @classmethod
+    def _get_param_names(cls):
+        base_params = super()._get_param_names()
+        return sorted(set(base_params) | set(cls._kwargs_defaults))
 
     def _check_params_vs_input(self, X):
         if self.perplexity >= X.shape[0]:
@@ -998,7 +1016,7 @@ class TSNE(ClassNamePrefixFeaturesOutMixin, TransformerMixin, BaseEstimator):
             P = _joint_probabilities_nn(distances_nn, self.perplexity, self.verbose)
 
         if isinstance(self.init, np.ndarray):
-            X_embedded = self.init
+            x_embedded = self.init
         elif self.init == "pca":
             pca = PCA(
                 n_components=self.n_components,
@@ -1006,14 +1024,14 @@ class TSNE(ClassNamePrefixFeaturesOutMixin, TransformerMixin, BaseEstimator):
             )
             # Always output a numpy array, no matter what is configured globally
             pca.set_output(transform="default")
-            X_embedded = pca.fit_transform(X).astype(np.float32, copy=False)
+            x_embedded = pca.fit_transform(X).astype(np.float32, copy=False)
             # PCA is rescaled so that PC1 has standard deviation 1e-4 which is
             # the default value for random initialization. See issue #18018.
-            X_embedded = X_embedded / np.std(X_embedded[:, 0]) * 1e-4
+            x_embedded = x_embedded / np.std(x_embedded[:, 0]) * 1e-4
         elif self.init == "random":
             # The embedding is initialized with iid samples from Gaussians with
             # standard deviation 1e-4.
-            X_embedded = 1e-4 * random_state.standard_normal(
+            x_embedded = 1e-4 * random_state.standard_normal(
                 size=(n_samples, self.n_components)
             ).astype(np.float32)
 
@@ -1027,17 +1045,17 @@ class TSNE(ClassNamePrefixFeaturesOutMixin, TransformerMixin, BaseEstimator):
             P,
             degrees_of_freedom,
             n_samples,
-            X_embedded=X_embedded,
+            x_embedded=x_embedded,
             neighbors=neighbors_nn,
             skip_num_points=skip_num_points,
         )
 
     def _tsne(
         self,
-        P,
+        p,
         degrees_of_freedom,
         n_samples,
-        X_embedded,
+        x_embedded,
         neighbors=None,
         skip_num_points=0,
     ):
@@ -1047,7 +1065,7 @@ class TSNE(ClassNamePrefixFeaturesOutMixin, TransformerMixin, BaseEstimator):
         # we use is batch gradient descent with two stages:
         # * initial optimization with early exaggeration and momentum at 0.5
         # * final optimization with momentum at 0.8
-        params = X_embedded.ravel()
+        params = x_embedded.ravel()
 
         opt_args = {
             "it": 0,
@@ -1055,8 +1073,8 @@ class TSNE(ClassNamePrefixFeaturesOutMixin, TransformerMixin, BaseEstimator):
             "min_grad_norm": self.min_grad_norm,
             "learning_rate": self.learning_rate_,
             "verbose": self.verbose,
-            "kwargs": dict(skip_num_points=skip_num_points),
-            "args": [P, degrees_of_freedom, n_samples, self.n_components],
+            "kwargs": {"skip_num_points": skip_num_points},
+            "args": [p, degrees_of_freedom, n_samples, self.n_components],
             "n_iter_without_progress": self._EXPLORATION_MAX_ITER,
             "max_iter": self._EXPLORATION_MAX_ITER,
             "momentum": 0.5,
@@ -1074,7 +1092,7 @@ class TSNE(ClassNamePrefixFeaturesOutMixin, TransformerMixin, BaseEstimator):
 
         # Learning schedule (part 1): do 250 iteration with lower momentum but
         # higher learning rate controlled via the early exaggeration parameter
-        P *= self.early_exaggeration
+        p *= self.early_exaggeration
         params, kl_divergence, it = _gradient_descent(obj_func, params, **opt_args)
         if self.verbose:
             print(
@@ -1084,7 +1102,7 @@ class TSNE(ClassNamePrefixFeaturesOutMixin, TransformerMixin, BaseEstimator):
 
         # Learning schedule (part 2): disable early exaggeration and finish
         # optimization with a higher momentum at 0.8
-        P /= self.early_exaggeration
+        p /= self.early_exaggeration
         remaining = self.max_iter - self._EXPLORATION_MAX_ITER
         if it < self._EXPLORATION_MAX_ITER or remaining > 0:
             opt_args["max_iter"] = self.max_iter
@@ -1102,10 +1120,10 @@ class TSNE(ClassNamePrefixFeaturesOutMixin, TransformerMixin, BaseEstimator):
                 % (it + 1, kl_divergence)
             )
 
-        X_embedded = params.reshape(n_samples, self.n_components)
+        x_embedded = params.reshape(n_samples, self.n_components)
         self.kl_divergence_ = kl_divergence
 
-        return X_embedded
+        return x_embedded
 
     @_fit_context(
         # TSNE.metric is not validated yet
