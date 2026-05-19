@@ -251,13 +251,13 @@ def test_spectral_embedding_callable_affinity(sparse_container, seed=36):
         n_components=2,
         affinity=(lambda x: rbf_kernel(x, gamma=gamma)),
         gamma=gamma,
-        random_state=np.random.RandomState(seed),
+        random_state=seed,
     )
     se_rbf = SpectralEmbedding(
         n_components=2,
         affinity="rbf",
         gamma=gamma,
-        random_state=np.random.RandomState(seed),
+        random_state=seed,
     )
     embed_rbf = se_rbf.fit_transform(X)
     embed_callable = se_callable.fit_transform(X)
@@ -277,14 +277,14 @@ def test_spectral_embedding_lobpcg_solver(dtype, global_random_seed):
         affinity="rbf",
         eigen_solver="lobpcg",
         eigen_tol=1e-5,
-        random_state=np.random.RandomState(global_random_seed),
+        random_state=global_random_seed,
     )
     se_arpack = SpectralEmbedding(
         n_components=2,
         affinity="rbf",
         eigen_solver="arpack",
         eigen_tol=0,
-        random_state=np.random.RandomState(global_random_seed),
+        random_state=global_random_seed,
     )
     embed_lobpcg = se_lobpcg.fit_transform(S.astype(dtype))
     embed_arpack = se_arpack.fit_transform(S.astype(dtype))
@@ -306,14 +306,14 @@ def test_spectral_embedding_amg_solver(dtype, coo_container, seed=36):
         affinity="rbf",
         eigen_solver="amg",
         eigen_tol=1e-5,
-        random_state=np.random.RandomState(seed),
+        random_state=seed,
     )
     se_arpack = SpectralEmbedding(
         n_components=2,
         affinity="rbf",
         eigen_solver="arpack",
         eigen_tol=0,
-        random_state=np.random.RandomState(seed),
+        random_state=seed,
     )
     embed_amg = se_amg.fit_transform(S.astype(dtype))
     embed_arpack = se_arpack.fit_transform(S.astype(dtype))
@@ -383,18 +383,17 @@ def test_pipeline_spectral_clustering(seed=36):
     # contrary to SpectralClustering.  So here for n_clusters
     # we will use n_components = n_clusters - 1
     # eigenvectors (since the first one is dropped).
-    random_state = np.random.RandomState(seed)
     se_rbf = SpectralEmbedding(
-        n_components=n_clusters - 1, affinity="rbf", random_state=random_state
+        n_components=n_clusters - 1, affinity="rbf", random_state=seed
     )
     se_knn = SpectralEmbedding(
         n_components=n_clusters - 1,
         affinity="nearest_neighbors",
         n_neighbors=5,
-        random_state=random_state,
+        random_state=seed,
     )
     for se in [se_rbf, se_knn]:
-        km = KMeans(n_clusters=n_clusters, random_state=random_state, n_init=10)
+        km = KMeans(n_clusters=n_clusters, random_state=seed, n_init=10)
         km.fit(se.fit_transform(S))
         assert_array_almost_equal(
             normalized_mutual_info_score(km.labels_, true_labels), 1.0, 2
@@ -436,8 +435,8 @@ def test_connectivity(seed=36):
 
 def test_spectral_embedding_deterministic():
     # Test that Spectral Embedding is deterministic
-    random_state = np.random.RandomState(36)
-    data = random_state.randn(10, 30)
+    rng = np.random.default_rng(36)
+    data = rng.standard_normal((10, 30))
     sims = rbf_kernel(data)
     embedding_1 = spectral_embedding(sims)
     embedding_2 = spectral_embedding(sims)
@@ -456,7 +455,7 @@ def test_spectral_embedding_unnormalized():
     )
 
     # Verify using manual computation with dense eigh
-    laplacian, dd = csgraph_laplacian(sims, normed=False, return_diag=True)
+    laplacian, _ = csgraph_laplacian(sims, normed=False, return_diag=True)
     _, diffusion_map = eigh(laplacian)
     embedding_2 = diffusion_map.T[:n_components]
     embedding_2 = _deterministic_vector_sign_flip(embedding_2).T
@@ -507,9 +506,9 @@ def test_spectral_embedding_preserves_dtype(eigen_solver, dtype):
     se = SpectralEmbedding(
         n_components=2, affinity="rbf", eigen_solver=eigen_solver, random_state=0
     )
-    X_trans = se.fit_transform(X)
+    x_trans = se.fit_transform(X)
 
-    assert X_trans.dtype == dtype
+    assert x_trans.dtype == dtype
     assert se.embedding_.dtype == dtype
     assert se.affinity_matrix_.dtype == dtype
 
