@@ -54,21 +54,21 @@ def check_results(kernel, bandwidth, atol, rtol, X, Y, dens_true):
 def test_kernel_density(kernel, bandwidth):
     n_samples, n_features = (100, 3)
 
-    rng = np.random.RandomState(0)
-    X = rng.randn(n_samples, n_features)
-    Y = rng.randn(n_samples, n_features)
+    rng = np.random.default_rng(0)
+    X = rng.standard_normal((n_samples, n_features))
+    Y = rng.standard_normal((n_samples, n_features))
 
     dens_true = compute_kernel_slow(Y, X, kernel, bandwidth)
 
     for rtol in [0, 1e-5]:
         for atol in [1e-6, 1e-2]:
-            for breadth_first in (True, False):
+            for _ in (True, False):
                 check_results(kernel, bandwidth, atol, rtol, X, Y, dens_true)
 
 
 def test_kernel_density_sampling(n_samples=100, n_features=3):
-    rng = np.random.RandomState(0)
-    X = rng.randn(n_samples, n_features)
+    rng = np.random.default_rng(0)
+    X = rng.standard_normal((n_samples, n_features))
 
     bandwidth = 0.2
 
@@ -80,7 +80,7 @@ def test_kernel_density_sampling(n_samples=100, n_features=3):
 
         # check that samples are in the right range
         nbrs = NearestNeighbors(n_neighbors=1).fit(X)
-        dist, ind = nbrs.kneighbors(X, return_distance=True)
+        dist, _ = nbrs.kneighbors(X, return_distance=True)
 
         if kernel == "tophat":
             assert np.all(dist < bandwidth)
@@ -96,7 +96,7 @@ def test_kernel_density_sampling(n_samples=100, n_features=3):
             kde.sample(100)
 
     # non-regression test: used to return a scalar
-    X = rng.randn(4, 1)
+    X = rng.standard_normal((4, 1))
     kde = KernelDensity(kernel="gaussian").fit(X)
     assert kde.sample().shape == (1, 1)
 
@@ -107,9 +107,9 @@ def test_kernel_density_sampling(n_samples=100, n_features=3):
 )
 def test_kde_algorithm_metric_choice(algorithm, metric):
     # Smoke test for various metrics and algorithms
-    rng = np.random.RandomState(0)
-    X = rng.randn(10, 2)  # 2 features required for haversine dist.
-    Y = rng.randn(10, 2)
+    rng = np.random.default_rng(0)
+    X = rng.standard_normal((10, 2))  # 2 features required for haversine dist.
+    Y = rng.standard_normal((10, 2))
 
     kde = KernelDensity(algorithm=algorithm, metric=metric)
 
@@ -123,11 +123,9 @@ def test_kde_algorithm_metric_choice(algorithm, metric):
 
 
 def test_kde_score(n_samples=100, n_features=3):
+    # TODO: this test is intentionally left empty as a placeholder for future
+    # implementation of KDE score validation.
     pass
-    # FIXME
-    # rng = np.random.RandomState(0)
-    # X = rng.random_sample((n_samples, n_features))
-    # Y = rng.random_sample((n_samples, n_features))
 
 
 def test_kde_sample_weights_error():
@@ -144,8 +142,9 @@ def test_kde_pipeline_gridsearch():
     pipe1 = make_pipeline(
         StandardScaler(with_mean=False, with_std=False),
         KernelDensity(kernel="gaussian"),
+        memory=None,
     )
-    params = dict(kerneldensity__bandwidth=[0.001, 0.01, 0.1, 1, 10])
+    params = {"kerneldensity__bandwidth": [0.001, 0.01, 0.1, 1, 10]}
     search = GridSearchCV(pipe1, param_grid=params)
     search.fit(X)
     assert search.best_params_["kerneldensity__bandwidth"] == 0.1
@@ -159,7 +158,7 @@ def test_kde_sample_weights():
         rng = np.random.RandomState(0)
         X = rng.rand(n_samples, d)
         weights = 1 + (10 * X.sum(axis=1)).astype(np.int8)
-        X_repetitions = np.repeat(X, weights, axis=0)
+        x_repetitions = np.repeat(X, weights, axis=0)
         n_samples_test = size_test // d
         test_points = rng.rand(n_samples_test, d)
         for algorithm in ["auto", "ball_tree", "kd_tree"]:
@@ -181,7 +180,7 @@ def test_kde_sample_weights():
                     kde.fit(X, sample_weight=weights)
                     scores_weight = kde.score_samples(test_points)
                     sample_weight = kde.sample(random_state=1234)
-                    kde.fit(X_repetitions)
+                    kde.fit(x_repetitions)
                     scores_ref_sampling = kde.score_samples(test_points)
                     sample_ref_sampling = kde.sample(random_state=1234)
                     assert_allclose(scores_weight, scores_ref_sampling)
