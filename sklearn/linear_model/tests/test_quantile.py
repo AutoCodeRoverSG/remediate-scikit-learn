@@ -21,7 +21,7 @@ from sklearn.utils.fixes import (
 
 
 @pytest.fixture
-def X_y_data():
+def x_y_data():
     X, y = make_regression(n_samples=10, n_features=1, random_state=0, noise=1)
     return X, y
 
@@ -32,14 +32,14 @@ def X_y_data():
 )
 @pytest.mark.parametrize("solver", ["interior-point", "revised simplex"])
 @pytest.mark.parametrize("csc_container", CSC_CONTAINERS)
-def test_incompatible_solver_for_sparse_input(X_y_data, solver, csc_container):
-    X, y = X_y_data
-    X_sparse = csc_container(X)
+def test_incompatible_solver_for_sparse_input(x_y_data, solver, csc_container):
+    X, y = x_y_data
+    x_sparse = csc_container(X)
     err_msg = (
         f"Solver {solver} does not support sparse X. Use solver 'highs' for example."
     )
     with pytest.raises(ValueError, match=err_msg):
-        QuantileRegressor(solver=solver).fit(X_sparse, y)
+        QuantileRegressor(solver=solver).fit(x_sparse, y)
 
 
 @pytest.mark.parametrize(
@@ -113,11 +113,11 @@ def test_quantile_sample_weight():
 def test_asymmetric_error(quantile):
     """Test quantile regression for asymmetric distributed targets."""
     n_samples = 1000
-    rng = np.random.RandomState(42)
+    rng = np.random.default_rng(42)
     X = np.concatenate(
         (
-            np.abs(rng.randn(n_samples)[:, None]),
-            -rng.randint(2, size=(n_samples, 1)),
+            np.abs(rng.standard_normal(n_samples)[:, None]),
+            -rng.integers(2, size=(n_samples, 1)),
         ),
         axis=1,
     )
@@ -174,19 +174,19 @@ def test_equivariance(quantile):
 
     See Koenker (2005) Quantile Regression, Chapter 2.2.3.
     """
-    rng = np.random.RandomState(42)
+    rng = np.random.default_rng(42)
     n_samples, n_features = 100, 5
     X, y = make_regression(
         n_samples=n_samples,
         n_features=n_features,
         n_informative=n_features,
         noise=0,
-        random_state=rng,
+        random_state=42,
         shuffle=False,
     )
     # make y asymmetric
     y += rng.exponential(scale=100, size=y.shape)
-    params = dict(alpha=0)
+    params = {"alpha": 0}
     model1 = QuantileRegressor(quantile=quantile, **params).fit(X, y)
 
     # coef(q; a*y, X) = a * coef(q; y, X)
@@ -201,14 +201,14 @@ def test_equivariance(quantile):
     assert_allclose(model2.coef_, -a * model1.coef_, rtol=1e-5)
 
     # coef(q; y + X @ g, X) = coef(q; y, X) + g
-    g_intercept, g_coef = rng.randn(), rng.randn(n_features)
+    g_intercept, g_coef = rng.standard_normal(), rng.standard_normal(n_features)
     model2 = QuantileRegressor(quantile=quantile, **params)
     model2.fit(X, y + X @ g_coef + g_intercept)
     assert model2.intercept_ == approx(model1.intercept_ + g_intercept)
     assert_allclose(model2.coef_, model1.coef_ + g_coef, rtol=1e-6)
 
     # coef(q; y, X @ A) = A^-1 @ coef(q; y, X)
-    A = rng.randn(n_features, n_features)
+    A = rng.standard_normal((n_features, n_features))
     model2 = QuantileRegressor(quantile=quantile, **params)
     model2.fit(X @ A, y)
     assert model2.intercept_ == approx(model1.intercept_, rel=1e-5)
@@ -249,14 +249,14 @@ def test_sparse_input(sparse_container, solver, fit_intercept, global_random_see
         random_state=global_random_seed,
         noise=1.0,
     )
-    X_sparse = sparse_container(X)
+    x_sparse = sparse_container(X)
     alpha = 0.1
     quant_dense = QuantileRegressor(
         quantile=quantile_level, alpha=alpha, fit_intercept=fit_intercept
     ).fit(X, y)
     quant_sparse = QuantileRegressor(
         quantile=quantile_level, alpha=alpha, fit_intercept=fit_intercept, solver=solver
-    ).fit(X_sparse, y)
+    ).fit(x_sparse, y)
     assert_allclose(quant_sparse.coef_, quant_dense.coef_, rtol=1e-2)
     sparse_support = quant_sparse.coef_ != 0
     dense_support = quant_dense.coef_ != 0
@@ -265,15 +265,15 @@ def test_sparse_input(sparse_container, solver, fit_intercept, global_random_see
     if fit_intercept:
         assert quant_sparse.intercept_ == approx(quant_dense.intercept_)
         # check that we still predict fraction
-        empirical_coverage = np.mean(y < quant_sparse.predict(X_sparse))
+        empirical_coverage = np.mean(y < quant_sparse.predict(x_sparse))
         assert empirical_coverage == approx(quantile_level, abs=3e-2)
 
 
-def test_error_interior_point_future(X_y_data, monkeypatch):
+def test_error_interior_point_future(x_y_data, monkeypatch):
     """Check that we will raise a proper error when requesting
     `solver='interior-point'` in SciPy >= 1.11.
     """
-    X, y = X_y_data
+    X, y = x_y_data
     import sklearn.linear_model._quantile
 
     with monkeypatch.context() as m:

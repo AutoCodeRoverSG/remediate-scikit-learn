@@ -250,13 +250,13 @@ def test_ransac_warn_exceed_max_skips():
     "sparse_container", COO_CONTAINERS + CSR_CONTAINERS + CSC_CONTAINERS
 )
 def test_ransac_sparse(sparse_container):
-    X_sparse = sparse_container(X)
+    x_sparse = sparse_container(X)
 
     estimator = LinearRegression()
     ransac_estimator = RANSACRegressor(
         estimator, min_samples=2, residual_threshold=5, random_state=0
     )
-    ransac_estimator.fit(X_sparse, y)
+    ransac_estimator.fit(x_sparse, y)
 
     ref_inlier_mask = np.ones_like(ransac_estimator.inlier_mask_).astype(np.bool_)
     ref_inlier_mask[outliers] = False
@@ -474,13 +474,13 @@ def test_ransac_fit_sample_weight():
     X_ = random_state.randint(0, 200, [10, 1])
     y_ = np.ndarray.flatten(0.2 * X_ + 2)
     sample_weight = random_state.randint(0, 10, 10)
-    outlier_X = random_state.randint(0, 1000, [1, 1])
+    outlier_x = random_state.randint(0, 1000, [1, 1])
     outlier_weight = random_state.randint(0, 10, 1)
     outlier_y = random_state.randint(-1000, 0, 1)
 
     X_flat = np.append(
         np.repeat(X_, sample_weight, axis=0),
-        np.repeat(outlier_X, outlier_weight, axis=0),
+        np.repeat(outlier_x, outlier_weight, axis=0),
         axis=0,
     )
     y_flat = np.ndarray.flatten(
@@ -494,7 +494,7 @@ def test_ransac_fit_sample_weight():
     ref_coef_ = ransac_estimator.estimator_.coef_
 
     sample_weight = np.append(sample_weight, outlier_weight)
-    X_ = np.append(X_, outlier_X, axis=0)
+    X_ = np.append(X_, outlier_x, axis=0)
     y_ = np.append(y_, outlier_y)
     ransac_estimator.fit(X_, y_, sample_weight=sample_weight)
 
