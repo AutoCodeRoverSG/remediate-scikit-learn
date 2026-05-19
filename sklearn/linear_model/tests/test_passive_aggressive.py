@@ -91,7 +91,7 @@ class MyPassiveAggressive(ClassifierMixin):
 def test_classifier_accuracy(csr_container, fit_intercept, average):
     data = csr_container(X) if csr_container is not None else X
     clf = PassiveAggressiveClassifier(
-        C=1.0,
+        c=1.0,
         max_iter=30,
         fit_intercept=fit_intercept,
         random_state=1,
@@ -171,14 +171,14 @@ def test_class_weights():
     y2 = [1, 1, 1, -1, -1]
 
     clf = PassiveAggressiveClassifier(
-        C=0.1, max_iter=100, class_weight=None, random_state=100
+        c=0.1, max_iter=100, class_weight=None, random_state=100
     )
     clf.fit(X2, y2)
     assert_array_equal(clf.predict([[0.2, -1.0]]), np.array([1]))
 
     # we give a small weights to class 1
     clf = PassiveAggressiveClassifier(
-        C=0.1, max_iter=100, class_weight={1: 0.001}, random_state=100
+        c=0.1, max_iter=100, class_weight={1: 0.001}, random_state=100
     )
     clf.fit(X2, y2)
 
@@ -199,15 +199,15 @@ def test_partial_fit_weight_class_balanced():
 def test_equal_class_weight():
     X2 = [[1, 0], [1, 0], [0, 1], [0, 1]]
     y2 = [0, 0, 1, 1]
-    clf = PassiveAggressiveClassifier(C=0.1, tol=None, class_weight=None)
+    clf = PassiveAggressiveClassifier(c=0.1, tol=None, class_weight=None)
     clf.fit(X2, y2)
 
     # Already balanced, so "balanced" weights should have no effect
-    clf_balanced = PassiveAggressiveClassifier(C=0.1, tol=None, class_weight="balanced")
+    clf_balanced = PassiveAggressiveClassifier(c=0.1, tol=None, class_weight="balanced")
     clf_balanced.fit(X2, y2)
 
     clf_weighted = PassiveAggressiveClassifier(
-        C=0.1, tol=None, class_weight={0: 0.5, 1: 0.5}
+        c=0.1, tol=None, class_weight={0: 0.5, 1: 0.5}
     )
     clf_weighted.fit(X2, y2)
 
@@ -237,7 +237,7 @@ def test_regressor_mse(csr_container, fit_intercept, average):
 
     data = csr_container(X) if csr_container is not None else X
     reg = PassiveAggressiveRegressor(
-        C=1.0,
+        c=1.0,
         fit_intercept=fit_intercept,
         random_state=0,
         average=average,
@@ -315,7 +315,7 @@ def test_passive_aggressive_classifier_vs_sgd(loss, lr):
     X, y = make_classification(
         n_samples=100, n_features=10, n_informative=5, random_state=1234
     )
-    pa = PassiveAggressiveClassifier(loss=loss, C=0.987, random_state=42).fit(X, y)
+    pa = PassiveAggressiveClassifier(loss=loss, c=0.987, random_state=42).fit(X, y)
     sgd = SGDClassifier(
         loss="hinge", penalty=None, learning_rate=lr, eta0=0.987, random_state=42
     ).fit(X, y)
@@ -332,7 +332,7 @@ def test_passive_aggressive_regressor_vs_sgd(loss, lr):
         n_samples=100, n_features=10, n_informative=5, random_state=1234
     )
     pa = PassiveAggressiveRegressor(
-        loss=loss, epsilon=0.123, C=0.987, random_state=42
+        loss=loss, epsilon=0.123, c=0.987, random_state=42
     ).fit(X, y)
     sgd = SGDRegressor(
         loss="epsilon_insensitive",

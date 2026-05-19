@@ -243,22 +243,22 @@ class QuantileRegressor(LinearModel, RegressorMixin, BaseEstimator):
             eye = _sparse_eye_array(n_indices, dtype=X.dtype, format="csc")
             if self.fit_intercept:
                 ones = sparse.csc_array(np.ones(shape=(n_indices, 1), dtype=X.dtype))
-                A_eq = sparse.hstack([ones, X, -ones, -X, eye, -eye], format="csc")
+                a_eq = sparse.hstack([ones, X, -ones, -X, eye, -eye], format="csc")
             else:
-                A_eq = sparse.hstack([X, -X, eye, -eye], format="csc")
+                a_eq = sparse.hstack([X, -X, eye, -eye], format="csc")
         else:
             eye = np.eye(n_indices)
             if self.fit_intercept:
                 ones = np.ones((n_indices, 1))
-                A_eq = np.concatenate([ones, X, -ones, -X, eye, -eye], axis=1)
+                a_eq = np.concatenate([ones, X, -ones, -X, eye, -eye], axis=1)
             else:
-                A_eq = np.concatenate([X, -X, eye, -eye], axis=1)
+                a_eq = np.concatenate([X, -X, eye, -eye], axis=1)
 
         b_eq = y
 
         result = linprog(
             c=c,
-            A_eq=A_eq,
+            A_eq=a_eq,
             b_eq=b_eq,
             method=self.solver,
             options=solver_options,
