@@ -694,7 +694,7 @@ class ARDRegression(RegressorMixin, LinearModel):
         alpha_ = np.asarray(1.0 / (np.var(y) + eps), dtype=dtype)
         lambda_ = np.ones(n_features, dtype=dtype)
 
-        self.scores_ = list()
+        self.scores_ = []
         coef_old_ = None
 
         def update_coeff(X, y, coef_, alpha_, keep_lambda, sigma_):
@@ -770,14 +770,14 @@ class ARDRegression(RegressorMixin, LinearModel):
         # woodbury formula:
         # https://en.wikipedia.org/wiki/Woodbury_matrix_identity
         n_samples = X.shape[0]
-        X_keep = X[:, keep_lambda]
+        x_keep = X[:, keep_lambda]
         inv_lambda = 1 / lambda_[keep_lambda].reshape(1, -1)
         sigma_ = pinvh(
             np.eye(n_samples, dtype=X.dtype) / alpha_
-            + np.dot(X_keep * inv_lambda, X_keep.T)
+            + np.dot(x_keep * inv_lambda, x_keep.T)
         )
-        sigma_ = np.dot(sigma_, X_keep * inv_lambda)
-        sigma_ = -np.dot(inv_lambda.reshape(-1, 1) * X_keep.T, sigma_)
+        sigma_ = np.dot(sigma_, x_keep * inv_lambda)
+        sigma_ = -np.dot(inv_lambda.reshape(-1, 1) * x_keep.T, sigma_)
         sigma_[np.diag_indices(sigma_.shape[1])] += 1.0 / lambda_[keep_lambda]
         return sigma_
 
