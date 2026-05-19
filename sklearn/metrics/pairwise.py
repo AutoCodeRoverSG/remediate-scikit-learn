@@ -2278,18 +2278,18 @@ def pairwise_distances_chunked(
             x_chunk = X  # enable optimised paths for X is Y
         else:
             x_chunk = X[sl]
-        D_chunk = pairwise_distances(x_chunk, Y, metric=metric, n_jobs=n_jobs, **kwds)
+        d_chunk = pairwise_distances(x_chunk, Y, metric=metric, n_jobs=n_jobs, **kwds)
         if (X is Y or Y is None) and PAIRWISE_DISTANCE_FUNCTIONS.get(
             metric, None
         ) is euclidean_distances:
             # zeroing diagonal, taking care of aliases of "euclidean",
             # i.e. "l2"
-            D_chunk.flat[sl.start :: _num_samples(X) + 1] = 0
+            d_chunk.flat[sl.start :: _num_samples(X) + 1] = 0
         if reduce_func is not None:
-            chunk_size = D_chunk.shape[0]
-            D_chunk = reduce_func(D_chunk, sl.start)
-            _check_chunk_size(D_chunk, chunk_size)
-        yield D_chunk
+            chunk_size = d_chunk.shape[0]
+            d_chunk = reduce_func(d_chunk, sl.start)
+            _check_chunk_size(d_chunk, chunk_size)
+        yield d_chunk
 
 
 @validate_params(

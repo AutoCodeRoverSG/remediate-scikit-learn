@@ -281,7 +281,7 @@ def test_theil_sen_parallel():
 
 
 def test_less_samples_than_features():
-    random_state = np.random.RandomState(0)
+    random_state = np.random.default_rng(0)
     n_samples, n_features = 10, 20
     X = random_state.normal(size=(n_samples, n_features))
     y = random_state.normal(size=n_samples)

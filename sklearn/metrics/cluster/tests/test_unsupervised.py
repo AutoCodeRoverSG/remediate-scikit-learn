@@ -348,7 +348,7 @@ def test_calinski_harabasz_score():
     assert calinski_harabasz_score(np.ones((10, 2)), [0] * 5 + [1] * 5) == pytest.approx(1.0)
 
     # Assert the value is 0. when all the mean cluster are equal
-    assert 0.0 == calinski_harabasz_score([[-1, -1], [1, 1]] * 10, [0] * 10 + [1] * 10)
+    assert calinski_harabasz_score([[-1, -1], [1, 1]] * 10, [0] * 10 + [1] * 10) == pytest.approx(0.0)
 
     # General case (with non numpy arrays)
     X = (
