@@ -873,7 +873,8 @@ def test_permutation_test_score_allow_nans():
         [
             ("imputer", SimpleImputer(strategy="mean", missing_values=np.nan)),
             ("classifier", MockClassifier()),
-        ]
+        ],
+        memory=None,
     )
     permutation_test_score(p, X, y)
 
@@ -885,12 +886,16 @@ def test_permutation_test_score_params():
 
     err_msg = r"Expected sample_weight to be passed"
     with pytest.raises(AssertionError, match=err_msg):
-        permutation_test_score(clf, X, y)
+        permutation_test_score(clf, X, y, random_state=0)
 
     err_msg = r"sample_weight.shape == \(1,\), expected \(8,\)!"
     with pytest.raises(ValueError, match=err_msg):
-        permutation_test_score(clf, X, y, params={"sample_weight": np.ones(1)})
-    permutation_test_score(clf, X, y, params={"sample_weight": np.ones(10)})
+        permutation_test_score(
+            clf, X, y, params={"sample_weight": np.ones(1)}, random_state=0
+        )
+    permutation_test_score(
+        clf, X, y, params={"sample_weight": np.ones(10)}, random_state=0
+    )
 
 
 def test_cross_val_score_allow_nans():
@@ -902,7 +907,8 @@ def test_cross_val_score_allow_nans():
         [
             ("imputer", SimpleImputer(strategy="mean", missing_values=np.nan)),
             ("classifier", MockClassifier()),
-        ]
+        ],
+        memory=None,
     )
     cross_val_score(p, X, y)
 
@@ -960,10 +966,10 @@ def test_cross_val_predict(coo_container):
     preds = cross_val_predict(est, X, y, cv=cv)
     assert len(preds) == len(y)
 
-    Xsp = X.copy()
-    Xsp *= Xsp > np.median(Xsp)
-    Xsp = coo_container(Xsp)
-    preds = cross_val_predict(est, Xsp, y)
+    x_sp = X.copy()
+    x_sp *= x_sp > np.median(x_sp)
+    x_sp = coo_container(x_sp)
+    preds = cross_val_predict(est, x_sp, y)
     assert_array_almost_equal(len(preds), len(y))
 
     preds = cross_val_predict(KMeans(n_init="auto"), X)
@@ -971,7 +977,7 @@ def test_cross_val_predict(coo_container):
 
     class BadCV:
         def split(self, X, y=None, groups=None):
-            for i in range(4):
+            for _ in range(4):
                 yield np.array([0, 1, 2, 3]), np.array([4, 5, 6, 7, 8])
 
     with pytest.raises(ValueError):
@@ -1070,7 +1076,7 @@ def test_cross_val_predict_predict_log_proba_shape():
 def test_cross_val_predict_input_types(coo_container):
     iris = load_iris()
     X, y = iris.data, iris.target
-    X_sparse = coo_container(X)
+    x_sparse = coo_container(X)
     multioutput_y = np.column_stack([y, y[::-1]])
 
     clf = Ridge(fit_intercept=False, random_state=0)
@@ -1080,43 +1086,43 @@ def test_cross_val_predict_input_types(coo_container):
     assert predictions.shape == (150,)
 
     # test with multioutput y
-    predictions = cross_val_predict(clf, X_sparse, multioutput_y)
+    predictions = cross_val_predict(clf, x_sparse, multioutput_y)
     assert predictions.shape == (150, 2)
 
-    predictions = cross_val_predict(clf, X_sparse, y)
+    predictions = cross_val_predict(clf, x_sparse, y)
     assert_array_equal(predictions.shape, (150,))
 
     # test with multioutput y
-    predictions = cross_val_predict(clf, X_sparse, multioutput_y)
+    predictions = cross_val_predict(clf, x_sparse, multioutput_y)
     assert_array_equal(predictions.shape, (150, 2))
 
     # test with X and y as list
     list_check = lambda x: isinstance(x, list)
-    clf = CheckingClassifier(check_X=list_check)
+    clf = CheckingClassifier(check_X=list_check, random_state=0)
     predictions = cross_val_predict(clf, X.tolist(), y.tolist())
 
-    clf = CheckingClassifier(check_y=list_check)
+    clf = CheckingClassifier(check_y=list_check, random_state=0)
     predictions = cross_val_predict(clf, X, y.tolist())
 
     # test with X and y as list and non empty method
     predictions = cross_val_predict(
-        LogisticRegression(),
+        LogisticRegression(random_state=0),
         X.tolist(),
         y.tolist(),
         method="decision_function",
     )
-    predictions = cross_val_predict(
-        LogisticRegression(),
+    cross_val_predict(
+        LogisticRegression(random_state=0),
         X,
         y.tolist(),
         method="decision_function",
     )
 
     # test with 3d X and
-    X_3d = X[:, :, np.newaxis]
+    x_3d = X[:, :, np.newaxis]
     check_3d = lambda x: x.ndim == 3
-    clf = CheckingClassifier(check_X=check_3d)
-    predictions = cross_val_predict(clf, X_3d, y)
+    clf = CheckingClassifier(check_X=check_3d, random_state=0)
+    predictions = cross_val_predict(clf, x_3d, y)
     assert_array_equal(predictions.shape, (150,))
 
 
