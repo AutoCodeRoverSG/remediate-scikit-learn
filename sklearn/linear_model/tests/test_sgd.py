@@ -1166,7 +1166,7 @@ def test_regression_losses(klass):
         random_state=random_state,
     )
     clf.fit(X, Y)
-    assert np.mean(clf.predict(X) == Y) == pytest.approx(1.0)
+    assert_allclose(np.mean(clf.predict(X) == Y), 1.0)
 
     clf = klass(
         alpha=0.01,
@@ -1176,11 +1176,11 @@ def test_regression_losses(klass):
         random_state=random_state,
     )
     clf.fit(X, Y)
-    assert np.mean(clf.predict(X) == Y) == pytest.approx(1.0)
+    assert_allclose(np.mean(clf.predict(X) == Y), 1.0)
 
     clf = klass(alpha=0.01, loss="huber", random_state=random_state)
     clf.fit(X, Y)
-    assert np.mean(clf.predict(X) == Y) == pytest.approx(1.0)
+    assert_allclose(np.mean(clf.predict(X) == Y), 1.0)
 
     clf = klass(
         alpha=0.01,
@@ -1190,7 +1190,7 @@ def test_regression_losses(klass):
         random_state=random_state,
     )
     clf.fit(X, Y)
-    assert np.mean(clf.predict(X) == Y) == pytest.approx(1.0)
+    assert_allclose(np.mean(clf.predict(X) == Y), 1.0)
 
 
 @pytest.mark.parametrize("klass", [SGDClassifier, SparseSGDClassifier])
@@ -1230,7 +1230,7 @@ def test_sgd_averaged_computed_correctly(klass):
     alpha = 0.01
     n_samples = 20
     n_features = 10
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
     X = rng.normal(size=(n_samples, n_features))
     w = rng.normal(size=n_features)
 
@@ -1262,7 +1262,7 @@ def test_sgd_averaged_partial_fit(klass):
     alpha = 0.01
     n_samples = 20
     n_features = 10
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
     X = rng.normal(size=(n_samples, n_features))
     w = rng.normal(size=n_features)
 
@@ -1319,7 +1319,7 @@ def test_average_sparse(klass):
 def test_sgd_least_squares_fit(klass):
     xmin, xmax = -5, 5
     n_samples = 100
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
     X = np.linspace(xmin, xmax, n_samples).reshape(n_samples, 1)
 
     # simple linear function without noise
@@ -1331,7 +1331,7 @@ def test_sgd_least_squares_fit(klass):
     assert score > 0.99
 
     # simple linear function with noise
-    y = 0.5 * X.ravel() + rng.randn(n_samples, 1).ravel()
+    y = 0.5 * X.ravel() + rng.standard_normal((n_samples, 1)).ravel()
 
     clf = klass(loss="squared_error", alpha=0.1, max_iter=20, fit_intercept=False)
     clf.fit(X, y)
@@ -1343,7 +1343,7 @@ def test_sgd_least_squares_fit(klass):
 def test_sgd_epsilon_insensitive(klass):
     xmin, xmax = -5, 5
     n_samples = 100
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
     X = np.linspace(xmin, xmax, n_samples).reshape(n_samples, 1)
 
     # simple linear function without noise
@@ -1361,7 +1361,7 @@ def test_sgd_epsilon_insensitive(klass):
     assert score > 0.99
 
     # simple linear function with noise
-    y = 0.5 * X.ravel() + rng.randn(n_samples, 1).ravel()
+    y = 0.5 * X.ravel() + rng.standard_normal((n_samples, 1)).ravel()
 
     clf = klass(
         loss="epsilon_insensitive",
@@ -1379,7 +1379,7 @@ def test_sgd_epsilon_insensitive(klass):
 def test_sgd_huber_fit(klass):
     xmin, xmax = -5, 5
     n_samples = 100
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
     X = np.linspace(xmin, xmax, n_samples).reshape(n_samples, 1)
 
     # simple linear function without noise
@@ -1391,7 +1391,7 @@ def test_sgd_huber_fit(klass):
     assert score > 0.99
 
     # simple linear function with noise
-    y = 0.5 * X.ravel() + rng.randn(n_samples, 1).ravel()
+    y = 0.5 * X.ravel() + rng.standard_normal((n_samples, 1)).ravel()
 
     clf = klass(loss="huber", epsilon=0.1, alpha=0.1, max_iter=20, fit_intercept=False)
     clf.fit(X, y)
@@ -1404,11 +1404,11 @@ def test_elasticnet_convergence(klass):
     # Check that the SGD output is consistent with coordinate descent
 
     n_samples, n_features = 1000, 5
-    rng = np.random.RandomState(0)
-    X = rng.randn(n_samples, n_features)
+    rng = np.random.default_rng(0)
+    X = rng.standard_normal((n_samples, n_features))
     # ground_truth linear model that generate y from X and to which the
     # models should converge if the regularizer would be set to 0.0
-    ground_truth_coef = rng.randn(n_features)
+    ground_truth_coef = rng.standard_normal(n_features)
     y = np.dot(X, ground_truth_coef)
 
     # XXX: alpha = 0.1 seems to cause convergence problems
@@ -1471,7 +1471,7 @@ def test_partial_fit_equal_fit(klass, lr):
 def test_loss_function_epsilon(klass):
     clf = klass(epsilon=0.9)
     clf.set_params(epsilon=0.1)
-    assert clf.loss_functions["huber"][1] == 0.1
+    assert clf.loss_functions["huber"][1] == pytest.approx(0.1)
 
 
 ###############################################################################
@@ -1641,7 +1641,7 @@ def test_sgd_averaged_computed_correctly_oneclass(klass):
     nu = 0.05
     n_samples = 20
     n_features = 10
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
     X = rng.normal(size=(n_samples, n_features))
 
     clf = klass(
@@ -1668,7 +1668,7 @@ def test_sgd_averaged_partial_fit_oneclass(klass):
     nu = 0.05
     n_samples = 20
     n_features = 10
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
     X = rng.normal(size=(n_samples, n_features))
 
     clf = klass(
