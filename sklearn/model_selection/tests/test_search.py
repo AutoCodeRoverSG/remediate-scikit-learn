@@ -259,7 +259,7 @@ def test_grid_search_pipeline_steps():
 
 
 @pytest.mark.parametrize("search_cv", [GridSearchCV, RandomizedSearchCV])
-def test_SearchCV_with_fit_params(search_cv):
+def test_search_cv_with_fit_params(search_cv):
     X = np.arange(100).reshape(10, 10)
     y = np.array([0] * 5 + [1] * 5)
     clf = CheckingClassifier(expected_fit_params=["spam", "eggs"], random_state=0)
@@ -332,10 +332,10 @@ def test_grid_search_score_method():
 def test_grid_search_groups():
     # Check if ValueError (when groups is None) propagates to GridSearchCV
     # And also check if groups is correctly passed to the cv object
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
 
     X, y = make_classification(n_samples=15, n_classes=2, random_state=0)
-    groups = rng.randint(0, 3, 15)
+    groups = rng.integers(0, 3, 15)
 
     clf = LinearSVC(random_state=0)
     grid = {"C": [1]}
@@ -769,14 +769,14 @@ def test_gridsearch_nd():
     x_4d = np.arange(10 * 5 * 3 * 2).reshape(10, 5, 3, 2)
     y_3d = np.arange(10 * 7 * 11).reshape(10, 7, 11)
 
-    def check_X(x):
+    def check_x(x):
         return x.shape[1:] == (5, 3, 2)
 
     def check_y(x):
         return x.shape[1:] == (7, 11)
 
     clf = CheckingClassifier(
-        check_X=check_X,
+        check_X=check_x,
         check_y=check_y,
         methods_to_check=["fit"],
         random_state=42,
@@ -786,7 +786,7 @@ def test_gridsearch_nd():
     assert hasattr(grid_search, "cv_results_")
 
 
-def test_X_as_list():
+def test_x_as_list():
     # Pass X as list in GridSearchCV
     X = np.arange(100).reshape(10, 10)
     y = np.array([0] * 5 + [1] * 5)
@@ -886,7 +886,7 @@ def test_gridsearch_no_predict():
     # test grid-search with an estimator without predict.
     # slight duplication of a test from KDE
     def custom_scoring(estimator, X):
-        return 42 if estimator.bandwidth == 0.1 else 0
+        return 42 if estimator.bandwidth == pytest.approx(0.1) else 0
 
     X, _ = make_blobs(cluster_std=0.1, random_state=1, centers=[[0, 1], [1, 0], [0, 0]])
     search = GridSearchCV(
@@ -895,7 +895,7 @@ def test_gridsearch_no_predict():
         scoring=custom_scoring,
     )
     search.fit(X)
-    assert search.best_params_["bandwidth"] == 0.1
+    assert search.best_params_["bandwidth"] == pytest.approx(0.1)
     assert search.best_score_ == 42
 
 
@@ -999,8 +999,8 @@ def test_grid_search_cv_results():
     cv_results = search.cv_results_
     # Check if score and timing are reasonable
     assert all(cv_results["rank_test_score"] >= 1)
-    assert (all(cv_results[k] >= 0) for k in score_keys if k != "rank_test_score")
-    assert (
+    assert all(all(cv_results[k] >= 0) for k in score_keys if k != "rank_test_score")
+    assert all(
         all(cv_results[k] <= 1)
         for k in score_keys
         if "time" not in k and k != "rank_test_score"
@@ -2888,8 +2888,8 @@ def test_array_api_search_cv_classifier(
     xp, device = _array_api_for_tests(array_namespace, device_name, dtype_name)
 
     X = np.arange(100).reshape((10, 10))
-    X_np = X.astype(dtype_name)
-    X_xp = xp.asarray(X_np, device=device)
+    x_np = X.astype(dtype_name)
+    x_xp = xp.asarray(x_np, device=device)
 
     # y should always be an integer, no matter what `dtype_name` is
     y_np = np.array([0] * 5 + [1] * 5)
@@ -2902,8 +2902,8 @@ def test_array_api_search_cv_classifier(
             cv=2,
             error_score="raise",
         )
-        searcher.fit(X_xp, y_xp)
-        searcher.score(X_xp, y_xp)
+        searcher.fit(x_xp, y_xp)
+        searcher.score(x_xp, y_xp)
 
 
 # Construct these outside the tests so that the same object is used
