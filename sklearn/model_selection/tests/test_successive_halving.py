@@ -561,7 +561,7 @@ def test_cv_results(est):
     # successive iteration are those that were best in the previous iteration
     pd = pytest.importorskip("pandas")
 
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
 
     n_samples = 1000
     X, y = make_classification(n_samples=n_samples, random_state=0)
@@ -571,7 +571,7 @@ def test_cv_results(est):
     # generate random scores: we want to avoid ties, which would otherwise
     # mess with the ordering and make testing harder
     def scorer(est, X, y):
-        return rng.rand()
+        return rng.random()
 
     sh = est(base_estimator, param_grid, factor=2, scoring=scorer)
     if est is HalvingRandomSearchCV:
@@ -666,9 +666,9 @@ def test_base_estimator_inputs(est):
     passed_params = []
 
     class FastClassifierBookKeeping(FastClassifier):
-        def fit(self, X, y):
+        def fit(self, X, y, sample_weight=None):
             passed_n_samples_fit.append(X.shape[0])
-            return super().fit(X, y)
+            return super().fit(X, y, sample_weight=sample_weight)
 
         def predict(self, X):
             passed_n_samples_predict.append(X.shape[0])
@@ -727,10 +727,10 @@ def test_groups_support(est):
     # Check if ValueError (when groups is None) propagates to
     # HalvingGridSearchCV and HalvingRandomSearchCV
     # And also check if groups is correctly passed to the cv object
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
 
     X, y = make_classification(n_samples=50, n_classes=2, random_state=0)
-    groups = rng.randint(0, 3, 50)
+    groups = rng.integers(0, 3, 50)
 
     clf = LinearSVC(random_state=0)
     grid = {"C": [1]}

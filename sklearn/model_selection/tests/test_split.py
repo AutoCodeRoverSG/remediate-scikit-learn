@@ -1480,19 +1480,21 @@ def test_train_test_split_32bit_overflow():
 
 def test_train_test_split_pandas():
     # check train_test_split doesn't destroy pandas dataframe
-    types = [MockDataFrame]
+    # X dataframe
+    x_df = MockDataFrame(X)
+    X_train, X_test = train_test_split(x_df)
+    assert isinstance(X_train, MockDataFrame)
+    assert isinstance(X_test, MockDataFrame)
+
     try:
         from pandas import DataFrame
 
-        types.append(DataFrame)
+        x_df = DataFrame(X)
+        X_train, X_test = train_test_split(x_df)
+        assert isinstance(X_train, DataFrame)
+        assert isinstance(X_test, DataFrame)
     except ImportError:
         pass
-    for input_feature_type in types:
-        # X dataframe
-        x_df = input_feature_type(X)
-        X_train, X_test = train_test_split(x_df)
-        assert isinstance(X_train, input_feature_type)
-        assert isinstance(X_test, input_feature_type)
 
 
 @pytest.mark.parametrize(
@@ -2074,11 +2076,11 @@ def test_random_state_shuffle_false(klass):
         (RepeatedStratifiedKFold(random_state=None), False),
         (RepeatedStratifiedKFold(random_state=np.random.default_rng(0)), False),
         (ShuffleSplit(random_state=None), False),
-        (ShuffleSplit(random_state=np.random.RandomState(0)), False),
+        (ShuffleSplit(random_state=np.random.default_rng(0)), False),
         (GroupShuffleSplit(random_state=None), False),
-        (GroupShuffleSplit(random_state=np.random.RandomState(0)), False),
+        (GroupShuffleSplit(random_state=np.random.default_rng(0)), False),
         (StratifiedShuffleSplit(random_state=None), False),
-        (StratifiedShuffleSplit(random_state=np.random.RandomState(0)), False),
+        (StratifiedShuffleSplit(random_state=np.random.default_rng(0)), False),
     ],
 )
 def test_yields_constant_splits(cv, expected):
@@ -2112,10 +2114,10 @@ def test_no_group_splitters_warns_with_groups(cv):
     msg = f"The groups parameter is ignored by {cv.__class__.__name__}"
 
     n_samples = 30
-    rng = np.random.RandomState(1)
-    X = rng.randint(0, 3, size=(n_samples, 2))
-    y = rng.randint(0, 3, size=(n_samples,))
-    groups = rng.randint(0, 3, size=(n_samples,))
+    rng = np.random.default_rng(1)
+    X = rng.integers(0, 3, size=(n_samples, 2))
+    y = rng.integers(0, 3, size=(n_samples,))
+    groups = rng.integers(0, 3, size=(n_samples,))
 
     with pytest.warns(UserWarning, match=msg):
         cv.split(X, y, groups=groups)
