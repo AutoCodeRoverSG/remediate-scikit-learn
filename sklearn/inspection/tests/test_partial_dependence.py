@@ -264,7 +264,7 @@ def test_grid_from_x_with_categorical(grid_resolution):
 
 
 @pytest.mark.parametrize("grid_resolution", [3, 100])
-def test_grid_from_X_heterogeneous_type(grid_resolution):
+def test_grid_from_x_heterogeneous_type(grid_resolution):
     """Check that `_grid_from_X` always sample from categories and does not
     depend from the percentiles.
     """
@@ -308,7 +308,7 @@ def test_grid_from_X_heterogeneous_type(grid_resolution):
         (1, (0.05, 0.95), "'grid_resolution' must be strictly greater than 1"),
     ],
 )
-def test_grid_from_X_error(grid_resolution, percentiles, err_msg):
+def test_grid_from_x_error(grid_resolution, percentiles, err_msg):
     X = np.asarray([[1, 2], [3, 4]])
     is_categorical = [False]
     with pytest.raises(ValueError, match=err_msg):
@@ -378,13 +378,13 @@ def test_recursion_decision_tree_vs_forest_and_gbdt(seed):
     # DecisionTreeRegressor and a GradientBoostingRegressor or a
     # RandomForestRegressor with 1 tree and equivalent parameters.
 
-    rng = np.random.RandomState(seed)
+    rng = np.random.default_rng(seed)
 
     # Purely random dataset to avoid correlated features
     n_samples = 1000
     n_features = 5
-    X = rng.randn(n_samples, n_features)
-    y = rng.randn(n_samples) * 10
+    X = rng.standard_normal((n_samples, n_features))
+    y = rng.standard_normal(n_samples) * 10
 
     # The 'init' estimator for GBDT (here the average prediction) isn't taken
     # into account with the recursion method, for technical reasons. We set
@@ -433,7 +433,7 @@ def test_recursion_decision_tree_vs_forest_and_gbdt(seed):
         assert _IS_32BIT, "this should only fail on 32 bit platforms"
         return
 
-    grid = rng.randn(50).reshape(-1, 1)
+    grid = rng.standard_normal(50).reshape(-1, 1)
     for f in range(n_features):
         features = np.array([f], dtype=np.intp)
 
@@ -459,7 +459,7 @@ def test_recursion_decision_function(est, target_feature):
     # response_method=decision_function
 
     X, y = make_classification(n_classes=2, n_clusters_per_class=1, random_state=1)
-    assert np.mean(y) == 0.5  # make sure the init estimator predicts 0 anyway
+    assert np.mean(y) == pytest.approx(0.5)  # make sure the init estimator predicts 0 anyway
 
     est = clone(est).fit(X, y)
 
@@ -503,7 +503,7 @@ def test_partial_dependence_easy_target(est, power):
     # needed) and compute r_squared to check that the partial dependence
     # correctly reflects the target.
 
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
     n_samples = 200
     target_variable = 2
     X = rng.normal(size=(n_samples, 5))
@@ -651,7 +651,7 @@ def test_partial_dependence_unknown_feature_string(estimator):
 @pytest.mark.parametrize(
     "estimator", [LinearRegression(), GradientBoostingClassifier(random_state=0, learning_rate=0.1)]
 )
-def test_partial_dependence_X_list(estimator):
+def test_partial_dependence_x_list(estimator):
     # check that array-like objects are accepted
     X, y = make_classification(random_state=0)
     estimator = clone(estimator).fit(X, y)
@@ -682,10 +682,10 @@ def test_partial_dependence_sample_weight_of_fitted_estimator():
     # non-regression test for #13193
     # TODO: extend to HistGradientBoosting once sample_weight is supported
     N = 1000
-    rng = np.random.RandomState(123456)
-    mask = rng.randint(2, size=N, dtype=bool)
+    rng = np.random.default_rng(123456)
+    mask = rng.integers(2, size=N, dtype=bool)
 
-    x = rng.rand(N)
+    x = rng.random(N)
     # set y = x on mask and y = -x outside
     y = x.copy()
     y[~mask] = -y[~mask]
@@ -755,14 +755,14 @@ def test_partial_dependence_binary_model_grid_resolution(
     pd = pytest.importorskip("pandas")
     model = DummyClassifier(random_state=0)
 
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
     X = pd.DataFrame(
         {
-            "a": rng.randint(0, 10, size=100).astype(np.float64),
-            "b": rng.randint(0, 10, size=100).astype(np.float64),
+            "a": rng.integers(0, 10, size=100).astype(np.float64),
+            "b": rng.integers(0, 10, size=100).astype(np.float64),
         }
     )
-    y = pd.Series(rng.randint(0, 2, size=100))
+    y = pd.Series(rng.integers(0, 2, size=100))
     model.fit(X, y)
 
     part_dep = partial_dependence(

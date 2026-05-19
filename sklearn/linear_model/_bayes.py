@@ -622,7 +622,7 @@ class ARDRegression(RegressorMixin, LinearModel):
         compute_score=False,
         threshold_lambda=1.0e4,
         fit_intercept=True,
-        copy_X=True,  # NOSONAR
+        copy_X=True,  # NOSONAR  # NOSONAR
         verbose=False,
     ):
         self.max_iter = max_iter
@@ -670,12 +670,12 @@ class ARDRegression(RegressorMixin, LinearModel):
         n_samples, n_features = X.shape
         coef_ = np.zeros(n_features, dtype=dtype)
 
-        X, y, X_offset_, y_offset_, X_scale_, _ = _preprocess_data(
+        X, y, x_offset_, y_offset_, x_scale_, _ = _preprocess_data(
             X, y, fit_intercept=self.fit_intercept, copy=self.copy_X
         )
 
-        self.X_offset_ = X_offset_
-        self.X_scale_ = X_scale_
+        self.X_offset_ = x_offset_
+        self.X_scale_ = x_scale_
 
         # Launch the convergence loop
         keep_lambda = np.ones(n_features, dtype=bool)
@@ -760,7 +760,7 @@ class ARDRegression(RegressorMixin, LinearModel):
         self.alpha_ = alpha_
         self.sigma_ = sigma_
         self.lambda_ = lambda_
-        self._set_intercept(X_offset_, y_offset_, X_scale_)
+        self._set_intercept(x_offset_, y_offset_, x_scale_)
         return self
 
     def _update_sigma_woodbury(self, X, alpha_, lambda_, keep_lambda):
