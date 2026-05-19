@@ -1679,18 +1679,18 @@ def _find_smallest_angle(query, vectors):
     return index
 
 
-class _X_CenterStackOp(sparse.linalg.LinearOperator):
+class _XCenterStackOp(sparse.linalg.LinearOperator):
     """Behaves as centered and scaled X with an added intercept column.
 
     This operator behaves as
     np.hstack([X - sqrt_sw[:, None] * X_mean, sqrt_sw[:, None]])
     """
 
-    def __init__(self, X, X_mean, sqrt_sw):
+    def __init__(self, X, x_mean, sqrt_sw):
         n_samples, n_features = X.shape
         super().__init__(X.dtype, (n_samples, n_features + 1))
         self.X = X
-        self.X_mean = X_mean
+        self.X_mean = x_mean
         self.sqrt_sw = sqrt_sw
 
     def _matvec(self, v):
@@ -1709,21 +1709,21 @@ class _X_CenterStackOp(sparse.linalg.LinearOperator):
         )
 
     def _transpose(self):
-        return _XT_CenterStackOp(self.X, self.X_mean, self.sqrt_sw)
+        return _XtCenterStackOp(self.X, self.X_mean, self.sqrt_sw)
 
 
-class _XT_CenterStackOp(sparse.linalg.LinearOperator):
+class _XtCenterStackOp(sparse.linalg.LinearOperator):
     """Behaves as transposed centered and scaled X with an intercept column.
 
     This operator behaves as
     np.hstack([X - sqrt_sw[:, None] * X_mean, sqrt_sw[:, None]]).T
     """
 
-    def __init__(self, X, X_mean, sqrt_sw):
+    def __init__(self, X, x_mean, sqrt_sw):
         n_samples, n_features = X.shape
         super().__init__(X.dtype, (n_features + 1, n_samples))
         self.X = X
-        self.X_mean = X_mean
+        self.X_mean = x_mean
         self.sqrt_sw = sqrt_sw
 
     def _matvec(self, v):
@@ -1883,7 +1883,7 @@ class _RidgeGCV(LinearModel):
         *,
         fit_intercept=True,
         scoring=None,
-        copy_X=True,
+        copy_X=True,  # NOSONAR
         gcv_mode=None,
         store_cv_results=False,
         is_clf=False,
@@ -1899,21 +1899,21 @@ class _RidgeGCV(LinearModel):
         self.alpha_per_target = alpha_per_target
 
     @staticmethod
-    def _decomp_diag(v_prime, Q):
+    def _decomp_diag(v_prime, q):
         # compute diagonal of the matrix: dot(Q, dot(diag(v_prime), Q.T))
-        xp, _ = get_namespace(v_prime, Q)
-        return xp.sum(v_prime * Q**2, axis=1)
+        xp, _ = get_namespace(v_prime, q)
+        return xp.sum(v_prime * q**2, axis=1)
 
     @staticmethod
-    def _diag_dot(D, B):
-        xp, _ = get_namespace(D, B)
+    def _diag_dot(d, b):
+        get_namespace(d, b)
         # compute dot(diag(D), B)
-        if len(B.shape) > 1:
+        if len(b.shape) > 1:
             # handle case where B is > 1-d
-            D = D[(slice(None),) + (None,) * (len(B.shape) - 1)]
-        return D * B
+            d = d[(slice(None),) + (None,) * (len(b.shape) - 1)]
+        return d * b
 
-    def _compute_gram(self, X, X_mean, sqrt_sw):
+    def _compute_gram(self, X, x_mean, sqrt_sw):
         """Computes the Gram matrix X X' with possible centering.
 
         Parameters
@@ -1950,12 +1950,12 @@ class _RidgeGCV(LinearModel):
             return safe_sparse_dot(X, X.T, dense_output=True)
         # X is sparse and fit_intercept is True
         # centered matrix = X - sqrt_sw X_mean'
-        X_Xm = safe_sparse_dot(X, X_mean, dense_output=True)
+        x_xm = safe_sparse_dot(X, x_mean, dense_output=True)
         return (
             safe_sparse_dot(X, X.T, dense_output=True)
-            - X_Xm[:, None] * sqrt_sw[None, :]
-            - sqrt_sw[:, None] * X_Xm[None, :]
-            + (X_mean @ X_mean) * sqrt_sw[:, None] * sqrt_sw[None, :]
+            - x_xm[:, None] * sqrt_sw[None, :]
+            - sqrt_sw[:, None] * x_xm[None, :]
+            + (x_mean @ x_mean) * sqrt_sw[:, None] * sqrt_sw[None, :]
         )
 
     def _compute_covariance(self, X, X_mean, sqrt_sw):
