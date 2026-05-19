@@ -12,6 +12,7 @@ from sklearn.metrics.cluster import adjusted_rand_score
 from sklearn.mixture import BayesianGaussianMixture
 from sklearn.mixture._bayesian_mixture import _log_dirichlet_norm, _log_wishart_norm
 from sklearn.mixture.tests.test_gaussian_mixture import RandomData
+from sklearn.utils.validation import check_random_state
 from sklearn.utils._testing import (
     assert_almost_equal,
     assert_array_equal,
@@ -183,16 +184,16 @@ def test_bayesian_mixture_check_is_fitted():
 
 
 def test_bayesian_mixture_weights():
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
     n_samples, n_features = 10, 2
 
-    X = rng.rand(n_samples, n_features)
+    X = rng.random((n_samples, n_features))
 
     # Case Dirichlet distribution for the weight concentration prior type
     bgmm = BayesianGaussianMixture(
         weight_concentration_prior_type="dirichlet_distribution",
         n_components=3,
-        random_state=rng,
+        random_state=0,
     ).fit(X)
 
     expected_weights = bgmm.weight_concentration_ / np.sum(bgmm.weight_concentration_)
@@ -203,7 +204,7 @@ def test_bayesian_mixture_weights():
     dpgmm = BayesianGaussianMixture(
         weight_concentration_prior_type="dirichlet_process",
         n_components=3,
-        random_state=rng,
+        random_state=0,
     ).fit(X)
     weight_dirichlet_sum = (
         dpgmm.weight_concentration_[0] + dpgmm.weight_concentration_[1]
@@ -223,8 +224,7 @@ def test_bayesian_mixture_weights():
 def test_monotonic_likelihood():
     # We check that each step of the each step of variational inference without
     # regularization improve monotonically the training set of the bound
-    rng = np.random.RandomState(0)
-    rand_data = RandomData(rng, scale=20)
+    rand_data = RandomData(check_random_state(0), scale=20)
     n_components = rand_data.n_components
 
     for prior_type in PRIOR_TYPE:
@@ -236,7 +236,7 @@ def test_monotonic_likelihood():
                 covariance_type=covar_type,
                 warm_start=True,
                 max_iter=1,
-                random_state=rng,
+                random_state=0,
                 tol=1e-3,
             )
             current_lower_bound = -np.inf
@@ -255,7 +255,7 @@ def test_monotonic_likelihood():
 def test_compare_covar_type():
     # We can compare the 'full' precision with the other cov_type if we apply
     # 1 iter of the M-step (done during _initialize_parameters).
-    rng = np.random.RandomState(0)
+    rng = check_random_state(0)
     rand_data = RandomData(rng, scale=7)
     X = rand_data.X["full"]
     n_components = rand_data.n_components
@@ -271,7 +271,7 @@ def test_compare_covar_type():
             tol=1e-7,
         )
         bgmm._check_parameters(X)
-        bgmm._initialize_parameters(X, np.random.RandomState(0))
+        bgmm._initialize_parameters(X, check_random_state(0))
         full_covariances = (
             bgmm.covariances_ * bgmm.degrees_of_freedom_[:, np.newaxis, np.newaxis]
         )
@@ -286,7 +286,7 @@ def test_compare_covar_type():
             tol=1e-7,
         )
         bgmm._check_parameters(X)
-        bgmm._initialize_parameters(X, np.random.RandomState(0))
+        bgmm._initialize_parameters(X, check_random_state(0))
 
         tied_covariance = bgmm.covariances_ * bgmm.degrees_of_freedom_
         assert_almost_equal(tied_covariance, np.mean(full_covariances, 0))
@@ -301,7 +301,7 @@ def test_compare_covar_type():
             tol=1e-7,
         )
         bgmm._check_parameters(X)
-        bgmm._initialize_parameters(X, np.random.RandomState(0))
+        bgmm._initialize_parameters(X, check_random_state(0))
 
         diag_covariances = bgmm.covariances_ * bgmm.degrees_of_freedom_[:, np.newaxis]
         assert_almost_equal(
@@ -318,7 +318,7 @@ def test_compare_covar_type():
             tol=1e-7,
         )
         bgmm._check_parameters(X)
-        bgmm._initialize_parameters(X, np.random.RandomState(0))
+        bgmm._initialize_parameters(X, check_random_state(0))
 
         spherical_covariances = bgmm.covariances_ * bgmm.degrees_of_freedom_
         assert_almost_equal(spherical_covariances, np.mean(diag_covariances, 1))
@@ -328,13 +328,13 @@ def test_compare_covar_type():
 def test_check_covariance_precision():
     # We check that the dot product of the covariance and the precision
     # matrices is identity.
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
     rand_data = RandomData(rng, scale=7)
     n_components, n_features = 2 * rand_data.n_components, 2
 
     # Computation of the full_covariance
     bgmm = BayesianGaussianMixture(
-        n_components=n_components, max_iter=100, random_state=rng, tol=1e-3, reg_covar=0
+        n_components=n_components, max_iter=100, random_state=0, tol=1e-3, reg_covar=0
     )
     for covar_type in COVARIANCE_TYPE:
         bgmm.covariance_type = covar_type
@@ -363,7 +363,7 @@ def test_check_covariance_precision():
 def test_invariant_translation():
     # We check here that adding a constant in the data change correctly the
     # parameters of the mixture
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
     rand_data = RandomData(rng, scale=100)
     n_components = 2 * rand_data.n_components
 
@@ -403,7 +403,7 @@ def test_invariant_translation():
     ],
 )
 def test_bayesian_mixture_fit_predict(seed, max_iter, tol):
-    rng = np.random.RandomState(seed)
+    rng = np.random.default_rng(seed)
     rand_data = RandomData(rng, n_samples=50, scale=7)
     n_components = 2 * rand_data.n_components
 
@@ -411,7 +411,7 @@ def test_bayesian_mixture_fit_predict(seed, max_iter, tol):
         bgmm1 = BayesianGaussianMixture(
             n_components=n_components,
             max_iter=max_iter,
-            random_state=rng,
+            random_state=seed,
             tol=tol,
             reg_covar=0,
         )
