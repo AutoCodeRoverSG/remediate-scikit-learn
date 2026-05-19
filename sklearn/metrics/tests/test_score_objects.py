@@ -175,10 +175,10 @@ def memmap_data_and_estimators(tmp_path_factory):
     _, y_ml = make_multilabel_classification(n_samples=X.shape[0], random_state=0)
     filename = temp_folder / "test_data.pkl"
     joblib.dump((X, y, y_ml), filename)
-    X_mm, y_mm, y_ml_mm = joblib.load(filename, mmap_mode="r")
-    estimators = _make_estimators(X_mm, y_mm, y_ml_mm)
+    x_mm, y_mm, y_ml_mm = joblib.load(filename, mmap_mode="r")
+    estimators = _make_estimators(x_mm, y_mm, y_ml_mm)
 
-    yield X_mm, y_mm, y_ml_mm, estimators
+    yield x_mm, y_mm, y_ml_mm, estimators
 
 
 class EstimatorWithFit(BaseEstimator):
@@ -219,7 +219,7 @@ class DummyScorer:
 def test_all_scorers_repr():
     # Test that all scorers have a working repr
     for name in get_scorer_names():
-        repr(get_scorer(name))
+        assert isinstance(repr(get_scorer(name)), str)
 
 
 def test_repr_partial():
@@ -295,8 +295,8 @@ def test_check_scoring_and_check_multimetric_scoring(scoring):
 
     scorers = _check_multimetric_scoring(estimator, scoring)
     assert isinstance(scorers, dict)
-    assert sorted(scorers.keys()) == sorted(list(scoring))
-    assert all([isinstance(scorer, _Scorer) for scorer in list(scorers.values())])
+    assert sorted(scorers.keys()) == sorted(scoring)
+    assert all(isinstance(scorer, _Scorer) for scorer in scorers.values())
     assert all(scorer._response_method == "predict" for scorer in scorers.values())
 
     if "acc" in scoring:
@@ -356,7 +356,7 @@ def test_check_scoring_gridsearchcv():
     assert isinstance(scorer, _Scorer)
     assert scorer._response_method == "predict"
 
-    pipe = make_pipeline(LinearSVC())
+    pipe = make_pipeline(LinearSVC(), memory=None)
     scorer = check_scoring(pipe, scoring="f1")
     assert isinstance(scorer, _Scorer)
     assert scorer._response_method == "predict"
@@ -458,7 +458,7 @@ def test_custom_scorer_pickling():
     assert score1 == pytest.approx(score2)
 
     # smoke test the repr:
-    repr(fbeta_score)
+    assert isinstance(repr(fbeta_score), str)
 
 
 def test_regression_scorers():
@@ -556,7 +556,7 @@ def test_thresholded_scorers_multilabel_indicator_data():
 def test_supervised_cluster_scorers():
     # Test clustering scorers against gold standard labeling.
     X, y = make_blobs(random_state=0, centers=2)
-    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
+    X_train, X_test, _, y_test = train_test_split(X, y, random_state=0)
     km = KMeans(n_clusters=3, n_init="auto")
     km.fit(X_train)
     for name in CLUSTER_SCORERS:
@@ -689,7 +689,7 @@ def test_scorer_memmap_input(name, memmap_data_and_estimators):
     # Non-regression test for #6147: some score functions would
     # return singleton memmap when computed on memmap data instead of scalar
     # float values.
-    X_mm, y_mm, y_ml_mm, estimators = memmap_data_and_estimators
+    x_mm, y_mm, y_ml_mm, estimators = memmap_data_and_estimators
 
     if name in REQUIRE_POSITIVE_Y_SCORERS:
         y_mm_1 = _require_positive_y(y_mm)
@@ -701,9 +701,9 @@ def test_scorer_memmap_input(name, memmap_data_and_estimators):
     with ignore_warnings():
         scorer, estimator = get_scorer(name), estimators[name]
         if name in MULTILABEL_ONLY_SCORERS:
-            score = scorer(estimator, X_mm, y_ml_mm_1)
+            score = scorer(estimator, x_mm, y_ml_mm_1)
         else:
-            score = scorer(estimator, X_mm, y_mm_1)
+            score = scorer(estimator, x_mm, y_mm_1)
         assert isinstance(score, numbers.Number), name
 
 
@@ -1695,7 +1695,8 @@ def test_Pipeline_in_PassthroughScorer():
                 .set_fit_request(sample_weight=True)
                 .set_score_request(sample_weight=True),
             )
-        ]
+        ],
+        memory=None,
     )
     search = GridSearchCV(pipe, {"logistic__C": [0.1, 1]}, n_jobs=1, cv=3)
     search.fit(X, y, sample_weight=sample_weight)
