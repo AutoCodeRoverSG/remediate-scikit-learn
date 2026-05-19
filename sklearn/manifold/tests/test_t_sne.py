@@ -77,7 +77,7 @@ def test_gradient_descent_stops(capsys):
         min_grad_norm=1e-5,
         verbose=2,
     )
-    assert error == 1.0
+    assert error == pytest.approx(1.0)
     assert it == 0
     assert "gradient norm" in capsys.readouterr().out
 
@@ -94,7 +94,7 @@ def test_gradient_descent_stops(capsys):
         min_grad_norm=0.0,
         verbose=2,
     )
-    assert error == 0.0
+    assert error == pytest.approx(0.0)
     assert it == 11
     assert "did not make any progress" in capsys.readouterr().out
 
@@ -111,7 +111,7 @@ def test_gradient_descent_stops(capsys):
         min_grad_norm=0.0,
         verbose=2,
     )
-    assert error == 0.0
+    assert error == pytest.approx(0.0)
     assert it == 10
     assert "Iteration 10" in capsys.readouterr().out
 
@@ -244,7 +244,7 @@ def test_trustworthiness():
 
     # Affine transformation
     X = random_state.randn(100, 2)
-    assert trustworthiness(X, 5.0 + X / 10.0) == 1.0
+    assert_almost_equal(trustworthiness(X, 5.0 + X / 10.0), 1.0)
 
     # Randomly shuffled
     X = np.arange(100).reshape(-1, 1)
@@ -264,9 +264,9 @@ def test_trustworthiness_n_neighbors_error():
     Non-regression test for #18567.
     """
     regex = "n_neighbors .+ should be less than .+"
-    rng = np.random.RandomState(42)
-    X = rng.rand(7, 4)
-    x_embedded = rng.rand(7, 2)
+    rng = np.random.default_rng(42)
+    X = rng.random((7, 4))
+    x_embedded = rng.random((7, 2))
     with pytest.raises(ValueError, match=regex):
         trustworthiness(X, x_embedded, n_neighbors=5)
 
@@ -1057,7 +1057,7 @@ def test_tsne_n_jobs(method):
     random_state = check_random_state(0)
     n_features = 10
     X = random_state.randn(30, n_features)
-    X_tr_ref = TSNE(
+    x_tr_ref = TSNE(
         n_components=2,
         method=method,
         perplexity=25.0,
@@ -1067,7 +1067,7 @@ def test_tsne_n_jobs(method):
         init="random",
         learning_rate="auto",
     ).fit_transform(X)
-    X_tr = TSNE(
+    x_tr = TSNE(
         n_components=2,
         method=method,
         perplexity=25.0,
@@ -1078,7 +1078,7 @@ def test_tsne_n_jobs(method):
         learning_rate="auto",
     ).fit_transform(X)
 
-    assert_allclose(X_tr_ref, X_tr)
+    assert_allclose(x_tr_ref, x_tr)
 
 
 def test_tsne_with_mahalanobis_distance():
@@ -1100,15 +1100,15 @@ def test_tsne_with_mahalanobis_distance():
     with pytest.raises(ValueError, match=msg):
         tsne.fit_transform(X)
 
-    precomputed_X = squareform(pdist(X, metric="mahalanobis"), checks=True)
-    X_trans_expected = TSNE(metric="precomputed", **default_params).fit_transform(
-        precomputed_X
+    precomputed_x = squareform(pdist(X, metric="mahalanobis"), checks=True)
+    x_trans_expected = TSNE(metric="precomputed", **default_params).fit_transform(
+        precomputed_x
     )
 
-    X_trans = TSNE(
+    x_trans = TSNE(
         metric="mahalanobis", metric_params={"V": np.cov(X.T)}, **default_params
     ).fit_transform(X)
-    assert_allclose(X_trans, X_trans_expected)
+    assert_allclose(x_trans, x_trans_expected)
 
 
 @pytest.mark.parametrize("perplexity", (20, 30))
