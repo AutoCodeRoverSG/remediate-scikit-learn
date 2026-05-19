@@ -937,7 +937,7 @@ def test_count_vectorizer_pipeline_grid_selection():
     # on this toy dataset bigram representation which is used in the last of
     # the grid_search is considered the best estimator since they all converge
     # to 100% accuracy models
-    assert grid_search.best_score_ == 1.0
+    assert grid_search.best_score_ == pytest.approx(1.0)
     best_vectorizer = grid_search.best_estimator_.named_steps["vect"]
     assert best_vectorizer.ngram_range == (1, 1)
 
@@ -976,7 +976,7 @@ def test_vectorizer_pipeline_grid_selection():
     # on this toy dataset bigram representation which is used in the last of
     # the grid_search is considered the best estimator since they all converge
     # to 100% accuracy models
-    assert grid_search.best_score_ == 1.0
+    assert grid_search.best_score_ == pytest.approx(1.0)
     best_vectorizer = grid_search.best_estimator_.named_steps["vect"]
     assert best_vectorizer.ngram_range == (1, 1)
     assert best_vectorizer.norm == "l2"
@@ -1443,9 +1443,9 @@ def test_callable_analyzer_change_behavior(estimator_class, analyzer, input_type
 
 
 @pytest.mark.parametrize(
-    "Estimator", [CountVectorizer, TfidfVectorizer, HashingVectorizer]
+    "estimator_cls", [CountVectorizer, TfidfVectorizer, HashingVectorizer]
 )
-def test_callable_analyzer_reraise_error(tmpdir, Estimator):
+def test_callable_analyzer_reraise_error(tmpdir, estimator_cls):
     # check if a custom exception from the analyzer is shown to the user
     def analyzer(doc):
         raise Exception("testing")
@@ -1454,11 +1454,11 @@ def test_callable_analyzer_reraise_error(tmpdir, Estimator):
     f.write("sample content\n")
 
     with pytest.raises(Exception, match="testing"):
-        Estimator(analyzer=analyzer, input="file").fit_transform([f])
+        estimator_cls(analyzer=analyzer, input="file").fit_transform([f])
 
 
 @pytest.mark.parametrize(
-    "Vectorizer", [CountVectorizer, HashingVectorizer, TfidfVectorizer]
+    "vectorizer_cls", [CountVectorizer, HashingVectorizer, TfidfVectorizer]
 )
 @pytest.mark.parametrize(
     (
@@ -1535,7 +1535,7 @@ def test_callable_analyzer_reraise_error(tmpdir, Estimator):
     ],
 )
 def test_unused_parameters_warn(
-    Vectorizer,
+    vectorizer_cls,
     stop_words,
     tokenizer,
     preprocessor,
@@ -1548,7 +1548,7 @@ def test_unused_parameters_warn(
 ):
     train_data = JUNK_FOOD_DOCS
     # setting parameter and checking for corresponding warning messages
-    vect = Vectorizer()
+    vect = vectorizer_cls()
     vect.set_params(
         stop_words=stop_words,
         tokenizer=tokenizer,
@@ -1567,15 +1567,15 @@ def test_unused_parameters_warn(
 
 
 @pytest.mark.parametrize(
-    "Vectorizer, X",
+    "vectorizer_cls, X",
     (
         (HashingVectorizer, [{"foo": 1, "bar": 2}, {"foo": 3, "baz": 1}]),
         (CountVectorizer, JUNK_FOOD_DOCS),
     ),
 )
-def test_n_features_in(Vectorizer, X):
+def test_n_features_in(vectorizer_cls, X):
     # For vectorizers, n_features_in_ does not make sense
-    vectorizer = Vectorizer()
+    vectorizer = vectorizer_cls()
     assert not hasattr(vectorizer, "n_features_in_")
     vectorizer.fit(X)
     assert not hasattr(vectorizer, "n_features_in_")
@@ -1598,11 +1598,12 @@ def test_nonnegative_hashing_vectorizer_result_indices():
 
 
 @pytest.mark.parametrize(
-    "Estimator", [CountVectorizer, TfidfVectorizer, TfidfTransformer, HashingVectorizer]
+    "estimator_cls",
+    [CountVectorizer, TfidfVectorizer, TfidfTransformer, HashingVectorizer],
 )
-def test_vectorizers_do_not_have_set_output(Estimator):
+def test_vectorizers_do_not_have_set_output(estimator_cls):
     """Check that vectorizers do not define set_output."""
-    est = Estimator()
+    est = estimator_cls()
     assert not hasattr(est, "set_output")
 
 
@@ -1610,30 +1611,30 @@ def test_vectorizers_do_not_have_set_output(Estimator):
 def test_tfidf_transformer_copy(csr_container):
     """Check the behaviour of TfidfTransformer.transform with the copy parameter."""
     X = sparse.rand(10, 20000, dtype=np.float64, random_state=42)
-    X_csr = csr_container(X)
+    x_csr = csr_container(X)
 
     # keep a copy of the original matrix for later comparison
-    X_csr_original = X_csr.copy()
+    x_csr_original = x_csr.copy()
 
-    transformer = TfidfTransformer().fit(X_csr)
+    transformer = TfidfTransformer().fit(x_csr)
 
-    X_transform = transformer.transform(X_csr, copy=True)
-    assert_allclose_dense_sparse(X_csr, X_csr_original)
-    assert X_transform is not X_csr
+    x_transform = transformer.transform(x_csr, copy=True)
+    assert_allclose_dense_sparse(x_csr, x_csr_original)
+    assert x_transform is not x_csr
 
-    X_transform = transformer.transform(X_csr, copy=False)
+    x_transform = transformer.transform(x_csr, copy=False)
     # allow for config["sparse_interface"] to change output type
     # there should be no data copied, but the `id` will change.
-    if _align_api_if_sparse(X_csr) is X_csr:
-        assert X_transform is X_csr
+    if _align_api_if_sparse(x_csr) is x_csr:
+        assert x_transform is x_csr
     else:
-        assert X_transform is not X_csr
-        assert X_transform.indptr is X_csr.indptr
-        assert X_transform.indices.base is X_csr.indices.base
-        assert X_transform.data.base is X_csr.data.base
+        assert x_transform is not x_csr
+        assert x_transform.indptr is x_csr.indptr
+        assert x_transform.indices.base is x_csr.indices.base
+        assert x_transform.data.base is x_csr.data.base
 
     with pytest.raises(AssertionError):
-        assert_allclose_dense_sparse(X_csr, X_csr_original)
+        assert_allclose_dense_sparse(x_csr, x_csr_original)
 
 
 @pytest.mark.parametrize("dtype", [np.float32, np.float64])
@@ -1643,7 +1644,7 @@ def test_tfidf_vectorizer_preserve_dtype_idf(dtype):
     Non-regression test for:
     https://github.com/scikit-learn/scikit-learn/issues/30016
     """
-    X = [str(uuid.uuid4()) for i in range(100_000)]
+    X = [str(uuid.uuid4()) for _ in range(100_000)]
     vectorizer = TfidfVectorizer(dtype=dtype).fit(X)
     assert vectorizer.idf_.dtype == dtype
 
