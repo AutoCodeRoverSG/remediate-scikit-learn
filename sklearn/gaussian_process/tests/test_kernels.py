@@ -35,8 +35,8 @@ from sklearn.utils._testing import (
     assert_array_equal,
 )
 
-X = np.random.RandomState(0).normal(0, 1, (5, 2))
-Y = np.random.RandomState(0).normal(0, 1, (6, 2))
+X = np.random.default_rng(0).normal(0, 1, (5, 2))
+Y = np.random.default_rng(0).normal(0, 1, (6, 2))
 # Set shared test data as read-only to avoid unintentional in-place
 # modifications that would introduce side-effects between tests.
 X.flags.writeable = False
@@ -387,7 +387,8 @@ def test_repr_kernels(kernel):
     kernel = clone(kernel)  # make tests independent of one-another
     # Smoke-test for repr in kernels.
 
-    repr(kernel)
+    result = repr(kernel)
+    assert isinstance(result, str)
 
 
 def test_rational_quadratic_kernel():
