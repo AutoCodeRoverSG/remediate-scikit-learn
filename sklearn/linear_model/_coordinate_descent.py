@@ -708,17 +708,17 @@ def enet_path(
     if multi_output and positive:
         raise ValueError("positive=True is not allowed for multi-output (y.ndim != 1)")
 
-    X_is_sparse = sparse.issparse(X)
-    if X_is_sparse:
+    x_is_sparse = sparse.issparse(X)
+    if x_is_sparse:
         if X_offset_param is not None:
             # As sparse matrices are not actually centered we need this to be passed to
             # the CD solver.
-            X_sparse_scaling = X_offset_param / X_scale_param
-            X_sparse_scaling = np.asarray(X_sparse_scaling, dtype=X.dtype)
+            x_sparse_scaling = X_offset_param / X_scale_param
+            x_sparse_scaling = np.asarray(x_sparse_scaling, dtype=X.dtype)
         else:
-            X_sparse_scaling = np.zeros(n_features, dtype=X.dtype)
+            x_sparse_scaling = np.zeros(n_features, dtype=X.dtype)
     else:
-        X_sparse_scaling = None
+        x_sparse_scaling = None
 
     # X should have been passed through _pre_fit already if function is called
     # from ElasticNet.fit
@@ -767,30 +767,30 @@ def enet_path(
     else:
         coef_ = np.asfortranarray(coef_init, dtype=X.dtype)
 
-    if X_is_sparse:
-        X_data = X.data
-        X_indices = X.indices
-        X_indptr = X.indptr
+    if x_is_sparse:
+        x_data = X.data
+        x_indices = X.indices
+        x_indptr = X.indptr
     else:
-        X_data = None
-        X_indices = None
-        X_indptr = None
+        x_data = None
+        x_indices = None
+        x_indptr = None
 
     for i, alpha in enumerate(alphas):
         # account for n_samples scaling in objectives between here and cd_fast
         l1_reg = alpha * l1_ratio * n_samples
         l2_reg = alpha * (1.0 - l1_ratio) * n_samples
-        if not multi_output and X_is_sparse:
+        if not multi_output and x_is_sparse:
             model = cd_fast.sparse_enet_coordinate_descent(
                 w=coef_,
                 alpha=l1_reg,
                 beta=l2_reg,
-                X_data=X_data,
-                X_indices=X_indices,
-                X_indptr=X_indptr,
+                X_data=x_data,
+                X_indices=x_indices,
+                X_indptr=x_indptr,
                 y=y,
                 sample_weight=sample_weight,
-                X_mean=X_sparse_scaling,
+                X_mean=x_sparse_scaling,
                 max_iter=max_iter,
                 tol=tol,
                 rng=rng,
@@ -803,14 +803,14 @@ def enet_path(
                 W=coef_,
                 alpha=l1_reg,
                 beta=l2_reg,
-                X=None if X_is_sparse else X,
-                X_is_sparse=X_is_sparse,
-                X_data=X_data,
-                X_indices=X_indices,
-                X_indptr=X_indptr,
+                X=None if x_is_sparse else X,
+                X_is_sparse=x_is_sparse,
+                X_data=x_data,
+                X_indices=x_indices,
+                X_indptr=x_indptr,
                 Y=y,
                 sample_weight=sample_weight,
-                X_mean=X_sparse_scaling,
+                X_mean=x_sparse_scaling,
                 max_iter=max_iter,
                 tol=tol,
                 rng=rng,
@@ -855,7 +855,7 @@ def enet_path(
                 "Precompute should be one of True, False, 'auto' or array-like. Got %r"
                 % precompute
             )
-        coef_, dual_gap_, eps_, n_iter_ = model
+        coef_, dual_gap_, _, n_iter_ = model
         coefs[..., i] = coef_
         # we correct the scale of the returned dual gap, as the objective
         # in cd_fast is n_samples * the objective in this docstring.
@@ -1072,7 +1072,7 @@ class ElasticNet(RegressorMixin, MultiOutputLinearModel):
         fit_intercept=True,
         precompute=False,
         max_iter=1000,
-        copy_X=True,
+        copy_X=True,  # noqa: N803  # NOSONAR
         tol=1e-4,
         warm_start=False,
         positive=False,
@@ -1141,11 +1141,11 @@ class ElasticNet(RegressorMixin, MultiOutputLinearModel):
             )
 
         # Remember if X is copied
-        X_copied = False
+        x_copied = False
         # We expect X and y to be float64 or float32 Fortran ordered arrays
         # when bypassing checks
         if check_input:
-            X_copied = self.copy_X and self.fit_intercept
+            x_copied = self.copy_X and self.fit_intercept
             X, y = validate_data(
                 self,
                 X,
@@ -1155,7 +1155,7 @@ class ElasticNet(RegressorMixin, MultiOutputLinearModel):
                 dtype=[np.float64, np.float32],
                 force_writeable=True,
                 accept_large_sparse=False,
-                copy=X_copied,
+                copy=x_copied,
                 multi_output=True,
                 y_numeric=True,
             )
@@ -1206,8 +1206,8 @@ class ElasticNet(RegressorMixin, MultiOutputLinearModel):
         # Ensure copying happens only once, don't do it again if done above.
         # X and y will be rescaled if sample_weight is not None, order='F'
         # ensures that the returned X and y are still F-contiguous.
-        should_copy = self.copy_X and not X_copied
-        X, y, X_offset, y_offset, X_scale, precompute, Xy = _pre_fit(
+        should_copy = self.copy_X and not x_copied
+        X, y, x_offset, y_offset, x_scale, precompute, Xy = _pre_fit(
             X,
             y,
             None,
@@ -1259,8 +1259,8 @@ class ElasticNet(RegressorMixin, MultiOutputLinearModel):
                 check_input=False,
                 # from here on **params
                 tol=self.tol,
-                X_offset=X_offset,
-                X_scale=X_scale,
+                X_offset=x_offset,
+                X_scale=x_scale,
                 max_iter=self.max_iter,
                 random_state=self.random_state,
                 selection=self.selection,
@@ -1278,7 +1278,7 @@ class ElasticNet(RegressorMixin, MultiOutputLinearModel):
             self.coef_ = coef_
             self.dual_gap_ = dual_gaps_
 
-        self._set_intercept(X_offset, y_offset, X_scale)
+        self._set_intercept(x_offset, y_offset, x_scale)
 
         # check for finiteness of coefficients
         if not all(np.isfinite(w).all() for w in [self.coef_, self.intercept_]):
@@ -1491,7 +1491,7 @@ class Lasso(ElasticNet):
         *,
         fit_intercept=True,
         precompute=False,
-        copy_X=True,
+        copy_X=True,  # noqa: N803  # NOSONAR
         max_iter=1000,
         tol=1e-4,
         warm_start=False,
@@ -1691,7 +1691,7 @@ class LinearModelCV(MultiOutputLinearModel, ABC):
         precompute="auto",
         max_iter=1000,
         tol=1e-4,
-        copy_X=True,
+        copy_X=True,  # noqa: N803  # NOSONAR
         cv=None,
         verbose=False,
         n_jobs=None,
@@ -2209,7 +2209,7 @@ class LassoCV(RegressorMixin, LinearModelCV):
         precompute="auto",
         max_iter=1000,
         tol=1e-4,
-        copy_X=True,
+        copy_X=True,  # noqa: N803  # NOSONAR
         cv=None,
         verbose=False,
         n_jobs=None,
@@ -2478,38 +2478,15 @@ class ElasticNetCV(RegressorMixin, LinearModelCV):
 
     path = staticmethod(enet_path)
 
-    def __init__(
-        self,
-        *,
-        l1_ratio=0.5,
-        eps=1e-3,
-        alphas=100,
-        fit_intercept=True,
-        precompute="auto",
-        max_iter=1000,
-        tol=1e-4,
-        cv=None,
-        copy_X=True,
-        verbose=0,
-        n_jobs=None,
-        positive=False,
-        random_state=None,
-        selection="cyclic",
-    ):
+    def __init__(self, *, l1_ratio=0.5, **kwargs):
         self.l1_ratio = l1_ratio
-        self.eps = eps
-        self.alphas = alphas
-        self.fit_intercept = fit_intercept
-        self.precompute = precompute
-        self.max_iter = max_iter
-        self.tol = tol
-        self.cv = cv
-        self.copy_X = copy_X
-        self.verbose = verbose
-        self.n_jobs = n_jobs
-        self.positive = positive
-        self.random_state = random_state
-        self.selection = selection
+        super().__init__(**kwargs)
+
+    @classmethod
+    def _get_param_names(cls):
+        own_params = ["l1_ratio"]
+        parent_params = LinearModelCV._get_param_names()
+        return sorted(set(own_params + parent_params))
 
     def _get_estimator(self):
         return ElasticNet()
@@ -3401,7 +3378,7 @@ class MultiTaskLassoCV(RegressorMixin, LinearModelCV):
         fit_intercept=True,
         max_iter=1000,
         tol=1e-4,
-        copy_X=True,
+        copy_X=True,  # noqa: N803  # NOSONAR
         cv=None,
         verbose=False,
         n_jobs=None,
