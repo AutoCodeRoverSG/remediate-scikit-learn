@@ -42,9 +42,9 @@ from sklearn.utils.fixes import CSR_CONTAINERS
 
 def test_f_oneway_vs_scipy_stats():
     # Test that our f_oneway gives the same result as scipy.stats
-    rng = np.random.RandomState(0)
-    X1 = rng.randn(10, 3)
-    X2 = 1 + rng.randn(10, 3)
+    rng = np.random.default_rng(0)
+    X1 = rng.standard_normal((10, 3))
+    X2 = 1 + rng.standard_normal((10, 3))
     f, pv = stats.f_oneway(X1, X2)
     f2, pv2 = f_oneway(X1, X2)
     assert np.allclose(f, f2)
@@ -54,8 +54,8 @@ def test_f_oneway_vs_scipy_stats():
 def test_f_oneway_ints():
     # Smoke test f_oneway on integers: that it does raise casting errors
     # with recent numpys
-    rng = np.random.RandomState(0)
-    X = rng.randint(10, size=(10, 10))
+    rng = np.random.default_rng(0)
+    X = rng.integers(10, size=(10, 10))
     y = np.arange(10)
     fint, pint = f_oneway(X, y)
 
@@ -778,13 +778,13 @@ def test_tied_pvalues():
 
     for perm in itertools.permutations((0, 1, 2)):
         X = X0[:, perm]
-        Xt = SelectKBest(chi2, k=2).fit_transform(X, y)
-        assert Xt.shape == (2, 2)
-        assert 9998 not in Xt
+        x_t = SelectKBest(chi2, k=2).fit_transform(X, y)
+        assert x_t.shape == (2, 2)
+        assert 9998 not in x_t
 
-        Xt = SelectPercentile(chi2, percentile=67).fit_transform(X, y)
-        assert Xt.shape == (2, 2)
-        assert 9998 not in Xt
+        x_t = SelectPercentile(chi2, percentile=67).fit_transform(X, y)
+        assert x_t.shape == (2, 2)
+        assert 9998 not in x_t
 
 
 def test_scorefunc_multilabel():
@@ -793,13 +793,13 @@ def test_scorefunc_multilabel():
     X = np.array([[10000, 9999, 0], [100, 9999, 0], [1000, 99, 0]])
     y = [[1, 1], [0, 1], [1, 0]]
 
-    Xt = SelectKBest(chi2, k=2).fit_transform(X, y)
-    assert Xt.shape == (3, 2)
-    assert 0 not in Xt
+    x_t = SelectKBest(chi2, k=2).fit_transform(X, y)
+    assert x_t.shape == (3, 2)
+    assert 0 not in x_t
 
-    Xt = SelectPercentile(chi2, percentile=67).fit_transform(X, y)
-    assert Xt.shape == (3, 2)
-    assert 0 not in Xt
+    x_t = SelectPercentile(chi2, percentile=67).fit_transform(X, y)
+    assert x_t.shape == (3, 2)
+    assert 0 not in x_t
 
 
 def test_tied_scores():
@@ -865,8 +865,8 @@ def test_no_feature_selected():
     for selector in strict_selectors:
         assert_array_equal(selector.get_support(), np.zeros(10))
         with pytest.warns(UserWarning, match="No features were selected"):
-            X_selected = selector.transform(X)
-        assert X_selected.shape == (40, 0)
+            x_selected = selector.transform(X)
+        assert x_selected.shape == (40, 0)
 
 
 def test_mutual_info_classif():
@@ -886,13 +886,13 @@ def test_mutual_info_classif():
 
     # Test in KBest mode.
     univariate_filter = SelectKBest(mutual_info_classif, k=2)
-    X_r = univariate_filter.fit(X, y).transform(X)
-    X_r2 = (
+    x_r = univariate_filter.fit(X, y).transform(X)
+    x_r2 = (
         GenericUnivariateSelect(mutual_info_classif, mode="k_best", param=2)
         .fit(X, y)
         .transform(X)
     )
-    assert_array_equal(X_r, X_r2)
+    assert_array_equal(x_r, x_r2)
     support = univariate_filter.get_support()
     gtruth = np.zeros(5)
     gtruth[:2] = 1
@@ -900,13 +900,13 @@ def test_mutual_info_classif():
 
     # Test in Percentile mode.
     univariate_filter = SelectPercentile(mutual_info_classif, percentile=40)
-    X_r = univariate_filter.fit(X, y).transform(X)
-    X_r2 = (
+    x_r = univariate_filter.fit(X, y).transform(X)
+    x_r2 = (
         GenericUnivariateSelect(mutual_info_classif, mode="percentile", param=40)
         .fit(X, y)
         .transform(X)
     )
-    assert_array_equal(X_r, X_r2)
+    assert_array_equal(x_r, x_r2)
     support = univariate_filter.get_support()
     gtruth = np.zeros(5)
     gtruth[:2] = 1
@@ -925,14 +925,14 @@ def test_mutual_info_regression():
 
     # Test in KBest mode.
     univariate_filter = SelectKBest(mutual_info_regression, k=2)
-    X_r = univariate_filter.fit(X, y).transform(X)
+    x_r = univariate_filter.fit(X, y).transform(X)
     assert_best_scores_kept(univariate_filter)
-    X_r2 = (
+    x_r2 = (
         GenericUnivariateSelect(mutual_info_regression, mode="k_best", param=2)
         .fit(X, y)
         .transform(X)
     )
-    assert_array_equal(X_r, X_r2)
+    assert_array_equal(x_r, x_r2)
     support = univariate_filter.get_support()
     gtruth = np.zeros(10)
     gtruth[:2] = 1
@@ -940,13 +940,13 @@ def test_mutual_info_regression():
 
     # Test in Percentile mode.
     univariate_filter = SelectPercentile(mutual_info_regression, percentile=20)
-    X_r = univariate_filter.fit(X, y).transform(X)
-    X_r2 = (
+    x_r = univariate_filter.fit(X, y).transform(X)
+    x_r2 = (
         GenericUnivariateSelect(mutual_info_regression, mode="percentile", param=20)
         .fit(X, y)
         .transform(X)
     )
-    assert_array_equal(X_r, X_r2)
+    assert_array_equal(x_r, x_r2)
     support = univariate_filter.get_support()
     gtruth = np.zeros(10)
     gtruth[:2] = 1
@@ -1012,7 +1012,7 @@ def test_unsupervised_filter(selector):
 
     selector.set_params(score_func=score_func)
     selector.fit(X)
-    X_trans = selector.transform(X)
-    assert_allclose(X_trans, X[:, :4])
-    X_trans = selector.fit_transform(X)
-    assert_allclose(X_trans, X[:, :4])
+    x_trans = selector.transform(X)
+    assert_allclose(x_trans, X[:, :4])
+    x_trans = selector.fit_transform(X)
+    assert_allclose(x_trans, X[:, :4])
