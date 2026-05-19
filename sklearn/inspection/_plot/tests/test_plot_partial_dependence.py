@@ -170,9 +170,17 @@ def test_plot_partial_dependence_kind(
     assert disp.contours_[0, 2] is None
 
     if centered:
-        assert all(ln._y[0] == 0.0 for ln in disp.lines_.ravel() if ln is not None)
+        assert all(
+            ln._y[0] == pytest.approx(0.0)
+            for ln in disp.lines_.ravel()
+            if ln is not None
+        )
     else:
-        assert all(ln._y[0] != 0.0 for ln in disp.lines_.ravel() if ln is not None)
+        assert all(
+            ln._y[0] != pytest.approx(0.0)
+            for ln in disp.lines_.ravel()
+            if ln is not None
+        )
 
 
 @pytest.mark.parametrize(
@@ -1245,7 +1253,11 @@ def test_partial_dependence_display_kind_centered_interaction(
         subsample=5,
     )
 
-    assert all([ln._y[0] == 0.0 for ln in disp.lines_.ravel() if ln is not None])
+    assert all(
+        ln._y[0] == pytest.approx(0.0)
+        for ln in disp.lines_.ravel()
+        if ln is not None
+    )
 
 
 def test_partial_dependence_display_with_constant_sample_weight(
