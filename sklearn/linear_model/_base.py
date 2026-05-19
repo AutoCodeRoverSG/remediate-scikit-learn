@@ -93,18 +93,18 @@ def make_dataset(X, y, sample_weight, random_state=None):
     seed = rng.randint(1, np.iinfo(np.int32).max)
 
     if X.dtype == np.float32:
-        CSRData = CSRDataset32
-        ArrayData = ArrayDataset32
+        csr_data = CSRDataset32
+        array_data = ArrayDataset32
     else:
-        CSRData = CSRDataset64
-        ArrayData = ArrayDataset64
+        csr_data = CSRDataset64
+        array_data = ArrayDataset64
 
     if sp.issparse(X):
-        dataset = CSRData(X.data, X.indptr, X.indices, y, sample_weight, seed=seed)
+        dataset = csr_data(X.data, X.indptr, X.indices, y, sample_weight, seed=seed)
         intercept_decay = SPARSE_INTERCEPT_DECAY
     else:
         X = np.ascontiguousarray(X)
-        dataset = ArrayData(X, y, sample_weight, seed=seed)
+        dataset = array_data(X, y, sample_weight, seed=seed)
         intercept_decay = 1.0
 
     return dataset, intercept_decay
@@ -165,8 +165,8 @@ def _preprocess_data(
         `np.sqrt(sample_weight)`
     """
     xp, _, device_ = get_namespace_and_device(X, y, sample_weight)
-    n_samples, n_features = X.shape
-    X_is_sparse = sp.issparse(X)
+    _, n_features = X.shape
+    x_is_sparse = sp.issparse(X)
 
     if check_input:
         X = check_array(
@@ -179,7 +179,7 @@ def _preprocess_data(
     else:
         y = xp.astype(y, X.dtype)
         if copy:
-            if X_is_sparse:
+            if x_is_sparse:
                 X = X.copy()
             else:
                 X = _asarray_with_order(X, order="K", copy=True, xp=xp)
@@ -187,18 +187,18 @@ def _preprocess_data(
     dtype_ = X.dtype
 
     if fit_intercept:
-        if X_is_sparse:
-            X_offset, X_var = mean_variance_axis(X, axis=0, weights=sample_weight)
+        if x_is_sparse:
+            x_offset, _ = mean_variance_axis(X, axis=0, weights=sample_weight)
         else:
-            X_offset = _average(X, axis=0, weights=sample_weight, xp=xp)
+            x_offset = _average(X, axis=0, weights=sample_weight, xp=xp)
 
-            X_offset = xp.astype(X_offset, X.dtype, copy=False)
-            X -= X_offset
+            x_offset = xp.astype(x_offset, X.dtype, copy=False)
+            X -= x_offset
 
         y_offset = _average(y, axis=0, weights=sample_weight, xp=xp)
         y -= y_offset
     else:
-        X_offset = xp.zeros(n_features, dtype=X.dtype, device=device_)
+        x_offset = xp.zeros(n_features, dtype=X.dtype, device=device_)
         if y.ndim == 1:
             y_offset = xp.asarray(0.0, dtype=dtype_, device=device_)
         else:
@@ -206,7 +206,7 @@ def _preprocess_data(
 
     # X_scale is no longer needed. It is a historic artifact from the
     # time where linear model exposed the normalize parameter.
-    X_scale = xp.ones(n_features, dtype=X.dtype, device=device_)
+    x_scale = xp.ones(n_features, dtype=X.dtype, device=device_)
 
     if sample_weight is not None and rescale_with_sw:
         # Sample weight can be implemented via a simple rescaling.
@@ -217,7 +217,7 @@ def _preprocess_data(
         X, y, sample_weight_sqrt = _rescale_data(X, y, sample_weight, inplace=True)
     else:
         sample_weight_sqrt = None
-    return X, y, X_offset, y_offset, X_scale, sample_weight_sqrt
+    return X, y, x_offset, y_offset, x_scale, sample_weight_sqrt
 
 
 def _rescale_data(X, y, sample_weight, inplace=False):
@@ -315,21 +315,21 @@ class LinearModel(BaseEstimator, metaclass=ABCMeta):
         check_same_namespace(X, self, attribute="coef_", method="predict")
         return self._decision_function(X)
 
-    def _set_intercept(self, X_offset, y_offset, X_scale=None):
+    def _set_intercept(self, x_offset, y_offset, x_scale=None):
         """Set the intercept_"""
-        xp, _ = get_namespace(X_offset, y_offset, X_scale)
+        xp, _ = get_namespace(x_offset, y_offset, x_scale)
 
         if self.fit_intercept:
             # We always want coef_.dtype=X.dtype. For instance, X.dtype can differ from
             # coef_.dtype if warm_start=True.
-            self.coef_ = xp.astype(self.coef_, X_offset.dtype, copy=False)
-            if X_scale is not None:
-                self.coef_ = xp.divide(self.coef_, X_scale)
+            self.coef_ = xp.astype(self.coef_, x_offset.dtype, copy=False)
+            if x_scale is not None:
+                self.coef_ = xp.divide(self.coef_, x_scale)
 
             if self.coef_.ndim == 1:
-                self.intercept_ = y_offset - X_offset @ self.coef_
+                self.intercept_ = y_offset - x_offset @ self.coef_
             else:
-                self.intercept_ = y_offset - X_offset @ self.coef_.T
+                self.intercept_ = y_offset - x_offset @ self.coef_.T
 
         else:
             self.intercept_ = 0.0
