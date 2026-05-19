@@ -279,10 +279,8 @@ def _compute_n_patches(i_h, i_w, p_h, p_w, max_patches=None):
     all_patches = n_h * n_w
 
     if max_patches:
-        if isinstance(max_patches, (Integral)) and max_patches < all_patches:
-            return max_patches
-        elif isinstance(max_patches, (Integral)) and max_patches >= all_patches:
-            return all_patches
+        if isinstance(max_patches, (Integral)):
+            return min(max_patches, all_patches)
         elif isinstance(max_patches, (Real)) and 0 < max_patches < 1:
             return int(max_patches * all_patches)
         else:

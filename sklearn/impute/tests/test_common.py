@@ -46,7 +46,7 @@ def test_imputers_add_indicator(marker, imputer):
             [1, 2, 9, marker, 4],
         ]
     )
-    X_true_indicator = np.array(
+    x_true_indicator = np.array(
         [
             [1.0, 0.0, 0.0, 1.0],
             [0.0, 1.0, 0.0, 1.0],
@@ -57,13 +57,13 @@ def test_imputers_add_indicator(marker, imputer):
     imputer = clone(imputer)
     imputer.set_params(missing_values=marker, add_indicator=True)
 
-    X_trans = imputer.fit_transform(X)
-    assert_allclose(X_trans[:, -4:], X_true_indicator)
+    x_trans = imputer.fit_transform(X)
+    assert_allclose(x_trans[:, -4:], x_true_indicator)
     assert_array_equal(imputer.indicator_.features_, np.array([0, 1, 2, 3]))
 
     imputer.set_params(add_indicator=False)
-    X_trans_no_indicator = imputer.fit_transform(X)
-    assert_allclose(X_trans[:, :-4], X_trans_no_indicator)
+    x_trans_no_indicator = imputer.fit_transform(X)
+    assert_allclose(x_trans[:, :-4], x_trans_no_indicator)
 
 
 # ConvergenceWarning will be raised by the IterativeImputer
@@ -83,7 +83,7 @@ def test_imputers_add_indicator_sparse(imputer, marker, csr_container):
             [1, 2, 9, marker, 4],
         ]
     )
-    X_true_indicator = csr_container(
+    x_true_indicator = csr_container(
         [
             [1.0, 0.0, 0.0, 1.0],
             [0.0, 1.0, 0.0, 1.0],
@@ -93,13 +93,13 @@ def test_imputers_add_indicator_sparse(imputer, marker, csr_container):
     )
     imputer.set_params(missing_values=marker, add_indicator=True)
 
-    X_trans = imputer.fit_transform(X)
-    assert_allclose_dense_sparse(X_trans[:, -4:], X_true_indicator)
+    x_trans = imputer.fit_transform(X)
+    assert_allclose_dense_sparse(x_trans[:, -4:], x_true_indicator)
     assert_array_equal(imputer.indicator_.features_, np.array([0, 1, 2, 3]))
 
     imputer.set_params(add_indicator=False)
-    X_trans_no_indicator = imputer.fit_transform(X)
-    assert_allclose_dense_sparse(X_trans[:, :-4], X_trans_no_indicator)
+    x_trans_no_indicator = imputer.fit_transform(X)
+    assert_allclose_dense_sparse(x_trans[:, :-4], x_trans_no_indicator)
 
 
 # ConvergenceWarning will be raised by the IterativeImputer

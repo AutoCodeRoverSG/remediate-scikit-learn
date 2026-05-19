@@ -9,7 +9,8 @@ from sklearn.utils._testing import _convert_container, assert_allclose
 
 @pytest.fixture
 def data():
-    X = np.random.randn(10, 2)
+    rng = np.random.default_rng(0)
+    X = rng.standard_normal((10, 2))
     X[::2] = np.nan
     return X
 
@@ -90,18 +91,20 @@ def test_base_no_precomputed_mask_transform(data):
         imputer.fit_transform(data)
 
 
-@pytest.mark.parametrize("X1_type", ["array", "pandas"])
-def test_assign_where(X1_type):
+@pytest.mark.parametrize("x1_type", ["array", "pandas"])
+def test_assign_where(x1_type):
     """Check the behaviour of the private helpers `_assign_where`."""
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
 
     n_samples, n_features = 10, 5
-    X1 = _convert_container(rng.randn(n_samples, n_features), constructor_name=X1_type)
-    X2 = rng.randn(n_samples, n_features)
-    mask = rng.randint(0, 2, size=(n_samples, n_features)).astype(bool)
+    X1 = _convert_container(
+        rng.standard_normal((n_samples, n_features)), constructor_name=x1_type
+    )
+    X2 = rng.standard_normal((n_samples, n_features))
+    mask = rng.integers(0, 2, size=(n_samples, n_features)).astype(bool)
 
     _assign_where(X1, X2, mask)
 
-    if X1_type == "pandas":
+    if x1_type == "pandas":
         X1 = X1.to_numpy()
     assert_allclose(X1[mask], X2[mask])
