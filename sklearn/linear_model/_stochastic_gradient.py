@@ -64,16 +64,28 @@ DEFAULT_EPSILON = 0.1
 
 MAX_INT = np.iinfo(np.int32).max
 
+_CONVERGENCE_WARNING_MSG = (
+    "Maximum number of iteration reached before "
+    "convergence. Consider increasing max_iter to "
+    "improve the fit."
+)
+
+_POWER_T_DEPRECATION_MSG = (
+    "Negative values for `power_t` are deprecated in version 1.8 "
+    "and will raise an error in 1.10. "
+    "Use values in the range [0.0, inf) instead."
+)
+
 
 class _ValidationScoreCallback:
     """Callback for early stopping based on validation score"""
 
-    def __init__(self, estimator, X_val, y_val, sample_weight_val, classes=None):
+    def __init__(self, estimator, x_val, y_val, sample_weight_val, classes=None):
         self.estimator = clone(estimator)
         self.estimator.t_ = 1  # to pass check_is_fitted
         if classes is not None:
             self.estimator.classes_ = classes
-        self.X_val = X_val
+        self.x_val = x_val
         self.y_val = y_val
         self.sample_weight_val = sample_weight_val
 
@@ -81,7 +93,7 @@ class _ValidationScoreCallback:
         est = self.estimator
         est.coef_ = coef.reshape(1, -1)
         est.intercept_ = np.atleast_1d(intercept)
-        return est.score(self.X_val, self.y_val, self.sample_weight_val)
+        return est.score(self.x_val, self.y_val, self.sample_weight_val)
 
 
 class BaseSGD(SparseCoefMixin, BaseEstimator, metaclass=ABCMeta):
@@ -114,13 +126,7 @@ class BaseSGD(SparseCoefMixin, BaseEstimator, metaclass=ABCMeta):
         epsilon=0.1,
         random_state=None,
         learning_rate="optimal",
-        eta0=0.01,
-        power_t=0.5,
-        early_stopping=False,
-        validation_fraction=0.1,
-        n_iter_no_change=5,
-        warm_start=False,
-        average=False,
+        **kwargs,
     ):
         self.loss = loss
         self.penalty = penalty
@@ -132,13 +138,13 @@ class BaseSGD(SparseCoefMixin, BaseEstimator, metaclass=ABCMeta):
         self.shuffle = shuffle
         self.random_state = random_state
         self.verbose = verbose
-        self.eta0 = eta0
-        self.power_t = power_t
-        self.early_stopping = early_stopping
-        self.validation_fraction = validation_fraction
-        self.n_iter_no_change = n_iter_no_change
-        self.warm_start = warm_start
-        self.average = average
+        self.eta0 = kwargs.pop("eta0", 0.01)
+        self.power_t = kwargs.pop("power_t", 0.5)
+        self.early_stopping = kwargs.pop("early_stopping", False)
+        self.validation_fraction = kwargs.pop("validation_fraction", 0.1)
+        self.n_iter_no_change = kwargs.pop("n_iter_no_change", 5)
+        self.warm_start = kwargs.pop("warm_start", False)
+        self.average = kwargs.pop("average", False)
         self.max_iter = max_iter
         self.tol = tol
 
@@ -556,17 +562,9 @@ class BaseSGDClassifier(LinearClassifierMixin, BaseSGD, metaclass=ABCMeta):
         shuffle=True,
         verbose=0,
         epsilon=DEFAULT_EPSILON,
-        n_jobs=None,
         random_state=None,
         learning_rate="optimal",
-        eta0=0.01,
-        power_t=0.5,
-        early_stopping=False,
-        validation_fraction=0.1,
-        n_iter_no_change=5,
-        class_weight=None,
-        warm_start=False,
-        average=False,
+        **kwargs,
     ):
         super().__init__(
             loss=loss,
@@ -581,16 +579,10 @@ class BaseSGDClassifier(LinearClassifierMixin, BaseSGD, metaclass=ABCMeta):
             epsilon=epsilon,
             random_state=random_state,
             learning_rate=learning_rate,
-            eta0=eta0,
-            power_t=power_t,
-            early_stopping=early_stopping,
-            validation_fraction=validation_fraction,
-            n_iter_no_change=n_iter_no_change,
-            warm_start=warm_start,
-            average=average,
+            **kwargs,
         )
-        self.class_weight = class_weight
-        self.n_jobs = n_jobs
+        self.class_weight = kwargs.get("class_weight", None)
+        self.n_jobs = kwargs.get("n_jobs", None)
 
     def _partial_fit(
         self,
@@ -617,7 +609,7 @@ class BaseSGDClassifier(LinearClassifierMixin, BaseSGD, metaclass=ABCMeta):
             reset=first_call,
         )
 
-        n_samples, n_features = X.shape
+        n_features = X.shape[1]
 
         _check_partial_fit_first_call(self, classes)
 
@@ -739,19 +731,13 @@ class BaseSGDClassifier(LinearClassifierMixin, BaseSGD, metaclass=ABCMeta):
             and self.n_iter_ == self.max_iter
         ):
             warnings.warn(
-                (
-                    "Maximum number of iteration reached before "
-                    "convergence. Consider increasing max_iter to "
-                    "improve the fit."
-                ),
+                _CONVERGENCE_WARNING_MSG,
                 ConvergenceWarning,
             )
 
         if self.power_t < 0:
             warnings.warn(
-                "Negative values for `power_t` are deprecated in version 1.8 "
-                "and will raise an error in 1.10. "
-                "Use values in the range [0.0, inf) instead.",
+                _POWER_T_DEPRECATION_MSG,
                 FutureWarning,
             )
 
@@ -1459,13 +1445,7 @@ class BaseSGDRegressor(RegressorMixin, BaseSGD):
         epsilon=DEFAULT_EPSILON,
         random_state=None,
         learning_rate="invscaling",
-        eta0=0.01,
-        power_t=0.25,
-        early_stopping=False,
-        validation_fraction=0.1,
-        n_iter_no_change=5,
-        warm_start=False,
-        average=False,
+        **kwargs,
     ):
         super().__init__(
             loss=loss,
@@ -1480,13 +1460,7 @@ class BaseSGDRegressor(RegressorMixin, BaseSGD):
             epsilon=epsilon,
             random_state=random_state,
             learning_rate=learning_rate,
-            eta0=eta0,
-            power_t=power_t,
-            early_stopping=early_stopping,
-            validation_fraction=validation_fraction,
-            n_iter_no_change=n_iter_no_change,
-            warm_start=warm_start,
-            average=average,
+            **kwargs,
         )
 
     def _partial_fit(
@@ -1515,7 +1489,7 @@ class BaseSGDRegressor(RegressorMixin, BaseSGD):
         )
         y = y.astype(X.dtype, copy=False)
 
-        n_samples, n_features = X.shape
+        n_features = X.shape[1]
 
         sample_weight = _check_sample_weight(sample_weight, X, dtype=X.dtype)
 
@@ -1618,19 +1592,13 @@ class BaseSGDRegressor(RegressorMixin, BaseSGD):
             and self.n_iter_ == self.max_iter
         ):
             warnings.warn(
-                (
-                    "Maximum number of iteration reached before "
-                    "convergence. Consider increasing max_iter to "
-                    "improve the fit."
-                ),
+                _CONVERGENCE_WARNING_MSG,
                 ConvergenceWarning,
             )
 
         if self.power_t < 0:
             warnings.warn(
-                "Negative values for `power_t` are deprecated in version 1.8 "
-                "and will raise an error in 1.10. "
-                "Use values in the range [0.0, inf) instead.",
+                _POWER_T_DEPRECATION_MSG,
                 FutureWarning,
             )
 
@@ -2325,7 +2293,9 @@ class SGDOneClassSVM(OutlierMixin, BaseSGD):
         n_samples = X.shape[0]
         y = np.ones(n_samples, dtype=X.dtype, order="C")
 
-        dataset, offset_decay = make_dataset(X, y, sample_weight)
+        dataset, offset_decay = make_dataset(
+            X, y, sample_weight, random_state=self.random_state
+        )
 
         penalty_type = self._get_penalty_type(self.penalty)
         learning_rate_type = self._get_learning_rate_type(learning_rate)
@@ -2551,19 +2521,13 @@ class SGDOneClassSVM(OutlierMixin, BaseSGD):
             and self.n_iter_ == self.max_iter
         ):
             warnings.warn(
-                (
-                    "Maximum number of iteration reached before "
-                    "convergence. Consider increasing max_iter to "
-                    "improve the fit."
-                ),
+                _CONVERGENCE_WARNING_MSG,
                 ConvergenceWarning,
             )
 
         if self.power_t < 0:
             warnings.warn(
-                "Negative values for `power_t` are deprecated in version 1.8 "
-                "and will raise an error in 1.10. "
-                "Use values in the range [0.0, inf) instead.",
+                _POWER_T_DEPRECATION_MSG,
                 FutureWarning,
             )
 
