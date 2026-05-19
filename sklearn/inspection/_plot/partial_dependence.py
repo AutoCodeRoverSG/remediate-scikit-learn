@@ -253,22 +253,11 @@ class PartialDependenceDisplay:
         feature_names=None,
         target=None,
         response_method="auto",
-        n_cols=3,
         grid_resolution=100,
         percentiles=(0.05, 0.95),
-        custom_values=None,
-        method="auto",
-        n_jobs=None,
-        verbose=0,
-        line_kw=None,
-        ice_lines_kw=None,
-        pd_line_kw=None,
-        contour_kw=None,
-        ax=None,
         kind="average",
-        centered=False,
         subsample=1000,
-        random_state=None,
+        **kwargs,
     ):
         """Partial dependence (PD) and individual conditional expectation (ICE) plots.
 
@@ -540,6 +529,25 @@ class PartialDependenceDisplay:
         check_matplotlib_support(f"{cls.__name__}.from_estimator")
         import matplotlib.pyplot as plt
 
+        # Extract keyword arguments with defaults
+        random_state = kwargs.pop("random_state", None)
+        n_cols = kwargs.pop("n_cols", 3)
+        custom_values = kwargs.pop("custom_values", None)
+        method = kwargs.pop("method", "auto")
+        n_jobs = kwargs.pop("n_jobs", None)
+        verbose = kwargs.pop("verbose", 0)
+        line_kw = kwargs.pop("line_kw", None)
+        ice_lines_kw = kwargs.pop("ice_lines_kw", None)
+        pd_line_kw = kwargs.pop("pd_line_kw", None)
+        contour_kw = kwargs.pop("contour_kw", None)
+        ax = kwargs.pop("ax", None)
+        centered = kwargs.pop("centered", False)
+        if kwargs:
+            raise TypeError(
+                f"from_estimator() got unexpected keyword argument(s): "
+                f"{', '.join(sorted(kwargs))}"
+            )
+
         # set target_idx for multi-class estimators
         if hasattr(estimator, "classes_") and np.size(estimator.classes_) > 2:
             if target is None:
@@ -639,7 +647,7 @@ class PartialDependenceDisplay:
                     for cat in categorical_features
                 ]
                 is_categorical = [
-                    tuple([idx in categorical_features_idx for idx in fxs])
+                    tuple(idx in categorical_features_idx for idx in fxs)
                     for fxs in features
                 ]
             else:
@@ -657,14 +665,12 @@ class PartialDependenceDisplay:
 
             # collect the indices of the categorical features targeted by the partial
             # dependence computation
-            categorical_features_targeted = set(
-                [
-                    fx
-                    for fxs, cats in zip(features, is_categorical)
-                    for fx in fxs
-                    if any(cats)
-                ]
-            )
+            categorical_features_targeted = {
+                fx
+                for fxs, cats in zip(features, is_categorical)
+                for fx in fxs
+                if any(cats)
+            }
             if categorical_features_targeted:
                 min_n_cats = min(
                     [
@@ -759,8 +765,8 @@ class PartialDependenceDisplay:
         for fxs, cats in zip(features, is_categorical):
             for fx, cat in zip(fxs, cats):
                 if not cat and fx not in deciles:
-                    X_col = _safe_indexing(X, fx, axis=1)
-                    deciles[fx] = mquantiles(X_col, prob=np.arange(0.1, 1.0, 0.1))
+                    x_col = _safe_indexing(X, fx, axis=1)
+                    deciles[fx] = mquantiles(x_col, prob=np.arange(0.1, 1.0, 0.1))
 
         display = cls(
             pd_results=pd_results,
@@ -1009,7 +1015,7 @@ class PartialDependenceDisplay:
         feature_idx,
         ax,
         pd_plot_idx,
-        Z_level,
+        z_level,
         contour_kw,
         categorical,
         heatmap_kw,
@@ -1045,7 +1051,7 @@ class PartialDependenceDisplay:
         if categorical:
             import matplotlib.pyplot as plt
 
-            default_im_kw = dict(interpolation="nearest", cmap="viridis")
+            default_im_kw = {"interpolation": "nearest", "cmap": "viridis"}
             im_kw = {**default_im_kw, **heatmap_kw}
 
             data = avg_preds[self.target_idx]
@@ -1064,7 +1070,7 @@ class PartialDependenceDisplay:
                 values_format = ".2f"
                 text_data = format(data[row, col], values_format)
 
-                text_kwargs = dict(ha="center", va="center", color=color)
+                text_kwargs = {"ha": "center", "va": "center", "color": color}
                 text[row, col] = ax.text(col, row, text_data, **text_kwargs)
 
             fig = ax.figure
@@ -1087,15 +1093,15 @@ class PartialDependenceDisplay:
 
             XX, YY = np.meshgrid(feature_values[0], feature_values[1])
             Z = avg_preds[self.target_idx].T
-            CS = ax.contour(XX, YY, Z, levels=Z_level, linewidths=0.5, colors="k")
+            CS = ax.contour(XX, YY, Z, levels=z_level, linewidths=0.5, colors="k")
             contour_idx = np.unravel_index(pd_plot_idx, self.contours_.shape)
             self.contours_[contour_idx] = ax.contourf(
                 XX,
                 YY,
                 Z,
-                levels=Z_level,
-                vmax=Z_level[-1],
-                vmin=Z_level[0],
+                levels=z_level,
+                vmax=z_level[-1],
+                vmin=z_level[0],
                 **contour_kw,
             )
             ax.clabel(CS, fmt="%2.2f", colors="k", fontsize=10, inline=True)
@@ -1245,7 +1251,7 @@ class PartialDependenceDisplay:
             )
 
         valid_kinds = {"average", "individual", "both"}
-        if any([k not in valid_kinds for k in kind]):
+        if any(k not in valid_kinds for k in kind):
             raise ValueError(
                 f"Values provided to `kind` must be one of: {valid_kinds!r} or a list"
                 f" of such values. Currently, kind={self.kind!r}"
@@ -1323,7 +1329,7 @@ class PartialDependenceDisplay:
             n_ice_lines = self._get_sample_count(
                 len(pd_results_[ice_plot_idx].individual[0])
             )
-            if any([kind_plot == "both" for kind_plot in kind]):
+            if any(kind_plot == "both" for kind_plot in kind):
                 n_lines = n_ice_lines + 1  # account for the average line
             else:
                 n_lines = n_ice_lines
@@ -1387,7 +1393,7 @@ class PartialDependenceDisplay:
 
         # create contour levels for two-way plots
         if 2 in pdp_lim:
-            Z_level = np.linspace(*pdp_lim[2], num=8)
+            z_level = np.linspace(*pdp_lim[2], num=8)
 
         self.deciles_vlines_ = np.empty_like(self.axes_, dtype=object)
         self.deciles_hlines_ = np.empty_like(self.axes_, dtype=object)
@@ -1481,7 +1487,7 @@ class PartialDependenceDisplay:
                     feature_idx,
                     axi,
                     pd_plot_idx,
-                    Z_level,
+                    z_level,
                     contour_kw,
                     cat[0] and cat[1],
                     heatmap_kw,
