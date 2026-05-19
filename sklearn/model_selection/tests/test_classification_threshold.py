@@ -235,17 +235,17 @@ def test_tuned_threshold_classifier_conflict_cv_refit(params, err_type, err_msg)
     "response_method", ["predict_proba", "predict_log_proba", "decision_function"]
 )
 @pytest.mark.parametrize(
-    "ThresholdClassifier", [FixedThresholdClassifier, TunedThresholdClassifierCV]
+    "threshold_classifier", [FixedThresholdClassifier, TunedThresholdClassifierCV]
 )
 def test_threshold_classifier_estimator_response_methods(
-    ThresholdClassifier, estimator, response_method
+    threshold_classifier, estimator, response_method
 ):
     """Check that `TunedThresholdClassifierCV` exposes the same response methods as the
     underlying estimator.
     """
     X, y = make_classification(n_samples=100, random_state=0)
 
-    model = ThresholdClassifier(estimator=estimator)
+    model = threshold_classifier(estimator=estimator)
     assert hasattr(model, response_method) == hasattr(estimator, response_method)
 
     model.fit(X, y)
@@ -276,7 +276,7 @@ def test_tuned_threshold_classifier_without_constraint_value(response_method):
     X = np.vstack([X[indices_neg], X[indices_pos]])
     y = np.hstack([y[indices_neg], y[indices_pos]])
 
-    lr = make_pipeline(StandardScaler(), LogisticRegression()).fit(X, y)
+    lr = make_pipeline(StandardScaler(), LogisticRegression(), memory=None).fit(X, y)
     thresholds = 100
     model = TunedThresholdClassifierCV(
         estimator=lr,
@@ -298,7 +298,7 @@ def test_tuned_threshold_classifier_metric_with_parameter():
     `beta=2`.
     """
     X, y = load_breast_cancer(return_X_y=True)
-    lr = make_pipeline(StandardScaler(), LogisticRegression()).fit(X, y)
+    lr = make_pipeline(StandardScaler(), LogisticRegression(), memory=None).fit(X, y)
     model_fbeta_1 = TunedThresholdClassifierCV(
         estimator=lr, scoring=make_scorer(fbeta_score, beta=1)
     ).fit(X, y)
@@ -335,7 +335,7 @@ def test_tuned_threshold_classifier_with_string_targets(response_method, metric)
     classes = np.array(["cancer", "healthy"], dtype=object)
     y = classes[y]
     model = TunedThresholdClassifierCV(
-        estimator=make_pipeline(StandardScaler(), LogisticRegression()),
+        estimator=make_pipeline(StandardScaler(), LogisticRegression(), memory=None),
         scoring=metric,
         response_method=response_method,
         thresholds=100,
@@ -349,10 +349,10 @@ def test_tuned_threshold_classifier_with_string_targets(response_method, metric)
 @config_context(enable_metadata_routing=True)
 def test_tuned_threshold_classifier_refit(with_sample_weight, global_random_seed):
     """Check the behaviour of the `refit` parameter."""
-    rng = np.random.RandomState(global_random_seed)
+    rng = np.random.default_rng(global_random_seed)
     X, y = make_classification(n_samples=100, random_state=0)
     if with_sample_weight:
-        sample_weight = rng.randn(X.shape[0])
+        sample_weight = rng.standard_normal(X.shape[0])
         sample_weight = np.abs(sample_weight, out=sample_weight)
     else:
         sample_weight = None
@@ -487,7 +487,7 @@ def test_tuned_threshold_classifier_cv_float():
     tuned_model.fit(X, y)
 
     cv = StratifiedShuffleSplit(n_splits=1, test_size=test_size, random_state=0)
-    train_idx, val_idx = next(cv.split(X, y))
+    train_idx, _ = next(cv.split(X, y))
     cloned_estimator = clone(estimator).fit(X[train_idx], y[train_idx])
 
     assert_allclose(tuned_model.estimator_.coef_, cloned_estimator.coef_)
@@ -505,7 +505,7 @@ def test_tuned_threshold_classifier_error_constant_predictor():
     probabilities such that we cannot find any threshold.
     """
     X, y = make_classification(random_state=0)
-    estimator = DummyClassifier(strategy="constant", constant=1)
+    estimator = DummyClassifier(strategy="constant", constant=1, random_state=0)
     tuned_model = TunedThresholdClassifierCV(estimator, response_method="predict_proba")
     err_msg = "The provided estimator makes constant predictions"
     with pytest.raises(ValueError, match=err_msg):

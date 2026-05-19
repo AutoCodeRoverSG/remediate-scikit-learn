@@ -410,7 +410,7 @@ def test_cross_validate_nested_estimator():
         ]
     )
 
-    results = cross_validate(pipeline, X, y, return_estimator=True)
+    results = cross_validate(pipeline, X, y, return_options={"estimator"})
     estimators = results["estimator"]
 
     assert isinstance(estimators, list)
@@ -491,7 +491,7 @@ def check_cross_validate_single_metric(clf, X, y, scores, cv):
                 X,
                 y,
                 scoring="neg_mean_squared_error",
-                return_train_score=True,
+                return_options={"train_score"},
                 cv=cv,
             )
             assert_array_almost_equal(mse_scores_dict["train_score"], train_mse_scores)
@@ -501,7 +501,6 @@ def check_cross_validate_single_metric(clf, X, y, scores, cv):
                 X,
                 y,
                 scoring="neg_mean_squared_error",
-                return_train_score=False,
                 cv=cv,
             )
         assert isinstance(mse_scores_dict, dict)
@@ -512,12 +511,12 @@ def check_cross_validate_single_metric(clf, X, y, scores, cv):
         if return_train_score:
             # It must be True by default - deprecated
             r2_scores_dict = cross_validate(
-                clf, X, y, scoring=["r2"], return_train_score=True, cv=cv
+                clf, X, y, scoring=["r2"], return_options={"train_score"}, cv=cv
             )
             assert_array_almost_equal(r2_scores_dict["train_r2"], train_r2_scores, True)
         else:
             r2_scores_dict = cross_validate(
-                clf, X, y, scoring=["r2"], return_train_score=False, cv=cv
+                clf, X, y, scoring=["r2"], cv=cv
             )
         assert isinstance(r2_scores_dict, dict)
         assert len(r2_scores_dict) == dict_len
@@ -525,7 +524,7 @@ def check_cross_validate_single_metric(clf, X, y, scores, cv):
 
     # Test return_estimator option
     mse_scores_dict = cross_validate(
-        clf, X, y, scoring="neg_mean_squared_error", return_estimator=True, cv=cv
+        clf, X, y, scoring="neg_mean_squared_error", return_options={"estimator"}, cv=cv
     )
     for k, est in enumerate(mse_scores_dict["estimator"]):
         est_coef = est.coef_.copy()
@@ -581,7 +580,7 @@ def check_cross_validate_multi_metric(clf, X, y, scores, cv):
             if return_train_score:
                 # return_train_score must be True by default - deprecated
                 cv_results = cross_validate(
-                    clf, X, y, scoring=scoring, return_train_score=True, cv=cv
+                    clf, X, y, scoring=scoring, return_options={"train_score"}, cv=cv
                 )
                 assert_array_almost_equal(cv_results["train_r2"], train_r2_scores)
                 assert_array_almost_equal(
@@ -589,7 +588,7 @@ def check_cross_validate_multi_metric(clf, X, y, scores, cv):
                 )
             else:
                 cv_results = cross_validate(
-                    clf, X, y, scoring=scoring, return_train_score=False, cv=cv
+                    clf, X, y, scoring=scoring, cv=cv
                 )
             assert isinstance(cv_results, dict)
             assert set(cv_results.keys()) == (
@@ -2124,7 +2123,7 @@ def test_fit_and_score_working():
         parameters={"max_iter": 100, "tol": 0.1},
         fit_params=None,
         score_params=None,
-        return_parameters=True,
+        return_options=frozenset({"parameters"}),
     )
     result = _fit_and_score(**fit_and_score_args)
     assert result["parameters"] == fit_and_score_args["parameters"]
@@ -2255,6 +2254,7 @@ def test_cross_validate_failing_scorer(
     else:
         scoring = failing_scorer
 
+    _return_options = {"train_score"} if return_train_score else None
     if error_score == "raise":
         with pytest.raises(ValueError, match=error_msg):
             cross_validate(
@@ -2263,7 +2263,7 @@ def test_cross_validate_failing_scorer(
                 y,
                 cv=3,
                 scoring=scoring,
-                return_train_score=return_train_score,
+                return_options=_return_options,
                 error_score=error_score,
             )
     else:
@@ -2278,7 +2278,7 @@ def test_cross_validate_failing_scorer(
                 y,
                 cv=3,
                 scoring=scoring,
-                return_train_score=return_train_score,
+                return_options=_return_options,
                 error_score=error_score,
             )
             for key in results:
@@ -2342,6 +2342,7 @@ def test_fit_and_score_verbosity(
     train, test = next(ShuffleSplit().split(X))
 
     # test print without train score
+    _return_options = frozenset({"train_score"}) if train_score else frozenset()
     fit_and_score_args = dict(
         estimator=clf,
         X=X,
@@ -2353,9 +2354,8 @@ def test_fit_and_score_verbosity(
         parameters=None,
         fit_params=None,
         score_params=None,
-        return_train_score=train_score,
-        split_progress=split_prg,
-        candidate_progress=cdt_prg,
+        return_options=_return_options,
+        progress={"split": split_prg, "candidate": cdt_prg},
     )
     _fit_and_score(**fit_and_score_args)
     out, _ = capsys.readouterr()
@@ -2450,10 +2450,12 @@ def test_cross_validate_return_indices(global_random_seed):
     estimator = LogisticRegression()
 
     cv = KFold(n_splits=3, shuffle=True, random_state=global_random_seed)
-    cv_results = cross_validate(estimator, X, y, cv=cv, n_jobs=2, return_indices=False)
+    cv_results = cross_validate(estimator, X, y, cv=cv, n_jobs=2)
     assert "indices" not in cv_results
 
-    cv_results = cross_validate(estimator, X, y, cv=cv, n_jobs=2, return_indices=True)
+    cv_results = cross_validate(
+        estimator, X, y, cv=cv, n_jobs=2, return_options={"indices"}
+    )
     assert "indices" in cv_results
     train_indices = cv_results["indices"]["train"]
     test_indices = cv_results["indices"]["test"]
