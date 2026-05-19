@@ -101,7 +101,7 @@ def test_converged_to_local_maximum(kernel):
     # Test that we are in local maximum after hyperparameter-optimization.
     gpc = GaussianProcessClassifier(kernel=kernel).fit(X, y)
 
-    lml, lml_gradient = gpc.log_marginal_likelihood(gpc.kernel_.theta, True)
+    _, lml_gradient = gpc.log_marginal_likelihood(gpc.kernel_.theta, True)
 
     assert np.all(
         (np.abs(lml_gradient) < 1e-4)
