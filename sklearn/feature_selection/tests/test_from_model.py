@@ -249,7 +249,7 @@ def test_max_features_tiebreak():
             threshold=-np.inf,
         )
         x_new = transformer.fit_transform(X, y)
-        selected_feature_indices = np.where(transformer._get_support_mask())[0]
+        selected_feature_indices = np.nonzero(transformer._get_support_mask())[0]
         assert_array_equal(selected_feature_indices, np.arange(n_features))
         assert x_new.shape[1] == n_features
 

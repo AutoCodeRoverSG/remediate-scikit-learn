@@ -200,10 +200,10 @@ def test_sparse_support(csr_container):
 def test_nan_support():
     # Make sure nans are OK if the underlying estimator supports nans
 
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
     n_samples, n_features = 40, 4
     X, y = make_regression(n_samples, n_features, random_state=0)
-    nan_mask = rng.randint(0, 2, size=(n_samples, n_features), dtype=bool)
+    nan_mask = rng.integers(0, 2, size=(n_samples, n_features), dtype=bool)
     X[nan_mask] = np.nan
     sfs = SequentialFeatureSelector(
         HistGradientBoostingRegressor(learning_rate=0.1, random_state=0),
