@@ -9,8 +9,8 @@ from sklearn.utils import check_random_state
 from sklearn.utils._testing import _convert_container
 from sklearn.utils.validation import check_array
 
-rng = np.random.RandomState(10)
-V_mahalanobis = rng.rand(3, 3)
+rng = np.random.default_rng(10)
+V_mahalanobis = rng.random((3, 3))
 V_mahalanobis = np.dot(V_mahalanobis, V_mahalanobis.T)
 
 DIMENSION = 3
@@ -18,7 +18,7 @@ DIMENSION = 3
 METRICS = {
     "euclidean": {},
     "manhattan": {},
-    "minkowski": dict(p=3),
+    "minkowski": {"p": 3},
     "chebyshev": {},
 }
 
@@ -49,14 +49,14 @@ def brute_force_neighbors(X, Y, k, metric, **kwargs):
     return dist, ind
 
 
-def test_BallTree_is_BallTree64_subclass():
+def test_ball_tree_is_ball_tree64_subclass():
     assert issubclass(BallTree, BallTree64)
 
 
 @pytest.mark.parametrize("metric", itertools.chain(BOOLEAN_METRICS, DISCRETE_METRICS))
 @pytest.mark.parametrize("array_type", ["list", "array"])
-@pytest.mark.parametrize("BallTreeImplementation", BALL_TREE_CLASSES)
-def test_ball_tree_query_metrics(metric, array_type, BallTreeImplementation):
+@pytest.mark.parametrize("ball_tree_implementation", BALL_TREE_CLASSES)
+def test_ball_tree_query_metrics(metric, array_type, ball_tree_implementation):
     rng = check_random_state(0)
     if metric in BOOLEAN_METRICS:
         X = rng.random_sample((40, 10)).round(0)
@@ -69,19 +69,19 @@ def test_ball_tree_query_metrics(metric, array_type, BallTreeImplementation):
 
     k = 5
 
-    bt = BallTreeImplementation(X, leaf_size=1, metric=metric)
-    dist1, ind1 = bt.query(Y, k)
-    dist2, ind2 = brute_force_neighbors(X, Y, k, metric)
+    bt = ball_tree_implementation(X, leaf_size=1, metric=metric)
+    dist1, _ = bt.query(Y, k)
+    dist2, _ = brute_force_neighbors(X, Y, k, metric)
     assert_array_almost_equal(dist1, dist2)
 
 
 @pytest.mark.parametrize(
-    "BallTreeImplementation, decimal_tol", zip(BALL_TREE_CLASSES, [6, 5])
+    "ball_tree_implementation, decimal_tol", zip(BALL_TREE_CLASSES, [6, 5])
 )
-def test_query_haversine(BallTreeImplementation, decimal_tol):
+def test_query_haversine(ball_tree_implementation, decimal_tol):
     rng = check_random_state(0)
     X = 2 * np.pi * rng.random_sample((40, 2))
-    bt = BallTreeImplementation(X, leaf_size=1, metric="haversine")
+    bt = ball_tree_implementation(X, leaf_size=1, metric="haversine")
     dist1, ind1 = bt.query(X, k=5)
     dist2, ind2 = brute_force_neighbors(X, X, k=5, metric="haversine")
 
@@ -89,16 +89,16 @@ def test_query_haversine(BallTreeImplementation, decimal_tol):
     assert_array_almost_equal(ind1, ind2)
 
 
-@pytest.mark.parametrize("BallTreeImplementation", BALL_TREE_CLASSES)
-def test_array_object_type(BallTreeImplementation):
+@pytest.mark.parametrize("ball_tree_implementation", BALL_TREE_CLASSES)
+def test_array_object_type(ball_tree_implementation):
     """Check that we do not accept object dtype array."""
     X = np.array([(1, 2, 3), (2, 5), (5, 5, 1, 2)], dtype=object)
     with pytest.raises(ValueError, match="setting an array element with a sequence"):
-        BallTreeImplementation(X)
+        ball_tree_implementation(X)
 
 
-@pytest.mark.parametrize("BallTreeImplementation", BALL_TREE_CLASSES)
-def test_bad_pyfunc_metric(BallTreeImplementation):
+@pytest.mark.parametrize("ball_tree_implementation", BALL_TREE_CLASSES)
+def test_bad_pyfunc_metric(ball_tree_implementation):
     def wrong_returned_value(x, y):
         return "1"
 
@@ -108,11 +108,11 @@ def test_bad_pyfunc_metric(BallTreeImplementation):
     X = np.ones((5, 2))
     msg = "Custom distance function must accept two vectors and return a float."
     with pytest.raises(TypeError, match=msg):
-        BallTreeImplementation(X, metric=wrong_returned_value)
+        ball_tree_implementation(X, metric=wrong_returned_value)
 
     msg = "takes 1 positional argument but 2 were given"
     with pytest.raises(TypeError, match=msg):
-        BallTreeImplementation(X, metric=one_arg_func)
+        ball_tree_implementation(X, metric=one_arg_func)
 
 
 @pytest.mark.parametrize("metric", itertools.chain(METRICS, BOOLEAN_METRICS))
@@ -187,9 +187,9 @@ def test_two_point_correlation_numerical_consistency(global_random_seed):
 
 
 def get_dataset_for_binary_tree(random_seed, features=3):
-    rng = np.random.RandomState(random_seed)
-    _X = rng.rand(100, features)
-    _Y = rng.rand(5, features)
+    rng = np.random.default_rng(random_seed)
+    _X = rng.random((100, features))
+    _Y = rng.random((5, features))
 
     X_64 = _X.astype(dtype=np.float64, copy=False)
     Y_64 = _Y.astype(dtype=np.float64, copy=False)
