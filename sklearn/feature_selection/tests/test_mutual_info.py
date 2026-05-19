@@ -18,11 +18,11 @@ def test_compute_mi_dd():
     x = np.array([0, 1, 1, 0, 0])
     y = np.array([1, 0, 0, 0, 1])
 
-    H_x = H_y = -(3 / 5) * np.log(3 / 5) - (2 / 5) * np.log(2 / 5)
-    H_xy = -1 / 5 * np.log(1 / 5) - 2 / 5 * np.log(2 / 5) - 2 / 5 * np.log(2 / 5)
-    I_xy = H_x + H_y - H_xy
+    h_x = h_y = -(3 / 5) * np.log(3 / 5) - (2 / 5) * np.log(2 / 5)
+    h_xy = -1 / 5 * np.log(1 / 5) - 2 / 5 * np.log(2 / 5) - 2 / 5 * np.log(2 / 5)
+    i_xy = h_x + h_y - h_xy
 
-    assert_allclose(_compute_mi(x, y, x_discrete=True, y_discrete=True), I_xy)
+    assert_allclose(_compute_mi(x, y, x_discrete=True, y_discrete=True), i_xy)
 
 
 def test_compute_mi_cc(global_dtype):
@@ -44,7 +44,7 @@ def test_compute_mi_cc(global_dtype):
     )
 
     # True theoretical mutual information.
-    I_theory = np.log(sigma_1) + np.log(sigma_2) - 0.5 * np.log(np.linalg.det(cov))
+    mi_theory = np.log(sigma_1) + np.log(sigma_2) - 0.5 * np.log(np.linalg.det(cov))
 
     rng = check_random_state(0)
     Z = rng.multivariate_normal(mean, cov, size=1000).astype(global_dtype, copy=False)
@@ -54,10 +54,10 @@ def test_compute_mi_cc(global_dtype):
     # Theory and computed values won't be very close
     # We here check with a large relative tolerance
     for n_neighbors in [3, 5, 7]:
-        I_computed = _compute_mi(
+        mi_computed = _compute_mi(
             x, y, x_discrete=False, y_discrete=False, n_neighbors=n_neighbors
         )
-        assert_allclose(I_computed, I_theory, rtol=1e-1)
+        assert_allclose(mi_computed, mi_theory, rtol=1e-1)
 
 
 def test_compute_mi_cd(global_dtype):
@@ -87,16 +87,16 @@ def test_compute_mi_cd(global_dtype):
         y[mask] = rng.uniform(-1, 1, size=np.sum(mask))
         y[~mask] = rng.uniform(0, 2, size=np.sum(~mask))
 
-        I_theory = -0.5 * (
+        mi_theory = -0.5 * (
             (1 - p) * np.log(0.5 * (1 - p)) + p * np.log(0.5 * p) + np.log(0.5)
         ) - np.log(2)
 
         # Assert the same tolerance.
         for n_neighbors in [3, 5, 7]:
-            I_computed = _compute_mi(
+            mi_computed = _compute_mi(
                 x, y, x_discrete=True, y_discrete=False, n_neighbors=n_neighbors
             )
-            assert_allclose(I_computed, I_theory, rtol=1e-1)
+            assert_allclose(mi_computed, mi_theory, rtol=1e-1)
 
 
 def test_compute_mi_cd_unique_label(global_dtype):
@@ -183,15 +183,15 @@ def test_mutual_info_options(global_dtype, csr_container):
         [[0, 0, 0], [1, 1, 0], [2, 0, 1], [2, 0, 1], [2, 0, 1]], dtype=global_dtype
     )
     y = np.array([0, 1, 2, 2, 1], dtype=global_dtype)
-    X_csr = csr_container(X)
+    x_csr = csr_container(X)
 
     for mutual_info in (mutual_info_regression, mutual_info_classif):
         with pytest.raises(ValueError):
-            mutual_info(X_csr, y, discrete_features=False)
+            mutual_info(x_csr, y, discrete_features=False)
         with pytest.raises(ValueError):
             mutual_info(X, y, discrete_features="manual")
         with pytest.raises(ValueError):
-            mutual_info(X_csr, y, discrete_features=[True, False, True])
+            mutual_info(x_csr, y, discrete_features=[True, False, True])
         with pytest.raises(IndexError):
             mutual_info(X, y, discrete_features=[True, False, True, False])
         with pytest.raises(IndexError):
@@ -199,8 +199,8 @@ def test_mutual_info_options(global_dtype, csr_container):
 
         mi_1 = mutual_info(X, y, discrete_features="auto", random_state=0)
         mi_2 = mutual_info(X, y, discrete_features=False, random_state=0)
-        mi_3 = mutual_info(X_csr, y, discrete_features="auto", random_state=0)
-        mi_4 = mutual_info(X_csr, y, discrete_features=True, random_state=0)
+        mi_3 = mutual_info(x_csr, y, discrete_features="auto", random_state=0)
+        mi_4 = mutual_info(x_csr, y, discrete_features=True, random_state=0)
         mi_5 = mutual_info(X, y, discrete_features=[True, False, True], random_state=0)
         mi_6 = mutual_info(X, y, discrete_features=[0, 2], random_state=0)
 
@@ -247,10 +247,10 @@ def test_mutual_info_regression_X_int_dtype(global_random_seed):
     """
     rng = np.random.RandomState(global_random_seed)
     X = rng.randint(100, size=(100, 10))
-    X_float = X.astype(np.float64, copy=True)
+    x_float = X.astype(np.float64, copy=True)
     y = rng.randint(100, size=100)
 
-    expected = mutual_info_regression(X_float, y, random_state=global_random_seed)
+    expected = mutual_info_regression(x_float, y, random_state=global_random_seed)
     result = mutual_info_regression(X, y, random_state=global_random_seed)
     assert_allclose(result, expected)
 
