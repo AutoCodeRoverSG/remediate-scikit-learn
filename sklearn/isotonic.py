@@ -78,12 +78,12 @@ def check_increasing(x, y):
     # Run Fisher transform to get the rho CI, but handle rho=+/-1
     if rho not in [-1.0, 1.0] and len(x) > 3:
         F = 0.5 * math.log((1.0 + rho) / (1.0 - rho))
-        F_se = 1 / math.sqrt(len(x) - 3)
+        f_se = 1 / math.sqrt(len(x) - 3)
 
         # Use a 95% CI, i.e., +/-1.96 S.E.
         # https://en.wikipedia.org/wiki/Fisher_transformation
-        rho_0 = math.tanh(F - 1.96 * F_se)
-        rho_1 = math.tanh(F + 1.96 * F_se)
+        rho_0 = math.tanh(F - 1.96 * f_se)
+        rho_1 = math.tanh(F + 1.96 * f_se)
 
         # Warn if the CI spans zero.
         if np.sign(rho_0) != np.sign(rho_1):
@@ -273,8 +273,8 @@ class IsotonicRegression(RegressorMixin, TransformerMixin, BaseEstimator):
     """
 
     # T should have been called X
-    __metadata_request__predict = {"T": metadata_routing.UNUSED}
-    __metadata_request__transform = {"T": metadata_routing.UNUSED}
+    _metadata_request__predict = {"T": metadata_routing.UNUSED}
+    _metadata_request__transform = {"T": metadata_routing.UNUSED}
 
     _parameter_constraints: dict = {
         "y_min": [Interval(Real, None, None, closed="both"), None],
@@ -328,9 +328,9 @@ class IsotonicRegression(RegressorMixin, TransformerMixin, BaseEstimator):
 
         order = np.lexsort((y, X))
         X, y, sample_weight = [array[order] for array in [X, y, sample_weight]]
-        unique_X, unique_y, unique_sample_weight = _make_unique(X, y, sample_weight)
+        unique_x, unique_y, unique_sample_weight = _make_unique(X, y, sample_weight)
 
-        X = unique_X
+        X = unique_x
         y = isotonic_regression(
             unique_y,
             sample_weight=unique_sample_weight,
@@ -387,7 +387,7 @@ class IsotonicRegression(RegressorMixin, TransformerMixin, BaseEstimator):
         X is stored for future use, as :meth:`transform` needs X to interpolate
         new input data.
         """
-        check_params = dict(accept_sparse=False, ensure_2d=False)
+        check_params = {"accept_sparse": False, "ensure_2d": False}
         X = check_array(
             X, input_name="X", dtype=[np.float64, np.float32], **check_params
         )
@@ -408,7 +408,7 @@ class IsotonicRegression(RegressorMixin, TransformerMixin, BaseEstimator):
         self._build_f(X, y)
         return self
 
-    def _transform(self, T):
+    def _transform(self, t):
         """`_transform` is called by both `transform` and `predict` methods.
 
         Since `transform` is wrapped to output arrays of specific types (e.g.
@@ -423,22 +423,22 @@ class IsotonicRegression(RegressorMixin, TransformerMixin, BaseEstimator):
         else:
             dtype = np.float64
 
-        T = check_array(T, dtype=dtype, ensure_2d=False)
+        t = check_array(t, dtype=dtype, ensure_2d=False)
 
-        self._check_input_data_shape(T)
-        T = T.reshape(-1)  # use 1d view
+        self._check_input_data_shape(t)
+        t = t.reshape(-1)  # use 1d view
 
         if self.out_of_bounds == "clip":
-            T = np.clip(T, self.X_min_, self.X_max_)
+            t = np.clip(t, self.X_min_, self.X_max_)
 
-        res = self.f_(T)
+        res = self.f_(t)
 
         # on scipy 0.17, interp1d up-casts to float64, so we cast back
-        res = res.astype(T.dtype)
+        res = res.astype(t.dtype)
 
         return res
 
-    def transform(self, T):
+    def transform(self, t):
         """Transform new data by linear interpolation.
 
         Parameters
@@ -454,9 +454,9 @@ class IsotonicRegression(RegressorMixin, TransformerMixin, BaseEstimator):
         y_pred : ndarray of shape (n_samples,)
             The transformed data.
         """
-        return self._transform(T)
+        return self._transform(t)
 
-    def predict(self, T):
+    def predict(self, t):
         """Predict new data by linear interpolation.
 
         Parameters
@@ -469,7 +469,7 @@ class IsotonicRegression(RegressorMixin, TransformerMixin, BaseEstimator):
         y_pred : ndarray of shape (n_samples,)
             Transformed data.
         """
-        return self._transform(T)
+        return self._transform(t)
 
     # We implement get_feature_names_out here instead of using
     # `ClassNamePrefixFeaturesOutMixin`` because `input_features` are ignored.

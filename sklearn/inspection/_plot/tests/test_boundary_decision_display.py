@@ -431,13 +431,13 @@ def test_dataframe_labels_used(pyplot, fitted_clf):
     assert ax.get_ylabel() == "col_y"
 
     # second call to plot will have the names
-    fig, ax = pyplot.subplots()
+    _, ax = pyplot.subplots()
     disp.plot(ax=ax)
     assert ax.get_xlabel() == "col_x"
     assert ax.get_ylabel() == "col_y"
 
     # axes with a label will not get overridden
-    fig, ax = pyplot.subplots()
+    _, ax = pyplot.subplots()
     ax.set(xlabel="hello", ylabel="world")
     disp.plot(ax=ax)
     assert ax.get_xlabel() == "hello"
@@ -880,7 +880,8 @@ class CustomContinuousEstimator(BaseEstimator):
                 [
                     ("scale", StandardScaler()),
                     ("dt", DecisionTreeClassifier(random_state=0)),
-                ]
+                ],
+                memory=None,
             ),
             7,
             7,
@@ -891,7 +892,8 @@ class CustomContinuousEstimator(BaseEstimator):
                 [
                     ("scale", StandardScaler()),
                     ("kmeans", KMeans(n_clusters=7, random_state=0)),
-                ]
+                ],
+                memory=None,
             ),
             7,
             7,
@@ -901,7 +903,8 @@ class CustomContinuousEstimator(BaseEstimator):
                 [
                     ("scale", StandardScaler()),
                     ("reg", DecisionTreeRegressor(random_state=0)),
-                ]
+                ],
+                memory=None,
             ),
             7,
             2,
@@ -911,7 +914,8 @@ class CustomContinuousEstimator(BaseEstimator):
                 [
                     ("scale", StandardScaler()),
                     ("kmeans", IsolationForest(random_state=0)),
-                ]
+                ],
+                memory=None,
             ),
             7,
             2,
