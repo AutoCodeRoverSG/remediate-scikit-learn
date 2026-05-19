@@ -29,7 +29,7 @@ def diabetes():
 
 @pytest.fixture(scope="module")
 def clf_diabetes(diabetes):
-    clf = GradientBoostingRegressor(n_estimators=10, random_state=1)
+    clf = GradientBoostingRegressor(n_estimators=10, random_state=1, learning_rate=0.1)
     clf.fit(diabetes.data, diabetes.target)
     return clf
 
@@ -170,9 +170,9 @@ def test_plot_partial_dependence_kind(
     assert disp.contours_[0, 2] is None
 
     if centered:
-        assert all([ln._y[0] == 0.0 for ln in disp.lines_.ravel() if ln is not None])
+        assert all(ln._y[0] == 0.0 for ln in disp.lines_.ravel() if ln is not None)
     else:
-        assert all([ln._y[0] != 0.0 for ln in disp.lines_.ravel() if ln is not None])
+        assert all(ln._y[0] != 0.0 for ln in disp.lines_.ravel() if ln is not None)
 
 
 @pytest.mark.parametrize(
@@ -388,19 +388,10 @@ def test_plot_partial_dependence_incorrect_num_axes(
     ncols,
 ):
     grid_resolution = 5
-    fig, axes = pyplot.subplots(nrows, ncols)
+    _, axes = pyplot.subplots(nrows, ncols)
     axes_formats = [list(axes.ravel()), tuple(axes.ravel()), axes]
 
     msg = "Expected ax to have 2 axes, got {}".format(nrows * ncols)
-
-    age = diabetes.data[:, diabetes.feature_names.index("age")]
-    bmi = diabetes.data[:, diabetes.feature_names.index("bmi")]
-    custom_values = None
-    if use_custom_values:
-        custom_values = {
-            "age": custom_values_helper(age, grid_resolution),
-            "bmi": custom_values_helper(bmi, grid_resolution),
-        }
 
     age = diabetes.data[:, diabetes.feature_names.index("age")]
     bmi = diabetes.data[:, diabetes.feature_names.index("bmi")]
@@ -464,7 +455,7 @@ def test_plot_partial_dependence_with_same_axes(
             "bmi": custom_values_helper(bmi, grid_resolution),
         }
 
-    fig, ax = pyplot.subplots()
+    _, ax = pyplot.subplots()
     PartialDependenceDisplay.from_estimator(
         clf_diabetes,
         diabetes.data,
@@ -535,7 +526,7 @@ def test_plot_partial_dependence_feature_name_reuse(
 @pytest.mark.parametrize("use_custom_values", [True, False])
 def test_plot_partial_dependence_multiclass(use_custom_values, pyplot):
     grid_resolution = 25
-    clf_int = GradientBoostingClassifier(n_estimators=10, random_state=1)
+    clf_int = GradientBoostingClassifier(n_estimators=10, random_state=1, learning_rate=0.1)
     iris = load_iris()
 
     custom_values = None
@@ -567,7 +558,7 @@ def test_plot_partial_dependence_multiclass(use_custom_values, pyplot):
 
     # now with symbol labels
     target = iris.target_names[iris.target]
-    clf_symbol = GradientBoostingClassifier(n_estimators=10, random_state=1)
+    clf_symbol = GradientBoostingClassifier(n_estimators=10, random_state=1, learning_rate=0.1)
     clf_symbol.fit(iris.data, target)
 
     disp_symbol = PartialDependenceDisplay.from_estimator(
@@ -708,7 +699,7 @@ dummy_classification_data = make_classification(random_state=0)
         ),
         (
             dummy_classification_data,
-            {"features": [tuple()]},
+            {"features": [()]},
             "Each entry in features must be either an int, ",
         ),
         (
@@ -774,7 +765,7 @@ def test_plot_partial_dependence_error(pyplot, data, params, err_msg):
 )
 def test_plot_partial_dependence_multiclass_error(pyplot, params, err_msg):
     iris = load_iris()
-    clf = GradientBoostingClassifier(n_estimators=10, random_state=1)
+    clf = GradientBoostingClassifier(n_estimators=10, random_state=1, learning_rate=0.1)
     clf.fit(iris.data, iris.target)
 
     with pytest.raises(ValueError, match=err_msg):
@@ -813,7 +804,7 @@ def test_plot_partial_dependence_with_categorical(
     y = np.array([1.2, 0.5, 0.45]).T
 
     preprocessor = make_column_transformer((OneHotEncoder(), categorical_features))
-    model = make_pipeline(preprocessor, LinearRegression())
+    model = make_pipeline(preprocessor, LinearRegression(), memory=None)
     model.fit(X, y)
 
     # single feature
@@ -874,7 +865,7 @@ def test_plot_partial_dependence_legend(pyplot):
 
     categorical_features = ["col_A", "col_C"]
     preprocessor = make_column_transformer((OneHotEncoder(), categorical_features))
-    model = make_pipeline(preprocessor, LinearRegression())
+    model = make_pipeline(preprocessor, LinearRegression(), memory=None)
     model.fit(X, y)
 
     disp = PartialDependenceDisplay.from_estimator(
@@ -935,7 +926,7 @@ def test_plot_partial_dependence_subsampling(
 
     assert disp1.lines_.shape == expected_shape
     assert all(
-        [isinstance(line, matplotlib.lines.Line2D) for line in disp1.lines_.ravel()]
+        isinstance(line, matplotlib.lines.Line2D) for line in disp1.lines_.ravel()
     )
 
 
@@ -996,7 +987,7 @@ def test_grid_resolution_with_categorical(pyplot, categorical_features, array_ty
     y = np.array([1.2, 0.5, 0.45]).T
 
     preprocessor = make_column_transformer((OneHotEncoder(), categorical_features))
-    model = make_pipeline(preprocessor, LinearRegression())
+    model = make_pipeline(preprocessor, LinearRegression(), memory=None)
     model.fit(X, y)
 
     err_msg = (
@@ -1095,15 +1086,13 @@ def test_partial_dependence_kind_list(
 
     for idx in [0, 1]:
         assert all(
-            [
-                isinstance(line, matplotlib.lines.Line2D)
-                for line in disp.lines_[0, idx].ravel()
-            ]
+            isinstance(line, matplotlib.lines.Line2D)
+            for line in disp.lines_[0, idx].ravel()
         )
         assert disp.contours_[0, idx] is None
 
     assert disp.contours_[0, 2] is not None
-    assert all([line is None for line in disp.lines_[0, 2].ravel()])
+    assert all(line is None for line in disp.lines_[0, 2].ravel())
 
 
 @pytest.mark.parametrize(
