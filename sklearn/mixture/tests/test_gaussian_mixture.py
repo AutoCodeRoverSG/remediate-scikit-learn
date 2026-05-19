@@ -1089,7 +1089,7 @@ def test_regularisation():
 
 @pytest.mark.parametrize("covar_type", COVARIANCE_TYPE)
 def test_fitted_precision_covariance_concistency(covar_type, global_dtype):
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
     rand_data = RandomData(rng, scale=7, dtype=global_dtype)
     n_components = rand_data.n_components
 
@@ -1097,7 +1097,7 @@ def test_fitted_precision_covariance_concistency(covar_type, global_dtype):
     gmm = GaussianMixture(
         n_components=n_components,
         covariance_type=covar_type,
-        random_state=rng,
+        random_state=0,
         n_init=5,
     )
     gmm.fit(X)
@@ -1113,7 +1113,7 @@ def test_fitted_precision_covariance_concistency(covar_type, global_dtype):
 
 
 def test_sample():
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
     rand_data = RandomData(rng, scale=7, n_components=3)
     n_features, n_components = rand_data.n_features, rand_data.n_components
 
@@ -1121,7 +1121,7 @@ def test_sample():
         X = rand_data.X[covar_type]
 
         gmm = GaussianMixture(
-            n_components=n_components, covariance_type=covar_type, random_state=rng
+            n_components=n_components, covariance_type=covar_type, random_state=0
         )
         # To sample we need that GaussianMixture is fitted
         msg = "This GaussianMixture instance is not fitted"
@@ -1174,7 +1174,7 @@ def test_init():
     # We check that by increasing the n_init number we have a better solution
     for random_state in range(15):
         rand_data = RandomData(
-            np.random.RandomState(random_state), n_samples=50, scale=1
+            np.random.default_rng(random_state), n_samples=50, scale=1
         )
         n_components = rand_data.n_components
         X = rand_data.X["full"]
@@ -1196,9 +1196,9 @@ def test_gaussian_mixture_setting_best_params():
     Non-regression test for:
     https://github.com/scikit-learn/scikit-learn/issues/18216
     """
-    rnd = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
     n_samples = 30
-    X = rnd.uniform(size=(n_samples, 3))
+    X = rng.uniform(size=(n_samples, 3))
 
     # following initialization parameters were found to lead to divergence
     means_init = np.array(
@@ -1235,7 +1235,7 @@ def test_gaussian_mixture_setting_best_params():
         reg_covar=0,
         means_init=means_init,
         weights_init=weights_init,
-        random_state=rnd,
+        random_state=0,
         n_components=len(weights_init),
         precisions_init=precisions_init,
         max_iter=1,
@@ -1264,13 +1264,16 @@ def test_gaussian_mixture_setting_best_params():
 )
 def test_init_means_not_duplicated(init_params, global_random_seed):
     # Check that all initialisations provide not duplicated starting means
-    rng = np.random.RandomState(global_random_seed)
+    rng = np.random.default_rng(global_random_seed)
     rand_data = RandomData(rng, scale=5)
     n_components = rand_data.n_components
     X = rand_data.X["full"]
 
     gmm = GaussianMixture(
-        n_components=n_components, init_params=init_params, random_state=rng, max_iter=0
+        n_components=n_components,
+        init_params=init_params,
+        random_state=global_random_seed,
+        max_iter=0,
     )
     gmm.fit(X)
 
@@ -1284,13 +1287,15 @@ def test_init_means_not_duplicated(init_params, global_random_seed):
 )
 def test_means_for_all_inits(init_params, global_random_seed, global_dtype):
     # Check fitted means properties for all initializations
-    rng = np.random.RandomState(global_random_seed)
+    rng = np.random.default_rng(global_random_seed)
     rand_data = RandomData(rng, scale=5, dtype=global_dtype)
     n_components = rand_data.n_components
     X = rand_data.X["full"]
 
     gmm = GaussianMixture(
-        n_components=n_components, init_params=init_params, random_state=rng
+        n_components=n_components,
+        init_params=init_params,
+        random_state=global_random_seed,
     )
     gmm.fit(X)
 
@@ -1306,14 +1311,14 @@ def test_means_for_all_inits(init_params, global_random_seed, global_dtype):
 def test_max_iter_zero():
     # Check that max_iter=0 returns initialisation as expected
     # Pick arbitrary initial means and check equal to max_iter=0
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
     rand_data = RandomData(rng, scale=5)
     n_components = rand_data.n_components
     X = rand_data.X["full"]
     means_init = [[20, 30], [30, 25]]
     gmm = GaussianMixture(
         n_components=n_components,
-        random_state=rng,
+        random_state=0,
         means_init=means_init,
         tol=1e-06,
         max_iter=0,
@@ -1338,10 +1343,10 @@ def test_gaussian_mixture_precisions_init_diag(global_dtype):
     """
     # generate a toy dataset
     n_samples = 300
-    rng = np.random.RandomState(0)
-    shifted_gaussian = rng.randn(n_samples, 2) + np.array([20, 20])
+    rng = np.random.default_rng(0)
+    shifted_gaussian = rng.standard_normal((n_samples, 2)) + np.array([20, 20])
     C = np.array([[0.0, -0.7], [3.5, 0.7]])
-    stretched_gaussian = np.dot(rng.randn(n_samples, 2), C)
+    stretched_gaussian = np.dot(rng.standard_normal((n_samples, 2)), C)
     X = np.vstack([shifted_gaussian, stretched_gaussian]).astype(global_dtype)
 
     # common parameters to check the consistency of precision initialization
@@ -1393,9 +1398,9 @@ def test_gaussian_mixture_precisions_init_diag(global_dtype):
 
 def _generate_data(seed, n_samples, n_features, n_components, dtype=np.float64):
     """Randomly generate samples and responsibilities."""
-    rs = np.random.RandomState(seed)
-    X = rs.random_sample((n_samples, n_features)).astype(dtype)
-    resp = rs.random_sample((n_samples, n_components)).astype(dtype)
+    rng = np.random.default_rng(seed)
+    X = rng.random((n_samples, n_features)).astype(dtype)
+    resp = rng.random((n_samples, n_components)).astype(dtype)
     resp /= resp.sum(axis=1)[:, np.newaxis]
     return X, resp
 
@@ -1454,7 +1459,7 @@ def test_gaussian_mixture_single_component_stable():
     Non-regression test for #23032 ensuring 1-component GM works on only a
     few samples.
     """
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
     X = rng.multivariate_normal(np.zeros(2), np.identity(2), size=3)
     gm = GaussianMixture(n_components=1)
     gm.fit(X).sample()
