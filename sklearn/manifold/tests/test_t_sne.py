@@ -162,13 +162,13 @@ def test_binary_search_neighbors():
     P2 = _binary_search_perplexity(distances_nn, desired_perplexity, verbose=0)
 
     indptr = distance_graph.indptr
-    P1_nn = np.array(
+    p1_nn = np.array(
         [
             P1[k, distance_graph.indices[indptr[k] : indptr[k + 1]]]
             for k in range(n_samples)
         ]
     )
-    assert_array_almost_equal(P1_nn, P2, decimal=4)
+    assert_array_almost_equal(p1_nn, P2, decimal=4)
 
     # Test that the highest P_ij are the same when fewer neighbors are used
     for k in np.linspace(150, n_samples - 1, 5):
@@ -177,13 +177,13 @@ def test_binary_search_neighbors():
         distance_graph = nn.kneighbors_graph(n_neighbors=k, mode="distance")
         distances_nn = distance_graph.data.astype(np.float32, copy=False)
         distances_nn = distances_nn.reshape(n_samples, k)
-        P2k = _binary_search_perplexity(distances_nn, desired_perplexity, verbose=0)
-        assert_array_almost_equal(P1_nn, P2, decimal=2)
+        p2k = _binary_search_perplexity(distances_nn, desired_perplexity, verbose=0)
+        assert_array_almost_equal(p1_nn, P2, decimal=2)
         idx = np.argsort(P1.ravel())[::-1]
-        P1top = P1.ravel()[idx][:topn]
-        idx = np.argsort(P2k.ravel())[::-1]
-        P2top = P2k.ravel()[idx][:topn]
-        assert_array_almost_equal(P1top, P2top, decimal=2)
+        p1_top = P1.ravel()[idx][:topn]
+        idx = np.argsort(p2k.ravel())[::-1]
+        p2_top = p2k.ravel()[idx][:topn]
+        assert_array_almost_equal(p1_top, p2_top, decimal=2)
 
 
 def test_binary_perplexity_stability():
@@ -198,19 +198,19 @@ def test_binary_perplexity_stability():
     distance_graph = nn.kneighbors_graph(n_neighbors=n_neighbors, mode="distance")
     distances = distance_graph.data.astype(np.float32, copy=False)
     distances = distances.reshape(n_samples, n_neighbors)
-    last_P = None
+    last_p = None
     desired_perplexity = 3
     for _ in range(100):
         P = _binary_search_perplexity(distances.copy(), desired_perplexity, verbose=0)
         P1 = _joint_probabilities_nn(distance_graph, desired_perplexity, verbose=0)
         # Convert the sparse matrix to a dense one for testing
         P1 = P1.toarray()
-        if last_P is None:
-            last_P = P
-            last_P1 = P1
+        if last_p is None:
+            last_p = P
+            last_p1 = P1
         else:
-            assert_array_almost_equal(P, last_P, decimal=4)
-            assert_array_almost_equal(P1, last_P1, decimal=4)
+            assert_array_almost_equal(P, last_p, decimal=4)
+            assert_array_almost_equal(P1, last_p1, decimal=4)
 
 
 def test_gradient():
@@ -225,7 +225,7 @@ def test_gradient():
     distances = random_state.randn(n_samples, n_features).astype(np.float32)
     distances = np.abs(distances.dot(distances.T))
     np.fill_diagonal(distances, 0.0)
-    X_embedded = random_state.randn(n_samples, n_components).astype(np.float32)
+    x_embedded = random_state.randn(n_samples, n_components).astype(np.float32)
 
     P = _joint_probabilities(distances, desired_perplexity=25.0, verbose=0)
 
@@ -235,7 +235,7 @@ def test_gradient():
     def grad(params):
         return _kl_divergence(params, P, alpha, n_samples, n_components)[1]
 
-    assert_almost_equal(check_grad(fun, grad, X_embedded.ravel()), 0.0, decimal=5)
+    assert_almost_equal(check_grad(fun, grad, x_embedded.ravel()), 0.0, decimal=5)
 
 
 def test_trustworthiness():
@@ -248,14 +248,14 @@ def test_trustworthiness():
 
     # Randomly shuffled
     X = np.arange(100).reshape(-1, 1)
-    X_embedded = X.copy()
-    random_state.shuffle(X_embedded)
-    assert trustworthiness(X, X_embedded) < 0.6
+    x_embedded = X.copy()
+    random_state.shuffle(x_embedded)
+    assert trustworthiness(X, x_embedded) < 0.6
 
     # Completely different
     X = np.arange(5).reshape(-1, 1)
-    X_embedded = np.array([[0], [2], [4], [1], [3]])
-    assert_almost_equal(trustworthiness(X, X_embedded, n_neighbors=1), 0.2)
+    x_embedded = np.array([[0], [2], [4], [1], [3]])
+    assert_almost_equal(trustworthiness(X, x_embedded, n_neighbors=1), 0.2)
 
 
 def test_trustworthiness_n_neighbors_error():
@@ -266,11 +266,11 @@ def test_trustworthiness_n_neighbors_error():
     regex = "n_neighbors .+ should be less than .+"
     rng = np.random.RandomState(42)
     X = rng.rand(7, 4)
-    X_embedded = rng.rand(7, 2)
+    x_embedded = rng.rand(7, 2)
     with pytest.raises(ValueError, match=regex):
-        trustworthiness(X, X_embedded, n_neighbors=5)
+        trustworthiness(X, x_embedded, n_neighbors=5)
 
-    trust = trustworthiness(X, X_embedded, n_neighbors=3)
+    trust = trustworthiness(X, x_embedded, n_neighbors=3)
     assert 0 <= trust <= 1
 
 
@@ -289,8 +289,8 @@ def test_preserve_trustworthiness_approximately(method, init):
         max_iter=700,
         learning_rate="auto",
     )
-    X_embedded = tsne.fit_transform(X)
-    t = trustworthiness(X, X_embedded, n_neighbors=1)
+    x_embedded = tsne.fit_transform(X)
+    t = trustworthiness(X, x_embedded, n_neighbors=1)
     assert t > 0.85
 
 
