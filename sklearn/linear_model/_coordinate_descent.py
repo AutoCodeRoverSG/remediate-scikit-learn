@@ -1207,7 +1207,7 @@ class ElasticNet(RegressorMixin, MultiOutputLinearModel):
         # X and y will be rescaled if sample_weight is not None, order='F'
         # ensures that the returned X and y are still F-contiguous.
         should_copy = self.copy_X and not x_copied
-        X, y, x_offset, y_offset, x_scale, precompute, Xy = _pre_fit(
+        X, y, x_offset, y_offset, x_scale, precompute, xy = _pre_fit(
             X,
             y,
             None,
@@ -1223,8 +1223,8 @@ class ElasticNet(RegressorMixin, MultiOutputLinearModel):
             X, y = _set_order(X, y, order="F")
         if y.ndim == 1:
             y = y[:, np.newaxis]
-        if Xy is not None and Xy.ndim == 1:
-            Xy = Xy[:, np.newaxis]
+        if xy is not None and xy.ndim == 1:
+            xy = xy[:, np.newaxis]
 
         n_targets = y.shape[1]
 
@@ -1239,10 +1239,10 @@ class ElasticNet(RegressorMixin, MultiOutputLinearModel):
         self.n_iter_ = []
 
         for k in range(n_targets):
-            if Xy is not None:
-                this_Xy = Xy[:, k]
+            if xy is not None:
+                this_xy = xy[:, k]
             else:
-                this_Xy = None
+                this_xy = None
             _, this_coef, this_dual_gap, this_iter = self.path(
                 X,
                 y[:, k],
@@ -1250,7 +1250,7 @@ class ElasticNet(RegressorMixin, MultiOutputLinearModel):
                 eps=None,
                 alphas=[self.alpha],
                 precompute=precompute,
-                Xy=this_Xy,
+                Xy=this_xy,
                 copy_X=True,
                 coef_init=coef_[k],
                 verbose=False,
@@ -1491,7 +1491,7 @@ class Lasso(ElasticNet):
         *,
         fit_intercept=True,
         precompute=False,
-        copy_X=True,  # noqa: N803  # NOSONAR
+        copy_X=True,  # NOSONAR # noqa: N803  # NOSONAR
         max_iter=1000,
         tol=1e-4,
         warm_start=False,
@@ -1529,7 +1529,7 @@ def _path_residuals(
     path_params,
     alphas=None,
     l1_ratio=1,
-    X_order=None,
+    x_order=None,
     dtype=None,
 ):
     """Returns the MSE for the models computed by 'path'.
@@ -1613,7 +1613,7 @@ def _path_residuals(
         # Fall back to default enet_multitask
         precompute = False
 
-    X_train, y_train, X_offset, y_offset, X_scale, precompute, Xy = _pre_fit(
+    X_train, y_train, x_offset, y_offset, x_scale, precompute, xy = _pre_fit(
         X_train,
         y_train,
         None,
@@ -1624,9 +1624,9 @@ def _path_residuals(
     )
 
     path_params = path_params.copy()
-    path_params["Xy"] = Xy
-    path_params["X_offset"] = X_offset
-    path_params["X_scale"] = X_scale
+    path_params["Xy"] = xy
+    path_params["X_offset"] = x_offset
+    path_params["X_scale"] = x_scale
     path_params["precompute"] = precompute
     path_params["copy_X"] = False
     path_params["alphas"] = alphas
@@ -1638,7 +1638,7 @@ def _path_residuals(
 
     # Do the ordering and type casting here, as if it is done in the path,
     # X is copied and a reference is kept here
-    X_train = check_array(X_train, accept_sparse="csc", dtype=dtype, order=X_order)
+    X_train = check_array(X_train, accept_sparse="csc", dtype=dtype, order=x_order)
     alphas, coefs, _ = path(X_train, y_train, **path_params)
     del X_train, y_train
 
@@ -1648,9 +1648,9 @@ def _path_residuals(
         y_offset = np.atleast_1d(y_offset)
         y_test = y_test[:, np.newaxis]
 
-    intercepts = y_offset[:, np.newaxis] - np.dot(X_offset, coefs)
-    X_test_coefs = safe_sparse_dot(X_test, coefs)
-    residues = X_test_coefs - y_test[:, :, np.newaxis]
+    intercepts = y_offset[:, np.newaxis] - np.dot(x_offset, coefs)
+    x_test_coefs = safe_sparse_dot(X_test, coefs)
+    residues = x_test_coefs - y_test[:, :, np.newaxis]
     residues += intercepts
     if sample_weight is None:
         this_mse = (residues**2).mean(axis=0)
@@ -1691,7 +1691,7 @@ class LinearModelCV(MultiOutputLinearModel, ABC):
         precompute="auto",
         max_iter=1000,
         tol=1e-4,
-        copy_X=True,  # noqa: N803  # NOSONAR
+        copy_X=True,  # noqa: N803  # NOSONAR  # NOSONAR
         cv=None,
         verbose=False,
         n_jobs=None,
@@ -1772,7 +1772,7 @@ class LinearModelCV(MultiOutputLinearModel, ABC):
         # Multiple functions touch X and subsamples of X and can induce a
         # lot of duplication of memory.
         # There is no need copy X if the model is fit without an intercept.
-        copy_X = self.copy_X and self.fit_intercept  # TODO: Sample_weights?
+        copy_x = self.copy_X and self.fit_intercept  # TODO: Sample_weights?
 
         check_y_params = dict(
             copy=False, dtype=[np.float64, np.float32], ensure_2d=False
@@ -1803,10 +1803,10 @@ class LinearModelCV(MultiOutputLinearModel, ABC):
                     reference_to_old_X.data, X.data
                 ):
                     # X is a sparse matrix and has been copied. No need to copy again.
-                    copy_X = False
+                    copy_x = False
             elif not np.may_share_memory(reference_to_old_X, X):
                 # X has been copied. No need to copy again.
-                copy_X = False
+                copy_x = False
             del reference_to_old_X
         else:
             # Need to validate separately here.
@@ -1818,12 +1818,12 @@ class LinearModelCV(MultiOutputLinearModel, ABC):
                 dtype=[np.float64, np.float32],
                 order="F",
                 force_writeable=True,
-                copy=copy_X,
+                copy=copy_x,
             )
             X, y = validate_data(
                 self, X, y, validate_separately=(check_X_params, check_y_params)
             )
-            copy_X = False
+            copy_x = False
 
         check_consistent_length(X, y)
 
@@ -1894,7 +1894,7 @@ class LinearModelCV(MultiOutputLinearModel, ABC):
             # Making sure alphas is properly ordered.
             alphas = np.tile(np.sort(self.alphas)[::-1], (n_l1_ratio, 1))
 
-        path_params["copy_X"] = copy_X
+        path_params["copy_X"] = copy_x
         # We are not computing in parallel, we can modify X
         # inplace in the folds
         if effective_n_jobs(self.n_jobs) > 1:
@@ -1932,7 +1932,7 @@ class LinearModelCV(MultiOutputLinearModel, ABC):
                 path_params,
                 alphas=this_alphas,
                 l1_ratio=this_l1_ratio,
-                X_order="F",
+                x_order="F",
                 dtype=X.dtype.type,
             )
             for this_l1_ratio, this_alphas in zip(l1_ratios, alphas)
@@ -1974,7 +1974,7 @@ class LinearModelCV(MultiOutputLinearModel, ABC):
         model.set_params(**common_params)
         model.alpha = best_alpha
         model.l1_ratio = best_l1_ratio
-        model.copy_X = copy_X
+        model.copy_X = copy_x
         precompute = getattr(self, "precompute", None)
         if isinstance(precompute, str) and precompute == "auto":
             model.precompute = False
