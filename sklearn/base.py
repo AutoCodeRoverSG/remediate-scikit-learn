@@ -236,7 +236,29 @@ class BaseEstimator(ReprHTMLMixin, _HTMLDocumentationLinkMixin, _MetadataRequest
                     " follow this convention." % (cls, init_signature)
                 )
         # Extract and sort argument names excluding 'self'
-        return sorted([p.name for p in parameters])
+        param_names = {p.name for p in parameters}
+
+        # If __init__ accepts **kwargs, also collect parameter names from
+        # parent classes so that inherited parameters are discoverable.
+        has_var_keyword = any(
+            p.kind == p.VAR_KEYWORD
+            for p in init_signature.parameters.values()
+        )
+        if has_var_keyword:
+            for klass in cls.__mro__[1:]:
+                parent_init = klass.__dict__.get("__init__")
+                if parent_init is None or parent_init is object.__init__:
+                    continue
+                parent_sig = inspect.signature(parent_init)
+                for p in parent_sig.parameters.values():
+                    if (
+                        p.name != "self"
+                        and p.kind != p.VAR_KEYWORD
+                        and p.kind != p.VAR_POSITIONAL
+                    ):
+                        param_names.add(p.name)
+
+        return sorted(param_names)
 
     def get_params(self, deep=True):
         """

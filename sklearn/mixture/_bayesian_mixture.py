@@ -674,8 +674,6 @@ class BayesianGaussianMixture(BaseMixture):
 
         sk : array-like of shape (n_components, n_features)
         """
-        _, n_features = xk.shape
-
         # Warning : in some Bishop book, there is a typo on the formula 10.63
         # `degrees_of_freedom_k = degrees_of_freedom_0 + Nk`
         # is the correct formula
@@ -704,8 +702,6 @@ class BayesianGaussianMixture(BaseMixture):
 
         sk : array-like of shape (n_components,)
         """
-        _, n_features = xk.shape
-
         # Warning : in some Bishop book, there is a typo on the formula 10.63
         # `degrees_of_freedom_k = degrees_of_freedom_0 + Nk`
         # is the correct formula
@@ -733,8 +729,6 @@ class BayesianGaussianMixture(BaseMixture):
             Logarithm of the posterior probabilities (or responsibilities) of
             the point of each sample in X.
         """
-        n_samples, _ = X.shape
-
         nk, xk, sk = _estimate_gaussian_parameters(
             X, np.exp(log_resp), self.reg_covar, self.covariance_type
         )

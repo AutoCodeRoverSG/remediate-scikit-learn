@@ -218,9 +218,9 @@ def _estimate_gaussian_covariances_tied(resp, X, nk, means, reg_covar, xp=None):
         The tied covariance matrix of the components.
     """
     xp, _ = get_namespace(X, means, xp=xp)
-    avg_X2 = X.T @ X
+    avg_x2 = X.T @ X
     avg_means2 = nk * means.T @ means
-    covariance = avg_X2 - avg_means2
+    covariance = avg_x2 - avg_means2
     covariance /= xp.sum(nk)
     _add_to_diagonal(covariance, reg_covar, xp)
     return covariance
@@ -247,9 +247,9 @@ def _estimate_gaussian_covariances_diag(resp, X, nk, means, reg_covar, xp=None):
         The covariance vector of the current components.
     """
     xp, _ = get_namespace(X, xp=xp)
-    avg_X2 = (resp.T @ (X * X)) / nk[:, xp.newaxis]
+    avg_x2 = (resp.T @ (X * X)) / nk[:, xp.newaxis]
     avg_means2 = means**2
-    return avg_X2 - avg_means2 + reg_covar
+    return avg_x2 - avg_means2 + reg_covar
 
 
 def _estimate_gaussian_covariances_spherical(resp, X, nk, means, reg_covar, xp=None):
@@ -272,7 +272,7 @@ def _estimate_gaussian_covariances_spherical(resp, X, nk, means, reg_covar, xp=N
     variances : array, shape (n_components,)
         The variance values of each components.
     """
-    xp, _ = get_namespace(X)
+    xp, _ = get_namespace(X, xp=xp)
     return xp.mean(
         _estimate_gaussian_covariances_diag(resp, X, nk, means, reg_covar, xp=xp),
         axis=1,
@@ -776,8 +776,7 @@ class GaussianMixture(BaseMixture):
         precisions_init=None,
         random_state=None,
         warm_start=False,
-        verbose=0,
-        verbose_interval=10,
+        **kwargs,
     ):
         super().__init__(
             n_components=n_components,
@@ -788,8 +787,8 @@ class GaussianMixture(BaseMixture):
             init_params=init_params,
             random_state=random_state,
             warm_start=warm_start,
-            verbose=verbose,
-            verbose_interval=verbose_interval,
+            verbose=kwargs.pop("verbose", 0),
+            verbose_interval=kwargs.pop("verbose_interval", 10),
         )
 
         self.covariance_type = covariance_type

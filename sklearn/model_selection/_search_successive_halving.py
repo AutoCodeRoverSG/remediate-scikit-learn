@@ -89,34 +89,40 @@ class BaseSuccessiveHalving(BaseSearchCV):
     }
     _parameter_constraints.pop("pre_dispatch")  # not used in this class
 
+    # Default overrides for parameters inherited from BaseSearchCV
+    _base_cv_defaults = {"cv": 5}
+
+    @classmethod
+    def _get_param_names(cls):
+        # Include parameters from BaseSearchCV that are passed via **kwargs
+        own_params = super()._get_param_names()
+        base_params = [
+            "cv",
+            "error_score",
+            "n_jobs",
+            "refit",
+            "return_train_score",
+            "scoring",
+            "verbose",
+        ]
+        return sorted(set(own_params + base_params))
+
     def __init__(
         self,
         estimator,
         *,
-        scoring=None,
-        n_jobs=None,
-        refit=True,
-        cv=5,
-        verbose=0,
         random_state=None,
-        error_score=np.nan,
-        return_train_score=True,
         max_resources="auto",
         min_resources="exhaust",
         resource="n_samples",
         factor=3,
         aggressive_elimination=False,
+        **kwargs,
     ):
-        super().__init__(
-            estimator,
-            scoring=scoring,
-            n_jobs=n_jobs,
-            refit=refit,
-            cv=cv,
-            verbose=verbose,
-            error_score=error_score,
-            return_train_score=return_train_score,
-        )
+        # Apply default overrides for BaseSearchCV parameters
+        for param, default in self._base_cv_defaults.items():
+            kwargs.setdefault(param, default)
+        super().__init__(estimator, **kwargs)
 
         self.random_state = random_state
         self.max_resources = max_resources
@@ -172,7 +178,7 @@ class BaseSuccessiveHalving(BaseSearchCV):
 
         self.max_resources_ = self.max_resources
         if self.max_resources_ == "auto":
-            if not self.resource == "n_samples":
+            if self.resource != "n_samples":
                 raise ValueError(
                     "resource can only be 'n_samples' when max_resources='auto'"
                 )
@@ -240,7 +246,7 @@ class BaseSuccessiveHalving(BaseSearchCV):
             Instance of fitted estimator.
         """
         self._checked_cv_orig = check_cv(
-            self.cv, y, classifier=is_classifier(self.estimator)
+            self.cv, y, classifier=is_classifier(self.estimator), random_state=0
         )
 
         routed_params = self._get_routed_params_for_fit(params)
@@ -695,30 +701,18 @@ class HalvingGridSearchCV(BaseSuccessiveHalving):
         max_resources="auto",
         min_resources="exhaust",
         aggressive_elimination=False,
-        cv=5,
-        scoring=None,
-        refit=True,
-        error_score=np.nan,
-        return_train_score=True,
         random_state=None,
-        n_jobs=None,
-        verbose=0,
+        **kwargs,
     ):
         super().__init__(
             estimator,
-            scoring=scoring,
-            n_jobs=n_jobs,
-            refit=refit,
-            verbose=verbose,
-            cv=cv,
             random_state=random_state,
-            error_score=error_score,
-            return_train_score=return_train_score,
             max_resources=max_resources,
             resource=resource,
             factor=factor,
             min_resources=min_resources,
             aggressive_elimination=aggressive_elimination,
+            **kwargs,
         )
         self.param_grid = param_grid
 
@@ -1065,30 +1059,18 @@ class HalvingRandomSearchCV(BaseSuccessiveHalving):
         max_resources="auto",
         min_resources="smallest",
         aggressive_elimination=False,
-        cv=5,
-        scoring=None,
-        refit=True,
-        error_score=np.nan,
-        return_train_score=True,
         random_state=None,
-        n_jobs=None,
-        verbose=0,
+        **kwargs,
     ):
         super().__init__(
             estimator,
-            scoring=scoring,
-            n_jobs=n_jobs,
-            refit=refit,
-            verbose=verbose,
-            cv=cv,
             random_state=random_state,
-            error_score=error_score,
-            return_train_score=return_train_score,
             max_resources=max_resources,
             resource=resource,
             factor=factor,
             min_resources=min_resources,
             aggressive_elimination=aggressive_elimination,
+            **kwargs,
         )
         self.param_distributions = param_distributions
         self.n_candidates = n_candidates
