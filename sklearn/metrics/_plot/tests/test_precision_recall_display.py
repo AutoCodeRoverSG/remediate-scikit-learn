@@ -449,9 +449,11 @@ def test_precision_recall_display_name(pyplot, constructor_name, default_label):
 @pytest.mark.parametrize(
     "clf",
     [
-        make_pipeline(StandardScaler(), LogisticRegression()),
+        make_pipeline(StandardScaler(), LogisticRegression(), memory=None),
         make_pipeline(
-            make_column_transformer((StandardScaler(), [0, 1])), LogisticRegression()
+            make_column_transformer((StandardScaler(), [0, 1])),
+            LogisticRegression(),
+            memory=None,
         ),
     ],
 )
@@ -469,7 +471,7 @@ def test_precision_recall_display_string_labels(pyplot):
     cancer = load_breast_cancer()
     X, y = cancer.data, cancer.target_names[cancer.target]
 
-    lr = make_pipeline(StandardScaler(), LogisticRegression())
+    lr = make_pipeline(StandardScaler(), LogisticRegression(), memory=None)
     n_cv = 3
     cv_results = cross_validate(
         lr, X, y, cv=n_cv, return_estimator=True, return_indices=True
