@@ -323,15 +323,11 @@ def capabilities(
         Capabilities of the namespace.
     """
     out = xp.__array_namespace_info__().capabilities()
-    if is_pydata_sparse_namespace(xp):
+    if is_pydata_sparse_namespace(xp) or is_jax_namespace(xp):
         if out["boolean indexing"]:
             # FIXME https://github.com/pydata/sparse/issues/876
             # boolean indexing is supported, but not when the index is a sparse array.
             # boolean indexing by list or numpy array is not part of the Array API.
-            out = out.copy()
-            out["boolean indexing"] = False
-    elif is_jax_namespace(xp):
-        if out["boolean indexing"]:  # pragma: no cover
             # Backwards compatibility with jax <0.6.0
             # https://github.com/jax-ml/jax/issues/27418
             out = out.copy()

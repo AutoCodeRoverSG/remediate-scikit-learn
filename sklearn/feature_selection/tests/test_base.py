@@ -43,10 +43,10 @@ feature_names_inv[1::2] = ""
 
 def test_transform_dense():
     sel = StepSelector()
-    Xt_actual = sel.fit(X, y).transform(X)
-    Xt_actual2 = StepSelector().fit_transform(X, y)
-    assert_array_equal(Xt, Xt_actual)
-    assert_array_equal(Xt, Xt_actual2)
+    xt_actual = sel.fit(X, y).transform(X)
+    xt_actual2 = StepSelector().fit_transform(X, y)
+    assert_array_equal(Xt, xt_actual)
+    assert_array_equal(Xt, xt_actual2)
 
     # Check dtype matches
     assert np.int32 == sel.transform(X.astype(np.int32)).dtype
@@ -63,16 +63,16 @@ def test_transform_dense():
 
 @pytest.mark.parametrize("csc_container", CSC_CONTAINERS)
 def test_transform_sparse(csc_container):
-    X_sp = csc_container(X)
+    x_sp = csc_container(X)
     sel = StepSelector()
-    Xt_actual = sel.fit(X_sp).transform(X_sp)
-    Xt_actual2 = sel.fit_transform(X_sp)
-    assert_array_equal(Xt, Xt_actual.toarray())
-    assert_array_equal(Xt, Xt_actual2.toarray())
+    xt_actual = sel.fit(x_sp).transform(x_sp)
+    xt_actual2 = sel.fit_transform(x_sp)
+    assert_array_equal(Xt, xt_actual.toarray())
+    assert_array_equal(Xt, xt_actual2.toarray())
 
     # Check dtype matches
-    assert np.int32 == sel.transform(X_sp.astype(np.int32)).dtype
-    assert np.float32 == sel.transform(X_sp.astype(np.float32)).dtype
+    assert np.int32 == sel.transform(x_sp.astype(np.int32)).dtype
+    assert np.float32 == sel.transform(x_sp.astype(np.float32)).dtype
 
     # Check wrong shape raises error
     with pytest.raises(ValueError):
@@ -81,8 +81,8 @@ def test_transform_sparse(csc_container):
 
 def test_inverse_transform_dense():
     sel = StepSelector()
-    Xinv_actual = sel.fit(X, y).inverse_transform(Xt)
-    assert_array_equal(Xinv, Xinv_actual)
+    xinv_actual = sel.fit(X, y).inverse_transform(Xt)
+    assert_array_equal(Xinv, xinv_actual)
 
     # Check dtype matches
     assert np.int32 == sel.inverse_transform(Xt.astype(np.int32)).dtype
@@ -99,15 +99,15 @@ def test_inverse_transform_dense():
 
 @pytest.mark.parametrize("csc_container", CSC_CONTAINERS)
 def test_inverse_transform_sparse(csc_container):
-    X_sp = csc_container(X)
-    Xt_sp = csc_container(Xt)
+    x_sp = csc_container(X)
+    xt_sp = csc_container(Xt)
     sel = StepSelector()
-    Xinv_actual = sel.fit(X_sp).inverse_transform(Xt_sp)
-    assert_array_equal(Xinv, Xinv_actual.toarray())
+    xinv_actual = sel.fit(x_sp).inverse_transform(xt_sp)
+    assert_array_equal(Xinv, xinv_actual.toarray())
 
     # Check dtype matches
-    assert np.int32 == sel.inverse_transform(Xt_sp.astype(np.int32)).dtype
-    assert np.float32 == sel.inverse_transform(Xt_sp.astype(np.float32)).dtype
+    assert np.int32 == sel.inverse_transform(xt_sp.astype(np.int32)).dtype
+    assert np.float32 == sel.inverse_transform(xt_sp.astype(np.float32)).dtype
 
     # Check wrong shape raises error
     with pytest.raises(ValueError):
