@@ -1510,11 +1510,10 @@ def test_train_test_split_sparse(sparse_container):
 
 def test_train_test_split_mock_pandas():
     # X mock dataframe
-    X_df = MockDataFrame(X)
-    X_train, X_test = train_test_split(X_df)
+    x_df = MockDataFrame(X)
+    X_train, X_test = train_test_split(x_df)
     assert isinstance(X_train, MockDataFrame)
     assert isinstance(X_test, MockDataFrame)
-    X_train_arr, X_test_arr = train_test_split(X_df)
 
 
 def test_train_test_split_list_input():
@@ -1525,19 +1524,19 @@ def test_train_test_split_list_input():
     y3 = y2.tolist()
 
     for stratify in (True, False):
-        X_train1, X_test1, y_train1, y_test1 = train_test_split(
+        x_train1, x_test1, _, _ = train_test_split(
             X, y1, stratify=y1 if stratify else None, random_state=0
         )
-        X_train2, X_test2, y_train2, y_test2 = train_test_split(
+        x_train2, _, y_train2, y_test2 = train_test_split(
             X, y2, stratify=y2 if stratify else None, random_state=0
         )
-        X_train3, X_test3, y_train3, y_test3 = train_test_split(
+        _, x_test3, y_train3, y_test3 = train_test_split(
             X, y3, stratify=y3 if stratify else None, random_state=0
         )
 
-        np.testing.assert_equal(X_train1, X_train2)
+        np.testing.assert_equal(x_train1, x_train2)
         np.testing.assert_equal(y_train2, y_train3)
-        np.testing.assert_equal(X_test1, X_test3)
+        np.testing.assert_equal(x_test1, x_test3)
         np.testing.assert_equal(y_test3, y_test2)
 
 
