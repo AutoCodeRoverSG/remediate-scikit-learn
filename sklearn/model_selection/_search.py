@@ -1002,14 +1002,20 @@ class BaseSearchCV(MetaEstimatorMixin, BaseEstimator, metaclass=ABCMeta):
 
         parallel = Parallel(n_jobs=self.n_jobs, pre_dispatch=self.pre_dispatch)
 
+        _return_options = frozenset(
+            key
+            for key, cond in [
+                ("train_score", self.return_train_score),
+                ("n_test_samples", True),
+                ("times", True),
+            ]
+            if cond
+        )
         fit_and_score_kwargs = {
             "scorer": scorers,
             "fit_params": routed_params.estimator.fit,
             "score_params": routed_params.scorer.score,
-            "return_train_score": self.return_train_score,
-            "return_n_test_samples": True,
-            "return_times": True,
-            "return_parameters": False,
+            "return_options": _return_options,
             "error_score": self.error_score,
             "verbose": self.verbose,
         }
@@ -1040,8 +1046,10 @@ class BaseSearchCV(MetaEstimatorMixin, BaseEstimator, metaclass=ABCMeta):
                         train=train,
                         test=test,
                         parameters=parameters,
-                        split_progress=(split_idx, n_splits),
-                        candidate_progress=(cand_idx, n_candidates),
+                        progress={
+                            "split": (split_idx, n_splits),
+                            "candidate": (cand_idx, n_candidates),
+                        },
                         **fit_and_score_kwargs,
                     )
                     for (cand_idx, parameters), (split_idx, (train, test)) in product(

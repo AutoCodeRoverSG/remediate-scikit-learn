@@ -90,9 +90,7 @@ def _check_groups_routing_disabled(groups):
         "verbose": ["verbose"],
         "params": [dict, None],
         "pre_dispatch": [Integral, str],
-        "return_train_score": ["boolean"],
-        "return_estimator": ["boolean"],
-        "return_indices": ["boolean"],
+        "return_options": [set, frozenset, list, tuple, None],
         "error_score": [StrOptions({"raise"}), Real],
     },
     prefer_skip_nested_validation=False,  # estimator is not validated yet
@@ -109,9 +107,7 @@ def cross_validate(
     verbose=0,
     params=None,
     pre_dispatch="2*n_jobs",
-    return_train_score=False,
-    return_estimator=False,
-    return_indices=False,
+    return_options=None,
     error_score=np.nan,
 ):
     """Evaluate metric(s) by cross-validation and also record fit/score times.
@@ -318,6 +314,22 @@ def cross_validate(
     params = {} if params is None else params
     cv = check_cv(cv, y, classifier=is_classifier(estimator), random_state=0)
 
+    _valid_return_options = {"train_score", "estimator", "indices"}
+    if return_options is None:
+        return_options = set()
+    else:
+        return_options = set(return_options)
+    invalid = return_options - _valid_return_options
+    if invalid:
+        raise ValueError(
+            f"Invalid return_options: {invalid}. "
+            f"Valid options are: {_valid_return_options}."
+        )
+
+    return_train_score = "train_score" in return_options
+    return_estimator = "estimator" in return_options
+    return_indices = "indices" in return_options
+
     scorers = check_scoring(
         estimator, scoring=scoring, raise_exc=(error_score == "raise")
     )
@@ -369,6 +381,15 @@ def cross_validate(
     # We clone the estimator to make sure that all the folds are
     # independent, and that it is pickle-able.
     parallel = Parallel(n_jobs=n_jobs, verbose=verbose, pre_dispatch=pre_dispatch)
+    _return_options = frozenset(
+        key
+        for key, cond in [
+            ("train_score", return_train_score),
+            ("times", True),
+            ("estimator", return_estimator),
+        ]
+        if cond
+    )
     results = parallel(
         delayed(_fit_and_score)(
             clone(estimator),
@@ -381,9 +402,7 @@ def cross_validate(
             parameters=None,
             fit_params=routed_params.estimator.fit,
             score_params=routed_params.scorer.score,
-            return_train_score=return_train_score,
-            return_times=True,
-            return_estimator=return_estimator,
+            return_options=_return_options,
             error_score=error_score,
         )
         for train, test in indices
@@ -675,13 +694,8 @@ def _fit_and_score(
     parameters,
     fit_params,
     score_params,
-    return_train_score=False,
-    return_parameters=False,
-    return_n_test_samples=False,
-    return_times=False,
-    return_estimator=False,
-    split_progress=None,
-    candidate_progress=None,
+    return_options=None,
+    progress=None,
     error_score=np.nan,
 ):
     """Fit estimator and compute scores for a given dataset split.
@@ -774,6 +788,20 @@ def _fit_and_score(
         fit_error : str or None
             Traceback str if the fit failed, None if the fit succeeded.
     """
+    # Unpack return_options and progress
+    if return_options is None:
+        return_options = frozenset()
+    return_train_score = "train_score" in return_options
+    return_parameters = "parameters" in return_options
+    return_n_test_samples = "n_test_samples" in return_options
+    return_times = "times" in return_options
+    return_estimator = "estimator" in return_options
+
+    if progress is None:
+        progress = {}
+    split_progress = progress.get("split")
+    candidate_progress = progress.get("candidate")
+
     xp, _ = get_namespace(X)
     x_device = device(X)
 
@@ -2031,6 +2059,14 @@ def learning_curve(
             for n_train_samples in train_sizes_abs:
                 train_test_proportions.append((train[:n_train_samples], test))
 
+        _return_options = frozenset(
+            key
+            for key, cond in [
+                ("train_score", True),
+                ("times", return_times),
+            ]
+            if cond
+        )
         results = parallel(
             delayed(_fit_and_score)(
                 clone(estimator),
@@ -2043,9 +2079,8 @@ def learning_curve(
                 parameters=None,
                 fit_params=routed_params.estimator.fit,
                 score_params=routed_params.scorer.score,
-                return_train_score=True,
+                return_options=_return_options,
                 error_score=error_score,
-                return_times=return_times,
             )
             for train, test in train_test_proportions
         )
@@ -2391,7 +2426,7 @@ def validation_curve(
 
     X, y, groups = indexable(X, y, groups)
 
-    cv = check_cv(cv, y, classifier=is_classifier(estimator))
+    cv = check_cv(cv, y, classifier=is_classifier(estimator), random_state=0)
     scorer = check_scoring(estimator, scoring=scoring)
 
     if _routing_enabled():
@@ -2443,7 +2478,7 @@ def validation_curve(
             parameters={param_name: v},
             fit_params=routed_params.estimator.fit,
             score_params=routed_params.scorer.score,
-            return_train_score=True,
+            return_options=frozenset({"train_score"}),
             error_score=error_score,
         )
         # NOTE do not change order of iteration to allow one time cv splitters
