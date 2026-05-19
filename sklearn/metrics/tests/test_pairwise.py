@@ -220,20 +220,20 @@ def test_pairwise_distances_for_sparse_data(
 
     # Test with sparse X and Y,
     # currently only supported for Euclidean, L1 and cosine.
-    X_sparse = csr_container(X)
-    Y_sparse = csr_container(Y)
+    x_sparse = csr_container(X)
+    y_sparse = csr_container(Y)
 
-    S = pairwise_distances(X_sparse, Y_sparse, metric="euclidean")
-    S2 = euclidean_distances(X_sparse, Y_sparse)
+    S = pairwise_distances(x_sparse, y_sparse, metric="euclidean")
+    S2 = euclidean_distances(x_sparse, y_sparse)
     assert_allclose(S, S2)
     assert S.dtype == S2.dtype == global_dtype
 
-    S = pairwise_distances(X_sparse, Y_sparse, metric="cosine")
-    S2 = cosine_distances(X_sparse, Y_sparse)
+    S = pairwise_distances(x_sparse, y_sparse, metric="cosine")
+    S2 = cosine_distances(x_sparse, y_sparse)
     assert_allclose(S, S2)
     assert S.dtype == S2.dtype == global_dtype
 
-    S = pairwise_distances(X_sparse, csc_container(Y), metric="manhattan")
+    S = pairwise_distances(x_sparse, csc_container(Y), metric="manhattan")
     S2 = manhattan_distances(bsr_container(X), coo_container(Y))
     assert_allclose(S, S2)
     if global_dtype == np.float64:
@@ -270,9 +270,9 @@ def test_pairwise_distances_for_sparse_data(
 
     # Test that scipy distance metrics throw an error if sparse matrix given
     with pytest.raises(TypeError):
-        pairwise_distances(X_sparse, metric="minkowski")
+        pairwise_distances(x_sparse, metric="minkowski")
     with pytest.raises(TypeError):
-        pairwise_distances(X, Y_sparse, metric="minkowski")
+        pairwise_distances(X, y_sparse, metric="minkowski")
 
 
 # Some scipy metrics are deprecated (depending on the scipy version) but we
@@ -366,9 +366,9 @@ def callable_rbf_kernel(x, y, **kwds):
     # unpack the output since this is a scalar packed in a 0-dim array
     # Note below is array API version of numpys `item()`
     if K.ndim > 0:
-        K_flat = xp.reshape(K, (-1,))
-        if K_flat.shape == (1,):
-            return float(K_flat[0])
+        k_flat = xp.reshape(K, (-1,))
+        if k_flat.shape == (1,):
+            return float(k_flat[0])
     raise ValueError("can only convert an array of size 1 to a Python scalar")
 
 
@@ -424,29 +424,29 @@ def test_pairwise_parallel_array_api(
 ):
     xp, device = _array_api_for_tests(array_namespace, device_name, dtype_name)
     rng = np.random.RandomState(0)
-    X_np = np.array(5 * rng.random_sample((5, 4)), dtype=dtype_name)
-    Y_np = np.array(5 * rng.random_sample((3, 4)), dtype=dtype_name)
-    X_xp = xp.asarray(X_np, device=device)
-    Y_xp = xp.asarray(Y_np, device=device)
+    x_np = np.array(5 * rng.random_sample((5, 4)), dtype=dtype_name)
+    y_np = np.array(5 * rng.random_sample((3, 4)), dtype=dtype_name)
+    x_xp = xp.asarray(x_np, device=device)
+    y_xp = xp.asarray(y_np, device=device)
 
     with config_context(array_api_dispatch=True):
         for y_val in (None, "not none"):
-            Y_xp = None if y_val is None else Y_xp
-            Y_np = None if y_val is None else Y_np
+            y_xp = None if y_val is None else y_xp
+            y_np = None if y_val is None else y_np
 
-            n_job1_xp = func(X_xp, Y_xp, metric=metric, n_jobs=1, **kwds)
+            n_job1_xp = func(x_xp, y_xp, metric=metric, n_jobs=1, **kwds)
             n_job1_xp_np = move_to(n_job1_xp, xp=np, device="cpu")
             assert get_namespace(n_job1_xp)[0].__name__ == xp.__name__
-            assert n_job1_xp.device == X_xp.device
-            assert n_job1_xp.dtype == X_xp.dtype
+            assert n_job1_xp.device == x_xp.device
+            assert n_job1_xp.dtype == x_xp.dtype
 
-            n_job2_xp = func(X_xp, Y_xp, metric=metric, n_jobs=2, **kwds)
+            n_job2_xp = func(x_xp, y_xp, metric=metric, n_jobs=2, **kwds)
             n_job2_xp_np = move_to(n_job2_xp, xp=np, device="cpu")
             assert get_namespace(n_job2_xp)[0].__name__ == xp.__name__
-            assert n_job2_xp.device == X_xp.device
-            assert n_job2_xp.dtype == X_xp.dtype
+            assert n_job2_xp.device == x_xp.device
+            assert n_job2_xp.dtype == x_xp.dtype
 
-            n_job2_np = func(X_np, metric=metric, n_jobs=2, **kwds)
+            n_job2_np = func(x_np, metric=metric, n_jobs=2, **kwds)
 
             assert_allclose(n_job1_xp_np, n_job2_xp_np)
             assert_allclose(n_job2_xp_np, n_job2_np)
@@ -481,9 +481,9 @@ def test_pairwise_kernels(metric, csr_container):
     K2 = function(X, Y=Y)
     assert_allclose(K1, K2)
     # Test with tuples as X and Y
-    X_tuples = tuple([tuple([v for v in row]) for row in X])
-    Y_tuples = tuple([tuple([v for v in row]) for row in Y])
-    K2 = pairwise_kernels(X_tuples, Y_tuples, metric=metric)
+    x_tuples = tuple(tuple(row) for row in X)
+    y_tuples = tuple(tuple(row) for row in Y)
+    K2 = pairwise_kernels(x_tuples, y_tuples, metric=metric)
     assert_allclose(K1, K2)
 
     # Test with sparse X and Y
