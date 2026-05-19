@@ -45,6 +45,9 @@ from sklearn.utils.validation import (
     _deprecate_positional_args,
 )
 
+_SHAPE_MISMATCH_ERR_MSG = "y_true and y_score have different shape"
+_FORMAT_NOT_SUPPORTED = "{0} format is not supported"
+
 
 @validate_params(
     {"x": ["array-like"], "y": ["array-like"]},
@@ -284,7 +287,7 @@ def average_precision_score(
             )
         y_true = label_binarize(y_true, classes=present_labels)
         y_true = move_to(y_true, xp=xp, device=device)
-        if not y_score.shape == y_true.shape:
+        if y_score.shape != y_true.shape:
             raise ValueError(
                 "`y_score` needs to be of shape `(n_samples, n_classes)`, since "
                 "`y_true` contains multiple classes. Got "
@@ -476,10 +479,10 @@ def _binary_roc_auc_score(y_true, y_score, sample_weight=None, max_fpr=None):
         return np.nan
 
     fpr, tpr, _ = roc_curve(y_true, y_score, sample_weight=sample_weight)
+    if max_fpr is not None and (max_fpr <= 0 or max_fpr > 1):
+        raise ValueError("Expected max_fpr in range (0, 1], got: %r" % max_fpr)
     if max_fpr is None or max_fpr == 1:
         return auc(fpr, tpr)
-    if max_fpr <= 0 or max_fpr > 1:
-        raise ValueError("Expected max_fpr in range (0, 1], got: %r" % max_fpr)
 
     # Add a single point at max_fpr by linear interpolation
     stop = np.searchsorted(fpr, max_fpr, "right")
@@ -715,7 +718,7 @@ def roc_auc_score(
         y_type == "binary" and y_score.ndim == 2 and y_score.shape[1] > 2
     ):
         # do not support partial ROC computation for multiclass
-        if max_fpr is not None and max_fpr != 1.0:
+        if max_fpr is not None and not np.isclose(max_fpr, 1.0):
             raise ValueError(
                 "Partial AUC computation not available in "
                 "multiclass setting, 'max_fpr' must be"
@@ -795,7 +798,7 @@ def _multiclass_roc_auc_score(
         Sample weights.
 
     """
-    if not y_score.ndim == 2:
+    if y_score.ndim != 2:
         raise ValueError(
             "`y_score` needs to be of shape `(n_samples, n_classes)`, since "
             "`y_true` contains multiple classes. Got "
@@ -1006,7 +1009,7 @@ def confusion_matrix_at_thresholds(
     # Check to make sure y_true is valid
     y_type = type_of_target(y_true, input_name="y_true")
     if not (y_type == "binary" or (y_type == "multiclass" and pos_label is not None)):
-        raise ValueError("{0} format is not supported".format(y_type))
+        raise ValueError(_FORMAT_NOT_SUPPORTED.format(y_type))
 
     xp, _, device = get_namespace_and_device(y_score)
     pos_label = _check_pos_label_consistency(pos_label, y_true)
@@ -1431,14 +1434,14 @@ def label_ranking_average_precision_score(y_true, y_score, *, sample_weight=None
     y_score = check_array(y_score, ensure_2d=False)
 
     if y_true.shape != y_score.shape:
-        raise ValueError("y_true and y_score have different shape")
+        raise ValueError(_SHAPE_MISMATCH_ERR_MSG)
 
     # Handle badly formatted array and the degenerate case with one label
     y_type = type_of_target(y_true, input_name="y_true")
     if y_type != "multilabel-indicator" and not (
         y_type == "binary" and y_true.ndim == 2
     ):
-        raise ValueError("{0} format is not supported".format(y_type))
+        raise ValueError(_FORMAT_NOT_SUPPORTED.format(y_type))
 
     if not issparse(y_true):
         y_true = csr_array(y_true)
@@ -1537,10 +1540,10 @@ def coverage_error(y_true, y_score, *, sample_weight=None):
 
     y_type = type_of_target(y_true, input_name="y_true")
     if y_type != "multilabel-indicator":
-        raise ValueError("{0} format is not supported".format(y_type))
+        raise ValueError(_FORMAT_NOT_SUPPORTED.format(y_type))
 
     if y_true.shape != y_score.shape:
-        raise ValueError("y_true and y_score have different shape")
+        raise ValueError(_SHAPE_MISMATCH_ERR_MSG)
 
     y_score_mask = np.ma.masked_array(y_score, mask=np.logical_not(y_true))
     y_min_relevant = y_score_mask.min(axis=1).reshape((-1, 1))
@@ -1616,10 +1619,10 @@ def label_ranking_loss(y_true, y_score, *, sample_weight=None):
 
     y_type = type_of_target(y_true, input_name="y_true")
     if y_type not in ("multilabel-indicator",):
-        raise ValueError("{0} format is not supported".format(y_type))
+        raise ValueError(_FORMAT_NOT_SUPPORTED.format(y_type))
 
     if y_true.shape != y_score.shape:
-        raise ValueError("y_true and y_score have different shape")
+        raise ValueError(_SHAPE_MISMATCH_ERR_MSG)
 
     n_samples, n_labels = y_true.shape
 
@@ -2175,7 +2178,7 @@ def top_k_accuracy_score(
             )
         y_score = column_or_1d(y_score)
     else:
-        if not y_score.ndim == 2:
+        if y_score.ndim != 2:
             raise ValueError(
                 "`y_score` needs to be of shape `(n_samples, n_classes)`, since "
                 "`y_true` contains multiple classes. Got "
