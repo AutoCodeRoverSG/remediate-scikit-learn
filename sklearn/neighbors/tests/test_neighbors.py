@@ -552,7 +552,7 @@ def test_sort_graph_by_row_values_copy(csr_container):
 @pytest.mark.parametrize("csr_container", CSR_CONTAINERS)
 def test_sort_graph_by_row_values_warning(csr_container):
     # Test that the parameter warn_when_not_sorted works as expected.
-    X = csr_container(np.abs(np.random.RandomState(42).randn(10, 10)))
+    X = csr_container(np.abs(np.random.default_rng(42).standard_normal((10, 10))))
     assert not _is_sorted_by_data(X)
 
     # warning
@@ -574,7 +574,7 @@ def test_sort_graph_by_row_values_warning(csr_container):
 )
 def test_sort_graph_by_row_values_bad_sparse_format(sparse_container):
     # Test that sort_graph_by_row_values and _check_precomputed error on bad formats
-    X = sparse_container(np.abs(np.random.RandomState(42).randn(10, 10)))
+    X = sparse_container(np.abs(np.random.default_rng(42).standard_normal((10, 10))))
     with pytest.raises(TypeError, match="format is not supported"):
         sort_graph_by_row_values(X)
     with pytest.raises(TypeError, match="format is not supported"):
@@ -2126,7 +2126,7 @@ def test_dtype_convert():
     classifier = neighbors.KNeighborsClassifier(n_neighbors=1)
     CLASSES = 15
     X = np.eye(CLASSES)
-    y = [ch for ch in "ABCDEFGHIJKLMNOPQRSTU"[:CLASSES]]
+    y = list("ABCDEFGHIJKLMNOPQRSTU"[:CLASSES])
 
     result = classifier.fit(X, y).predict(X)
     assert_array_equal(result, y)
@@ -2180,12 +2180,12 @@ def test_radius_neighbors_predict_proba():
             n_classes=3,
             random_state=seed,
         )
-        X_tr, X_te, y_tr, y_te = train_test_split(X, y, random_state=0)
+        x_tr, x_te, y_tr, _ = train_test_split(X, y, random_state=0)
         outlier_label = int(2 - seed)
         clf = neighbors.RadiusNeighborsClassifier(radius=2, outlier_label=outlier_label)
-        clf.fit(X_tr, y_tr)
-        pred = clf.predict(X_te)
-        proba = clf.predict_proba(X_te)
+        clf.fit(x_tr, y_tr)
+        pred = clf.predict(x_te)
+        proba = clf.predict_proba(x_te)
         proba_label = proba.argmax(axis=1)
         proba_label = np.where(proba.sum(axis=1) == 0, outlier_label, proba_label)
         assert_array_equal(pred, proba_label)
@@ -2230,7 +2230,7 @@ def test_pipeline_with_nearest_neighbors_transformer():
         reg_precomp = clone(reg)
         reg_precomp.set_params(metric="precomputed")
 
-        reg_chain = make_pipeline(clone(trans), reg_precomp)
+        reg_chain = make_pipeline(clone(trans), reg_precomp, memory=None)
 
         y_pred_chain = reg_chain.fit(X, y).predict(X2)
         y_pred_compact = reg_compact.fit(X, y).predict(X2)
@@ -2261,7 +2261,7 @@ def test_auto_algorithm(X, metric, metric_params, expected_algo):
 # still want to test them.
 @ignore_warnings(category=DeprecationWarning)
 @pytest.mark.parametrize(
-    "metric", sorted(set(neighbors.VALID_METRICS["brute"]) - {"precomputed"})
+    "metric", sorted({*neighbors.VALID_METRICS["brute"]} - {"precomputed"})
 )
 def test_radius_neighbors_brute_backend(
     metric,
@@ -2342,7 +2342,7 @@ def test_regressor_predict_on_arraylikes():
 
 
 @pytest.mark.parametrize(
-    "Estimator, params",
+    "estimator_cls, params",
     [
         (neighbors.KNeighborsClassifier, {"n_neighbors": 2}),
         (neighbors.KNeighborsRegressor, {"n_neighbors": 2}),
@@ -2353,7 +2353,7 @@ def test_regressor_predict_on_arraylikes():
         (neighbors.LocalOutlierFactor, {"n_neighbors": 1}),
     ],
 )
-def test_nan_euclidean_support(Estimator, params):
+def test_nan_euclidean_support(estimator_cls, params):
     """Check that the different neighbor estimators are lenient towards `nan`
     values if using `metric="nan_euclidean"`.
     """
@@ -2362,7 +2362,7 @@ def test_nan_euclidean_support(Estimator, params):
     y = [0, 0, 1, 1]
 
     params.update({"metric": "nan_euclidean"})
-    estimator = Estimator().set_params(**params).fit(X, y)
+    estimator = estimator_cls().set_params(**params).fit(X, y)
 
     for response_method in ("kneighbors", "predict", "transform", "fit_predict"):
         if hasattr(estimator, response_method):
@@ -2511,9 +2511,9 @@ def test_neighbor_regressors_loocv(nn_model, algorithm):
 
 @pytest.mark.parametrize("metric", COMMON_VALID_METRICS)
 @pytest.mark.parametrize(
-    "Estimator", [neighbors.KNeighborsClassifier, neighbors.RadiusNeighborsClassifier]
+    "estimator", [neighbors.KNeighborsClassifier, neighbors.RadiusNeighborsClassifier]
 )
-def test_neighbors_classifier_with_string_labels(metric, Estimator):
+def test_neighbors_classifier_with_string_labels(metric, estimator):
     """Ensure KNeighborsClassifier(algorithm='brute') works with string labels.
 
     Non-regression test for issue #33034.
@@ -2522,7 +2522,7 @@ def test_neighbors_classifier_with_string_labels(metric, Estimator):
     # String label
     y = np.array(["foo", "bar", "foo", "bar", "foo"])
 
-    knn = Estimator(algorithm="brute", metric=metric)
+    knn = estimator(algorithm="brute", metric=metric)
     knn.fit(X, y)
 
     y_pred = knn.predict(X)
