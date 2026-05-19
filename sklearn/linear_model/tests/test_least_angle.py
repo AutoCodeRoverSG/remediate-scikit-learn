@@ -101,18 +101,18 @@ def test_lars_path_gram_equivalent(method, return_path):
 
 def test_x_none_gram_none_raises_value_error():
     # Test that lars_path with no X and Gram raises exception
-    Xy = np.dot(X.T, y)
+    xy = np.dot(X.T, y)
     with pytest.raises(ValueError, match="X and Gram cannot both be unspecified"):
-        linear_model.lars_path(None, y, Gram=None, Xy=Xy)
+        linear_model.lars_path(None, y, Gram=None, Xy=xy)
 
 
 def test_all_precomputed():
     # Test that lars_path with precomputed Gram and Xy gives the right answer
     G = np.dot(X.T, X)
-    Xy = np.dot(X.T, y)
+    x_y = np.dot(X.T, y)
     for method in "lar", "lasso":
         output = linear_model.lars_path(X, y, method=method)
-        output_pre = linear_model.lars_path(X, y, Gram=G, Xy=Xy, method=method)
+        output_pre = linear_model.lars_path(X, y, Gram=G, Xy=x_y, method=method)
         for expected, got in zip(output, output_pre):
             assert_array_almost_equal(expected, got)
 
@@ -193,12 +193,12 @@ def test_no_path_all_precomputed():
     # correct
     X, y = 3 * diabetes.data, diabetes.target
     G = np.dot(X.T, X)
-    Xy = np.dot(X.T, y)
+    xy = np.dot(X.T, y)
     alphas_, _, coef_path_ = linear_model.lars_path(
-        X, y, method="lasso", Xy=Xy, Gram=G, alpha_min=0.9
+        X, y, method="lasso", Xy=xy, Gram=G, alpha_min=0.9
     )
     alpha_, _, coef = linear_model.lars_path(
-        X, y, method="lasso", Gram=G, Xy=Xy, alpha_min=0.9, return_path=False
+        X, y, method="lasso", Gram=G, Xy=xy, alpha_min=0.9, return_path=False
     )
 
     assert_array_almost_equal(coef, coef_path_[:, -1])
@@ -422,7 +422,7 @@ def test_multitarget():
 
     for estimator in estimators:
         estimator.fit(X, Y)
-        Y_pred = estimator.predict(X)
+        y_pred_mt = estimator.predict(X)
         alphas, active, coef, path = (
             estimator.alphas_,
             estimator.active_,
@@ -436,7 +436,7 @@ def test_multitarget():
             assert_array_almost_equal(active[k], estimator.active_)
             assert_array_almost_equal(coef[k], estimator.coef_)
             assert_array_almost_equal(path[k], estimator.coef_path_)
-            assert_array_almost_equal(Y_pred[:, k], y_pred)
+            assert_array_almost_equal(y_pred_mt[:, k], y_pred)
 
 
 def test_lars_cv():
@@ -706,24 +706,24 @@ def test_lasso_lars_vs_R_implementation():
     assert_array_almost_equal(r, skl_betas, decimal=12)
 
 
-@pytest.mark.parametrize("copy_X", [True, False])
-def test_lasso_lars_copyX_behaviour(copy_X):
+@pytest.mark.parametrize("copy_x", [True, False])
+def test_lasso_lars_copyX_behaviour(copy_x):
     """
     Test that user input regarding copy_X is not being overridden (it was until
     at least version 0.21)
 
     """
-    lasso_lars = LassoLarsIC(copy_X=copy_X, precompute=False)
+    lasso_lars = LassoLarsIC(copy_X=copy_x, precompute=False)
     rng = np.random.RandomState(0)
     X = rng.normal(0, 1, (100, 5))
-    X_copy = X.copy()
+    x_copy = X.copy()
     y = X[:, 2]
     lasso_lars.fit(X, y)
-    assert copy_X == np.array_equal(X, X_copy)
+    assert copy_x == np.array_equal(X, x_copy)
 
 
-@pytest.mark.parametrize("copy_X", [True, False])
-def test_lasso_lars_fit_copyX_behaviour(copy_X):
+@pytest.mark.parametrize("copy_x", [True, False])
+def test_lasso_lars_fit_copyX_behaviour(copy_x):
     """
     Test that user input to .fit for copy_X overrides default __init__ value
 
@@ -731,10 +731,10 @@ def test_lasso_lars_fit_copyX_behaviour(copy_X):
     lasso_lars = LassoLarsIC(precompute=False)
     rng = np.random.RandomState(0)
     X = rng.normal(0, 1, (100, 5))
-    X_copy = X.copy()
+    x_copy = X.copy()
     y = X[:, 2]
-    lasso_lars.fit(X, y, copy_X=copy_X)
-    assert copy_X == np.array_equal(X, X_copy)
+    lasso_lars.fit(X, y, copy_X=copy_x)
+    assert copy_x == np.array_equal(X, x_copy)
 
 
 @pytest.mark.parametrize("est", (LassoLars(alpha=1e-3), Lars()))
@@ -771,14 +771,14 @@ def test_copy_X_with_auto_gram():
     X = rng.rand(6, 6)
     y = rng.rand(6)
 
-    X_before = X.copy()
+    x_before = X.copy()
     linear_model.lars_path(X, y, Gram="auto", copy_X=True, method="lasso")
     # X did not change
-    assert_allclose(X, X_before)
+    assert_allclose(X, x_before)
 
 
 @pytest.mark.parametrize(
-    "LARS, has_coef_path, args",
+    "lars_cls, has_coef_path, args",
     (
         (Lars, True, {}),
         (LassoLars, True, {}),
@@ -789,13 +789,13 @@ def test_copy_X_with_auto_gram():
     ),
 )
 @pytest.mark.parametrize("dtype", (np.float32, np.float64))
-def test_lars_dtype_match(LARS, has_coef_path, args, dtype):
+def test_lars_dtype_match(lars_cls, has_coef_path, args, dtype):
     # The test ensures that the fit method preserves input dtype
     rng = np.random.RandomState(0)
     X = rng.rand(20, 6).astype(dtype)
     y = rng.rand(20).astype(dtype)
 
-    model = LARS(**args)
+    model = lars_cls(**args)
     model.fit(X, y)
     assert model.coef_.dtype == dtype
     if has_coef_path:
