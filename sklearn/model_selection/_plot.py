@@ -465,6 +465,8 @@ class LearningCurveDisplay(_BaseCurveDisplay):
         # Extract fit_params from learning_curve_kw to pass as 'params'
         fit_params = learning_curve_kw.pop("fit_params", None)
 
+        learning_curve_kw.setdefault("random_state", 0)
+
         train_sizes, train_scores, test_scores = learning_curve(
             estimator,
             X,
