@@ -396,10 +396,10 @@ def test_imputation_most_frequent_pandas(dtype):
     assert_array_equal(x_trans, x_true)
 
 
-@pytest.mark.parametrize("X_data, missing_value", [(1, 0), (1.0, np.nan)])
-def test_imputation_constant_error_invalid_type(X_data, missing_value):
+@pytest.mark.parametrize("x_data, missing_value", [(1, 0), (1.0, np.nan)])
+def test_imputation_constant_error_invalid_type(x_data, missing_value):
     # Verify that exceptions are raised on invalid fill_value type
-    X = np.full((3, 5), X_data, dtype=float)
+    X = np.full((3, 5), x_data, dtype=float)
     X[0, 0] = missing_value
 
     fill_value = "x"
@@ -416,9 +416,9 @@ def test_imputation_constant_integer(keep_empty_features):
     # Test imputation using the constant strategy on integers
     X = np.array([[-1, 2, 3, -1], [4, -1, 5, -1], [6, 7, -1, -1], [8, 9, 0, -1]])
 
-    X_true = np.array([[0, 2, 3, 0], [4, 0, 5, 0], [6, 7, 0, 0], [8, 9, 0, 0]])
+    x_true = np.array([[0, 2, 3, 0], [4, 0, 5, 0], [6, 7, 0, 0], [8, 9, 0, 0]])
     if not keep_empty_features:
-        X_true = X_true[:, :-1]
+        x_true = x_true[:, :-1]
 
     imputer = SimpleImputer(
         missing_values=-1,
@@ -426,9 +426,9 @@ def test_imputation_constant_integer(keep_empty_features):
         fill_value=0,
         keep_empty_features=keep_empty_features,
     )
-    X_trans = imputer.fit_transform(X)
+    x_trans = imputer.fit_transform(X)
 
-    assert_array_equal(X_trans, X_true)
+    assert_array_equal(x_trans, x_true)
 
 
 @pytest.mark.parametrize("array_constructor", CSR_CONTAINERS + [np.asarray])
@@ -444,22 +444,22 @@ def test_imputation_constant_float(array_constructor, keep_empty_features):
         ]
     )
 
-    X_true = np.array(
+    x_true = np.array(
         [[-1, 1.1, 0, -1], [1.2, -1, 1.3, -1], [0, 0, -1, -1], [1.4, 1.5, 0, -1]]
     )
     if not keep_empty_features:
-        X_true = X_true[:, :-1]
+        x_true = x_true[:, :-1]
 
     X = array_constructor(X)
 
-    X_true = array_constructor(X_true)
+    x_true = array_constructor(x_true)
 
     imputer = SimpleImputer(
         strategy="constant", fill_value=-1, keep_empty_features=keep_empty_features
     )
-    X_trans = imputer.fit_transform(X)
+    x_trans = imputer.fit_transform(X)
 
-    assert_allclose_dense_sparse(X_trans, X_true)
+    assert_allclose_dense_sparse(x_trans, x_true)
 
 
 @pytest.mark.parametrize("marker", [None, np.nan, "NAN", "", 0])
@@ -476,7 +476,7 @@ def test_imputation_constant_object(marker, keep_empty_features):
         dtype=object,
     )
 
-    X_true = np.array(
+    x_true = np.array(
         [
             ["missing", "a", "b", "missing"],
             ["c", "missing", "d", "missing"],
@@ -486,7 +486,7 @@ def test_imputation_constant_object(marker, keep_empty_features):
         dtype=object,
     )
     if not keep_empty_features:
-        X_true = X_true[:, :-1]
+        x_true = x_true[:, :-1]
 
     imputer = SimpleImputer(
         missing_values=marker,
@@ -494,9 +494,9 @@ def test_imputation_constant_object(marker, keep_empty_features):
         fill_value="missing",
         keep_empty_features=keep_empty_features,
     )
-    X_trans = imputer.fit_transform(X)
+    x_trans = imputer.fit_transform(X)
 
-    assert_array_equal(X_trans, X_true)
+    assert_array_equal(x_trans, x_true)
 
 
 @pytest.mark.parametrize("dtype", [object, "category"])
@@ -509,7 +509,7 @@ def test_imputation_constant_pandas(dtype, keep_empty_features):
 
     df = pd.read_csv(f, dtype=dtype)
 
-    X_true = np.array(
+    x_true = np.array(
         [
             ["missing_value", "i", "x", "missing_value"],
             ["a", "missing_value", "y", "missing_value"],
@@ -519,14 +519,14 @@ def test_imputation_constant_pandas(dtype, keep_empty_features):
         dtype=object,
     )
     if not keep_empty_features:
-        X_true = X_true[:, :-1]
+        x_true = x_true[:, :-1]
 
     imputer = SimpleImputer(
         strategy="constant", keep_empty_features=keep_empty_features
     )
-    X_trans = imputer.fit_transform(df)
+    x_trans = imputer.fit_transform(df)
 
-    assert_array_equal(X_trans, X_true)
+    assert_array_equal(x_trans, x_true)
 
 
 @pytest.mark.parametrize("X", [[[1], [2]], [[1], [np.nan]]])
@@ -543,7 +543,7 @@ def test_iterative_imputer_one_feature(X):
 
 def test_imputation_pipeline_grid_search():
     # Test imputation within a pipeline + gridsearch.
-    X = _sparse_random_matrix(100, 100, density=0.10)
+    X = _sparse_random_matrix(100, 100, density=0.10, random_state=0)
     missing_values = X.data[0]
 
     pipeline = Pipeline(
@@ -555,7 +555,7 @@ def test_imputation_pipeline_grid_search():
 
     parameters = {"imputer__strategy": ["mean", "median", "most_frequent"]}
 
-    Y = _sparse_random_matrix(100, 1, density=0.10).toarray()
+    Y = _sparse_random_matrix(100, 1, density=0.10, random_state=0).toarray()
     gs = GridSearchCV(pipeline, parameters)
     gs.fit(X, Y)
 
