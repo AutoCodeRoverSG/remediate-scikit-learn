@@ -220,20 +220,18 @@ def clip(
     # TODO: This won't handle dask unknown shapes
     result_shape = np.broadcast_shapes(x.shape, min_shape, max_shape)
 
-    if min is not None:
-        min = da.broadcast_to(da.asarray(min), result_shape)
-    if max is not None:
-        max = da.broadcast_to(da.asarray(max), result_shape)
+    min_val = da.broadcast_to(da.asarray(min), result_shape) if min is not None else None
+    max_val = da.broadcast_to(da.asarray(max), result_shape) if max is not None else None
 
-    if min is None and max is None:
+    if min_val is None and max_val is None:
         return da.positive(x)
 
-    if min is None:
-        return astype(da.minimum(x, max), x.dtype)
-    if max is None:
-        return astype(da.maximum(x, min), x.dtype)
+    if min_val is None:
+        return astype(da.minimum(x, max_val), x.dtype)
+    if max_val is None:
+        return astype(da.maximum(x, min_val), x.dtype)
 
-    return astype(da.minimum(da.maximum(x, min), max), x.dtype)
+    return astype(da.minimum(da.maximum(x, min_val), max_val), x.dtype)
 
 
 def _ensure_single_chunk(x: Array, axis: int) -> tuple[Array, Callable[[Array], Array]]:
