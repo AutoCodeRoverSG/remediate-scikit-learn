@@ -143,7 +143,7 @@ def test_collinearity():
     # Check that lars_path is robust to collinearity in input
     X = np.array([[3.0, 3.0, 1.0], [2.0, 2.0, 0.0], [1.0, 1.0, 0]])
     y = np.array([1.0, 0.0, 0])
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
 
     f = ignore_warnings
     _, _, coef_path_ = f(linear_model.lars_path)(X, y, alpha_min=0.01)
@@ -152,7 +152,7 @@ def test_collinearity():
     assert (residual**2).sum() < 1.0  # just make sure it's bounded
 
     n_samples = 10
-    X = rng.rand(n_samples, 5)
+    X = rng.random((n_samples, 5))
     y = np.zeros(n_samples)
     _, _, coef_path_ = linear_model.lars_path(
         X,
@@ -337,20 +337,20 @@ def test_lasso_lars_vs_lasso_cd_ill_conditioned():
     # Also test that lasso_path (using lars_path output style) gives
     # the same result as lars_path and previous lasso output style
     # under these conditions.
-    rng = np.random.RandomState(42)
+    rng = np.random.default_rng(42)
 
     # Generate data
     n, m = 70, 100
     k = 5
-    X = rng.randn(n, m)
+    X = rng.standard_normal((n, m))
     w = np.zeros((m, 1))
     i = np.arange(0, m)
     rng.shuffle(i)
     supp = i[:k]
-    w[supp] = np.sign(rng.randn(k, 1)) * (rng.rand(k, 1) + 1)
+    w[supp] = np.sign(rng.standard_normal((k, 1))) * (rng.random((k, 1)) + 1)
     y = np.dot(X, w)
     sigma = 0.2
-    y += sigma * rng.rand(*y.shape)
+    y += sigma * rng.random(y.shape)
     y = y.squeeze()
     lars_alphas, _, lars_coef = linear_model.lars_path(X, y, method="lasso")
 
@@ -458,10 +458,9 @@ def test_lars_cv():
 def test_lars_cv_max_iter(recwarn):
     warnings.simplefilter("always")
     with np.errstate(divide="raise", invalid="raise"):
-        X = diabetes.data
         y = diabetes.target
-        rng = np.random.RandomState(42)
-        x = rng.randn(len(y))
+        rng = np.random.default_rng(42)
+        x = rng.standard_normal(len(y))
         X = diabetes.data
         X = np.c_[X, x, x]  # add correlated features
         X = StandardScaler().fit_transform(X)
@@ -483,9 +482,9 @@ def test_lasso_lars_ic():
     # - n_nonzero_bic < n_nonzero_aic
     lars_bic = linear_model.LassoLarsIC("bic")
     lars_aic = linear_model.LassoLarsIC("aic")
-    rng = np.random.RandomState(42)
+    rng = np.random.default_rng(42)
     X = diabetes.data
-    X = np.c_[X, rng.randn(X.shape[0], 5)]  # add 5 bad features
+    X = np.c_[X, rng.standard_normal((X.shape[0], 5))]  # add 5 bad features
     X = StandardScaler().fit_transform(X)
     lars_bic.fit(X, y)
     lars_aic.fit(X, y)
@@ -619,7 +618,7 @@ def test_lasso_lars_vs_lasso_cd_positive():
         assert error < 0.01
 
 
-def test_lasso_lars_vs_R_implementation():
+def test_lasso_lars_vs_r_implementation():
     # Test that sklearn LassoLars implementation agrees with the LassoLars
     # implementation available in R (lars library) when fit_intercept=False.
 
@@ -707,7 +706,7 @@ def test_lasso_lars_vs_R_implementation():
 
 
 @pytest.mark.parametrize("copy_x", [True, False])
-def test_lasso_lars_copyX_behaviour(copy_x):
+def test_lasso_lars_copy_x_behaviour(copy_x):
     """
     Test that user input regarding copy_X is not being overridden (it was until
     at least version 0.21)
@@ -804,7 +803,7 @@ def test_lars_dtype_match(lars_cls, has_coef_path, args, dtype):
 
 
 @pytest.mark.parametrize(
-    "LARS, has_coef_path, args",
+    "lars_cls, has_coef_path, args",
     (
         (Lars, True, {}),
         (LassoLars, True, {}),
@@ -814,7 +813,7 @@ def test_lars_dtype_match(lars_cls, has_coef_path, args, dtype):
         (LassoLarsCV, True, {"max_iter": 5}),
     ),
 )
-def test_lars_numeric_consistency(LARS, has_coef_path, args):
+def test_lars_numeric_consistency(lars_cls, has_coef_path, args):
     # The test ensures numerical consistency between trained coefficients
     # of float32 and float64.
     rtol = 1e-5
@@ -824,8 +823,8 @@ def test_lars_numeric_consistency(LARS, has_coef_path, args):
     X_64 = rng.rand(10, 6)
     y_64 = rng.rand(10)
 
-    model_64 = LARS(**args).fit(X_64, y_64)
-    model_32 = LARS(**args).fit(X_64.astype(np.float32), y_64.astype(np.float32))
+    model_64 = lars_cls(**args).fit(X_64, y_64)
+    model_32 = lars_cls(**args).fit(X_64.astype(np.float32), y_64.astype(np.float32))
 
     assert_allclose(model_64.coef_, model_32.coef_, rtol=rtol, atol=atol)
     if has_coef_path:
@@ -841,7 +840,7 @@ def test_lassolarsic_alpha_selection(criterion):
     (reference [1] in LassoLarsIC) In this example, only 7 features should be
     selected.
     """
-    model = make_pipeline(StandardScaler(), LassoLarsIC(criterion=criterion))
+    model = make_pipeline(StandardScaler(), LassoLarsIC(criterion=criterion), memory=None)
     model.fit(X, y)
 
     best_alpha_selected = np.argmin(model[-1].criterion_)
@@ -857,7 +856,9 @@ def test_lassolarsic_noise_variance(fit_intercept):
         n_samples=10, n_features=11 - fit_intercept, random_state=rng
     )
 
-    model = make_pipeline(StandardScaler(), LassoLarsIC(fit_intercept=fit_intercept))
+    model = make_pipeline(
+        StandardScaler(), LassoLarsIC(fit_intercept=fit_intercept), memory=None
+    )
 
     err_msg = (
         "You are using LassoLarsIC in the case where the number of samples is smaller"
