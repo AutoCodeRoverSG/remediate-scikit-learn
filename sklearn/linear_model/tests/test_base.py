@@ -65,13 +65,13 @@ def test_linear_regression_vs_lstsq(dtype):
     Check that LinearRegression is as good as `scipy.linalg.lstsq`.
     Non regression test for issue #33032.
     """
-    rng = np.random.RandomState(1137)
+    rng = np.random.default_rng(1137)
     n_samples = 500_000
 
-    x1 = rng.rand(n_samples)
-    x2 = 0.3 * x1 + 0.1 * rng.rand(n_samples)
+    x1 = rng.random(n_samples)
+    x2 = 0.3 * x1 + 0.1 * rng.random(n_samples)
     X = np.column_stack([x1, x2])
-    y = X @ [0.5, 2.0] + 0.1 * rng.rand(n_samples)
+    y = X @ [0.5, 2.0] + 0.1 * rng.random(n_samples)
 
     X = X.astype(dtype)
     y = y.astype(dtype)
@@ -112,10 +112,10 @@ def test_linear_regression_sample_weights(
     # Closed form of the weighted least square
     # theta = (X^T W X)^(-1) @ X^T W y
     W = np.diag(sample_weight)
-    X_aug = X if not fit_intercept else add_dummy_feature(X)
+    x_aug = X if not fit_intercept else add_dummy_feature(X)
 
-    Xw = X_aug.T @ W @ X_aug
-    yw = X_aug.T @ W @ y
+    Xw = x_aug.T @ W @ x_aug
+    yw = x_aug.T @ W @ y
     coefs2 = linalg.solve(Xw, yw)
 
     if not fit_intercept:
@@ -531,7 +531,7 @@ def test_sparse_preprocess_data_offsets(global_random_seed, lil_container):
 @pytest.mark.parametrize("csr_container", CSR_CONTAINERS)
 def test_csr_preprocess_data(csr_container):
     # Test output format of _preprocess_data, when input is csr
-    X, y = make_regression()
+    X, y = make_regression(random_state=0)
     X[X < 2.5] = 0.0
     csr = csr_container(X)
     csr_, y, _, _, _, _ = _preprocess_data(csr, y, fit_intercept=True)
@@ -542,7 +542,7 @@ def test_csr_preprocess_data(csr_container):
 @pytest.mark.parametrize("to_copy", (True, False))
 @pytest.mark.parametrize("use_sample_weight", (False, True))
 def test_preprocess_copy_data_no_checks(sparse_container, to_copy, use_sample_weight):
-    X, y = make_regression()
+    X, y = make_regression(random_state=0)
     X[X < 2.5] = 0.0
 
     sample_weight = np.ones(len(y)) if use_sample_weight else None
