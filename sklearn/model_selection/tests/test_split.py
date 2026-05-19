@@ -204,12 +204,12 @@ def test_cross_validator_with_default_params():
 def test_2d_y():
     # smoke test for 2d y and multi-label
     n_samples = 30
-    rng = np.random.RandomState(1)
-    X = rng.randint(0, 3, size=(n_samples, 2))
-    y = rng.randint(0, 3, size=(n_samples,))
+    rng = np.random.default_rng(1)
+    X = rng.integers(0, 3, size=(n_samples, 2))
+    y = rng.integers(0, 3, size=(n_samples,))
     y_2d = y.reshape(-1, 1)
-    y_multilabel = rng.randint(0, 2, size=(n_samples, 3))
-    groups = rng.randint(0, 3, size=(n_samples,))
+    y_multilabel = rng.integers(0, 2, size=(n_samples, 3))
+    groups = rng.integers(0, 3, size=(n_samples,))
     splitters = [
         LeaveOneOut(),
         LeavePOut(p=2),
@@ -559,7 +559,7 @@ def test_shuffle_kfold_stratifiedkfold_reproducibility(kfold):
     # Check that when the shuffle is True, multiple split calls often
     # (not always) produce different splits when random_state is
     # RandomState instance or None
-    kf = kfold(3, shuffle=True, random_state=np.random.RandomState(0))
+    kf = kfold(3, shuffle=True, random_state=None)
     for data in zip((X, X2), (y, y2), (groups_1, groups_2)):
         # Test if the two splits are different cv
         for (_, test_a), (_, test_b) in zip(_split(kf, *data), _split(kf, *data)):
@@ -1957,7 +1957,7 @@ def test_nested_cv():
 
     for inner_cv, outer_cv in combinations_with_replacement(cvs, 2):
         gs = GridSearchCV(
-            DummyClassifier(),
+            DummyClassifier(random_state=0),
             param_grid={"strategy": ["stratified", "most_frequent"]},
             cv=inner_cv,
             error_score="raise",
@@ -1981,10 +1981,10 @@ def test_build_repr():
 
 
 @pytest.mark.parametrize(
-    "CVSplitter", (ShuffleSplit, GroupShuffleSplit, StratifiedShuffleSplit)
+    "cv_splitter", (ShuffleSplit, GroupShuffleSplit, StratifiedShuffleSplit)
 )
-def test_shuffle_split_empty_trainset(CVSplitter):
-    cv = CVSplitter(test_size=0.99)
+def test_shuffle_split_empty_trainset(cv_splitter):
+    cv = cv_splitter(test_size=0.99)
     X, y = [[1]], [0]  # 1 sample
     with pytest.raises(
         ValueError,
@@ -2037,12 +2037,12 @@ def test_leave_p_out_empty_trainset():
 
 
 @pytest.mark.parametrize(
-    "Klass", (KFold, StratifiedKFold, StratifiedGroupKFold, GroupKFold)
+    "klass", (KFold, StratifiedKFold, StratifiedGroupKFold, GroupKFold)
 )
-def test_random_state_shuffle_false(Klass):
+def test_random_state_shuffle_false(klass):
     # passing a non-default random_state when shuffle=False makes no sense
     with pytest.raises(ValueError, match="has no effect since shuffle is False"):
-        Klass(3, shuffle=False, random_state=0)
+        klass(3, shuffle=False, random_state=0)
 
 
 @pytest.mark.parametrize(
