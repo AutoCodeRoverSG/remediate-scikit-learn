@@ -183,7 +183,7 @@ class PrecisionRecallDisplay(_BinaryClassifierCurveDisplayMixin):
         self.pos_label = pos_label
         self.prevalence_pos_label = prevalence_pos_label
 
-    def _validate_plot_params(self, *, ax, name):
+    def _validate_plot_params(self, *, ax=None, name=None):
         self.ax_, self.figure_, name = super()._validate_plot_params(ax=ax, name=name)
 
         precision = _convert_to_list_leaving_none(self.precision)
@@ -418,7 +418,6 @@ class PrecisionRecallDisplay(_BinaryClassifierCurveDisplayMixin):
         curve_kwargs=None,
         plot_chance_level=False,
         chance_level_kw=None,
-        despine=False,
         **kwargs,
     ):
         """Plot precision-recall curve given an estimator and some data.
@@ -556,7 +555,6 @@ class PrecisionRecallDisplay(_BinaryClassifierCurveDisplayMixin):
             curve_kwargs=curve_kwargs,
             plot_chance_level=plot_chance_level,
             chance_level_kw=chance_level_kw,
-            despine=despine,
             **kwargs,
         )
 
