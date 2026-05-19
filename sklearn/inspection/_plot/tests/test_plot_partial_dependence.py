@@ -177,7 +177,7 @@ def test_plot_partial_dependence_kind(
         )
     else:
         assert all(
-            ln._y[0] != pytest.approx(0.0)
+            abs(ln._y[0]) > 1e-12
             for ln in disp.lines_.ravel()
             if ln is not None
         )
