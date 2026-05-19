@@ -1075,9 +1075,9 @@ def test_iterative_imputer_min_max_array_like_imputation(min_max_1, min_max_2):
     imputer2 = IterativeImputer(
         min_value=min_max_2[0], max_value=min_max_2[1], random_state=0
     )
-    X_test_imputed1 = imputer1.fit(X_train).transform(X_test)
-    X_test_imputed2 = imputer2.fit(X_train).transform(X_test)
-    assert_allclose(X_test_imputed1[:, 0], X_test_imputed2[:, 0])
+    x_test_imputed1 = imputer1.fit(X_train).transform(X_test)
+    x_test_imputed2 = imputer2.fit(X_train).transform(X_test)
+    assert_allclose(x_test_imputed1[:, 0], x_test_imputed2[:, 0])
 
 
 @pytest.mark.parametrize("skip_complete", [True, False])
@@ -1091,12 +1091,12 @@ def test_iterative_imputer_skip_non_missing(skip_complete):
     imputer = IterativeImputer(
         initial_strategy="mean", skip_complete=skip_complete, random_state=rng
     )
-    X_test_est = imputer.fit(X_train).transform(X_test)
+    x_test_est = imputer.fit(X_train).transform(X_test)
     if skip_complete:
         # impute with the initial strategy: 'mean'
-        assert_allclose(X_test_est[:, 0], np.mean(X_train[:, 0]))
+        assert_allclose(x_test_est[:, 0], np.mean(X_train[:, 0]))
     else:
-        assert_allclose(X_test_est[:, 0], [11, 7, 12], rtol=1e-4)
+        assert_allclose(x_test_est[:, 0], [11, 7, 12], rtol=1e-4)
 
 
 @pytest.mark.parametrize("rs_imputer", [None, 1, np.random.RandomState(seed=1)])
@@ -1120,7 +1120,7 @@ def test_iterative_imputer_dont_set_random_state(rs_imputer, rs_estimator):
 
 
 @pytest.mark.parametrize(
-    "X_fit, X_trans, params, msg_err",
+    "x_fit, x_trans, params, msg_err",
     [
         (
             np.array([[-1, 1], [1, 2]]),
@@ -1136,11 +1136,11 @@ def test_iterative_imputer_dont_set_random_state(rs_imputer, rs_estimator):
         ),
     ],
 )
-def test_missing_indicator_error(X_fit, X_trans, params, msg_err):
+def test_missing_indicator_error(x_fit, x_trans, params, msg_err):
     indicator = MissingIndicator(missing_values=-1)
     indicator.set_params(**params)
     with pytest.raises(ValueError, match=msg_err):
-        indicator.fit(X_fit).transform(X_trans)
+        indicator.fit(x_fit).transform(x_trans)
 
 
 def _generate_missing_indicator_cases():
@@ -1172,45 +1172,45 @@ def _generate_missing_indicator_cases():
 def test_missing_indicator_new(
     missing_values, arr_type, dtype, param_features, n_features, features_indices
 ):
-    X_fit = np.array([[missing_values, missing_values, 1], [4, 2, missing_values]])
-    X_trans = np.array([[missing_values, missing_values, 1], [4, 12, 10]])
-    X_fit_expected = np.array([[1, 1, 0], [0, 0, 1]])
-    X_trans_expected = np.array([[1, 1, 0], [0, 0, 0]])
+    x_fit = np.array([[missing_values, missing_values, 1], [4, 2, missing_values]])
+    x_trans = np.array([[missing_values, missing_values, 1], [4, 12, 10]])
+    x_fit_expected = np.array([[1, 1, 0], [0, 0, 1]])
+    x_trans_expected = np.array([[1, 1, 0], [0, 0, 0]])
 
     # convert the input to the right array format and right dtype
-    X_fit = arr_type(X_fit).astype(dtype)
-    X_trans = arr_type(X_trans).astype(dtype)
-    X_fit_expected = X_fit_expected.astype(dtype)
-    X_trans_expected = X_trans_expected.astype(dtype)
+    x_fit = arr_type(x_fit).astype(dtype)
+    x_trans = arr_type(x_trans).astype(dtype)
+    x_fit_expected = x_fit_expected.astype(dtype)
+    x_trans_expected = x_trans_expected.astype(dtype)
 
     indicator = MissingIndicator(
         missing_values=missing_values, features=param_features, sparse=False
     )
-    X_fit_mask = indicator.fit_transform(X_fit)
-    X_trans_mask = indicator.transform(X_trans)
+    x_fit_mask = indicator.fit_transform(x_fit)
+    x_trans_mask = indicator.transform(x_trans)
 
-    assert X_fit_mask.shape[1] == n_features
-    assert X_trans_mask.shape[1] == n_features
+    assert x_fit_mask.shape[1] == n_features
+    assert x_trans_mask.shape[1] == n_features
 
     assert_array_equal(indicator.features_, features_indices)
-    assert_allclose(X_fit_mask, X_fit_expected[:, features_indices])
-    assert_allclose(X_trans_mask, X_trans_expected[:, features_indices])
+    assert_allclose(x_fit_mask, x_fit_expected[:, features_indices])
+    assert_allclose(x_trans_mask, x_trans_expected[:, features_indices])
 
-    assert X_fit_mask.dtype == bool
-    assert X_trans_mask.dtype == bool
-    assert isinstance(X_fit_mask, np.ndarray)
-    assert isinstance(X_trans_mask, np.ndarray)
+    assert x_fit_mask.dtype == bool
+    assert x_trans_mask.dtype == bool
+    assert isinstance(x_fit_mask, np.ndarray)
+    assert isinstance(x_trans_mask, np.ndarray)
 
     indicator.set_params(sparse=True)
-    X_fit_mask_sparse = indicator.fit_transform(X_fit)
-    X_trans_mask_sparse = indicator.transform(X_trans)
+    x_fit_mask_sparse = indicator.fit_transform(x_fit)
+    x_trans_mask_sparse = indicator.transform(x_trans)
 
-    assert X_fit_mask_sparse.dtype == bool
-    assert X_trans_mask_sparse.dtype == bool
-    assert X_fit_mask_sparse.format == "csc"
-    assert X_trans_mask_sparse.format == "csc"
-    assert_allclose(X_fit_mask_sparse.toarray(), X_fit_mask)
-    assert_allclose(X_trans_mask_sparse.toarray(), X_trans_mask)
+    assert x_fit_mask_sparse.dtype == bool
+    assert x_trans_mask_sparse.dtype == bool
+    assert x_fit_mask_sparse.format == "csc"
+    assert x_trans_mask_sparse.format == "csc"
+    assert_allclose(x_fit_mask_sparse.toarray(), x_fit_mask)
+    assert_allclose(x_trans_mask_sparse.toarray(), x_trans_mask)
 
 
 @pytest.mark.parametrize(
