@@ -1732,7 +1732,7 @@ def test_neighbors_metrics(
 # still want to test them.
 @ignore_warnings(category=DeprecationWarning)
 @pytest.mark.parametrize(
-    "metric", sorted(set(neighbors.VALID_METRICS["brute"]) - set(["precomputed"]))
+    "metric", sorted(set(neighbors.VALID_METRICS["brute"]) - {"precomputed"})
 )
 def test_kneighbors_brute_backend(
     metric,
@@ -1804,8 +1804,8 @@ def test_callable_metric():
     nbrs1.fit(X)
     nbrs2.fit(X)
 
-    dist1, ind1 = nbrs1.kneighbors(X)
-    dist2, ind2 = nbrs2.kneighbors(X)
+    dist1, _ = nbrs1.kneighbors(X)
+    dist2, _ = nbrs2.kneighbors(X)
 
     assert_allclose(dist1, dist2)
 
@@ -1820,16 +1820,16 @@ def test_valid_brute_metric_for_auto_algorithm(
     metric = _parse_metric(metric, global_dtype)
 
     X = rng.random((n_samples, n_features)).astype(global_dtype, copy=False)
-    Xcsr = csr_container(X)
+    x_csr = csr_container(X)
 
     metric_params_list = _generate_test_params_for(metric, n_features)
 
     if metric == "precomputed":
-        X_precomputed = rng.random((10, 4))
-        Y_precomputed = rng.random((3, 4))
-        DXX = metrics.pairwise_distances(X_precomputed, metric="euclidean")
+        x_precomputed = rng.random((10, 4))
+        y_precomputed = rng.random((3, 4))
+        DXX = metrics.pairwise_distances(x_precomputed, metric="euclidean")
         DYX = metrics.pairwise_distances(
-            Y_precomputed, X_precomputed, metric="euclidean"
+            y_precomputed, x_precomputed, metric="euclidean"
         )
         nb_p = neighbors.NearestNeighbors(n_neighbors=3, metric="precomputed")
         nb_p.fit(DXX)
@@ -1854,8 +1854,8 @@ def test_valid_brute_metric_for_auto_algorithm(
             if metric in VALID_METRICS_SPARSE["brute"]:
                 nn = neighbors.NearestNeighbors(
                     n_neighbors=3, algorithm="auto", metric=metric
-                ).fit(Xcsr)
-                nn.kneighbors(Xcsr)
+                ).fit(x_csr)
+                nn.kneighbors(x_csr)
 
 
 def test_metric_params_interface():
@@ -1905,14 +1905,14 @@ def test_non_euclidean_kneighbors():
         assert_array_equal(nbrs_graph, nbrs1.radius_neighbors_graph(X).toarray())
 
     # Raise error when wrong parameters are supplied,
-    X_nbrs = neighbors.NearestNeighbors(n_neighbors=3, metric="manhattan")
-    X_nbrs.fit(X)
+    x_nbrs = neighbors.NearestNeighbors(n_neighbors=3, metric="manhattan")
+    x_nbrs.fit(X)
     with pytest.raises(ValueError):
-        neighbors.kneighbors_graph(X_nbrs, 3, metric="euclidean")
-    X_nbrs = neighbors.NearestNeighbors(radius=radius, metric="manhattan")
-    X_nbrs.fit(X)
+        neighbors.kneighbors_graph(x_nbrs, 3, metric="euclidean")
+    x_nbrs = neighbors.NearestNeighbors(radius=radius, metric="manhattan")
+    x_nbrs.fit(X)
     with pytest.raises(ValueError):
-        neighbors.radius_neighbors_graph(X_nbrs, radius, metric="euclidean")
+        neighbors.radius_neighbors_graph(x_nbrs, radius, metric="euclidean")
 
 
 def check_object_arrays(nparray, list_check):
@@ -2053,7 +2053,7 @@ def test_same_knn_parallel(algorithm):
     X, y = datasets.make_classification(
         n_samples=30, n_features=5, n_redundant=0, random_state=0
     )
-    X_train, X_test, y_train, y_test = train_test_split(X, y)
+    X_train, X_test, y_train, _ = train_test_split(X, y)
 
     clf = neighbors.KNeighborsClassifier(n_neighbors=3, algorithm=algorithm)
     clf.fit(X_train, y_train)
@@ -2078,7 +2078,7 @@ def test_same_radius_neighbors_parallel(algorithm):
     X, y = datasets.make_classification(
         n_samples=30, n_features=5, n_redundant=0, random_state=0
     )
-    X_train, X_test, y_train, y_test = train_test_split(X, y)
+    X_train, X_test, y_train, _ = train_test_split(X, y)
 
     clf = neighbors.RadiusNeighborsClassifier(radius=10, algorithm=algorithm)
     clf.fit(X_train, y_train)
@@ -2111,7 +2111,7 @@ def test_knn_forcing_backend(backend, algorithm):
         X, y = datasets.make_classification(
             n_samples=30, n_features=5, n_redundant=0, random_state=0
         )
-        X_train, X_test, y_train, y_test = train_test_split(X, y)
+        X_train, X_test, y_train, _ = train_test_split(X, y)
 
         clf = neighbors.KNeighborsClassifier(
             n_neighbors=3, algorithm=algorithm, n_jobs=2
@@ -2261,7 +2261,7 @@ def test_auto_algorithm(X, metric, metric_params, expected_algo):
 # still want to test them.
 @ignore_warnings(category=DeprecationWarning)
 @pytest.mark.parametrize(
-    "metric", sorted(set(neighbors.VALID_METRICS["brute"]) - set(["precomputed"]))
+    "metric", sorted(set(neighbors.VALID_METRICS["brute"]) - {"precomputed"})
 )
 def test_radius_neighbors_brute_backend(
     metric,
