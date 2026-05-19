@@ -92,7 +92,7 @@ class _SparseSGDOneClassSVM(linear_model.SGDOneClassSVM):
         return linear_model.SGDOneClassSVM.decision_function(self, X, *args, **kw)
 
 
-def SGDClassifier(**kwargs):
+def _sgd_classifier(**kwargs):
     _update_kwargs(kwargs)
     return linear_model.SGDClassifier(**kwargs)
 
@@ -251,7 +251,7 @@ def _test_warm_start(klass, X, Y, lr):
 
 
 @pytest.mark.parametrize(
-    "klass", [SGDClassifier, SparseSGDClassifier, SGDRegressor, SparseSGDRegressor]
+    "klass", [_sgd_classifier, SparseSGDClassifier, SGDRegressor, SparseSGDRegressor]
 )
 @pytest.mark.parametrize("lr", ["constant", "optimal", "invscaling", "adaptive"])
 def test_warm_start(klass, lr):
@@ -259,7 +259,7 @@ def test_warm_start(klass, lr):
 
 
 @pytest.mark.parametrize(
-    "klass", [SGDClassifier, SparseSGDClassifier, SGDRegressor, SparseSGDRegressor]
+    "klass", [_sgd_classifier, SparseSGDClassifier, SGDRegressor, SparseSGDRegressor]
 )
 def test_input_format(klass):
     # Input format tests.
@@ -274,7 +274,7 @@ def test_input_format(klass):
 
 @pytest.mark.parametrize("lr", ["pa1", "pa2"])
 @pytest.mark.parametrize(
-    ["est", "loss"], [(SGDClassifier, "squared_hinge"), (SGDRegressor, "squared_error")]
+    ["est", "loss"], [(_sgd_classifier, "squared_hinge"), (SGDRegressor, "squared_error")]
 )
 def test_learning_rate_PA_raises(lr, est, loss):
     """Test that SGD raises with forbidden loss for passive-aggressive algo."""
@@ -284,7 +284,7 @@ def test_learning_rate_PA_raises(lr, est, loss):
 
 
 @pytest.mark.parametrize(
-    "klass", [SGDClassifier, SparseSGDClassifier, SGDRegressor, SparseSGDRegressor]
+    "klass", [_sgd_classifier, SparseSGDClassifier, SGDRegressor, SparseSGDRegressor]
 )
 def test_clone(klass):
     # Test whether clone works ok.
@@ -302,7 +302,7 @@ def test_clone(klass):
 @pytest.mark.parametrize(
     "klass",
     [
-        SGDClassifier,
+        _sgd_classifier,
         SparseSGDClassifier,
         SGDRegressor,
         SparseSGDRegressor,
@@ -331,7 +331,7 @@ def test_plain_has_no_average_attr(klass):
 @pytest.mark.parametrize(
     "klass",
     [
-        SGDClassifier,
+        _sgd_classifier,
         SparseSGDClassifier,
         SGDRegressor,
         SparseSGDRegressor,
@@ -351,7 +351,7 @@ def test_late_onset_averaging_not_reached(klass):
             clf2.partial_fit(X, Y)
 
     assert_array_almost_equal(clf1.coef_, clf2.coef_, decimal=16)
-    if klass in [SGDClassifier, SparseSGDClassifier, SGDRegressor, SparseSGDRegressor]:
+    if klass in [_sgd_classifier, SparseSGDClassifier, SGDRegressor, SparseSGDRegressor]:
         assert_almost_equal(clf1.intercept_, clf2.intercept_, decimal=16)
     elif klass in [SGDOneClassSVM, SparseSGDOneClassSVM]:
         assert_allclose(clf1.offset_, clf2.offset_)
@@ -1459,7 +1459,7 @@ def test_partial_fit_equal_fit(klass, lr):
     t = clf.t_
 
     clf = klass(alpha=0.01, eta0=0.01, learning_rate=lr, shuffle=False)
-    for i in range(2):
+    for _ in range(2):
         clf.partial_fit(X, Y)
     y_pred2 = clf.predict(T)
 
@@ -1745,7 +1745,7 @@ def test_ocsvm_vs_sgdocsvm():
         random_state=random_state,
         tol=None,
     )
-    pipe_sgd = make_pipeline(transform, clf_sgd)
+    pipe_sgd = make_pipeline(transform, clf_sgd, memory=None)
     pipe_sgd.fit(X_train)
     y_pred_sgdocsvm = pipe_sgd.predict(X_test)
     dec_sgdocsvm = pipe_sgd.decision_function(X_test).reshape(1, -1)
@@ -1811,7 +1811,7 @@ def test_sgd_oneclass_vs_linear_oneclass_offsets_match(nu):
     dataset is scaled.
     """
     X = iris.data
-    X_scaled = StandardScaler().fit_transform(X)
+    x_scaled = StandardScaler().fit_transform(X)
     model = SGDOneClassSVM(
         nu=nu,
         max_iter=40000,
@@ -1821,8 +1821,8 @@ def test_sgd_oneclass_vs_linear_oneclass_offsets_match(nu):
         random_state=42,
     )
     model_ref = OneClassSVM(kernel="linear", nu=nu, tol=5e-6)
-    model.fit(X_scaled)
-    model_ref.fit(X_scaled)
+    model.fit(x_scaled)
+    model_ref.fit(x_scaled)
     assert_allclose(model.offset_, model_ref.offset_, atol=1.3e-6)
 
 
@@ -1875,18 +1875,18 @@ def test_underflow_or_overflow():
         # Use MinMaxScaler to scale the data without introducing a numerical
         # instability (computing the standard deviation naively is not possible
         # on this data)
-        X_scaled = MinMaxScaler().fit_transform(X)
-        assert np.isfinite(X_scaled).all()
+        x_scaled = MinMaxScaler().fit_transform(X)
+        assert np.isfinite(x_scaled).all()
 
         # Define a ground truth on the scaled data
         ground_truth = rng.normal(size=n_features)
-        y = (np.dot(X_scaled, ground_truth) > 0.0).astype(np.int32)
+        y = (np.dot(x_scaled, ground_truth) > 0.0).astype(np.int32)
         assert_array_equal(np.unique(y), [0, 1])
 
         model = SGDClassifier(alpha=0.1, loss="squared_hinge", max_iter=500)
 
         # smoke test: model is stable on scaled data
-        model.fit(X_scaled, y)
+        model.fit(x_scaled, y)
         assert np.isfinite(model.coef_).all()
 
         # model is numerically unstable on unscaled data
@@ -2149,12 +2149,12 @@ def test_SGDClassifier_fit_for_all_backends(backend):
 
 
 @pytest.mark.parametrize(
-    "Estimator", [linear_model.SGDClassifier, linear_model.SGDRegressor]
+    "estimator", [linear_model.SGDClassifier, linear_model.SGDRegressor]
 )
-def test_sgd_random_state(Estimator, global_random_seed):
+def test_sgd_random_state(estimator, global_random_seed):
     # Train the same model on the same data without converging and check that we
     # get reproducible results by fixing the random seed.
-    if Estimator == linear_model.SGDRegressor:
+    if estimator == linear_model.SGDRegressor:
         X, y = datasets.make_regression(random_state=global_random_seed)
     else:
         X, y = datasets.make_classification(random_state=global_random_seed)
@@ -2162,12 +2162,12 @@ def test_sgd_random_state(Estimator, global_random_seed):
     # Fitting twice a model with the same hyper-parameters on the same training
     # set with the same seed leads to the same results deterministically.
 
-    est = Estimator(random_state=global_random_seed, max_iter=1)
+    est = estimator(random_state=global_random_seed, max_iter=1)
     with pytest.warns(ConvergenceWarning):
         coef_same_seed_a = est.fit(X, y).coef_
         assert est.n_iter_ == 1
 
-    est = Estimator(random_state=global_random_seed, max_iter=1)
+    est = estimator(random_state=global_random_seed, max_iter=1)
     with pytest.warns(ConvergenceWarning):
         coef_same_seed_b = est.fit(X, y).coef_
         assert est.n_iter_ == 1
@@ -2178,7 +2178,7 @@ def test_sgd_random_state(Estimator, global_random_seed):
     # set but with different random seed leads to different results after one
     # epoch because of the random shuffling of the dataset.
 
-    est = Estimator(random_state=global_random_seed + 1, max_iter=1)
+    est = estimator(random_state=global_random_seed + 1, max_iter=1)
     with pytest.warns(ConvergenceWarning):
         coef_other_seed = est.fit(X, y).coef_
         assert est.n_iter_ == 1
@@ -2205,8 +2205,8 @@ def test_validation_mask_correctly_subsets(monkeypatch):
     monkeypatch.setattr(_stochastic_gradient, "_ValidationScoreCallback", mock)
     clf.fit(X, Y)
 
-    X_val, y_val = mock.call_args[0][1:3]
-    assert X_val.shape[0] == int(n_samples * validation_fraction)
+    x_val, y_val = mock.call_args[0][1:3]
+    assert x_val.shape[0] == int(n_samples * validation_fraction)
     assert y_val.shape[0] == int(n_samples * validation_fraction)
 
 
@@ -2229,14 +2229,14 @@ def test_sgd_error_on_zero_validation_weight():
         clf.fit(X, Y, sample_weight=sample_weight)
 
 
-@pytest.mark.parametrize("Estimator", [SGDClassifier, SGDRegressor])
-def test_sgd_verbose(Estimator):
+@pytest.mark.parametrize("estimator", [SGDClassifier, SGDRegressor])
+def test_sgd_verbose(estimator):
     """non-regression test for gh #25249"""
-    Estimator(verbose=1).fit(X, Y)
+    estimator(verbose=1).fit(X, Y)
 
 
 @pytest.mark.parametrize(
-    "SGDEstimator",
+    "sgd_estimator",
     [
         SGDClassifier,
         SparseSGDClassifier,
@@ -2247,16 +2247,16 @@ def test_sgd_verbose(Estimator):
     ],
 )
 @pytest.mark.parametrize("data_type", (np.float32, np.float64))
-def test_sgd_dtype_match(SGDEstimator, data_type):
+def test_sgd_dtype_match(sgd_estimator, data_type):
     _X = X.astype(data_type)
     _Y = np.array(Y, dtype=data_type)
-    sgd_model = SGDEstimator()
+    sgd_model = sgd_estimator()
     sgd_model.fit(_X, _Y)
     assert sgd_model.coef_.dtype == data_type
 
 
 @pytest.mark.parametrize(
-    "SGDEstimator",
+    "sgd_estimator",
     [
         SGDClassifier,
         SparseSGDClassifier,
@@ -2266,17 +2266,17 @@ def test_sgd_dtype_match(SGDEstimator, data_type):
         SparseSGDOneClassSVM,
     ],
 )
-def test_sgd_numerical_consistency(SGDEstimator):
+def test_sgd_numerical_consistency(sgd_estimator):
     X_64 = X.astype(dtype=np.float64)
     Y_64 = np.array(Y, dtype=np.float64)
 
     X_32 = X.astype(dtype=np.float32)
     Y_32 = np.array(Y, dtype=np.float32)
 
-    sgd_64 = SGDEstimator(max_iter=22, shuffle=False)
+    sgd_64 = sgd_estimator(max_iter=22, shuffle=False)
     sgd_64.fit(X_64, Y_64)
 
-    sgd_32 = SGDEstimator(max_iter=22, shuffle=False)
+    sgd_32 = sgd_estimator(max_iter=22, shuffle=False)
     sgd_32.fit(X_32, Y_32)
 
     assert_allclose(sgd_64.coef_, sgd_32.coef_)
