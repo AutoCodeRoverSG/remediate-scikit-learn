@@ -299,14 +299,14 @@ def _solve_cholesky_kernel(k, y, alpha, sample_weight=None, copy=False):
 
 def _solve_svd(X, y, alpha, xp=None):
     xp, _ = get_namespace(X, xp=xp)
-    U, s, Vt = xp.linalg.svd(X, full_matrices=False)
+    U, s, vt = xp.linalg.svd(X, full_matrices=False)
     idx = s > 1e-15  # same default value as scipy.linalg.pinv
     s_nnz = s[idx][:, None]
-    UTy = U.T @ y
+    ut_y = U.T @ y
     d = xp.zeros((s.shape[0], alpha.shape[0]), dtype=X.dtype, device=device(X))
     d[idx] = s_nnz / (s_nnz**2 + alpha)
-    d_UT_y = d * UTy
-    return (Vt.T @ d_UT_y).T
+    d_ut_y = d * ut_y
+    return (vt.T @ d_ut_y).T
 
 
 def _solve_lbfgs(
@@ -316,8 +316,8 @@ def _solve_lbfgs(
     positive=True,
     max_iter=None,
     tol=1e-4,
-    X_offset=None,
-    X_scale=None,
+    x_offset=None,
+    x_scale=None,
     sample_weight_sqrt=None,
 ):
     """Solve ridge regression with LBFGS.
@@ -327,7 +327,7 @@ def _solve_lbfgs(
     Note that with positive bounds on the coefficients, LBFGS seems faster
     than scipy.optimize.lsq_linear.
     """
-    n_samples, n_features = X.shape
+    _, n_features = X.shape
 
     options = {}
     if max_iter is not None:
@@ -341,10 +341,10 @@ def _solve_lbfgs(
     if positive:
         config["bounds"] = [(0, np.inf)] * n_features
 
-    if X_offset is not None and X_scale is not None:
-        X_offset_scale = X_offset / X_scale
+    if x_offset is not None and x_scale is not None:
+        x_offset_scale = x_offset / x_scale
     else:
-        X_offset_scale = None
+        x_offset_scale = None
 
     if sample_weight_sqrt is None:
         sample_weight_sqrt = np.ones(X.shape[0], dtype=X.dtype)
@@ -357,12 +357,12 @@ def _solve_lbfgs(
 
         def func(w):
             residual = X.dot(w) - y_column
-            if X_offset_scale is not None:
-                residual -= sample_weight_sqrt * w.dot(X_offset_scale)
+            if x_offset_scale is not None:
+                residual -= sample_weight_sqrt * w.dot(x_offset_scale)
             f = 0.5 * residual.dot(residual) + 0.5 * alpha[i] * w.dot(w)
             grad = X.T @ residual + alpha[i] * w
-            if X_offset_scale is not None:
-                grad -= X_offset_scale * residual.dot(sample_weight_sqrt)
+            if x_offset_scale is not None:
+                grad -= x_offset_scale * residual.dot(sample_weight_sqrt)
 
             return f, grad
 
@@ -380,8 +380,8 @@ def _solve_lbfgs(
     return coefs
 
 
-def _get_valid_accept_sparse(is_X_sparse, solver):
-    if is_X_sparse and solver in ["auto", "sag", "saga"]:
+def _get_valid_accept_sparse(is_x_sparse, solver):
+    if is_x_sparse and solver in ["auto", "sag", "saga"]:
         return "csr"
     else:
         return ["csr", "csc", "coo"]
@@ -606,8 +606,8 @@ def ridge_regression(
         random_state=random_state,
         return_n_iter=return_n_iter,
         return_intercept=return_intercept,
-        X_scale=None,
-        X_offset=None,
+        x_scale=None,
+        x_offset=None,
         check_input=check_input,
     )
 
@@ -626,13 +626,13 @@ def _ridge_regression(
     return_n_iter=False,
     return_intercept=False,
     return_solver=False,
-    X_scale=None,
-    X_offset=None,
+    x_scale=None,
+    x_offset=None,
     check_input=True,
     fit_intercept=False,
 ):
     xp, is_array_api_compliant, device_ = get_namespace_and_device(
-        X, y, sample_weight, X_scale, X_offset
+        X, y, sample_weight, x_scale, x_offset
     )
     is_numpy_namespace = _is_numpy_namespace(xp)
     X_is_sparse = sparse.issparse(X)
@@ -737,8 +737,8 @@ def _ridge_regression(
             max_iter=max_iter,
             tol=tol,
             verbose=verbose,
-            x_offset=X_offset,
-            x_scale=X_scale,
+            x_offset=x_offset,
+            x_scale=x_scale,
             sample_weight_sqrt=sample_weight_sqrt if has_sw else None,
         )
 
@@ -750,8 +750,8 @@ def _ridge_regression(
             fit_intercept=fit_intercept,
             max_iter=max_iter,
             tol=tol,
-            x_offset=X_offset,
-            x_scale=X_scale,
+            x_offset=x_offset,
+            x_scale=x_scale,
             sample_weight_sqrt=sample_weight_sqrt if has_sw else None,
         )
 
@@ -817,8 +817,8 @@ def _ridge_regression(
             positive=positive,
             tol=tol,
             max_iter=max_iter,
-            X_offset=X_offset,
-            X_scale=X_scale,
+            x_offset=x_offset,
+            x_scale=x_scale,
             sample_weight_sqrt=sample_weight_sqrt if has_sw else None,
         )
 
@@ -1004,7 +1004,7 @@ class _BaseRidge(LinearModel, metaclass=ABCMeta):
         else:
             if sparse.issparse(X) and self.fit_intercept:
                 # required to fit intercept with sparse_cg and lbfgs solver
-                params = {"X_offset": X_offset, "X_scale": X_scale}
+                params = {"x_offset": X_offset, "x_scale": X_scale}
             else:
                 # for dense matrices or when intercept is set to 0
                 params = {}
