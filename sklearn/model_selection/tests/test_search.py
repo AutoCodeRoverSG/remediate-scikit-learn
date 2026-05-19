@@ -116,8 +116,8 @@ class MockClassifier(ClassifierMixin, BaseEstimator):
         self.classes_ = np.unique(Y)
         return self
 
-    def predict(self, T):
-        return T.shape[0]
+    def predict(self, X):
+        return X.shape[0]
 
     def transform(self, X):
         return X + self.foo_param
@@ -193,12 +193,12 @@ def test_parameter_grid():
     assert len(grid2) == 6
 
     # loop to assert we can iterate over the grid multiple times
-    for i in range(2):
+    for _ in range(2):
         # tuple + chain transforms {"a": 1, "b": 2} to ("a", 1, "b", 2)
-        points = set(tuple(chain(*(sorted(p.items())))) for p in grid2)
-        assert points == set(
+        points = {tuple(chain(*(sorted(p.items())))) for p in grid2}
+        assert points == {
             ("bar", x, "foo", y) for x, y in product(params2["bar"], params2["foo"])
-        )
+        }
     assert_grid_iter_equals_getitem(grid2)
 
     # Special case: empty grid (useful to get default estimator settings)
@@ -242,7 +242,7 @@ def test_grid_search():
 
 def test_grid_search_pipeline_steps():
     # check that parameters that are estimators are cloned before fitting
-    pipe = Pipeline([("regressor", LinearRegression())])
+    pipe = Pipeline([("regressor", LinearRegression())], memory=None)
     param_grid = {"regressor": [LinearRegression(), Ridge()]}
     grid_search = GridSearchCV(pipe, param_grid, cv=2)
     grid_search.fit(X, y)
@@ -258,12 +258,12 @@ def test_grid_search_pipeline_steps():
     assert not hasattr(param_grid["regressor"][1], "coef_")
 
 
-@pytest.mark.parametrize("SearchCV", [GridSearchCV, RandomizedSearchCV])
-def test_SearchCV_with_fit_params(SearchCV):
+@pytest.mark.parametrize("search_cv", [GridSearchCV, RandomizedSearchCV])
+def test_SearchCV_with_fit_params(search_cv):
     X = np.arange(100).reshape(10, 10)
     y = np.array([0] * 5 + [1] * 5)
-    clf = CheckingClassifier(expected_fit_params=["spam", "eggs"])
-    searcher = SearchCV(clf, {"foo_param": [1, 2, 3]}, cv=2, error_score="raise")
+    clf = CheckingClassifier(expected_fit_params=["spam", "eggs"], random_state=0)
+    searcher = search_cv(clf, {"foo_param": [1, 2, 3]}, cv=2, error_score="raise")
 
     # The CheckingClassifier generates an assertion error if
     # a parameter is missing or has length != len(X).
@@ -281,12 +281,12 @@ def test_grid_search_no_score():
     # Test grid-search on classifier that has no score function.
     clf = LinearSVC(random_state=0)
     X, y = make_blobs(random_state=0, centers=2)
-    Cs = [0.1, 1, 10]
+    c_values = [0.1, 1, 10]
     clf_no_score = LinearSVCNoScore(random_state=0)
-    grid_search = GridSearchCV(clf, {"C": Cs}, scoring="accuracy")
+    grid_search = GridSearchCV(clf, {"C": c_values}, scoring="accuracy")
     grid_search.fit(X, y)
 
-    grid_search_no_score = GridSearchCV(clf_no_score, {"C": Cs}, scoring="accuracy")
+    grid_search_no_score = GridSearchCV(clf_no_score, {"C": c_values}, scoring="accuracy")
     # smoketest grid search
     grid_search_no_score.fit(X, y)
 
@@ -296,7 +296,7 @@ def test_grid_search_no_score():
     assert grid_search.score(X, y) == grid_search_no_score.score(X, y)
 
     # giving no scoring function raises an error
-    grid_search_no_score = GridSearchCV(clf_no_score, {"C": Cs})
+    grid_search_no_score = GridSearchCV(clf_no_score, {"C": c_values})
     with pytest.raises(TypeError, match="no scoring"):
         grid_search_no_score.fit([[1]])
 
@@ -364,9 +364,9 @@ def test_classes__property():
     # Test that classes_ property matches best_estimator_.classes_
     X = np.arange(100).reshape(10, 10)
     y = np.array([0] * 5 + [1] * 5)
-    Cs = [0.1, 1, 10]
+    cs = [0.1, 1, 10]
 
-    grid_search = GridSearchCV(LinearSVC(random_state=0), {"C": Cs})
+    grid_search = GridSearchCV(LinearSVC(random_state=0), {"C": cs})
     grid_search.fit(X, y)
     assert_array_equal(grid_search.best_estimator_.classes_, grid_search.classes_)
 
@@ -376,11 +376,11 @@ def test_classes__property():
     assert not hasattr(grid_search, "classes_")
 
     # Test that the grid searcher has no classes_ attribute before it's fit
-    grid_search = GridSearchCV(LinearSVC(random_state=0), {"C": Cs})
+    grid_search = GridSearchCV(LinearSVC(random_state=0), {"C": cs})
     assert not hasattr(grid_search, "classes_")
 
     # Test that the grid searcher has no classes_ attribute without a refit
-    grid_search = GridSearchCV(LinearSVC(random_state=0), {"C": Cs}, refit=False)
+    grid_search = GridSearchCV(LinearSVC(random_state=0), {"C": cs}, refit=False)
     grid_search.fit(X, y)
     assert not hasattr(grid_search, "classes_")
 
@@ -400,7 +400,7 @@ def test_trivial_cv_results_attr():
 def test_no_refit():
     # Test that GSCV can be used for model selection alone without refitting
     clf = MockClassifier()
-    for scoring in [None, ["accuracy", "precision"]]:
+    for _ in [None, ["accuracy", "precision"]]:
         grid_search = GridSearchCV(clf, {"foo_param": [1, 2, 3]}, refit=False, cv=2)
         grid_search.fit(X, y)
         assert (
