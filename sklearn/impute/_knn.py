@@ -160,7 +160,7 @@ class KNNImputer(_BaseImputer):
         self.metric = metric
         self.copy = copy
 
-    def _calc_impute(self, dist_pot_donors, n_neighbors, fit_X_col, mask_fit_X_col):
+    def _calc_impute(self, dist_pot_donors, n_neighbors, fit_x_col, mask_fit_x_col):
         """Helper function to impute a single column.
 
         Parameters
@@ -204,8 +204,8 @@ class KNNImputer(_BaseImputer):
             weight_matrix[np.isnan(donors_dist)] = 0.0
 
         # Retrieve donor values and calculate kNN average
-        donors = fit_X_col.take(donors_idx)
-        donors_mask = mask_fit_X_col.take(donors_idx)
+        donors = fit_x_col.take(donors_idx)
+        donors_mask = mask_fit_x_col.take(donors_idx)
         donors = np.ma.array(donors, mask=donors_mask)
 
         return np.ma.average(donors, axis=1, weights=weight_matrix).data
@@ -283,29 +283,29 @@ class KNNImputer(_BaseImputer):
         )
 
         mask = _get_mask(X, self.missing_values)
-        mask_fit_X = self._mask_fit_X
+        mask_fit_x = self._mask_fit_X
         valid_mask = self._valid_mask
 
-        X_indicator = super()._transform_indicator(mask)
+        x_indicator = super()._transform_indicator(mask)
 
         # Removes columns where the training data is all nan
         if not np.any(mask[:, valid_mask]):
             # No missing values in X
             if self.keep_empty_features:
-                Xc = X
-                Xc[:, ~valid_mask] = 0
+                xc = X
+                xc[:, ~valid_mask] = 0
             else:
-                Xc = X[:, valid_mask]
+                xc = X[:, valid_mask]
 
             # Even if there are no missing values in X, we still concatenate Xc
             # with the missing value indicator matrix, X_indicator.
             # This is to ensure that the output maintains consistency in terms
             # of columns, regardless of whether missing values exist in X or not.
-            return super()._concatenate_indicator(Xc, X_indicator)
+            return super()._concatenate_indicator(xc, x_indicator)
 
         row_missing_idx = np.flatnonzero(mask[:, valid_mask].any(axis=1))
 
-        non_missing_fix_X = np.logical_not(mask_fit_X)
+        non_missing_fix_x = np.logical_not(mask_fit_x)
 
         # Maps from indices from X to indices in dist matrix
         dist_idx_map = np.zeros(X.shape[0], dtype=int)
@@ -325,7 +325,7 @@ class KNNImputer(_BaseImputer):
                     # column has no missing values
                     continue
 
-                (potential_donors_idx,) = np.nonzero(non_missing_fix_X[:, col])
+                (potential_donors_idx,) = np.nonzero(non_missing_fix_x[:, col])
 
                 # receivers_idx are indices in X
                 receivers_idx = row_missing_chunk[np.flatnonzero(col_mask)]
@@ -341,7 +341,7 @@ class KNNImputer(_BaseImputer):
 
                 if all_nan_receivers_idx.size:
                     col_mean = np.ma.array(
-                        self._fit_X[:, col], mask=mask_fit_X[:, col]
+                        self._fit_X[:, col], mask=mask_fit_x[:, col]
                     ).mean()
                     X[all_nan_receivers_idx, col] = col_mean
 
@@ -360,7 +360,7 @@ class KNNImputer(_BaseImputer):
                     dist_subset,
                     n_neighbors,
                     self._fit_X[potential_donors_idx, col],
-                    mask_fit_X[potential_donors_idx, col],
+                    mask_fit_x[potential_donors_idx, col],
                 )
                 X[receivers_idx, col] = value
 
@@ -373,17 +373,17 @@ class KNNImputer(_BaseImputer):
             ensure_all_finite=ensure_all_finite,
             reduce_func=process_chunk,
         )
-        for chunk in gen:
+        for _ in gen:
             # process_chunk modifies X in place. No return value.
             pass
 
         if self.keep_empty_features:
-            Xc = X
-            Xc[:, ~valid_mask] = 0
+            xc = X
+            xc[:, ~valid_mask] = 0
         else:
-            Xc = X[:, valid_mask]
+            xc = X[:, valid_mask]
 
-        return super()._concatenate_indicator(Xc, X_indicator)
+        return super()._concatenate_indicator(xc, x_indicator)
 
     def get_feature_names_out(self, input_features=None):
         """Get output feature names for transformation.
