@@ -216,26 +216,26 @@ def test_distance_metrics_dtype_consistency(metric_param_grid):
 
 
 @pytest.mark.parametrize("metric", BOOL_METRICS)
-@pytest.mark.parametrize("X_bool", [X_bool, X_bool_mmap])
+@pytest.mark.parametrize("x_bool", [X_bool, X_bool_mmap])
 @pytest.mark.parametrize("csr_container", CSR_CONTAINERS)
-def test_pdist_bool_metrics(metric, X_bool, csr_container):
+def test_pdist_bool_metrics(metric, x_bool, csr_container):
     if metric in DEPRECATED_METRICS:
         with ignore_warnings(category=DeprecationWarning):
             # Some metrics can be deprecated depending on the scipy version.
             # But if they are present, we still want to test whether
             # scikit-learn gives the same result, whether or not they are
             # deprecated.
-            D_scipy_pdist = cdist(X_bool, X_bool, metric)
+            d_scipy_pdist = cdist(x_bool, x_bool, metric)
     else:
-        D_scipy_pdist = cdist(X_bool, X_bool, metric)
+        d_scipy_pdist = cdist(x_bool, x_bool, metric)
 
     dm = DistanceMetric.get_metric(metric)
-    D_sklearn = dm.pairwise(X_bool)
-    assert_allclose(D_sklearn, D_scipy_pdist)
+    d_sklearn = dm.pairwise(x_bool)
+    assert_allclose(d_sklearn, d_scipy_pdist)
 
-    X_bool_csr = csr_container(X_bool)
-    D_sklearn = dm.pairwise(X_bool_csr)
-    assert_allclose(D_sklearn, D_scipy_pdist)
+    x_bool_csr = csr_container(x_bool)
+    d_sklearn = dm.pairwise(x_bool_csr)
+    assert_allclose(d_sklearn, d_scipy_pdist)
 
 
 @pytest.mark.parametrize("writable_kwargs", [True, False])
@@ -261,12 +261,12 @@ def test_pickle(writable_kwargs, metric_param_grid, X):
 
 
 @pytest.mark.parametrize("metric", BOOL_METRICS)
-@pytest.mark.parametrize("X_bool", [X_bool, X_bool_mmap])
-def test_pickle_bool_metrics(metric, X_bool):
+@pytest.mark.parametrize("x_bool", [X_bool, X_bool_mmap])
+def test_pickle_bool_metrics(metric, x_bool):
     dm = DistanceMetric.get_metric(metric)
-    D1 = dm.pairwise(X_bool)
+    D1 = dm.pairwise(x_bool)
     dm2 = pickle.loads(pickle.dumps(dm))
-    D2 = dm2.pairwise(X_bool)
+    D2 = dm2.pairwise(x_bool)
     assert_allclose(D1, D2)
 
 
@@ -277,7 +277,7 @@ def test_haversine_metric(X, Y, csr_container):
     X = np.asarray(X[:, :2])
     Y = np.asarray(Y[:, :2])
 
-    X_csr, Y_csr = csr_container(X), csr_container(Y)
+    x_csr, y_csr = csr_container(X), csr_container(Y)
 
     # Haversine is not supported by scipy.special.distance.{cdist,pdist}
     # So we reimplement it to have a reference.
@@ -289,31 +289,31 @@ def test_haversine_metric(X, Y, csr_container):
             )
         )
 
-    D_reference = np.zeros((X_csr.shape[0], Y_csr.shape[0]))
+    d_reference = np.zeros((x_csr.shape[0], y_csr.shape[0]))
     for i, xi in enumerate(X):
         for j, yj in enumerate(Y):
-            D_reference[i, j] = haversine_slow(xi, yj)
+            d_reference[i, j] = haversine_slow(xi, yj)
 
     haversine = DistanceMetric.get_metric("haversine", X.dtype)
 
-    D_sklearn = haversine.pairwise(X, Y)
+    d_sklearn = haversine.pairwise(X, Y)
     assert_allclose(
-        haversine.dist_to_rdist(D_sklearn), np.sin(0.5 * D_reference) ** 2, rtol=1e-6
+        haversine.dist_to_rdist(d_sklearn), np.sin(0.5 * d_reference) ** 2, rtol=1e-6
     )
 
-    assert_allclose(D_sklearn, D_reference)
+    assert_allclose(d_sklearn, d_reference)
 
-    D_sklearn = haversine.pairwise(X_csr, Y_csr)
-    assert D_sklearn.flags.c_contiguous
-    assert_allclose(D_sklearn, D_reference)
+    d_sklearn = haversine.pairwise(x_csr, y_csr)
+    assert d_sklearn.flags.c_contiguous
+    assert_allclose(d_sklearn, d_reference)
 
-    D_sklearn = haversine.pairwise(X_csr, Y)
-    assert D_sklearn.flags.c_contiguous
-    assert_allclose(D_sklearn, D_reference)
+    d_sklearn = haversine.pairwise(x_csr, Y)
+    assert d_sklearn.flags.c_contiguous
+    assert_allclose(d_sklearn, d_reference)
 
-    D_sklearn = haversine.pairwise(X, Y_csr)
-    assert D_sklearn.flags.c_contiguous
-    assert_allclose(D_sklearn, D_reference)
+    d_sklearn = haversine.pairwise(X, y_csr)
+    assert d_sklearn.flags.c_contiguous
+    assert_allclose(d_sklearn, d_reference)
 
 
 def test_pyfunc_metric():
