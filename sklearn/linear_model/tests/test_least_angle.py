@@ -488,8 +488,8 @@ def test_lasso_lars_ic():
     X = StandardScaler().fit_transform(X)
     lars_bic.fit(X, y)
     lars_aic.fit(X, y)
-    nonzero_bic = np.where(lars_bic.coef_)[0]
-    nonzero_aic = np.where(lars_aic.coef_)[0]
+    nonzero_bic = np.nonzero(lars_bic.coef_)[0]
+    nonzero_aic = np.nonzero(lars_aic.coef_)[0]
     assert lars_bic.alpha_ > lars_aic.alpha_
     assert len(nonzero_bic) < len(nonzero_aic)
     assert np.max(nonzero_bic) < diabetes.data.shape[1]
@@ -713,7 +713,7 @@ def test_lasso_lars_copy_x_behaviour(copy_x):
 
     """
     lasso_lars = LassoLarsIC(copy_X=copy_x, precompute=False)
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
     X = rng.normal(0, 1, (100, 5))
     x_copy = X.copy()
     y = X[:, 2]
@@ -722,13 +722,13 @@ def test_lasso_lars_copy_x_behaviour(copy_x):
 
 
 @pytest.mark.parametrize("copy_x", [True, False])
-def test_lasso_lars_fit_copyX_behaviour(copy_x):
+def test_lasso_lars_fit_copy_x_behaviour(copy_x):
     """
     Test that user input to .fit for copy_X overrides default __init__ value
 
     """
     lasso_lars = LassoLarsIC(precompute=False)
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
     X = rng.normal(0, 1, (100, 5))
     x_copy = X.copy()
     y = X[:, 2]
@@ -758,17 +758,17 @@ def test_lars_with_jitter(est):
     np.testing.assert_allclose(est_jitter.coef_, expected_coef, rtol=1e-3)
 
 
-def test_X_none_gram_not_none():
+def test_x_none_gram_not_none():
     with pytest.raises(ValueError, match="X cannot be None if Gram is not None"):
         lars_path(X=None, y=np.array([1]), Gram=True)
 
 
-def test_copy_X_with_auto_gram():
+def test_copy_x_with_auto_gram():
     # Non-regression test for #17789, `copy_X=True` and Gram='auto' does not
     # overwrite X
-    rng = np.random.RandomState(42)
-    X = rng.rand(6, 6)
-    y = rng.rand(6)
+    rng = np.random.default_rng(42)
+    X = rng.random((6, 6))
+    y = rng.random(6)
 
     x_before = X.copy()
     linear_model.lars_path(X, y, Gram="auto", copy_X=True, method="lasso")
@@ -790,9 +790,9 @@ def test_copy_X_with_auto_gram():
 @pytest.mark.parametrize("dtype", (np.float32, np.float64))
 def test_lars_dtype_match(lars_cls, has_coef_path, args, dtype):
     # The test ensures that the fit method preserves input dtype
-    rng = np.random.RandomState(0)
-    X = rng.rand(20, 6).astype(dtype)
-    y = rng.rand(20).astype(dtype)
+    rng = np.random.default_rng(0)
+    X = rng.random((20, 6)).astype(dtype)
+    y = rng.random(20).astype(dtype)
 
     model = lars_cls(**args)
     model.fit(X, y)
@@ -819,9 +819,9 @@ def test_lars_numeric_consistency(lars_cls, has_coef_path, args):
     rtol = 1e-5
     atol = 1e-5
 
-    rng = np.random.RandomState(0)
-    X_64 = rng.rand(10, 6)
-    y_64 = rng.rand(10)
+    rng = np.random.default_rng(0)
+    X_64 = rng.random((10, 6))
+    y_64 = rng.random(10)
 
     model_64 = lars_cls(**args).fit(X_64, y_64)
     model_32 = lars_cls(**args).fit(X_64.astype(np.float32), y_64.astype(np.float32))
@@ -851,9 +851,8 @@ def test_lassolarsic_alpha_selection(criterion):
 def test_lassolarsic_noise_variance(fit_intercept):
     """Check the behaviour when `n_samples` < `n_features` and that one needs
     to provide the noise variance."""
-    rng = np.random.RandomState(0)
     X, y = datasets.make_regression(
-        n_samples=10, n_features=11 - fit_intercept, random_state=rng
+        n_samples=10, n_features=11 - fit_intercept, random_state=0
     )
 
     model = make_pipeline(
