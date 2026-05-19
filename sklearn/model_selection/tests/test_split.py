@@ -1358,10 +1358,10 @@ def test_array_api_train_test_split(
 ):
     xp, device = _array_api_for_tests(array_namespace, device_name, dtype_name)
 
-    X = np.arange(100).reshape((10, 10))
+    x = np.arange(100).reshape((10, 10))
     y = np.arange(10)
 
-    x_np = X.astype(dtype_name)
+    x_np = x.astype(dtype_name)
     x_xp = xp.asarray(x_np, device=device)
 
     y_np = y.astype(dtype_name)
@@ -1410,7 +1410,7 @@ def test_array_api_train_test_split(
 @pytest.mark.parametrize("coo_container", COO_CONTAINERS)
 def test_train_test_split(coo_container):
     X = np.arange(100).reshape((10, 10))
-    X_s = coo_container(X)
+    x_s = coo_container(X)
     y = np.arange(10)
 
     # simple test
@@ -1422,15 +1422,15 @@ def test_train_test_split(coo_container):
     assert_array_equal(X_test[:, 0], y_test * 10)
 
     # don't convert lists to anything else by default
-    split = train_test_split(X, X_s, y.tolist())
-    X_train, X_test, X_s_train, X_s_test, y_train, y_test = split
+    split = train_test_split(X, x_s, y.tolist())
+    X_train, X_test, _, _, y_train, y_test = split
     assert isinstance(y_train, list)
     assert isinstance(y_test, list)
 
     # allow nd-arrays
-    X_4d = np.arange(10 * 5 * 3 * 2).reshape(10, 5, 3, 2)
+    x_4d = np.arange(10 * 5 * 3 * 2).reshape(10, 5, 3, 2)
     y_3d = np.arange(10 * 7 * 11).reshape(10, 7, 11)
-    split = train_test_split(X_4d, y_3d)
+    split = train_test_split(x_4d, y_3d)
     assert split[0].shape == (7, 5, 3, 2)
     assert split[1].shape == (3, 5, 3, 2)
     assert split[2].shape == (7, 7, 11)
@@ -1487,12 +1487,12 @@ def test_train_test_split_pandas():
         types.append(DataFrame)
     except ImportError:
         pass
-    for InputFeatureType in types:
+    for input_feature_type in types:
         # X dataframe
-        X_df = InputFeatureType(X)
-        X_train, X_test = train_test_split(X_df)
-        assert isinstance(X_train, InputFeatureType)
-        assert isinstance(X_test, InputFeatureType)
+        x_df = input_feature_type(X)
+        X_train, X_test = train_test_split(x_df)
+        assert isinstance(X_train, input_feature_type)
+        assert isinstance(X_test, input_feature_type)
 
 
 @pytest.mark.parametrize(
@@ -1502,8 +1502,8 @@ def test_train_test_split_sparse(sparse_container):
     # check that train_test_split converts scipy sparse matrices
     # to csr, as stated in the documentation
     X = np.arange(100).reshape((10, 10))
-    X_s = sparse_container(X)
-    X_train, X_test = train_test_split(X_s)
+    x_s = sparse_container(X)
+    X_train, X_test = train_test_split(x_s)
     assert issparse(X_train) and X_train.format == "csr"
     assert issparse(X_test) and X_test.format == "csr"
 
