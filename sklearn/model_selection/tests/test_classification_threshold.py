@@ -109,14 +109,14 @@ def test_fit_and_score_over_thresholds_sample_weight():
     X, y = X[:100], y[:100]  # only 2 classes
 
     # create a dataset and repeat twice the sample of class #0
-    X_repeated, y_repeated = np.vstack([X, X[y == 0]]), np.hstack([y, y[y == 0]])
+    x_repeated, y_repeated = np.vstack([X, X[y == 0]]), np.hstack([y, y[y == 0]])
     # create a sample weight vector that is equivalent to the repeated dataset
     sample_weight = np.ones_like(y)
     sample_weight[:50] *= 2
 
     classifier = LogisticRegression()
-    train_repeated_idx = np.arange(X_repeated.shape[0])
-    val_repeated_idx = np.arange(X_repeated.shape[0])
+    train_repeated_idx = np.arange(x_repeated.shape[0])
+    val_repeated_idx = np.arange(x_repeated.shape[0])
     curve_scorer = _CurveScorer(
         score_func=balanced_accuracy_score,
         sign=1,
@@ -126,7 +126,7 @@ def test_fit_and_score_over_thresholds_sample_weight():
     )
     scores_repeated, thresholds_repeated = _fit_and_score_over_thresholds(
         classifier,
-        X_repeated,
+        x_repeated,
         y_repeated,
         fit_params={},
         train_idx=train_repeated_idx,

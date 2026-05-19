@@ -26,21 +26,21 @@ def data():
     ],
 )
 @pytest.mark.parametrize(
-    "CurveDisplay, specific_params",
+    "curve_display, specific_params",
     [
         (ValidationCurveDisplay, {"param_name": "max_depth", "param_range": [1, 3, 5]}),
         (LearningCurveDisplay, {"train_sizes": [0.3, 0.6, 0.9]}),
     ],
 )
 def test_curve_display_parameters_validation(
-    pyplot, data, params, err_type, err_msg, CurveDisplay, specific_params
+    pyplot, data, params, err_type, err_msg, curve_display, specific_params
 ):
     """Check that we raise a proper error when passing invalid parameters."""
     X, y = data
     estimator = DecisionTreeClassifier(random_state=0)
 
     with pytest.raises(err_type, match=err_msg):
-        CurveDisplay.from_estimator(estimator, X, y, **specific_params, **params)
+        curve_display.from_estimator(estimator, X, y, **specific_params, **params)
 
 
 def test_learning_curve_display_default_usage(pyplot, data):
@@ -64,7 +64,7 @@ def test_learning_curve_display_default_usage(pyplot, data):
     assert isinstance(display.fill_between_, list)
     for fill in display.fill_between_:
         assert isinstance(fill, mpl.collections.PolyCollection)
-        assert fill.get_alpha() == 0.5
+        assert fill.get_alpha() == pytest.approx(0.5)
 
     assert display.score_name == "Score"
     assert display.ax_.get_xlabel() == "Number of samples in the training set"
@@ -103,7 +103,7 @@ def test_validation_curve_display_default_usage(pyplot, data):
     assert isinstance(display.fill_between_, list)
     for fill in display.fill_between_:
         assert isinstance(fill, mpl.collections.PolyCollection)
-        assert fill.get_alpha() == 0.5
+        assert fill.get_alpha() == pytest.approx(0.5)
 
     assert display.score_name == "Score"
     assert display.ax_.get_xlabel() == f"{param_name}"
@@ -122,13 +122,13 @@ def test_validation_curve_display_default_usage(pyplot, data):
 
 
 @pytest.mark.parametrize(
-    "CurveDisplay, specific_params",
+    "curve_display, specific_params",
     [
         (ValidationCurveDisplay, {"param_name": "max_depth", "param_range": [1, 3, 5]}),
         (LearningCurveDisplay, {"train_sizes": [0.3, 0.6, 0.9]}),
     ],
 )
-def test_curve_display_negate_score(pyplot, data, CurveDisplay, specific_params):
+def test_curve_display_negate_score(pyplot, data, curve_display, specific_params):
     """Check the behaviour of the `negate_score` parameter calling `from_estimator` and
     `plot`.
     """
@@ -136,7 +136,7 @@ def test_curve_display_negate_score(pyplot, data, CurveDisplay, specific_params)
     estimator = DecisionTreeClassifier(max_depth=1, random_state=0)
 
     negate_score = False
-    display = CurveDisplay.from_estimator(
+    display = curve_display.from_estimator(
         estimator, X, y, **specific_params, negate_score=negate_score
     )
 
@@ -145,7 +145,7 @@ def test_curve_display_negate_score(pyplot, data, CurveDisplay, specific_params)
     assert display.ax_.get_ylabel() == "Score"
 
     negate_score = True
-    display = CurveDisplay.from_estimator(
+    display = curve_display.from_estimator(
         estimator, X, y, **specific_params, negate_score=negate_score
     )
 
@@ -155,7 +155,7 @@ def test_curve_display_negate_score(pyplot, data, CurveDisplay, specific_params)
     assert display.ax_.get_ylabel() == "Negative score"
 
     negate_score = False
-    display = CurveDisplay.from_estimator(
+    display = curve_display.from_estimator(
         estimator, X, y, **specific_params, negate_score=negate_score
     )
     assert display.ax_.get_ylabel() == "Score"
@@ -168,20 +168,20 @@ def test_curve_display_negate_score(pyplot, data, CurveDisplay, specific_params)
     "score_name, ylabel", [(None, "Score"), ("Accuracy", "Accuracy")]
 )
 @pytest.mark.parametrize(
-    "CurveDisplay, specific_params",
+    "curve_display, specific_params",
     [
         (ValidationCurveDisplay, {"param_name": "max_depth", "param_range": [1, 3, 5]}),
         (LearningCurveDisplay, {"train_sizes": [0.3, 0.6, 0.9]}),
     ],
 )
 def test_curve_display_score_name(
-    pyplot, data, score_name, ylabel, CurveDisplay, specific_params
+    pyplot, data, score_name, ylabel, curve_display, specific_params
 ):
     """Check that we can overwrite the default score name shown on the y-axis."""
     X, y = data
     estimator = DecisionTreeClassifier(random_state=0)
 
-    display = CurveDisplay.from_estimator(
+    display = curve_display.from_estimator(
         estimator, X, y, **specific_params, score_name=score_name
     )
 
@@ -189,7 +189,7 @@ def test_curve_display_score_name(
     X, y = data
     estimator = DecisionTreeClassifier(max_depth=1, random_state=0)
 
-    display = CurveDisplay.from_estimator(
+    display = curve_display.from_estimator(
         estimator, X, y, **specific_params, score_name=score_name
     )
 
@@ -382,7 +382,7 @@ def test_validation_curve_display_score_type(pyplot, data, std_display_style):
 
 
 @pytest.mark.parametrize(
-    "CurveDisplay, specific_params, expected_xscale",
+    "curve_display, specific_params, expected_xscale",
     [
         (
             ValidationCurveDisplay,
@@ -402,24 +402,24 @@ def test_validation_curve_display_score_type(pyplot, data, std_display_style):
     ],
 )
 def test_curve_display_xscale_auto(
-    pyplot, data, CurveDisplay, specific_params, expected_xscale
+    pyplot, data, curve_display, specific_params, expected_xscale
 ):
     """Check the behaviour of the x-axis scaling depending on the data provided."""
     X, y = data
     estimator = DecisionTreeClassifier(random_state=0)
 
-    display = CurveDisplay.from_estimator(estimator, X, y, **specific_params)
+    display = curve_display.from_estimator(estimator, X, y, **specific_params)
     assert display.ax_.get_xscale() == expected_xscale
 
 
 @pytest.mark.parametrize(
-    "CurveDisplay, specific_params",
+    "curve_display, specific_params",
     [
         (ValidationCurveDisplay, {"param_name": "max_depth", "param_range": [1, 3, 5]}),
         (LearningCurveDisplay, {"train_sizes": [0.3, 0.6, 0.9]}),
     ],
 )
-def test_curve_display_std_display_style(pyplot, data, CurveDisplay, specific_params):
+def test_curve_display_std_display_style(pyplot, data, curve_display, specific_params):
     """Check the behaviour of the parameter `std_display_style`."""
     X, y = data
     estimator = DecisionTreeClassifier(random_state=0)
@@ -427,7 +427,7 @@ def test_curve_display_std_display_style(pyplot, data, CurveDisplay, specific_pa
     import matplotlib as mpl
 
     std_display_style = None
-    display = CurveDisplay.from_estimator(
+    display = curve_display.from_estimator(
         estimator,
         X,
         y,
@@ -444,7 +444,7 @@ def test_curve_display_std_display_style(pyplot, data, CurveDisplay, specific_pa
     assert len(legend_label) == 2
 
     std_display_style = "fill_between"
-    display = CurveDisplay.from_estimator(
+    display = curve_display.from_estimator(
         estimator,
         X,
         y,
@@ -463,7 +463,7 @@ def test_curve_display_std_display_style(pyplot, data, CurveDisplay, specific_pa
     assert len(legend_label) == 2
 
     std_display_style = "errorbar"
-    display = CurveDisplay.from_estimator(
+    display = curve_display.from_estimator(
         estimator,
         X,
         y,
@@ -481,13 +481,13 @@ def test_curve_display_std_display_style(pyplot, data, CurveDisplay, specific_pa
 
 
 @pytest.mark.parametrize(
-    "CurveDisplay, specific_params",
+    "curve_display, specific_params",
     [
         (ValidationCurveDisplay, {"param_name": "max_depth", "param_range": [1, 3, 5]}),
         (LearningCurveDisplay, {"train_sizes": [0.3, 0.6, 0.9]}),
     ],
 )
-def test_curve_display_plot_kwargs(pyplot, data, CurveDisplay, specific_params):
+def test_curve_display_plot_kwargs(pyplot, data, curve_display, specific_params):
     """Check the behaviour of the different plotting keyword arguments: `line_kw`,
     `fill_between_kw`, and `errorbar_kw`."""
     X, y = data
@@ -496,7 +496,7 @@ def test_curve_display_plot_kwargs(pyplot, data, CurveDisplay, specific_params):
     std_display_style = "fill_between"
     line_kw = {"color": "red"}
     fill_between_kw = {"color": "red", "alpha": 1.0}
-    display = CurveDisplay.from_estimator(
+    display = curve_display.from_estimator(
         estimator,
         X,
         y,
@@ -514,7 +514,7 @@ def test_curve_display_plot_kwargs(pyplot, data, CurveDisplay, specific_params):
 
     std_display_style = "errorbar"
     errorbar_kw = {"color": "red"}
-    display = CurveDisplay.from_estimator(
+    display = curve_display.from_estimator(
         estimator,
         X,
         y,
@@ -550,13 +550,13 @@ def test_validation_curve_xscale_from_param_range_provided_as_a_list(
 
 
 @pytest.mark.parametrize(
-    "Display, params",
+    "display_class, params",
     [
         (LearningCurveDisplay, {}),
         (ValidationCurveDisplay, {"param_name": "max_depth", "param_range": [1, 3, 5]}),
     ],
 )
-def test_subclassing_displays(pyplot, data, Display, params):
+def test_subclassing_displays(pyplot, data, display_class, params):
     """Check that named constructors return the correct type when subclassed.
 
     Non-regression test for:
@@ -565,7 +565,7 @@ def test_subclassing_displays(pyplot, data, Display, params):
     X, y = data
     estimator = DecisionTreeClassifier(random_state=0)
 
-    class SubclassOfDisplay(Display):
+    class SubclassOfDisplay(display_class):
         pass
 
     display = SubclassOfDisplay.from_estimator(estimator, X, y, **params)
