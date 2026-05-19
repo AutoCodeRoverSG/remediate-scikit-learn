@@ -1612,10 +1612,10 @@ def test_multilabel_hamming_loss():
     assert hamming_loss(y2, 1 - y2) == 1
     assert hamming_loss(y1, 1 - y1) == 1
     assert hamming_loss(y1, np.zeros(y1.shape)) == 4 / 6
-    assert hamming_loss(y2, np.zeros(y1.shape)) == 0.5
-    assert hamming_loss(y1, y2, sample_weight=w) == 1.0 / 12
-    assert hamming_loss(y1, 1 - y2, sample_weight=w) == 11.0 / 12
-    assert hamming_loss(y1, np.zeros_like(y1), sample_weight=w) == 2.0 / 3
+    assert hamming_loss(y2, np.zeros(y1.shape)) == pytest.approx(0.5)
+    assert hamming_loss(y1, y2, sample_weight=w) == pytest.approx(1.0 / 12)
+    assert hamming_loss(y1, 1 - y2, sample_weight=w) == pytest.approx(11.0 / 12)
+    assert hamming_loss(y1, np.zeros_like(y1), sample_weight=w) == pytest.approx(2.0 / 3)
     # sp_hamming only works with 1-D arrays
     assert hamming_loss(y1[0], y2[0]) == sp_hamming(y1[0], y2[0])
 
@@ -1668,7 +1668,7 @@ def test_multilabel_jaccard_score(recwarn):
     # size(y1 \inter y2) = [1, 2]
     # size(y1 \union y2) = [2, 2]
 
-    assert jaccard_score(y1, y2, average="samples") == 0.75
+    assert_almost_equal(jaccard_score(y1, y2, average="samples"), 0.75)
     assert jaccard_score(y1, y1, average="samples") == 1
     assert jaccard_score(y2, y2, average="samples") == 1
     assert jaccard_score(y2, np.logical_not(y2), average="samples") == 0
@@ -1678,11 +1678,11 @@ def test_multilabel_jaccard_score(recwarn):
 
     y_true = np.array([[0, 1, 1], [1, 0, 0]])
     y_pred = np.array([[1, 1, 1], [1, 0, 1]])
-    # average='macro'
+    
     assert_almost_equal(jaccard_score(y_true, y_pred, average="macro"), 2.0 / 3)
-    # average='micro'
+    
     assert_almost_equal(jaccard_score(y_true, y_pred, average="micro"), 3.0 / 5)
-    # average='samples'
+    
     assert_almost_equal(jaccard_score(y_true, y_pred, average="samples"), 7.0 / 12)
     assert_almost_equal(
         jaccard_score(y_true, y_pred, average="samples", labels=[0, 2]), 1.0 / 2
@@ -2923,9 +2923,9 @@ def test_log_loss_pandas_input():
         types.append((Series, DataFrame))
     except ImportError:
         pass
-    for TrueInputType, PredInputType in types:
+    for true_input_type, pred_input_type in types:
         # y_proba dataframe, y_true series
-        y_true, y_proba = TrueInputType(y_tr), PredInputType(y_pr)
+        y_true, y_proba = true_input_type(y_tr), pred_input_type(y_pr)
         loss = log_loss(y_true, y_proba)
         assert_allclose(loss, 0.7469410)
 
