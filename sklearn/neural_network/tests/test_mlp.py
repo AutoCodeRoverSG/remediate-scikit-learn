@@ -232,7 +232,7 @@ def test_gradient():
                     t, X, Y, None, activations, deltas, coef_grads, intercept_grads
                 )
 
-            [value, grad] = loss_grad_fun(theta)
+            [_, grad] = loss_grad_fun(theta)
             numgrad = np.zeros(np.size(theta))
             n = np.size(theta, 0)
             E = np.eye(n)
@@ -388,7 +388,7 @@ def test_multilabel_classification():
         alpha=1e-5,
         learning_rate_init=0.2,
     )
-    for i in range(100):
+    for _ in range(100):
         mlp.partial_fit(X, y, classes=[0, 1, 2, 3, 4])
     assert mlp.score(X, y) > 0.9
 
@@ -438,7 +438,7 @@ def test_partial_fit_classification():
         mlp = MLPClassifier(
             solver="sgd", random_state=1, alpha=1e-5, learning_rate_init=0.2
         )
-        for i in range(100):
+        for _ in range(100):
             mlp.partial_fit(X, y, classes=np.unique(y))
         pred2 = mlp.predict(X)
         assert_array_equal(pred1, pred2)
@@ -483,7 +483,7 @@ def test_partial_fit_regression():
             batch_size=X.shape[0],
             momentum=momentum,
         )
-        for i in range(100):
+        for _ in range(100):
             mlp.partial_fit(X, y)
 
         pred2 = mlp.predict(X)
@@ -641,15 +641,15 @@ def test_sparse_matrices(csr_container):
     # Test that sparse and dense input matrices output the same results.
     X = X_digits_binary[:50]
     y = y_digits_binary[:50]
-    X_sparse = csr_container(X)
+    x_sparse = csr_container(X)
     mlp = MLPClassifier(solver="lbfgs", hidden_layer_sizes=15, random_state=1)
     mlp.fit(X, y)
     pred1 = mlp.predict(X)
-    mlp.fit(X_sparse, y)
-    pred2 = mlp.predict(X_sparse)
+    mlp.fit(x_sparse, y)
+    pred2 = mlp.predict(x_sparse)
     assert_almost_equal(pred1, pred2)
     pred1 = mlp.predict(X)
-    pred2 = mlp.predict(X_sparse)
+    pred2 = mlp.predict(x_sparse)
     assert_array_equal(pred1, pred2)
 
 
@@ -677,12 +677,12 @@ def test_verbose_sgd(capsys):
     assert "Iteration" in out
 
 
-@pytest.mark.parametrize("MLPEstimator", [MLPClassifier, MLPRegressor])
-def test_early_stopping(MLPEstimator):
+@pytest.mark.parametrize("mlp_estimator_cls", [MLPClassifier, MLPRegressor])
+def test_early_stopping(mlp_estimator_cls):
     X = X_digits_binary[:100]
     y = y_digits_binary[:100]
     tol = 0.2
-    mlp_estimator = MLPEstimator(
+    mlp_estimator = mlp_estimator_cls(
         tol=tol, max_iter=3000, solver="sgd", early_stopping=True
     )
     mlp_estimator.fit(X, y)
@@ -699,7 +699,7 @@ def test_early_stopping(MLPEstimator):
 
     # check that the attributes `validation_scores_` and `best_validation_score_`
     # are set to None when `early_stopping=False`
-    mlp_estimator = MLPEstimator(
+    mlp_estimator = mlp_estimator_cls(
         tol=tol, max_iter=3000, solver="sgd", early_stopping=False
     )
     mlp_estimator.fit(X, y)
@@ -751,15 +751,15 @@ def test_warm_start():
             clf.fit(X, y_i)
 
 
-@pytest.mark.parametrize("MLPEstimator", [MLPClassifier, MLPRegressor])
-def test_warm_start_full_iteration(MLPEstimator):
+@pytest.mark.parametrize("mlp_estimator", [MLPClassifier, MLPRegressor])
+def test_warm_start_full_iteration(mlp_estimator):
     # Non-regression test for:
     # https://github.com/scikit-learn/scikit-learn/issues/16812
     # Check that the MLP estimator accomplish `max_iter` with a
     # warm started estimator.
     X, y = X_iris, y_iris
     max_iter = 3
-    clf = MLPEstimator(
+    clf = mlp_estimator(
         hidden_layer_sizes=2, solver="sgd", warm_start=True, max_iter=max_iter
     )
     with warnings.catch_warnings():
@@ -893,22 +893,22 @@ def test_mlp_regressor_dtypes_casting():
 
 
 @pytest.mark.parametrize("dtype", [np.float32, np.float64])
-@pytest.mark.parametrize("Estimator", [MLPClassifier, MLPRegressor])
-def test_mlp_param_dtypes(dtype, Estimator):
+@pytest.mark.parametrize("estimator", [MLPClassifier, MLPRegressor])
+def test_mlp_param_dtypes(dtype, estimator):
     # Checks if input dtype is used for network parameters
     # and predictions
     X, y = X_digits.astype(dtype), y_digits
-    mlp = Estimator(
+    mlp = estimator(
         alpha=1e-5, hidden_layer_sizes=(5, 3), random_state=1, max_iter=50, tol=1e-1
     )
     mlp.fit(X[:300], y[:300])
     pred = mlp.predict(X[300:])
 
-    assert all([intercept.dtype == dtype for intercept in mlp.intercepts_])
+    assert all(intercept.dtype == dtype for intercept in mlp.intercepts_)
 
-    assert all([coef.dtype == dtype for coef in mlp.coefs_])
+    assert all(coef.dtype == dtype for coef in mlp.coefs_)
 
-    if Estimator == MLPRegressor:
+    if estimator == MLPRegressor:
         assert pred.dtype == dtype
 
 
