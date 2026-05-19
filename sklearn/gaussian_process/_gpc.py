@@ -284,7 +284,7 @@ class _BinaryGaussianProcessClassifierLaplace(BaseEstimator):
         # As discussed on Section 3.4.2 of GPML, for making hard binary
         # decisions, it is enough to compute the MAP of the posterior and
         # pass it through the link function
-        k_star = self.kernel_(self.X_train_, X)  # K_star =k(x_star)
+        k_star = self.kernel_(self.X_train_, X)  
         f_star = k_star.T.dot(self.y_train_ - self.pi_)  # Algorithm 3.2,Line 4
 
         return np.where(f_star > 0, self.classes_[1], self.classes_[0])
@@ -432,7 +432,7 @@ class _BinaryGaussianProcessClassifierLaplace(BaseEstimator):
         check_is_fitted(self)
 
         # Based on Algorithm 3.2 of GPML
-        k_star = self.kernel_(self.X_train_, X)  # K_star =k(x_star)
+        k_star = self.kernel_(self.X_train_, X)  
         latent_mean = k_star.T.dot(self.y_train_ - self.pi_)  # Line 4
         v = solve(self.L_, self.W_sr_[:, np.newaxis] * k_star)  # Line 5
         # Line 6 (compute np.diag(v.T.dot(v)) via einsum)
@@ -696,7 +696,7 @@ class GaussianProcessClassifier(ClassifierMixin, BaseEstimator):
         n_restarts_optimizer=0,
         max_iter_predict=100,
         warm_start=False,
-        copy_X_train=True,
+        copy_X_train=True,  # NOSONAR
         random_state=None,
         multi_class="one_vs_rest",
         n_jobs=None,

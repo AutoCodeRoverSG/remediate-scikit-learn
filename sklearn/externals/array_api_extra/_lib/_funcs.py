@@ -18,6 +18,8 @@ from ._utils._helpers import (
 )
 from ._utils._typing import Array, Device, DType
 
+_COMPLEX_FLOATING = "complex floating"
+
 __all__ = [
     "apply_where",
     "atleast_nd",
@@ -372,7 +374,7 @@ def cov(m: Array, /, *, xp: ModuleType | None = None) -> Array:
 
     m -= avg[:, None]
     m_transpose = m.T
-    if xp.isdtype(m_transpose.dtype, "complex floating"):
+    if xp.isdtype(m_transpose.dtype, _COMPLEX_FLOATING):
         m_transpose = xp.conj(m_transpose)
     c = m @ m_transpose
     c /= fact
@@ -492,7 +494,7 @@ def default_dtype(
     try:
         return dtypes[kind]
     except KeyError as e:
-        domain = ("real floating", "complex floating", "integral", "indexing")
+        domain = ("real floating", _COMPLEX_FLOATING, "integral", "indexing")
         assert set(dtypes) == set(domain), f"Non-compliant namespace: {dtypes}"
         msg = f"Unknown kind '{kind}'. Expected one of {domain}."
         raise ValueError(msg) from e
@@ -596,8 +598,8 @@ def isclose(
     """See docstring in array_api_extra._delegation."""
     a, b = asarrays(a, b, xp=xp)
 
-    a_inexact = xp.isdtype(a.dtype, ("real floating", "complex floating"))
-    b_inexact = xp.isdtype(b.dtype, ("real floating", "complex floating"))
+    a_inexact = xp.isdtype(a.dtype, ("real floating", _COMPLEX_FLOATING))
+    b_inexact = xp.isdtype(b.dtype, ("real floating", _COMPLEX_FLOATING))
     if a_inexact or b_inexact:
         # prevent warnings on NumPy and Dask on inf - inf
         mxp = meta_namespace(a, b, xp=xp)
@@ -767,7 +769,7 @@ def nan_to_num(  # numpydoc ignore=PR01,RT01
         x = xp.where(idx_posinf, finfo.max, x)
         return xp.where(idx_neginf, finfo.min, x)
 
-    if xp.isdtype(x.dtype, "complex floating"):
+    if xp.isdtype(x.dtype, _COMPLEX_FLOATING):
         return perform_replacements(
             xp.real(x),
             fill_value,

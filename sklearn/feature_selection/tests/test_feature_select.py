@@ -147,8 +147,8 @@ def test_f_regression(csr_container):
 def test_f_regression_input_dtype():
     # Test whether f_regression returns the same value
     # for any numeric data_type
-    rng = np.random.RandomState(0)
-    X = rng.rand(10, 20)
+    rng = np.random.default_rng(0)
+    X = rng.random((10, 20))
     y = np.arange(10).astype(int)
 
     F1, pv1 = f_regression(X, y)
@@ -849,12 +849,12 @@ def test_f_classif_constant_feature():
 
 
 def test_no_feature_selected():
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
 
     # Generate random uncorrelated data: a strict univariate test should
     # rejects all the features
-    X = rng.rand(40, 10)
-    y = rng.randint(0, 4, size=40)
+    X = rng.random((40, 10))
+    y = rng.integers(0, 4, size=40)
     strict_selectors = [
         SelectFwe(alpha=0.01).fit(X, y),
         SelectFdr(alpha=0.01).fit(X, y),
@@ -1004,8 +1004,8 @@ def test_unsupervised_filter(selector):
     """Check support for unsupervised feature selection for the filter that could
     require only `X`.
     """
-    rng = np.random.RandomState(0)
-    X = rng.randn(10, 5)
+    rng = np.random.default_rng(0)
+    X = rng.standard_normal((10, 5))
 
     def score_func(X, y=None):
         return np.array([1, 1, 1, 1, 0])
