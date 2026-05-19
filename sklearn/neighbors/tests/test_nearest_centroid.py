@@ -37,8 +37,8 @@ iris.target = iris.target[perm]
 @pytest.mark.parametrize("csr_container", CSR_CONTAINERS)
 def test_classification_toy(csr_container):
     # Check classification on a toy dataset, including sparse versions.
-    X_csr = csr_container(X)
-    T_csr = csr_container(T)
+    x_csr = csr_container(X)
+    t_csr = csr_container(T)
 
     # Check classification on a toy dataset, including sparse versions.
     clf = NearestCentroid()
@@ -67,23 +67,23 @@ def test_classification_toy(csr_container):
 
     # Same test, but with a sparse matrix to fit and test.
     clf = NearestCentroid()
-    clf.fit(X_csr, y)
-    assert_array_equal(clf.predict(T_csr), true_result)
+    clf.fit(x_csr, y)
+    assert_array_equal(clf.predict(t_csr), true_result)
 
     # Fit with sparse, test with non-sparse
     clf = NearestCentroid()
-    clf.fit(X_csr, y)
+    clf.fit(x_csr, y)
     assert_array_equal(clf.predict(T), true_result)
 
     # Fit with non-sparse, test with sparse
     clf = NearestCentroid()
     clf.fit(X, y)
-    assert_array_equal(clf.predict(T_csr), true_result)
+    assert_array_equal(clf.predict(t_csr), true_result)
 
     # Fit and predict with non-CSR sparse matrices
     clf = NearestCentroid()
-    clf.fit(X_csr.tocoo(), y)
-    assert_array_equal(clf.predict(T_csr.tolil()), true_result)
+    clf.fit(x_csr.tocoo(), y)
+    assert_array_equal(clf.predict(t_csr.tolil()), true_result)
 
 
 def test_iris():
@@ -158,9 +158,9 @@ def test_predict_translated_data():
     clf.fit(X, y)
     y_init = clf.predict(X)
     clf = NearestCentroid(shrink_threshold=0.1)
-    X_noise = X + noise
-    clf.fit(X_noise, y)
-    y_translate = clf.predict(X_noise)
+    x_noise = X + noise
+    clf.fit(x_noise, y)
+    y_translate = clf.predict(x_noise)
     assert_array_equal(y_init, y_translate)
 
 

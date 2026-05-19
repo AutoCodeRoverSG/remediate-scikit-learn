@@ -148,7 +148,7 @@ def test_kde_pipeline_gridsearch():
     params = {"kerneldensity__bandwidth": [0.001, 0.01, 0.1, 1, 10]}
     search = GridSearchCV(pipe1, param_grid=params)
     search.fit(X)
-    assert search.best_params_["kerneldensity__bandwidth"] == 0.1
+    assert search.best_params_["kerneldensity__bandwidth"] == pytest.approx(0.1)
 
 
 def test_kde_sample_weights():
@@ -156,12 +156,12 @@ def test_kde_sample_weights():
     size_test = 20
     weights_neutral = np.full(n_samples, 3.0)
     for d in [1, 2, 10]:
-        rng = np.random.RandomState(0)
-        X = rng.rand(n_samples, d)
+        rng = np.random.default_rng(0)
+        X = rng.random((n_samples, d))
         weights = 1 + (10 * X.sum(axis=1)).astype(np.int8)
         x_repetitions = np.repeat(X, weights, axis=0)
         n_samples_test = size_test // d
-        test_points = rng.rand(n_samples_test, d)
+        test_points = rng.random((n_samples_test, d))
         for algorithm in ["auto", "ball_tree", "kd_tree"]:
             for metric in ["euclidean", "minkowski", "manhattan", "chebyshev"]:
                 if algorithm != "kd_tree" or metric in KDTree.valid_metrics:
@@ -192,7 +192,7 @@ def test_kde_sample_weights():
                     assert diff > 0.001
 
                     # Test invariance with respect to arbitrary scaling
-                    scale_factor = rng.rand()
+                    scale_factor = rng.random()
                     kde.fit(X, sample_weight=(scale_factor * weights))
                     scores_scaled_weight = kde.score_samples(test_points)
                     assert_allclose(scores_scaled_weight, scores_weight)
@@ -223,8 +223,8 @@ def test_pickling(tmpdir, sample_weight):
 def test_check_is_fitted(method):
     # Check that predict raises an exception in an unfitted estimator.
     # Unfitted estimators should raise a NotFittedError.
-    rng = np.random.RandomState(0)
-    X = rng.randn(10, 2)
+    rng = np.random.default_rng(0)
+    X = rng.standard_normal((10, 2))
     kde = KernelDensity()
 
     with pytest.raises(NotFittedError):
@@ -234,8 +234,8 @@ def test_check_is_fitted(method):
 @pytest.mark.parametrize("bandwidth", ["scott", "silverman", 0.1])
 def test_bandwidth(bandwidth):
     n_samples, n_features = (100, 3)
-    rng = np.random.RandomState(0)
-    X = rng.randn(n_samples, n_features)
+    rng = np.random.default_rng(0)
+    X = rng.standard_normal((n_samples, n_features))
     kde = KernelDensity(bandwidth=bandwidth).fit(X)
     samp = kde.sample(100)
     kde_sc = kde.score_samples(X)
