@@ -905,7 +905,7 @@ def test_param_sampler():
     sampler = ParameterSampler(
         param_distributions=param_distributions, n_iter=10, random_state=0
     )
-    samples = [x for x in sampler]
+    samples = list(sampler)
     assert len(samples) == 10
     for sample in samples:
         assert sample["kernel"] in ["rbf", "linear"]
@@ -916,13 +916,13 @@ def test_param_sampler():
     sampler = ParameterSampler(
         param_distributions=param_distributions, n_iter=3, random_state=0
     )
-    assert [x for x in sampler] == [x for x in sampler]
+    assert list(sampler) == list(sampler)
 
     param_distributions = {"C": uniform(0, 1)}
     sampler = ParameterSampler(
         param_distributions=param_distributions, n_iter=10, random_state=0
     )
-    assert [x for x in sampler] == [x for x in sampler]
+    assert list(sampler) == list(sampler)
 
 
 def check_cv_results_array_types(
@@ -959,19 +959,19 @@ def test_grid_search_cv_results():
 
     n_grid_points = 6
     params = [
-        dict(
-            kernel=[
+        {
+            "kernel": [
                 "rbf",
             ],
-            C=[1, 10],
-            gamma=[0.1, 1],
-        ),
-        dict(
-            kernel=[
+            "C": [1, 10],
+            "gamma": [0.1, 1],
+        },
+        {
+            "kernel": [
                 "poly",
             ],
-            degree=[1, 2],
-        ),
+            "degree": [1, 2],
+        },
     ]
 
     param_keys = ("param_C", "param_degree", "param_gamma", "param_kernel")
@@ -1114,13 +1114,13 @@ def test_random_search_cv_results():
 
 
 @pytest.mark.parametrize(
-    "SearchCV, specialized_params",
+    "search_cv, specialized_params",
     [
         (GridSearchCV, {"param_grid": {"C": [1, 10]}}),
         (RandomizedSearchCV, {"param_distributions": {"C": [1, 10]}, "n_iter": 2}),
     ],
 )
-def test_search_default_iid(SearchCV, specialized_params):
+def test_search_default_iid(search_cv, specialized_params):
     # Test the IID parameter  TODO: Clearly this test does something else???
     # noise-free simple 2d-data
     X, y = make_blobs(
@@ -1141,7 +1141,7 @@ def test_search_default_iid(SearchCV, specialized_params):
     cv = [[mask, ~mask], [~mask, mask]]
 
     common_params = {"estimator": SVC(), "cv": cv, "return_train_score": True}
-    search = SearchCV(**common_params, **specialized_params)
+    search = search_cv(**common_params, **specialized_params)
     search.fit(X, y)
 
     test_cv_scores = np.array(
@@ -1181,19 +1181,19 @@ def test_grid_search_cv_results_multimetric():
 
     n_splits = 3
     params = [
-        dict(
-            kernel=[
+        {
+            "kernel": [
                 "rbf",
             ],
-            C=[1, 10],
-            gamma=[0.1, 1],
-        ),
-        dict(
-            kernel=[
+            "C": [1, 10],
+            "gamma": [0.1, 1],
+        },
+        {
+            "kernel": [
                 "poly",
             ],
-            degree=[1, 2],
-        ),
+            "degree": [1, 2],
+        },
     ]
 
     grid_searches = []
