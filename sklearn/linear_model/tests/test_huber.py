@@ -93,9 +93,9 @@ def test_huber_sample_weights(csr_container):
     assert_array_almost_equal(huber.intercept_ / scale, huber_intercept / scale)
 
     X, y = make_regression_with_outliers(n_samples=5, n_features=20)
-    X_new = np.vstack((X, np.vstack((X[1], X[1], X[3]))))
+    x_new = np.vstack((X, np.vstack((X[1], X[1], X[3]))))
     y_new = np.concatenate((y, [y[1]], [y[1]], [y[3]]))
-    huber.fit(X_new, y_new)
+    huber.fit(x_new, y_new)
     huber_coef = huber.coef_
     huber_intercept = huber.intercept_
     sample_weight = np.ones(X.shape[0])
