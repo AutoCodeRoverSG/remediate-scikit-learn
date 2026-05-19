@@ -903,10 +903,7 @@ class PartialDependenceDisplay:
         n_cols,
         pd_plot_idx,
         n_lines,
-        ice_lines_kw,
-        pd_line_kw,
-        categorical,
-        bar_kw,
+        plot_kw,
         pdp_lim,
     ):
         """Plot 1-way partial dependence: ICE and PDP.
@@ -951,6 +948,11 @@ class PartialDependenceDisplay:
             and max for single partial dependence curves.
         """
         from matplotlib import transforms
+
+        ice_lines_kw = plot_kw["ice_lines_kw"]
+        pd_line_kw = plot_kw["pd_line_kw"]
+        categorical = plot_kw["categorical"]
+        bar_kw = plot_kw["bar_kw"]
 
         if kind in ("individual", "both"):
             self._plot_ice_lines(
@@ -1474,10 +1476,12 @@ class PartialDependenceDisplay:
                     n_cols,
                     pd_plot_idx,
                     n_lines,
-                    ice_lines_kw,
-                    pd_line_kw,
-                    cat[0],
-                    bar_kw,
+                    {
+                        "ice_lines_kw": ice_lines_kw,
+                        "pd_line_kw": pd_line_kw,
+                        "categorical": cat[0],
+                        "bar_kw": bar_kw,
+                    },
                     pdp_lim,
                 )
             else:

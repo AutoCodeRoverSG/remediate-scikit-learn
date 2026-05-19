@@ -266,7 +266,7 @@ def test_plot_partial_dependence_str_features(
     line = disp.lines_[1, 0]
     avg_preds = disp.pd_results[1]
     target_idx = disp.target_idx
-    assert line.get_alpha() == 0.8
+    assert line.get_alpha() == pytest.approx(0.8)
 
     line_data = line.get_data()
     assert_allclose(line_data[0], avg_preds["grid_values"][0])

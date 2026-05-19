@@ -450,7 +450,7 @@ def test_dataframe_labels_used(pyplot, fitted_clf):
 
     # labels do not get inferred if provided to `from_estimator`
     _, ax = pyplot.subplots()
-    disp = DecisionBoundaryDisplay.from_estimator(
+    DecisionBoundaryDisplay.from_estimator(
         fitted_clf, df, ax=ax, xlabel="overwritten_x", ylabel="overwritten_y"
     )
     assert ax.get_xlabel() == "overwritten_x"
