@@ -444,16 +444,16 @@ def test_select_kbest_all():
     )
 
     univariate_filter = SelectKBest(f_classif, k="all")
-    X_r = univariate_filter.fit(X, y).transform(X)
-    assert_array_equal(X, X_r)
+    x_r = univariate_filter.fit(X, y).transform(X)
+    assert_array_equal(X, x_r)
     # Non-regression test for:
     # https://github.com/scikit-learn/scikit-learn/issues/24949
-    X_r2 = (
+    x_r2 = (
         GenericUnivariateSelect(f_classif, mode="k_best", param="all")
         .fit(X, y)
         .transform(X)
     )
-    assert_array_equal(X_r, X_r2)
+    assert_array_equal(x_r, x_r2)
 
 
 @pytest.mark.parametrize("dtype_in", [np.float32, np.float64])
@@ -470,9 +470,9 @@ def test_select_kbest_zero(dtype_in):
     gtruth = np.zeros(10, dtype=bool)
     assert_array_equal(support, gtruth)
     with pytest.warns(UserWarning, match="No features were selected"):
-        X_selected = univariate_filter.transform(X)
-    assert X_selected.shape == (20, 0)
-    assert X_selected.dtype == dtype_in
+        x_selected = univariate_filter.transform(X)
+    assert x_selected.shape == (20, 0)
+    assert x_selected.dtype == dtype_in
 
 
 def test_select_heuristics_classif():
@@ -494,16 +494,16 @@ def test_select_heuristics_classif():
     )
 
     univariate_filter = SelectFwe(f_classif, alpha=0.01)
-    X_r = univariate_filter.fit(X, y).transform(X)
+    x_r = univariate_filter.fit(X, y).transform(X)
     gtruth = np.zeros(20)
     gtruth[:5] = 1
     for mode in ["fdr", "fpr", "fwe"]:
-        X_r2 = (
+        x_r2 = (
             GenericUnivariateSelect(f_classif, mode=mode, param=0.01)
             .fit(X, y)
             .transform(X)
         )
-        assert_array_equal(X_r, X_r2)
+        assert_array_equal(x_r, x_r2)
         support = univariate_filter.get_support()
         assert_allclose(support, gtruth)
 
@@ -527,24 +527,24 @@ def test_select_percentile_regression():
     )
 
     univariate_filter = SelectPercentile(f_regression, percentile=25)
-    X_r = univariate_filter.fit(X, y).transform(X)
+    x_r = univariate_filter.fit(X, y).transform(X)
     assert_best_scores_kept(univariate_filter)
-    X_r2 = (
+    x_r2 = (
         GenericUnivariateSelect(f_regression, mode="percentile", param=25)
         .fit(X, y)
         .transform(X)
     )
-    assert_array_equal(X_r, X_r2)
+    assert_array_equal(x_r, x_r2)
     support = univariate_filter.get_support()
     gtruth = np.zeros(20)
     gtruth[:5] = 1
     assert_array_equal(support, gtruth)
     X_2 = X.copy()
     X_2[:, np.logical_not(support)] = 0
-    assert_array_equal(X_2, univariate_filter.inverse_transform(X_r))
+    assert_array_equal(X_2, univariate_filter.inverse_transform(x_r))
     # Check inverse_transform respects dtype
     assert_array_equal(
-        X_2.astype(bool), univariate_filter.inverse_transform(X_r.astype(bool))
+        X_2.astype(bool), univariate_filter.inverse_transform(x_r.astype(bool))
     )
 
 
@@ -556,14 +556,14 @@ def test_select_percentile_regression_full():
     )
 
     univariate_filter = SelectPercentile(f_regression, percentile=100)
-    X_r = univariate_filter.fit(X, y).transform(X)
+    x_r = univariate_filter.fit(X, y).transform(X)
     assert_best_scores_kept(univariate_filter)
-    X_r2 = (
+    x_r2 = (
         GenericUnivariateSelect(f_regression, mode="percentile", param=100)
         .fit(X, y)
         .transform(X)
     )
-    assert_array_equal(X_r, X_r2)
+    assert_array_equal(x_r, x_r2)
     support = univariate_filter.get_support()
     gtruth = np.ones(20)
     assert_array_equal(support, gtruth)
@@ -583,14 +583,14 @@ def test_select_kbest_regression():
     )
 
     univariate_filter = SelectKBest(f_regression, k=5)
-    X_r = univariate_filter.fit(X, y).transform(X)
+    x_r = univariate_filter.fit(X, y).transform(X)
     assert_best_scores_kept(univariate_filter)
-    X_r2 = (
+    x_r2 = (
         GenericUnivariateSelect(f_regression, mode="k_best", param=5)
         .fit(X, y)
         .transform(X)
     )
-    assert_array_equal(X_r, X_r2)
+    assert_array_equal(x_r, x_r2)
     support = univariate_filter.get_support()
     gtruth = np.zeros(20)
     gtruth[:5] = 1
@@ -842,7 +842,7 @@ def test_invalid_k():
 def test_f_classif_constant_feature():
     # Test that f_classif warns if a feature is constant throughout.
 
-    X, y = make_classification(n_samples=10, n_features=5)
+    X, y = make_classification(n_samples=10, n_features=5, random_state=0)
     X[:, 0] = 2.0
     with pytest.warns(UserWarning):
         f_classif(X, y)
