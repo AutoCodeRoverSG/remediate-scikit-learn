@@ -67,17 +67,17 @@ from sklearn.utils.validation import (
 )
 
 
-def _get_rescaled_operator(X, X_offset, sample_weight_sqrt):
+def _get_rescaled_operator(X, x_offset, sample_weight_sqrt):
     """Create LinearOperator for matrix products with implicit centering.
 
     Matrix product `LinearOperator @ coef` returns `(X - X_offset) @ coef`.
     """
 
     def matvec(b):
-        return X.dot(b) - sample_weight_sqrt * b.dot(X_offset)
+        return X.dot(b) - sample_weight_sqrt * b.dot(x_offset)
 
     def rmatvec(b):
-        return X.T.dot(b) - X_offset * b.dot(sample_weight_sqrt)
+        return X.T.dot(b) - x_offset * b.dot(sample_weight_sqrt)
 
     X1 = sparse.linalg.LinearOperator(shape=X.shape, matvec=matvec, rmatvec=rmatvec)
     return X1
@@ -90,8 +90,8 @@ def _solve_sparse_cg(
     max_iter=None,
     tol=1e-4,
     verbose=0,
-    X_offset=None,
-    X_scale=None,
+    x_offset=None,
+    x_scale=None,
     sample_weight_sqrt=None,
 ):
     if sample_weight_sqrt is None:
@@ -99,11 +99,11 @@ def _solve_sparse_cg(
 
     n_samples, n_features = X.shape
 
-    if X_offset is None or X_scale is None:
+    if x_offset is None or x_scale is None:
         X1 = sp_linalg.aslinearoperator(X)
     else:
-        X_offset_scale = X_offset / X_scale
-        X1 = _get_rescaled_operator(X, X_offset_scale, sample_weight_sqrt)
+        x_offset_scale = x_offset / x_scale
+        X1 = _get_rescaled_operator(X, x_offset_scale, sample_weight_sqrt)
 
     coefs = np.empty((y.shape[1], n_features), dtype=X.dtype)
 
@@ -164,8 +164,8 @@ def _solve_lsqr(
     fit_intercept=True,
     max_iter=None,
     tol=1e-4,
-    X_offset=None,
-    X_scale=None,
+    x_offset=None,
+    x_scale=None,
     sample_weight_sqrt=None,
 ):
     """Solve Ridge regression via LSQR.
@@ -188,13 +188,13 @@ def _solve_lsqr(
         sample_weight_sqrt = np.ones(X.shape[0], dtype=X.dtype)
 
     if sparse.issparse(X) and fit_intercept:
-        X_offset_scale = X_offset / X_scale
-        X1 = _get_rescaled_operator(X, X_offset_scale, sample_weight_sqrt)
+        x_offset_scale = x_offset / x_scale
+        X1 = _get_rescaled_operator(X, x_offset_scale, sample_weight_sqrt)
     else:
         # No need to touch anything
         X1 = X
 
-    n_samples, n_features = X.shape
+    _, n_features = X.shape
     coefs = np.empty((y.shape[1], n_features), dtype=X.dtype)
     n_iter = np.empty(y.shape[1], dtype=np.int32)
 
@@ -218,24 +218,25 @@ def _solve_cholesky(X, y, alpha):
     n_targets = y.shape[1]
 
     A = safe_sparse_dot(X.T, X, dense_output=True)
-    Xy = safe_sparse_dot(X.T, y, dense_output=True)
+    x_y = safe_sparse_dot(X.T, y, dense_output=True)
 
     one_alpha = np.array_equal(alpha, len(alpha) * [alpha[0]])
 
     if one_alpha:
         A.flat[:: n_features + 1] += alpha[0]
-        return linalg.solve(A, Xy, assume_a="pos", overwrite_a=True).T
+        return linalg.solve(A, x_y, assume_a="pos", overwrite_a=True).T
     else:
         coefs = np.empty([n_targets, n_features], dtype=X.dtype)
-        for coef, target, current_alpha in zip(coefs, Xy.T, alpha):
+        for coef, target, current_alpha in zip(coefs, x_y.T, alpha):
             A.flat[:: n_features + 1] += current_alpha
             coef[:] = linalg.solve(A, target, assume_a="pos", overwrite_a=False).ravel()
             A.flat[:: n_features + 1] -= current_alpha
         return coefs
 
 
-def _solve_cholesky_kernel(K, y, alpha, sample_weight=None, copy=False):
+def _solve_cholesky_kernel(k, y, alpha, sample_weight=None, copy=False):
     # dual_coef = inv(X X^t + alpha*Id) y
+    K = k
     n_samples = K.shape[0]
     n_targets = y.shape[1]
 
@@ -736,8 +737,8 @@ def _ridge_regression(
             max_iter=max_iter,
             tol=tol,
             verbose=verbose,
-            X_offset=X_offset,
-            X_scale=X_scale,
+            x_offset=X_offset,
+            x_scale=X_scale,
             sample_weight_sqrt=sample_weight_sqrt if has_sw else None,
         )
 
@@ -749,8 +750,8 @@ def _ridge_regression(
             fit_intercept=fit_intercept,
             max_iter=max_iter,
             tol=tol,
-            X_offset=X_offset,
-            X_scale=X_scale,
+            x_offset=X_offset,
+            x_scale=X_scale,
             sample_weight_sqrt=sample_weight_sqrt if has_sw else None,
         )
 
