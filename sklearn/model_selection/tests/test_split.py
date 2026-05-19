@@ -762,7 +762,7 @@ def test_stratified_group_kfold_against_group_kfold(cls_distr, n_groups):
     n_splits = 5
     sgkf = StratifiedGroupKFold(n_splits=n_splits)
     gkf = GroupKFold(n_splits=n_splits)
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
     n_points = 1000
     y = rng.choice(2, size=n_points, p=cls_distr)
     X = np.ones_like(y).reshape(-1, 1)
@@ -945,7 +945,7 @@ def test_stratified_shuffle_split_even():
         assert len(set(train).intersection(test)) == 0
 
         group_counts = np.unique(groups)
-        assert splits.test_size == 1.0 / n_folds
+        assert splits.test_size == pytest.approx(1.0 / n_folds)
         assert n_train + n_test == len(groups)
         assert len(group_counts) == 2
         ex_test_p = float(n_test) / n_samples
@@ -1045,7 +1045,7 @@ def test_group_shuffle_split():
         slo = GroupShuffleSplit(n_splits, test_size=test_size, random_state=0)
 
         # Make sure the repr works
-        repr(slo)
+        assert isinstance(repr(slo), str)
 
         # Test that the length is correct
         assert slo.get_n_splits(X, y, groups=groups_i) == n_splits
@@ -1659,7 +1659,7 @@ def test_cv_iterable_wrapper():
 @pytest.mark.parametrize("kfold", [GroupKFold, StratifiedGroupKFold])
 @pytest.mark.parametrize("shuffle", [True, False])
 def test_group_kfold(kfold, shuffle, global_random_seed):
-    rng = np.random.RandomState(global_random_seed)
+    rng = np.random.default_rng(global_random_seed)
 
     # Parameters of the test
     n_groups = 15
@@ -1670,7 +1670,7 @@ def test_group_kfold(kfold, shuffle, global_random_seed):
 
     # Construct the test data
     tolerance = 0.05 * n_samples  # 5 percent error allowed
-    groups = rng.randint(0, n_groups, n_samples)
+    groups = rng.integers(0, n_groups, n_samples)
 
     ideal_n_groups_per_fold = n_samples // n_splits
 
@@ -1740,7 +1740,6 @@ def test_group_kfold(kfold, shuffle, global_random_seed):
         ]
     )
 
-    n_groups = len(np.unique(groups))
     n_samples = len(groups)
     n_splits = 5
     tolerance = 0.05 * n_samples  # 5 percent error allowed
@@ -1940,10 +1939,10 @@ def test_time_series_gap():
 @ignore_warnings
 def test_nested_cv():
     # Test if nested cross validation works with different combinations of cv
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
 
     X, y = make_classification(n_samples=15, n_classes=2, random_state=0)
-    groups = rng.randint(0, 5, 15)
+    groups = rng.integers(0, 5, 15)
 
     cvs = [
         LeaveOneGroupOut(),
@@ -2068,12 +2067,12 @@ def test_random_state_shuffle_false(klass):
         (LeavePOut(p=2), True),
         (KFold(shuffle=True, random_state=None), False),
         (KFold(shuffle=True, random_state=None), False),
-        (StratifiedKFold(shuffle=True, random_state=np.random.RandomState(0)), False),
-        (StratifiedKFold(shuffle=True, random_state=np.random.RandomState(0)), False),
+        (StratifiedKFold(shuffle=True, random_state=np.random.default_rng(0)), False),
+        (StratifiedKFold(shuffle=True, random_state=np.random.default_rng(0)), False),
         (RepeatedKFold(random_state=None), False),
-        (RepeatedKFold(random_state=np.random.RandomState(0)), False),
+        (RepeatedKFold(random_state=np.random.default_rng(0)), False),
         (RepeatedStratifiedKFold(random_state=None), False),
-        (RepeatedStratifiedKFold(random_state=np.random.RandomState(0)), False),
+        (RepeatedStratifiedKFold(random_state=np.random.default_rng(0)), False),
         (ShuffleSplit(random_state=None), False),
         (ShuffleSplit(random_state=np.random.RandomState(0)), False),
         (GroupShuffleSplit(random_state=None), False),
