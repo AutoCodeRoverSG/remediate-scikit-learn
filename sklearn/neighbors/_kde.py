@@ -274,12 +274,12 @@ class KernelDensity(BaseEstimator):
             N = self.tree_.data.shape[0]
         else:
             N = self.tree_.sum_weight
-        atol_N = self.atol * N
+        atol_n = self.atol * N
         log_density = self.tree_.kernel_density(
             X,
             h=self.bandwidth_,
             kernel=self.kernel,
-            atol=atol_N,
+            atol=atol_n,
             rtol=self.rtol,
             breadth_first=self.breadth_first,
             return_log=True,

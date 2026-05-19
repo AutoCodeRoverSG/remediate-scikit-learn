@@ -180,7 +180,7 @@ class NearestCentroid(
                 ensure_all_finite=ensure_all_finite,
                 accept_sparse=["csr", "csc"],
             )
-        is_X_sparse = sp.issparse(X)
+        is_x_sparse = sp.issparse(X)
         check_classification_targets(y)
 
         n_samples, n_features = X.shape
@@ -220,12 +220,12 @@ class NearestCentroid(
         for cur_class in range(n_classes):
             center_mask = y_ind == cur_class
             nk[cur_class] = np.sum(center_mask)
-            if is_X_sparse:
-                center_mask = np.where(center_mask)[0]
+            if is_x_sparse:
+                center_mask = np.nonzero(center_mask)[0]
 
             if self.metric == "manhattan":
                 # NumPy does not calculate median of sparse matrices.
-                if not is_X_sparse:
+                if not is_x_sparse:
                     self.centroids_[cur_class] = np.median(X[center_mask], axis=0)
                 else:
                     self.centroids_[cur_class] = csc_median_axis_0(X[center_mask])
@@ -244,9 +244,9 @@ class NearestCentroid(
             )
 
         err_msg = "All features have zero variance. Division by zero."
-        if is_X_sparse and np.all((X.max(axis=0) - X.min(axis=0)).toarray() == 0):
-            raise ValueError(err_msg)
-        elif not is_X_sparse and np.all(np.ptp(X, axis=0) == 0):
+        if (is_x_sparse and np.all((X.max(axis=0) - X.min(axis=0)).toarray() == 0)) or (
+            not is_x_sparse and np.all(np.ptp(X, axis=0) == 0)
+        ):
             raise ValueError(err_msg)
 
         dataset_centroid_ = X.mean(axis=0)
@@ -310,22 +310,22 @@ class NearestCentroid(
         # return discriminant scores, see eq. (18.2) p. 652 of the ESL.
         check_is_fitted(self, "centroids_")
 
-        X_normalized = validate_data(
+        x_normalized = validate_data(
             self, X, copy=True, reset=False, accept_sparse="csr", dtype=np.float64
         )
 
         discriminant_score = np.empty(
-            (X_normalized.shape[0], self.classes_.size), dtype=np.float64
+            (x_normalized.shape[0], self.classes_.size), dtype=np.float64
         )
 
         mask = self.within_class_std_dev_ != 0
-        X_normalized[:, mask] /= self.within_class_std_dev_[mask]
+        x_normalized[:, mask] /= self.within_class_std_dev_[mask]
         centroids_normalized = self.centroids_.copy()
         centroids_normalized[:, mask] /= self.within_class_std_dev_[mask]
 
         for class_idx in range(self.classes_.size):
             distances = pairwise_distances(
-                X_normalized, centroids_normalized[[class_idx]], metric=self.metric
+                x_normalized, centroids_normalized[[class_idx]], metric=self.metric
             ).ravel()
             distances **= 2
             discriminant_score[:, class_idx] = np.squeeze(
