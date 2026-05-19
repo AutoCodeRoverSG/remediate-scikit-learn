@@ -44,9 +44,9 @@ def classification_dataset():
     [
         (LinearRegression(), "regression_dataset"),
         (LogisticRegression(), "classification_dataset"),
-        (make_pipeline(StandardScaler(), LinearRegression()), "regression_dataset"),
+        (make_pipeline(StandardScaler(), LinearRegression(), memory=None), "regression_dataset"),
         (
-            make_pipeline(StandardScaler(), LogisticRegression()),
+            make_pipeline(StandardScaler(), LogisticRegression(), memory=None),
             "classification_dataset",
         ),
         (StandardScaler(), "regression_dataset"),
@@ -71,7 +71,7 @@ def test_frozen_methods(estimator, dataset, request, method):
     """
     estimator = clone(estimator)
     X, y = request.getfixturevalue(dataset)
-    set_random_state(estimator)
+    set_random_state(estimator, random_state=0)
     estimator.fit(X, y)
     frozen = FrozenEstimator(estimator)
     # this should be no-op
@@ -110,7 +110,8 @@ def test_frozen_metadata_routing(regression_dataset):
     pipeline = make_pipeline(
         ConsumesMetadata(on_fit=True, on_predict=True)
         .set_fit_request(metadata=True)
-        .set_predict_request(metadata=True)
+        .set_predict_request(metadata=True),
+        memory=None,
     )
 
     pipeline.fit(X, y, metadata="test")

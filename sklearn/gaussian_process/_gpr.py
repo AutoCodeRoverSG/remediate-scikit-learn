@@ -216,7 +216,7 @@ class GaussianProcessRegressor(MultiOutputMixin, RegressorMixin, BaseEstimator):
         optimizer="fmin_l_bfgs_b",
         n_restarts_optimizer=0,
         normalize_y=False,
-        copy_X_train=True,
+        copy_X_train=True,  # NOSONAR
         n_targets=None,
         random_state=None,
     ):
@@ -326,7 +326,7 @@ class GaussianProcessRegressor(MultiOutputMixin, RegressorMixin, BaseEstimator):
                         "requires that all bounds are finite."
                     )
                 bounds = self.kernel_.bounds
-                for iteration in range(self.n_restarts_optimizer):
+                for _ in range(self.n_restarts_optimizer):
                     theta_initial = self._rng.uniform(bounds[:, 0], bounds[:, 1])
                     optima.append(
                         self._constrained_optimization(obj_func, theta_initial, bounds)
@@ -443,8 +443,8 @@ class GaussianProcessRegressor(MultiOutputMixin, RegressorMixin, BaseEstimator):
                 return y_mean
         else:  # Predict based on GP posterior
             # Alg 2.1, page 19, line 4 -> f*_bar = K(X_test, X_train) . alpha
-            K_trans = self.kernel_(X, self.X_train_)
-            y_mean = K_trans @ self.alpha_
+            k_trans = self.kernel_(X, self.X_train_)
+            y_mean = k_trans @ self.alpha_
 
             # undo normalisation
             y_mean = self._y_train_std * y_mean + self._y_train_mean
@@ -458,7 +458,7 @@ class GaussianProcessRegressor(MultiOutputMixin, RegressorMixin, BaseEstimator):
 
             # Alg 2.1, page 19, line 5 -> v = L \ K(X_test, X_train)^T
             V = solve_triangular(
-                self.L_, K_trans.T, lower=GPR_CHOLESKY_LOWER, check_finite=False
+                self.L_, k_trans.T, lower=GPR_CHOLESKY_LOWER, check_finite=False
             )
 
             if return_cov:
@@ -581,7 +581,7 @@ class GaussianProcessRegressor(MultiOutputMixin, RegressorMixin, BaseEstimator):
             kernel.theta = theta
 
         if eval_gradient:
-            K, K_gradient = kernel(self.X_train_, eval_gradient=True)
+            K, k_gradient = kernel(self.X_train_, eval_gradient=True)
         else:
             K = kernel(self.X_train_)
 
@@ -628,12 +628,12 @@ class GaussianProcessRegressor(MultiOutputMixin, RegressorMixin, BaseEstimator):
             #     inner_term[..., output_idx] = output_alpha @ output_alpha.T
             inner_term = np.einsum("ik,jk->ijk", alpha, alpha)
             # compute K^-1 of shape (n_samples, n_samples)
-            K_inv = cho_solve(
+            k_inv = cho_solve(
                 (L, GPR_CHOLESKY_LOWER), np.eye(K.shape[0]), check_finite=False
             )
             # create a new axis to use broadcasting between inner_term and
             # K_inv
-            inner_term -= K_inv[..., np.newaxis]
+            inner_term -= k_inv[..., np.newaxis]
             # Since we are interested about the trace of
             # inner_term @ K_gradient, we don't explicitly compute the
             # matrix-by-matrix operation and instead use an einsum. Therefore
@@ -645,7 +645,7 @@ class GaussianProcessRegressor(MultiOutputMixin, RegressorMixin, BaseEstimator):
             #             K_gradient[..., param_idx]
             #         )
             log_likelihood_gradient_dims = 0.5 * np.einsum(
-                "ijl,jik->kl", inner_term, K_gradient
+                "ijl,jik->kl", inner_term, k_gradient
             )
             # the log likelihood gradient is the sum-up across the outputs
             log_likelihood_gradient = log_likelihood_gradient_dims.sum(axis=-1)
