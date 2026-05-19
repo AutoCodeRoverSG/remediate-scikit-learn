@@ -64,6 +64,8 @@ from sklearn.utils.validation import _check_method_params, check_is_fitted, inde
 
 __all__ = ["GridSearchCV", "ParameterGrid", "ParameterSampler", "RandomizedSearchCV"]
 
+_DEFAULT_PRE_DISPATCH = "2*n_jobs"
+
 
 class ParameterGrid:
     """Grid of parameters with a discrete number of values for each.
@@ -201,7 +203,7 @@ class ParameterGrid:
                     continue
 
             # Reverse so most frequent cycling parameter comes first
-            keys, values_lists = zip(*sorted(sub_grid.items())[::-1])
+            keys, values_lists = zip(*sorted(sub_grid.items(), reverse=True))
             sizes = [len(v_list) for v_list in values_lists]
             total = np.prod(sizes)
 
@@ -337,7 +339,7 @@ class ParameterSampler:
                 dist = rng.choice(self.param_distributions)
                 # Always sort the keys of a dictionary, for reproducibility
                 items = sorted(dist.items())
-                params = dict()
+                params = {}
                 for k, v in items:
                     if hasattr(v, "rvs"):
                         params[k] = v.rvs(random_state=rng)
@@ -380,9 +382,9 @@ def _search_estimator_has(attr):
         if hasattr(self, "best_estimator_"):
             # raise an AttributeError if `attr` does not exist
             getattr(self.best_estimator_, attr)
-            return True
-        # raise an AttributeError if `attr` does not exist
-        getattr(self.estimator, attr)
+        else:
+            # raise an AttributeError if `attr` does not exist
+            getattr(self.estimator, attr)
         return True
 
     return check
@@ -470,7 +472,7 @@ class BaseSearchCV(MetaEstimatorMixin, BaseEstimator, metaclass=ABCMeta):
         refit=True,
         cv=None,
         verbose=0,
-        pre_dispatch="2*n_jobs",
+        pre_dispatch=_DEFAULT_PRE_DISPATCH,
         error_score=np.nan,
         return_train_score=True,
     ):
@@ -535,7 +537,7 @@ class BaseSearchCV(MetaEstimatorMixin, BaseEstimator, metaclass=ABCMeta):
         if _routing_enabled():
             score_params = process_routing(self, "score", **params).scorer["score"]
         else:
-            score_params = dict()
+            score_params = {}
 
         if self.scorer_ is None:
             raise ValueError(
@@ -991,24 +993,26 @@ class BaseSearchCV(MetaEstimatorMixin, BaseEstimator, metaclass=ABCMeta):
 
         routed_params = self._get_routed_params_for_fit(params)
 
-        cv_orig = check_cv(self.cv, y, classifier=is_classifier(estimator))
+        cv_orig = check_cv(
+            self.cv, y, classifier=is_classifier(estimator), random_state=0
+        )
         n_splits = cv_orig.get_n_splits(X, y, **routed_params.splitter.split)
 
         base_estimator = clone(self.estimator)
 
         parallel = Parallel(n_jobs=self.n_jobs, pre_dispatch=self.pre_dispatch)
 
-        fit_and_score_kwargs = dict(
-            scorer=scorers,
-            fit_params=routed_params.estimator.fit,
-            score_params=routed_params.scorer.score,
-            return_train_score=self.return_train_score,
-            return_n_test_samples=True,
-            return_times=True,
-            return_parameters=False,
-            error_score=self.error_score,
-            verbose=self.verbose,
-        )
+        fit_and_score_kwargs = {
+            "scorer": scorers,
+            "fit_params": routed_params.estimator.fit,
+            "score_params": routed_params.scorer.score,
+            "return_train_score": self.return_train_score,
+            "return_n_test_samples": True,
+            "return_times": True,
+            "return_parameters": False,
+            "error_score": self.error_score,
+            "verbose": self.verbose,
+        }
         results = {}
         with parallel:
             all_candidate_params = []
@@ -1623,7 +1627,7 @@ class GridSearchCV(BaseSearchCV):
         refit=True,
         cv=None,
         verbose=0,
-        pre_dispatch="2*n_jobs",
+        pre_dispatch=_DEFAULT_PRE_DISPATCH,
         error_score=np.nan,
         return_train_score=False,
     ):
@@ -2011,7 +2015,7 @@ class RandomizedSearchCV(BaseSearchCV):
         refit=True,
         cv=None,
         verbose=0,
-        pre_dispatch="2*n_jobs",
+        pre_dispatch=_DEFAULT_PRE_DISPATCH,
         random_state=None,
         error_score=np.nan,
         return_train_score=False,
