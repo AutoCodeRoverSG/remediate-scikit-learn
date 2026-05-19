@@ -59,12 +59,12 @@ def _joint_probabilities(distances, desired_perplexity, verbose):
     # Compute conditional probabilities such that they approximately match
     # the desired perplexity
     distances = distances.astype(np.float32, copy=False)
-    conditional_P = _utils._binary_search_perplexity(
+    conditional_p = _utils._binary_search_perplexity(
         distances, desired_perplexity, verbose
     )
-    P = conditional_P + conditional_P.T
-    sum_P = np.maximum(np.sum(P), MACHINE_EPSILON)
-    P = np.maximum(squareform(P) / sum_P, MACHINE_EPSILON)
+    P = conditional_p + conditional_p.T
+    sum_p = np.maximum(np.sum(P), MACHINE_EPSILON)
+    P = np.maximum(squareform(P) / sum_p, MACHINE_EPSILON)
     return P
 
 
@@ -102,21 +102,21 @@ def _joint_probabilities_nn(distances, desired_perplexity, verbose):
     n_samples = distances.shape[0]
     distances_data = distances.data.reshape(n_samples, -1)
     distances_data = distances_data.astype(np.float32, copy=False)
-    conditional_P = _utils._binary_search_perplexity(
+    conditional_p = _utils._binary_search_perplexity(
         distances_data, desired_perplexity, verbose
     )
-    assert np.all(np.isfinite(conditional_P)), "All probabilities should be finite"
+    assert np.all(np.isfinite(conditional_p)), "All probabilities should be finite"
 
     # Symmetrize the joint probability distribution using sparse operations
     P = csr_array(
-        (conditional_P.ravel(), distances.indices, distances.indptr),
+        (conditional_p.ravel(), distances.indices, distances.indptr),
         shape=(n_samples, n_samples),
     )
     P = P + P.T
 
     # Normalize the joint probability distribution
-    sum_P = np.maximum(P.sum(), MACHINE_EPSILON)
-    P /= sum_P
+    sum_p = np.maximum(P.sum(), MACHINE_EPSILON)
+    P /= sum_p
 
     assert np.all(np.abs(P.data) <= 1.0)
     if verbose >= 2:
@@ -127,7 +127,7 @@ def _joint_probabilities_nn(distances, desired_perplexity, verbose):
 
 def _kl_divergence(
     params,
-    P,
+    p,
     degrees_of_freedom,
     n_samples,
     n_components,
@@ -171,10 +171,10 @@ def _kl_divergence(
         Unraveled gradient of the Kullback-Leibler divergence with respect to
         the embedding.
     """
-    X_embedded = params.reshape(n_samples, n_components)
+    x_embedded = params.reshape(n_samples, n_components)
 
     # Q is a heavy-tailed distribution: Student's t-distribution
-    dist = pdist(X_embedded, "sqeuclidean")
+    dist = pdist(x_embedded, "sqeuclidean")
     dist /= degrees_of_freedom
     dist += 1.0
     dist **= (degrees_of_freedom + 1.0) / -2.0
@@ -185,16 +185,16 @@ def _kl_divergence(
 
     # Objective: C (Kullback-Leibler divergence of P and Q)
     if compute_error:
-        kl_divergence = 2.0 * np.dot(P, np.log(np.maximum(P, MACHINE_EPSILON) / Q))
+        kl_divergence = 2.0 * np.dot(p, np.log(np.maximum(p, MACHINE_EPSILON) / Q))
     else:
         kl_divergence = np.nan
 
     # Gradient: dC/dY
     # pdist always returns double precision distances. Thus we need to take
     grad = np.ndarray((n_samples, n_components), dtype=params.dtype)
-    PQd = squareform((P - Q) * dist)
+    pqd = squareform((p - Q) * dist)
     for i in range(skip_num_points, n_samples):
-        grad[i] = np.dot(np.ravel(PQd[i], order="K"), X_embedded[i] - X_embedded)
+        grad[i] = np.dot(np.ravel(pqd[i], order="K"), x_embedded[i] - x_embedded)
     grad = grad.ravel()
     c = 2.0 * (degrees_of_freedom + 1.0) / degrees_of_freedom
     grad *= c
@@ -204,7 +204,7 @@ def _kl_divergence(
 
 def _kl_divergence_bh(
     params,
-    P,
+    p_matrix,
     degrees_of_freedom,
     n_samples,
     n_components,
@@ -271,16 +271,16 @@ def _kl_divergence_bh(
         the embedding.
     """
     params = params.astype(np.float32, copy=False)
-    X_embedded = params.reshape(n_samples, n_components)
+    x_embedded = params.reshape(n_samples, n_components)
 
-    val_P = P.data.astype(np.float32, copy=False)
-    neighbors = P.indices.astype(np.int64, copy=False)
-    indptr = P.indptr.astype(np.int64, copy=False)
+    val_p = p_matrix.data.astype(np.float32, copy=False)
+    neighbors = p_matrix.indices.astype(np.int64, copy=False)
+    indptr = p_matrix.indptr.astype(np.int64, copy=False)
 
-    grad = np.zeros(X_embedded.shape, dtype=np.float32)
+    grad = np.zeros(x_embedded.shape, dtype=np.float32)
     error = _barnes_hut_tsne.gradient(
-        val_P,
-        X_embedded,
+        val_p,
+        x_embedded,
         neighbors,
         indptr,
         grad,
