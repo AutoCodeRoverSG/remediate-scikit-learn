@@ -609,10 +609,10 @@ def test_precomputed_sparse_invalid(csr_container):
 
 def test_precomputed_cross_validation():
     # Ensure array is split correctly
-    rng = np.random.RandomState(0)
-    X = rng.rand(20, 2)
+    rng = np.random.default_rng(0)
+    X = rng.random((20, 2))
     D = pairwise_distances(X, metric="euclidean")
-    y = rng.randint(3, size=20)
+    y = rng.integers(3, size=20)
     for est in (
         neighbors.KNeighborsClassifier,
         neighbors.RadiusNeighborsClassifier,
@@ -628,11 +628,11 @@ def test_unsupervised_radius_neighbors(
     global_dtype, n_samples=20, n_features=5, n_query_pts=2, radius=0.5, random_state=0
 ):
     # Test unsupervised radius-based query
-    rng = np.random.RandomState(random_state)
+    rng = np.random.default_rng(random_state)
 
-    X = rng.rand(n_samples, n_features).astype(global_dtype, copy=False)
+    X = rng.random((n_samples, n_features)).astype(global_dtype, copy=False)
 
-    test = rng.rand(n_query_pts, n_features).astype(global_dtype, copy=False)
+    test = rng.random((n_query_pts, n_features)).astype(global_dtype, copy=False)
 
     for p in P:
         results = []
@@ -679,8 +679,8 @@ def test_kneighbors_classifier(
     random_state=0,
 ):
     # Test k-neighbors classification
-    rng = np.random.RandomState(random_state)
-    X = 2 * rng.rand(n_samples, n_features).astype(global_dtype, copy=False) - 1
+    rng = np.random.default_rng(random_state)
+    X = 2 * rng.random((n_samples, n_features)).astype(global_dtype, copy=False) - 1
     y = ((X**2).sum(axis=1) < 0.5).astype(int)
     y_str = y.astype(str)
 
@@ -688,7 +688,7 @@ def test_kneighbors_classifier(
         n_neighbors=n_neighbors, weights=weights, algorithm=algorithm
     )
     knn.fit(X, y)
-    epsilon = 1e-5 * (2 * rng.rand(1, n_features) - 1)
+    epsilon = 1e-5 * (2 * rng.random((1, n_features)) - 1)
     y_pred = knn.predict(X[:n_test_pts] + epsilon)
     assert_array_equal(y_pred, y[:n_test_pts])
     # Test prediction with y_str
@@ -706,13 +706,13 @@ def test_kneighbors_classifier_float_labels(
     random_state=0,
 ):
     # Test k-neighbors classification
-    rng = np.random.RandomState(random_state)
-    X = 2 * rng.rand(n_samples, n_features).astype(global_dtype, copy=False) - 1
+    rng = np.random.default_rng(random_state)
+    X = 2 * rng.random((n_samples, n_features)).astype(global_dtype, copy=False) - 1
     y = ((X**2).sum(axis=1) < 0.5).astype(int)
 
     knn = neighbors.KNeighborsClassifier(n_neighbors=n_neighbors)
     knn.fit(X, y.astype(float))
-    epsilon = 1e-5 * (2 * rng.rand(1, n_features) - 1)
+    epsilon = 1e-5 * (2 * rng.random((1, n_features)) - 1)
     y_pred = knn.predict(X[:n_test_pts] + epsilon)
     assert_array_equal(y_pred, y[:n_test_pts])
 
@@ -765,8 +765,8 @@ def test_radius_neighbors_classifier(
     random_state=0,
 ):
     # Test radius-based classification
-    rng = np.random.RandomState(random_state)
-    X = 2 * rng.rand(n_samples, n_features).astype(global_dtype, copy=False) - 1
+    rng = np.random.default_rng(random_state)
+    X = 2 * rng.random((n_samples, n_features)).astype(global_dtype, copy=False) - 1
     y = ((X**2).sum(axis=1) < radius).astype(int)
     y_str = y.astype(str)
 
@@ -774,7 +774,7 @@ def test_radius_neighbors_classifier(
         radius=radius, weights=weights, algorithm=algorithm
     )
     neigh.fit(X, y)
-    epsilon = 1e-5 * (2 * rng.rand(1, n_features) - 1)
+    epsilon = 1e-5 * (2 * rng.random((1, n_features)) - 1)
     y_pred = neigh.predict(X[:n_test_pts] + epsilon)
     assert_array_equal(y_pred, y[:n_test_pts])
     neigh.fit(X, y_str)
@@ -1078,8 +1078,8 @@ def test_radius_neighbors_sort_results(algorithm, metric):
             " estimators."
         )
     n_samples = 10
-    rng = np.random.RandomState(42)
-    X = rng.random_sample((n_samples, 4))
+    rng = np.random.default_rng(42)
+    X = rng.random((n_samples, 4))
 
     if metric == "precomputed":
         X = neighbors.radius_neighbors_graph(X, radius=np.inf, mode="distance")
@@ -1091,7 +1091,7 @@ def test_radius_neighbors_sort_results(algorithm, metric):
     for ii in range(n_samples):
         assert_array_equal(distances[ii], np.sort(distances[ii]))
 
-    # sort_results=True and return_distance=False
+    
     if metric != "precomputed":  # no need to raise with precomputed graph
         with pytest.raises(ValueError, match="return_distance must be True"):
             model.radius_neighbors(
@@ -1105,7 +1105,7 @@ def test_radius_neighbors_sort_results(algorithm, metric):
     assert _is_sorted_by_data(graph)
 
 
-def test_RadiusNeighborsClassifier_multioutput():
+def test_radius_neighbors_classifier_multioutput():
     # Test k-NN classifier on multioutput data
     rng = check_random_state(0)
     n_features = 2
@@ -1148,22 +1148,22 @@ def test_kneighbors_classifier_sparse(
 ):
     # Test k-NN classifier on sparse matrices
     # Like the above, but with various types of sparse matrices
-    rng = np.random.RandomState(random_state)
-    X = 2 * rng.rand(n_samples, n_features) - 1
+    rng = np.random.default_rng(random_state)
+    X = 2 * rng.random((n_samples, n_features)) - 1
     X *= X > 0.2
     y = ((X**2).sum(axis=1) < 0.5).astype(int)
 
     for sparsemat in SPARSE_TYPES:
         knn = neighbors.KNeighborsClassifier(n_neighbors=n_neighbors, algorithm="auto")
         knn.fit(sparsemat(X), y)
-        epsilon = 1e-5 * (2 * rng.rand(1, n_features) - 1)
+        epsilon = 1e-5 * (2 * rng.random((1, n_features)) - 1)
         for sparsev in SPARSE_TYPES + (np.asarray,):
             x_eps = sparsev(X[:n_test_pts] + epsilon)
             y_pred = knn.predict(x_eps)
             assert_array_equal(y_pred, y[:n_test_pts])
 
 
-def test_KNeighborsClassifier_multioutput():
+def test_kneighbors_classifier_multioutput():
     # Test k-NN classifier on multioutput data
     rng = check_random_state(0)
     n_features = 5
