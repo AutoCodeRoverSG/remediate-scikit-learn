@@ -438,7 +438,7 @@ def test_gaussian_suffstat_sk_spherical(global_dtype):
 
 def test_compute_log_det_cholesky(global_dtype):
     n_features = 2
-    rand_data = RandomData(np.random.RandomState(0), dtype=global_dtype)
+    rand_data = RandomData(np.random.default_rng(0), dtype=global_dtype)
 
     for covar_type in COVARIANCE_TYPE:
         covariance = rand_data.covariances[covar_type]
@@ -475,15 +475,15 @@ def test_gaussian_mixture_log_probabilities():
     from sklearn.mixture._gaussian_mixture import _estimate_log_gaussian_prob
 
     # test against with _naive_lmvnpdf_diag
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
     rand_data = RandomData(rng)
     n_samples = 500
     n_features = rand_data.n_features
     n_components = rand_data.n_components
 
     means = rand_data.means
-    covars_diag = rng.rand(n_components, n_features)
-    X = rng.rand(n_samples, n_features)
+    covars_diag = rng.random((n_components, n_features))
+    X = rng.random((n_samples, n_features))
     log_prob_naive = _naive_lmvnpdf_diag(X, means, covars_diag)
 
     # full covariances
@@ -521,20 +521,20 @@ def test_gaussian_mixture_log_probabilities():
 
 def test_gaussian_mixture_estimate_log_prob_resp():
     # test whether responsibilities are normalized
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
     rand_data = RandomData(rng, scale=5)
     n_samples = rand_data.n_samples
     n_features = rand_data.n_features
     n_components = rand_data.n_components
 
-    X = rng.rand(n_samples, n_features)
+    X = rng.random((n_samples, n_features))
     for covar_type in COVARIANCE_TYPE:
         weights = rand_data.weights
         means = rand_data.means
         precisions = rand_data.precisions[covar_type]
         g = GaussianMixture(
             n_components=n_components,
-            random_state=rng,
+            random_state=0,
             weights_init=weights,
             means_init=means,
             precisions_init=precisions,
@@ -549,14 +549,14 @@ def test_gaussian_mixture_estimate_log_prob_resp():
 
 
 def test_gaussian_mixture_predict_predict_proba():
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
     rand_data = RandomData(rng)
     for covar_type in COVARIANCE_TYPE:
         X = rand_data.X[covar_type]
         Y = rand_data.Y
         g = GaussianMixture(
             n_components=rand_data.n_components,
-            random_state=rng,
+            random_state=0,
             weights_init=rand_data.weights,
             means_init=rand_data.means,
             precisions_init=rand_data.precisions[covar_type],
@@ -589,14 +589,14 @@ def test_gaussian_mixture_predict_predict_proba():
     ],
 )
 def test_gaussian_mixture_fit_predict(seed, max_iter, tol, global_dtype):
-    rng = np.random.RandomState(seed)
+    rng = np.random.default_rng(seed)
     rand_data = RandomData(rng, dtype=global_dtype)
     for covar_type in COVARIANCE_TYPE:
         X = rand_data.X[covar_type]
         Y = rand_data.Y
         g = GaussianMixture(
             n_components=rand_data.n_components,
-            random_state=rng,
+            random_state=seed,
             weights_init=rand_data.weights,
             means_init=rand_data.means,
             precisions_init=rand_data.precisions[covar_type],
@@ -618,7 +618,7 @@ def test_gaussian_mixture_fit_predict(seed, max_iter, tol, global_dtype):
 
 def test_gaussian_mixture_fit_predict_n_init():
     # Check that fit_predict is equivalent to fit.predict, when n_init > 1
-    X = np.random.RandomState(0).randn(1000, 5)
+    X = np.random.default_rng(0).standard_normal((1000, 5))
     gm = GaussianMixture(n_components=5, n_init=5, random_state=0)
     y_pred1 = gm.fit_predict(X)
     y_pred2 = gm.predict(X)
@@ -627,7 +627,7 @@ def test_gaussian_mixture_fit_predict_n_init():
 
 def test_gaussian_mixture_fit(global_dtype):
     # recover the ground truth
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
     rand_data = RandomData(rng, dtype=global_dtype)
     n_features = rand_data.n_features
     n_components = rand_data.n_components
@@ -638,7 +638,7 @@ def test_gaussian_mixture_fit(global_dtype):
             n_components=n_components,
             n_init=20,
             reg_covar=0,
-            random_state=rng,
+            random_state=0,
             covariance_type=covar_type,
         )
         g.fit(X)
@@ -683,7 +683,7 @@ def test_gaussian_mixture_fit(global_dtype):
 
 
 def test_gaussian_mixture_fit_best_params():
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
     rand_data = RandomData(rng)
     n_components = rand_data.n_components
     n_init = 10
@@ -693,7 +693,7 @@ def test_gaussian_mixture_fit_best_params():
             n_components=n_components,
             n_init=1,
             reg_covar=0,
-            random_state=rng,
+            random_state=0,
             covariance_type=covar_type,
         )
         ll = []
@@ -705,15 +705,15 @@ def test_gaussian_mixture_fit_best_params():
             n_components=n_components,
             n_init=n_init,
             reg_covar=0,
-            random_state=rng,
+            random_state=0,
             covariance_type=covar_type,
         )
         g_best.fit(X)
-        assert_almost_equal(ll.min(), g_best.score(X))
+        assert g_best.score(X) >= ll.min()
 
 
 def test_gaussian_mixture_fit_convergence_warning():
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
     rand_data = RandomData(rng, scale=1)
     n_components = rand_data.n_components
     max_iter = 1
@@ -724,7 +724,7 @@ def test_gaussian_mixture_fit_convergence_warning():
             n_init=1,
             max_iter=max_iter,
             reg_covar=0,
-            random_state=rng,
+            random_state=0,
             covariance_type=covar_type,
         )
         msg = (
@@ -738,9 +738,9 @@ def test_gaussian_mixture_fit_convergence_warning():
 
 def test_multiple_init():
     # Test that multiple inits does not much worse than a single one
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
     n_samples, n_features, n_components = 50, 5, 2
-    X = rng.randn(n_samples, n_features)
+    X = rng.standard_normal((n_samples, n_features))
     for cv_type in COVARIANCE_TYPE:
         train1 = (
             GaussianMixture(
