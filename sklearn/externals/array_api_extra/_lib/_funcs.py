@@ -18,6 +18,7 @@ from ._utils._helpers import (
 )
 from ._utils._typing import Array, Device, DType
 
+_REAL_FLOATING = "real floating"
 _COMPLEX_FLOATING = "complex floating"
 
 __all__ = [
@@ -466,7 +467,7 @@ def default_dtype(
     xp: ModuleType,
     kind: Literal[
         "real floating", "complex floating", "integral", "indexing"
-    ] = "real floating",
+    ] = _REAL_FLOATING,
     *,
     device: Device | None = None,
 ) -> DType:
@@ -494,7 +495,7 @@ def default_dtype(
     try:
         return dtypes[kind]
     except KeyError as e:
-        domain = ("real floating", _COMPLEX_FLOATING, "integral", "indexing")
+        domain = (_REAL_FLOATING, _COMPLEX_FLOATING, "integral", "indexing")
         assert set(dtypes) == set(domain), f"Non-compliant namespace: {dtypes}"
         msg = f"Unknown kind '{kind}'. Expected one of {domain}."
         raise ValueError(msg) from e
@@ -598,8 +599,8 @@ def isclose(
     """See docstring in array_api_extra._delegation."""
     a, b = asarrays(a, b, xp=xp)
 
-    a_inexact = xp.isdtype(a.dtype, ("real floating", _COMPLEX_FLOATING))
-    b_inexact = xp.isdtype(b.dtype, ("real floating", _COMPLEX_FLOATING))
+    a_inexact = xp.isdtype(a.dtype, (_REAL_FLOATING, _COMPLEX_FLOATING))
+    b_inexact = xp.isdtype(b.dtype, (_REAL_FLOATING, _COMPLEX_FLOATING))
     if a_inexact or b_inexact:
         # prevent warnings on NumPy and Dask on inf - inf
         mxp = meta_namespace(a, b, xp=xp)
@@ -1026,7 +1027,7 @@ def sinc(x: Array, /, *, xp: ModuleType | None = None) -> Array:
     if xp is None:
         xp = array_namespace(x)
 
-    if not xp.isdtype(x.dtype, "real floating"):
+    if not xp.isdtype(x.dtype, _REAL_FLOATING):
         err_msg = "`x` must have a real floating data type."
         raise ValueError(err_msg)
     # no scalars in `where` - array-api#807

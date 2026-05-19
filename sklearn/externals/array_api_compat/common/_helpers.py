@@ -59,6 +59,7 @@ _API_VERSIONS_OLD: Final = frozenset({"2021.12", "2022.12", "2023.12"})
 _API_VERSIONS: Final = _API_VERSIONS_OLD | frozenset({"2024.12"})
 
 _DASK_ARRAY_MODULE: Final = "dask.array"
+_JAX_CORE_MODULE: Final = "jax.core"
 
 
 @lru_cache(100)
@@ -245,7 +246,7 @@ def is_jax_array(x: object) -> TypeIs[jax.Array]:
     # https://github.com/data-apis/array-api-compat/pull/369 and the corresponding issue.
     return (
         _issubclass_fast(cls, "jax", "Array")
-        or _issubclass_fast(cls, "jax.core", "Tracer")
+        or _issubclass_fast(cls, _JAX_CORE_MODULE, "Tracer")
         or _is_jax_zero_gradient_array(x)
     )
 
@@ -308,7 +309,7 @@ def _is_array_api_cls(cls: type) -> bool:
         or _issubclass_fast(cls, "sparse", "SparseArray")
         # TODO: drop support for jax<0.4.32 which didn't have __array_namespace__
         or _issubclass_fast(cls, "jax", "Array")
-        or _issubclass_fast(cls, "jax.core", "Tracer")  # see is_jax_array for limitations
+        or _issubclass_fast(cls, _JAX_CORE_MODULE, "Tracer")  # see is_jax_array for limitations
     )
 
 
@@ -941,7 +942,7 @@ def _is_writeable_cls(cls: type) -> bool | None:
     if (
         _issubclass_fast(cls, "numpy", "generic")
         or _issubclass_fast(cls, "jax", "Array")
-        or _issubclass_fast(cls, "jax.core", "Tracer")  # see is_jax_array for limitations
+        or _issubclass_fast(cls, _JAX_CORE_MODULE, "Tracer")  # see is_jax_array for limitations
         or _issubclass_fast(cls, "sparse", "SparseArray")
     ):
         return False
@@ -981,7 +982,7 @@ def _is_lazy_cls(cls: type) -> bool | None:
         return False
     if (
         _issubclass_fast(cls, "jax", "Array")
-        or _issubclass_fast(cls, "jax.core", "Tracer")  # see is_jax_array for limitations
+        or _issubclass_fast(cls, _JAX_CORE_MODULE, "Tracer")  # see is_jax_array for limitations
         or _issubclass_fast(cls, _DASK_ARRAY_MODULE, "Array")
         or _issubclass_fast(cls, "ndonnx", "Array")
     ):

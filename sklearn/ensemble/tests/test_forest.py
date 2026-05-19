@@ -1931,7 +1931,7 @@ def test_missing_value_is_predictive(Forest, criterion, global_random_seed):
 
 
 # TODO(1.11): remove test with the deprecation of friedman_mse criterion
-@pytest.mark.parametrize("Forest", FOREST_REGRESSORS.values())
-def test_friedman_mse_deprecation(Forest):
+@pytest.mark.parametrize("forest", FOREST_REGRESSORS.values())
+def test_friedman_mse_deprecation(forest):
     with pytest.warns(FutureWarning, match="friedman_mse"):
-        _ = Forest(criterion="friedman_mse")
+        _ = forest(criterion="friedman_mse")
