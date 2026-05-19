@@ -619,13 +619,13 @@ class DecisionBoundaryDisplay:
         """
         check_is_fitted(estimator)
 
-        if not grid_resolution > 1:
+        if grid_resolution <= 1:
             raise ValueError(
                 "grid_resolution must be greater than 1. Got"
                 f" {grid_resolution} instead."
             )
 
-        if not eps >= 0:
+        if eps < 0:
             raise ValueError(
                 f"eps must be greater than or equal to 0. Got {eps} instead."
             )
@@ -654,12 +654,12 @@ class DecisionBoundaryDisplay:
             np.linspace(x1_min, x1_max, grid_resolution),
         )
 
-        X_grid = np.c_[xx0.ravel(), xx1.ravel()]
+        x_grid = np.c_[xx0.ravel(), xx1.ravel()]
         if is_pandas_df(X) or is_polars_df(X):
             adapter = _get_adapter_from_container(X)
-            X_grid = adapter.create_container(
-                X_grid,
-                X_grid,
+            x_grid = adapter.create_container(
+                x_grid,
+                x_grid,
                 columns=X.columns,
             )
 
@@ -674,7 +674,7 @@ class DecisionBoundaryDisplay:
 
         response, _, response_method_used = _get_response_values(
             estimator,
-            X_grid,
+            x_grid,
             response_method=prediction_method,
             pos_label=class_of_interest,
             return_response_method_used=True,

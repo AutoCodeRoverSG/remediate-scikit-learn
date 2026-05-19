@@ -221,7 +221,6 @@ class _GeneralizedLinearRegressor(RegressorMixin, BaseEstimator):
 
         y, sample_weight = move_to(y, sample_weight, xp=xp, device=device_)
 
-        n_samples, n_features = X.shape
         self._base_loss = self._get_loss(xp=xp, device=device_)
 
         linear_loss = LinearModelLoss(
@@ -254,7 +253,7 @@ class _GeneralizedLinearRegressor(RegressorMixin, BaseEstimator):
 
         loss_dtype_np = _matching_numpy_dtype(X, xp=xp)
         if self.warm_start and hasattr(self, "coef_"):
-            coef_xp, _ = get_namespace(self.coef_)
+            _, _ = get_namespace(self.coef_)
             coef = move_to(self.coef_, xp=np, device="cpu")
             if self.fit_intercept:
                 # LinearModelLoss needs intercept at the end of coefficient array.
@@ -477,12 +476,14 @@ class _GeneralizedLinearRegressor(RegressorMixin, BaseEstimator):
             pass  # pragma: no cover
         return tags
 
-    def _get_loss(self, xp=None, device=None):
+    def _get_loss(self, xp=None, device=None):  # xp and device used by subclasses
         """This is only necessary because of the link and power arguments of the
         TweedieRegressor.
 
         Note that we do not need to pass sample_weight to the loss class as this is
         only needed to set loss.constant_hessian on which GLMs do not rely.
+
+        Subclasses may use xp and device to select array-API-compatible losses.
         """
         return HalfSquaredError()
 
