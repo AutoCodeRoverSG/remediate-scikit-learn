@@ -668,7 +668,7 @@ def test_lasso_readonly_data():
 
 
 def test_multi_task_lasso_readonly_data():
-    X, y, X_test, y_test = build_dataset()
+    X, y, _, _ = build_dataset()
     Y = np.c_[y, y]
     with TempMemmap((X, Y)) as (X, Y):
         Y = np.c_[y, y]
@@ -783,14 +783,14 @@ def test_elasticnet_precompute_incorrect_gram():
 
     rng = np.random.RandomState(0)
 
-    X_centered = X - np.average(X, axis=0)
+    x_centered = X - np.average(X, axis=0)
     garbage = rng.standard_normal(X.shape)
     precompute = np.dot(garbage.T, garbage)
 
     clf = ElasticNet(alpha=0.01, precompute=precompute)
     msg = "Gram matrix.*did not pass validation.*"
     with pytest.raises(ValueError, match=msg):
-        clf.fit(X_centered, y)
+        clf.fit(x_centered, y)
 
 
 def test_elasticnet_precompute_gram_weighted_samples():
@@ -802,12 +802,12 @@ def test_elasticnet_precompute_gram_weighted_samples():
     sample_weight = rng.lognormal(size=y.shape)
 
     w_norm = sample_weight * (y.shape / np.sum(sample_weight))
-    X_c = X - np.average(X, axis=0, weights=w_norm)
-    X_r = X_c * np.sqrt(w_norm)[:, np.newaxis]
-    gram = np.dot(X_r.T, X_r)
+    x_centered = X - np.average(X, axis=0, weights=w_norm)
+    x_rescaled = x_centered * np.sqrt(w_norm)[:, np.newaxis]
+    gram = np.dot(x_rescaled.T, x_rescaled)
 
     clf1 = ElasticNet(alpha=0.01, precompute=gram)
-    clf1.fit(X_c, y, sample_weight=sample_weight)
+    clf1.fit(x_centered, y, sample_weight=sample_weight)
 
     clf2 = ElasticNet(alpha=0.01, precompute=False)
     clf2.fit(X, y, sample_weight=sample_weight)
@@ -826,11 +826,11 @@ def test_elasticnet_precompute_gram():
     X = rng.binomial(1, 0.25, (1000, 4)).astype(np.float32)
     y = rng.rand(1000).astype(np.float32)
 
-    X_c = X - np.average(X, axis=0)
-    gram = np.dot(X_c.T, X_c)
+    x_centered = X - np.average(X, axis=0)
+    gram = np.dot(x_centered.T, x_centered)
 
     clf1 = ElasticNet(alpha=0.01, precompute=gram)
-    clf1.fit(X_c, y)
+    clf1.fit(x_centered, y)
 
     clf2 = ElasticNet(alpha=0.01, precompute=False)
     clf2.fit(X, y)
@@ -839,10 +839,10 @@ def test_elasticnet_precompute_gram():
 
 
 @pytest.mark.parametrize("sparse_csr_type", [sparse.csr_array, sparse.csr_matrix])
-@pytest.mark.parametrize("sparse_X", [True, False])
-def test_warm_start_convergence(sparse_X, sparse_csr_type):
+@pytest.mark.parametrize("sparse_x", [True, False])
+def test_warm_start_convergence(sparse_x, sparse_csr_type):
     X, y, _, _ = build_dataset()
-    if sparse_X:
+    if sparse_x:
         X = sparse_csr_type(X)
     model = ElasticNet(alpha=1e-3, tol=1e-3).fit(X, y)
     n_iter_reference = model.n_iter_
@@ -990,23 +990,23 @@ def test_enet_copy_X_True(check_input):
     X, y, _, _ = build_dataset()
     X = X.copy(order="F")
 
-    original_X = X.copy()
+    original_x = X.copy()
     enet = ElasticNet(copy_X=True)
     enet.fit(X, y, check_input=check_input)
 
-    assert_array_equal(original_X, X)
+    assert_array_equal(original_x, X)
 
 
 def test_enet_copy_X_False_check_input_False():
     X, y, _, _ = build_dataset()
     X = X.copy(order="F")
 
-    original_X = X.copy()
+    original_x = X.copy()
     enet = ElasticNet(copy_X=False)
     enet.fit(X, y, check_input=False)
 
     # No copying, X is overwritten
-    assert np.any(np.not_equal(original_X, X))
+    assert np.any(np.not_equal(original_x, X))
 
 
 def test_overridden_gram_matrix():
