@@ -108,9 +108,9 @@ class MockImprovingEstimator(BaseEstimator):
         self.train_sizes = 0
         self.X_subset = None
 
-    def fit(self, X_subset, y_subset=None):
-        self.X_subset = X_subset
-        self.train_sizes = X_subset.shape[0]
+    def fit(self, x_subset, y_subset=None):
+        self.X_subset = x_subset
+        self.train_sizes = x_subset.shape[0]
         return self
 
     def predict(self, X):
@@ -164,9 +164,9 @@ class MockEstimatorWithParameter(BaseEstimator):
         self.X_subset = None
         self.param = param
 
-    def fit(self, X_subset, y_subset):
-        self.X_subset = X_subset
-        self.train_sizes = X_subset.shape[0]
+    def fit(self, x_subset, y_subset):
+        self.X_subset = x_subset
+        self.train_sizes = x_subset.shape[0]
         return self
 
     def predict(self, X):
@@ -182,10 +182,10 @@ class MockEstimatorWithParameter(BaseEstimator):
 class MockEstimatorWithSingleFitCallAllowed(MockEstimatorWithParameter):
     """Dummy classifier that disallows repeated calls of fit method"""
 
-    def fit(self, X_subset, y_subset):
+    def fit(self, x_subset, y_subset):
         assert not hasattr(self, "fit_called_"), "fit is called the second time"
         self.fit_called_ = True
-        return super().fit(X_subset, y_subset)
+        return super().fit(x_subset, y_subset)
 
     def predict(self, X):
         raise NotImplementedError
@@ -262,13 +262,13 @@ class MockClassifier(ClassifierMixin, BaseEstimator):
         self.classes_ = np.unique(y)
         return self
 
-    def predict(self, T):
+    def predict(self, t):
         if self.allow_nd:
-            T = T.reshape(len(T), -1)
-        return T[:, 0]
+            t = t.reshape(len(t), -1)
+        return t[:, 0]
 
-    def predict_proba(self, T):
-        return T
+    def predict_proba(self, t):
+        return t
 
     def score(self, X=None, Y=None):
         return 1.0 / (1 + np.abs(self.a))
@@ -290,7 +290,7 @@ P = np.eye(5)
 @pytest.mark.parametrize("coo_container", COO_CONTAINERS)
 def test_cross_val_score(coo_container):
     clf = MockClassifier()
-    X_sparse = coo_container(X)
+    x_sparse = coo_container(X)
 
     for a in range(-10, 10):
         clf.a = a
@@ -300,32 +300,32 @@ def test_cross_val_score(coo_container):
 
         # test with multioutput y
         multioutput_y = np.column_stack([y2, y2[::-1]])
-        scores = cross_val_score(clf, X_sparse, multioutput_y)
-        assert_array_equal(scores, clf.score(X_sparse, multioutput_y))
+        scores = cross_val_score(clf, x_sparse, multioutput_y)
+        assert_array_equal(scores, clf.score(x_sparse, multioutput_y))
 
-        scores = cross_val_score(clf, X_sparse, y2)
-        assert_array_equal(scores, clf.score(X_sparse, y2))
+        scores = cross_val_score(clf, x_sparse, y2)
+        assert_array_equal(scores, clf.score(x_sparse, y2))
 
         # test with multioutput y
-        scores = cross_val_score(clf, X_sparse, multioutput_y)
-        assert_array_equal(scores, clf.score(X_sparse, multioutput_y))
+        scores = cross_val_score(clf, x_sparse, multioutput_y)
+        assert_array_equal(scores, clf.score(x_sparse, multioutput_y))
 
     # test with X and y as list
     list_check = lambda x: isinstance(x, list)
-    clf = CheckingClassifier(check_X=list_check)
+    clf = CheckingClassifier(check_X=list_check, random_state=0)
     scores = cross_val_score(clf, X.tolist(), y2.tolist(), cv=3)
 
-    clf = CheckingClassifier(check_y=list_check)
+    clf = CheckingClassifier(check_y=list_check, random_state=0)
     scores = cross_val_score(clf, X, y2.tolist(), cv=3)
 
     # test with 3d X and
-    X_3d = X[:, :, np.newaxis]
+    x_3d = X[:, :, np.newaxis]
     clf = MockClassifier(allow_nd=True)
-    scores = cross_val_score(clf, X_3d, y2)
+    scores = cross_val_score(clf, x_3d, y2)
 
     clf = MockClassifier(allow_nd=False)
     with pytest.raises(ValueError):
-        cross_val_score(clf, X_3d, y2, error_score="raise")
+        cross_val_score(clf, x_3d, y2, error_score="raise")
 
 
 def test_cross_validate_many_jobs():
@@ -371,7 +371,7 @@ def test_cross_validate_invalid_scoring_param():
 
     # Empty dict should raise invalid scoring error
     with pytest.raises(ValueError, match="An empty dict"):
-        cross_validate(estimator, X, y, scoring=(dict()))
+        cross_validate(estimator, X, y, scoring=({}))
 
     multiclass_scorer = make_scorer(precision_recall_fscore_support)
 
@@ -407,7 +407,8 @@ def test_cross_validate_nested_estimator():
         [
             ("imputer", SimpleImputer()),
             ("classifier", MockClassifier()),
-        ]
+        ],
+        memory=None,
     )
 
     results = cross_validate(pipeline, X, y, return_options={"estimator"})
