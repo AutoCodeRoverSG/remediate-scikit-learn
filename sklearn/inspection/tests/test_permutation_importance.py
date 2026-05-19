@@ -408,7 +408,7 @@ def test_permutation_importance_sample_weight():
     # variable is a linear combination of the two features, such that
     # in half of the samples the impact of feature 1 is twice the impact of
     # feature 2, and vice versa on the other half of the samples.
-    rng = np.random.RandomState(1)
+    rng = np.random.default_rng(1)
     n_samples = 1000
     n_features = 2
     n_half_samples = n_samples // 2

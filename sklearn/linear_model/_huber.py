@@ -95,18 +95,18 @@ def _huber_loss_and_gradient(w, X, y, epsilon, alpha, sample_weight=None):
         grad = np.zeros(n_features + 1)
 
     # Gradient due to the squared loss.
-    X_non_outliers = -axis0_safe_slice(X, ~outliers_mask, n_non_outliers)
+    x_non_outliers = -axis0_safe_slice(X, ~outliers_mask, n_non_outliers)
     grad[:n_features] = (
-        2.0 / sigma * safe_sparse_dot(weighted_non_outliers, X_non_outliers)
+        2.0 / sigma * safe_sparse_dot(weighted_non_outliers, x_non_outliers)
     )
 
     # Gradient due to the linear loss.
     signed_outliers = np.ones_like(outliers)
     signed_outliers_mask = linear_loss[outliers_mask] < 0
     signed_outliers[signed_outliers_mask] = -1.0
-    X_outliers = axis0_safe_slice(X, outliers_mask, num_outliers)
+    x_outliers = axis0_safe_slice(X, outliers_mask, num_outliers)
     sw_outliers = sample_weight[outliers_mask] * signed_outliers
-    grad[:n_features] -= 2.0 * epsilon * (safe_sparse_dot(sw_outliers, X_outliers))
+    grad[:n_features] -= 2.0 * epsilon * (safe_sparse_dot(sw_outliers, x_outliers))
 
     # Gradient due to the penalty.
     grad[:n_features] += alpha * 2.0 * w

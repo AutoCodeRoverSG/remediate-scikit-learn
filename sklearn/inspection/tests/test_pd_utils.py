@@ -14,7 +14,7 @@ from sklearn.utils._testing import _convert_container
     ],
 )
 def test_check_feature_names(feature_names, array_type, expected_feature_names):
-    X = np.random.randn(10, 3)
+    X = np.random.default_rng(0).standard_normal((10, 3))
     column_names = ["a", "b", "c"]
     X = _convert_container(X, constructor_name=array_type, column_names=column_names)
     feature_names_validated = _check_feature_names(X, feature_names)
@@ -22,7 +22,7 @@ def test_check_feature_names(feature_names, array_type, expected_feature_names):
 
 
 def test_check_feature_names_error():
-    X = np.random.randn(10, 3)
+    X = np.random.default_rng(0).standard_normal((10, 3))
     feature_names = ["a", "b", "c", "a"]
     msg = "feature_names should not contain duplicates."
     with pytest.raises(ValueError, match=msg):
