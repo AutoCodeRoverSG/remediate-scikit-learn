@@ -764,13 +764,13 @@ def test_multiple_init():
 
 def test_gaussian_mixture_n_parameters():
     # Test that the right number of parameters is estimated
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
     n_samples, n_features, n_components = 50, 5, 2
-    X = rng.randn(n_samples, n_features)
+    X = rng.standard_normal((n_samples, n_features))
     n_params = {"spherical": 13, "diag": 21, "tied": 26, "full": 41}
     for cv_type in COVARIANCE_TYPE:
         g = GaussianMixture(
-            n_components=n_components, covariance_type=cv_type, random_state=rng
+            n_components=n_components, covariance_type=cv_type, random_state=0
         ).fit(X)
         assert g._n_parameters() == n_params[cv_type]
 
@@ -778,12 +778,12 @@ def test_gaussian_mixture_n_parameters():
 def test_bic_1d_1component():
     # Test all of the covariance_types return the same BIC score for
     # 1-dimensional, 1 component fits.
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
     n_samples, n_dim, n_components = 100, 1, 1
-    X = rng.randn(n_samples, n_dim)
+    X = rng.standard_normal((n_samples, n_dim))
     bic_full = (
         GaussianMixture(
-            n_components=n_components, covariance_type="full", random_state=rng
+            n_components=n_components, covariance_type="full", random_state=0
         )
         .fit(X)
         .bic(X)
@@ -793,7 +793,7 @@ def test_bic_1d_1component():
             GaussianMixture(
                 n_components=n_components,
                 covariance_type=covariance_type,
-                random_state=rng,
+                random_state=0,
             )
             .fit(X)
             .bic(X)
@@ -803,9 +803,9 @@ def test_bic_1d_1component():
 
 def test_gaussian_mixture_aic_bic():
     # Test the aic and bic criteria
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
     n_samples, n_features, n_components = 50, 3, 2
-    X = rng.randn(n_samples, n_features)
+    X = rng.standard_normal((n_samples, n_features))
     # standard gaussian entropy
     sgh = 0.5 * (
         fast_logdet(np.cov(X.T, bias=1)) + n_features * (1 + np.log(2 * np.pi))
@@ -814,7 +814,7 @@ def test_gaussian_mixture_aic_bic():
         g = GaussianMixture(
             n_components=n_components,
             covariance_type=cv_type,
-            random_state=rng,
+            random_state=0,
             max_iter=200,
         )
         g.fit(X)
@@ -826,7 +826,7 @@ def test_gaussian_mixture_aic_bic():
 
 
 def test_gaussian_mixture_verbose():
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
     rand_data = RandomData(rng)
     n_components = rand_data.n_components
     for covar_type in COVARIANCE_TYPE:
@@ -835,7 +835,7 @@ def test_gaussian_mixture_verbose():
             n_components=n_components,
             n_init=1,
             reg_covar=0,
-            random_state=rng,
+            random_state=0,
             covariance_type=covar_type,
             verbose=1,
         )
@@ -843,7 +843,7 @@ def test_gaussian_mixture_verbose():
             n_components=n_components,
             n_init=1,
             reg_covar=0,
-            random_state=rng,
+            random_state=0,
             covariance_type=covar_type,
             verbose=2,
         )
@@ -860,9 +860,9 @@ def test_gaussian_mixture_verbose():
 @pytest.mark.parametrize("seed", (0, 1, 2))
 def test_warm_start(seed):
     random_state = seed
-    rng = np.random.RandomState(random_state)
+    rng = np.random.default_rng(random_state)
     n_samples, n_features, n_components = 500, 2, 2
-    X = rng.rand(n_samples, n_features)
+    X = rng.random((n_samples, n_features))
 
     # Assert the warm_start give the same result for the same number of iter
     g = GaussianMixture(
@@ -928,7 +928,7 @@ def test_warm_start(seed):
 @pytest.mark.filterwarnings("ignore::sklearn.exceptions.ConvergenceWarning")
 def test_convergence_detected_with_warm_start():
     # We check that convergence is detected when warm_start=True
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
     rand_data = RandomData(rng)
     n_components = rand_data.n_components
     X = rand_data.X["full"]
@@ -938,7 +938,7 @@ def test_convergence_detected_with_warm_start():
             n_components=n_components,
             warm_start=True,
             max_iter=max_iter,
-            random_state=rng,
+            random_state=0,
         )
         for _ in range(100):
             gmm.fit(X)
@@ -950,7 +950,7 @@ def test_convergence_detected_with_warm_start():
 
 def test_score(global_dtype):
     covar_type = "full"
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
     rand_data = RandomData(rng, scale=7, dtype=global_dtype)
     n_components = rand_data.n_components
     X = rand_data.X[covar_type]
@@ -962,7 +962,7 @@ def test_score(global_dtype):
         n_init=1,
         max_iter=1,
         reg_covar=0,
-        random_state=rng,
+        random_state=0,
         covariance_type=covar_type,
     )
     msg = (
@@ -998,7 +998,7 @@ def test_score(global_dtype):
 
 def test_score_samples():
     covar_type = "full"
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
     rand_data = RandomData(rng, scale=7)
     n_components = rand_data.n_components
     X = rand_data.X[covar_type]
@@ -1008,7 +1008,7 @@ def test_score_samples():
         n_components=n_components,
         n_init=1,
         reg_covar=0,
-        random_state=rng,
+        random_state=0,
         covariance_type=covar_type,
     )
     msg = (
@@ -1025,7 +1025,7 @@ def test_score_samples():
 def test_monotonic_likelihood():
     # We check that each step of the EM without regularization improve
     # monotonically the training set likelihood
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
     rand_data = RandomData(rng, scale=7)
     n_components = rand_data.n_components
 
@@ -1037,7 +1037,7 @@ def test_monotonic_likelihood():
             reg_covar=0,
             warm_start=True,
             max_iter=1,
-            random_state=rng,
+            random_state=0,
             tol=1e-7,
         )
         current_log_likelihood = -np.inf
@@ -1059,7 +1059,6 @@ def test_monotonic_likelihood():
 def test_regularisation():
     # We train the GaussianMixture on degenerate data by defining two clusters
     # of a 0 covariance.
-    rng = np.random.RandomState(0)
     n_samples, n_features = 10, 5
 
     X = np.vstack(
@@ -1071,7 +1070,7 @@ def test_regularisation():
             n_components=n_samples,
             reg_covar=0,
             covariance_type=covar_type,
-            random_state=rng,
+            random_state=0,
         )
 
         with warnings.catch_warnings():
