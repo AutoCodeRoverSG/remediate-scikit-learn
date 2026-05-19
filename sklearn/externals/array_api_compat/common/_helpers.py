@@ -58,6 +58,8 @@ if TYPE_CHECKING:
 _API_VERSIONS_OLD: Final = frozenset({"2021.12", "2022.12", "2023.12"})
 _API_VERSIONS: Final = _API_VERSIONS_OLD | frozenset({"2024.12"})
 
+_DASK_ARRAY_MODULE: Final = "dask.array"
+
 
 @lru_cache(100)
 def _issubclass_fast(cls: type, modname: str, clsname: str) -> bool:
@@ -211,7 +213,7 @@ def is_dask_array(x: object) -> TypeIs[da.Array]:
     is_pydata_sparse_array
     """
     cls = cast(Hashable, type(x))
-    return _issubclass_fast(cls, "dask.array", "Array")
+    return _issubclass_fast(cls, _DASK_ARRAY_MODULE, "Array")
 
 
 def is_jax_array(x: object) -> TypeIs[jax.Array]:
@@ -302,7 +304,7 @@ def _is_array_api_cls(cls: type) -> bool:
         or _issubclass_fast(cls, "numpy", "generic")
         or _issubclass_fast(cls, "cupy", "ndarray")
         or _issubclass_fast(cls, "torch", "Tensor")
-        or _issubclass_fast(cls, "dask.array", "Array")
+        or _issubclass_fast(cls, _DASK_ARRAY_MODULE, "Array")
         or _issubclass_fast(cls, "sparse", "SparseArray")
         # TODO: drop support for jax<0.4.32 which didn't have __array_namespace__
         or _issubclass_fast(cls, "jax", "Array")
@@ -419,7 +421,7 @@ def is_dask_namespace(xp: Namespace) -> bool:
     is_pydata_sparse_namespace
     is_array_api_strict_namespace
     """
-    return xp.__name__ in {"dask.array", _compat_module_name() + ".dask.array"}
+    return xp.__name__ in {_DASK_ARRAY_MODULE, _compat_module_name() + "." + _DASK_ARRAY_MODULE}
 
 
 def is_jax_namespace(xp: Namespace) -> bool:
@@ -545,7 +547,7 @@ def _cls_to_namespace(
             import torch as xp  # type: ignore[no-redef]
         return xp, None
 
-    if _issubclass_fast(cls_, "dask.array", "Array"):
+    if _issubclass_fast(cls_, _DASK_ARRAY_MODULE, "Array"):
         if _use_compat:
             _check_api_version(api_version)
             from ..dask import array as xp  # type: ignore[no-redef]
@@ -697,7 +699,7 @@ def _check_device(bare_xp: Namespace, device: Device) -> None:  # pyright: ignor
         if device not in ("cpu", None):
             raise ValueError(f"Unsupported device for NumPy: {device!r}")
 
-    elif bare_xp is sys.modules.get("dask.array"):
+    elif bare_xp is sys.modules.get(_DASK_ARRAY_MODULE):
         if device not in ("cpu", _DASK_DEVICE, None):
             raise ValueError(f"Unsupported device for Dask: {device!r}")
 
@@ -882,9 +884,10 @@ def to_device(x: Array, device: Device, /, *, stream: int | Any | None = None) -
     device : Hardware device the array data resides on.
 
     """
-    if is_numpy_array(x):
+    if is_numpy_array(x) or is_dask_array(x):
         if stream is not None:
             raise ValueError("The stream argument to to_device() is not supported")
+        # TODO: What if our array is on the GPU already?
         if device == "cpu":
             return x
         raise ValueError(f"Unsupported device {device!r}")
@@ -893,13 +896,6 @@ def to_device(x: Array, device: Device, /, *, stream: int | Any | None = None) -
         return _cupy_to_device(x, device, stream=stream)
     elif is_torch_array(x):
         return _torch_to_device(x, device, stream=stream)
-    elif is_dask_array(x):
-        if stream is not None:
-            raise ValueError("The stream argument to to_device() is not supported")
-        # TODO: What if our array is on the GPU already?
-        if device == "cpu":
-            return x
-        raise ValueError(f"Unsupported device {device!r}")
     elif is_jax_array(x):
         if not hasattr(x, "__array_namespace__"):
             # In JAX v0.4.31 and older, this import adds to_device method to x...
@@ -986,7 +982,7 @@ def _is_lazy_cls(cls: type) -> bool | None:
     if (
         _issubclass_fast(cls, "jax", "Array")
         or _issubclass_fast(cls, "jax.core", "Tracer")  # see is_jax_array for limitations
-        or _issubclass_fast(cls, "dask.array", "Array")
+        or _issubclass_fast(cls, _DASK_ARRAY_MODULE, "Array")
         or _issubclass_fast(cls, "ndonnx", "Array")
     ):
         return True
