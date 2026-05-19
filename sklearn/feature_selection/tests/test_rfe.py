@@ -123,7 +123,7 @@ def test_rfe(csr_container):
     assert_array_almost_equal(x_r, x_r_sparse.toarray())
 
 
-def test_RFE_fit_score_params():
+def test_rfe_fit_score_params():
     # Make sure RFE passes the metadata down to fit and score methods of the
     # underlying estimator
     class TestEstimator(BaseEstimator, ClassifierMixin):
@@ -521,7 +521,7 @@ def test_rfe_allow_nan_inf_in_x(cv):
 
     clf = MockClassifier()
     if cv is not None:
-        rfe = RFECV(estimator=clf, cv=cv)
+        rfe = make_pipeline(RFECV(estimator=clf, cv=cv), memory=None)
     else:
         rfe = RFE(estimator=clf)
     rfe.fit(X, y)
@@ -529,7 +529,7 @@ def test_rfe_allow_nan_inf_in_x(cv):
 
 
 def test_w_pipeline_2d_coef_():
-    pipeline = make_pipeline(StandardScaler(), LogisticRegression())
+    pipeline = make_pipeline(StandardScaler(), LogisticRegression(), memory=None)
 
     data, y = load_iris(return_X_y=True)
     sfm = RFE(
@@ -605,20 +605,20 @@ def test_rfecv_cv_results_n_features(
     )
 
 
-@pytest.mark.parametrize("ClsRFE", [RFE, RFECV])
-def test_multioutput(ClsRFE):
+@pytest.mark.parametrize("cls_rfe", [RFE, RFECV])
+def test_multioutput(cls_rfe):
     rng = np.random.default_rng(0)
     X = rng.normal(size=(10, 3))
     y = rng.integers(2, size=(10, 2))
     clf = RandomForestClassifier(
         n_estimators=5, random_state=0, min_samples_leaf=1, max_features="sqrt"
     )
-    rfe_test = ClsRFE(clf)
+    rfe_test = cls_rfe(clf)
     rfe_test.fit(X, y)
 
 
-@pytest.mark.parametrize("ClsRFE", [RFE, RFECV])
-def test_pipeline_with_nans(ClsRFE):
+@pytest.mark.parametrize("cls_rfe", [RFE, RFECV])
+def test_pipeline_with_nans(cls_rfe):
     """Check that RFE works with pipeline that accept nans.
 
     Non-regression test for gh-21743.
@@ -630,26 +630,27 @@ def test_pipeline_with_nans(ClsRFE):
         SimpleImputer(),
         StandardScaler(),
         LogisticRegression(),
+        memory=None,
     )
 
-    fs = ClsRFE(
+    fs = cls_rfe(
         estimator=pipe,
         importance_getter="named_steps.logisticregression.coef_",
     )
     fs.fit(X, y)
 
 
-@pytest.mark.parametrize("ClsRFE", [RFE, RFECV])
-@pytest.mark.parametrize("PLSEstimator", [CCA, PLSCanonical, PLSRegression])
-def test_rfe_pls(ClsRFE, PLSEstimator):
+@pytest.mark.parametrize("cls_rfe", [RFE, RFECV])
+@pytest.mark.parametrize("pls_estimator", [CCA, PLSCanonical, PLSRegression])
+def test_rfe_pls(cls_rfe, pls_estimator):
     """Check the behaviour of RFE with PLS estimators.
 
     Non-regression test for:
     https://github.com/scikit-learn/scikit-learn/issues/12410
     """
     X, y = make_friedman1(n_samples=50, n_features=10, random_state=0)
-    estimator = PLSEstimator(n_components=1)
-    selector = ClsRFE(estimator, step=1).fit(X, y)
+    estimator = pls_estimator(n_components=1)
+    selector = cls_rfe(estimator, step=1).fit(X, y)
     assert selector.score(X, y) > 0.5
 
 
@@ -676,9 +677,9 @@ def test_rfe_estimator_attribute_error():
 
 
 @pytest.mark.parametrize(
-    "ClsRFE, param", [(RFE, "n_features_to_select"), (RFECV, "min_features_to_select")]
+    "cls_rfe, param", [(RFE, "n_features_to_select"), (RFECV, "min_features_to_select")]
 )
-def test_rfe_n_features_to_select_warning(ClsRFE, param):
+def test_rfe_n_features_to_select_warning(cls_rfe, param):
     """Check if the correct warning is raised when trying to initialize a RFE
     object with an n_features_to_select attribute larger than the number of
     features present in the X variable that is passed to the fit method
@@ -688,7 +689,7 @@ def test_rfe_n_features_to_select_warning(ClsRFE, param):
     with pytest.warns(UserWarning, match=f"{param}=21 > n_features=20"):
         # Create RFE/RFECV with n_features_to_select/min_features_to_select
         # larger than the number of features present in the X variable
-        clsrfe = ClsRFE(estimator=LogisticRegression(), **{param: 21})
+        clsrfe = cls_rfe(estimator=LogisticRegression(), **{param: 21})
         clsrfe.fit(X, y)
 
 
