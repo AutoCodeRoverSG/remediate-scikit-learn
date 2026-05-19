@@ -110,13 +110,13 @@ def test_inferred_max_features_integer(max_features):
     transformer = SelectFromModel(
         estimator=clf, max_features=max_features, threshold=-np.inf
     )
-    X_trans = transformer.fit_transform(data, y)
+    x_trans = transformer.fit_transform(data, y)
     if max_features is not None:
         assert transformer.max_features_ == max_features
-        assert X_trans.shape[1] == transformer.max_features_
+        assert x_trans.shape[1] == transformer.max_features_
     else:
         assert not hasattr(transformer, "max_features_")
-        assert X_trans.shape[1] == data.shape[1]
+        assert x_trans.shape[1] == data.shape[1]
 
 
 @pytest.mark.parametrize(
@@ -129,9 +129,9 @@ def test_inferred_max_features_callable(max_features):
     transformer = SelectFromModel(
         estimator=clf, max_features=max_features, threshold=-np.inf
     )
-    X_trans = transformer.fit_transform(data, y)
+    x_trans = transformer.fit_transform(data, y)
     assert transformer.max_features_ == max_features(data)
-    assert X_trans.shape[1] == transformer.max_features_
+    assert x_trans.shape[1] == transformer.max_features_
 
 
 @pytest.mark.parametrize("max_features", [lambda X: round(len(X[0]) / 2), 2])
@@ -148,8 +148,8 @@ def test_max_features_array_like(max_features):
     transformer = SelectFromModel(
         estimator=clf, max_features=max_features, threshold=-np.inf
     )
-    X_trans = transformer.fit_transform(X, y)
-    assert X_trans.shape[1] == transformer.max_features_
+    x_trans = transformer.fit_transform(X, y)
+    assert x_trans.shape[1] == transformer.max_features_
 
 
 @pytest.mark.parametrize(
@@ -191,23 +191,23 @@ def test_max_features():
     transformer2 = SelectFromModel(
         estimator=est, max_features=max_features, threshold=-np.inf
     )
-    X_new1 = transformer1.fit_transform(X, y)
-    X_new2 = transformer2.fit_transform(X, y)
-    assert_allclose(X_new1, X_new2)
+    x_new1 = transformer1.fit_transform(X, y)
+    x_new2 = transformer2.fit_transform(X, y)
+    assert_allclose(x_new1, x_new2)
 
     # Test max_features against actual model.
     transformer1 = SelectFromModel(estimator=Lasso(alpha=0.025, random_state=42))
-    X_new1 = transformer1.fit_transform(X, y)
+    x_new1 = transformer1.fit_transform(X, y)
     scores1 = np.abs(transformer1.estimator_.coef_)
     candidate_indices1 = np.argsort(-scores1, kind="mergesort")
 
-    for n_features in range(1, X_new1.shape[1] + 1):
+    for n_features in range(1, x_new1.shape[1] + 1):
         transformer2 = SelectFromModel(
             estimator=Lasso(alpha=0.025, random_state=42),
             max_features=n_features,
             threshold=-np.inf,
         )
-        X_new2 = transformer2.fit_transform(X, y)
+        x_new2 = transformer2.fit_transform(X, y)
         scores2 = np.abs(transformer2.estimator_.coef_)
         candidate_indices2 = np.argsort(-scores2, kind="mergesort")
         assert_allclose(
@@ -236,10 +236,10 @@ def test_max_features_tiebreak():
             max_features=n_features,
             threshold=-np.inf,
         )
-        X_new = transformer.fit_transform(X, y)
+        x_new = transformer.fit_transform(X, y)
         selected_feature_indices = np.where(transformer._get_support_mask())[0]
         assert_array_equal(selected_feature_indices, np.arange(n_features))
-        assert X_new.shape[1] == n_features
+        assert x_new.shape[1] == n_features
 
 
 def test_threshold_and_max_features():
@@ -255,16 +255,16 @@ def test_threshold_and_max_features():
     est = RandomForestClassifier(n_estimators=50, random_state=0)
 
     transformer1 = SelectFromModel(estimator=est, max_features=3, threshold=-np.inf)
-    X_new1 = transformer1.fit_transform(X, y)
+    x_new1 = transformer1.fit_transform(X, y)
 
     transformer2 = SelectFromModel(estimator=est, threshold=0.04)
-    X_new2 = transformer2.fit_transform(X, y)
+    x_new2 = transformer2.fit_transform(X, y)
 
     transformer3 = SelectFromModel(estimator=est, max_features=3, threshold=0.04)
-    X_new3 = transformer3.fit_transform(X, y)
-    assert X_new3.shape[1] == min(X_new1.shape[1], X_new2.shape[1])
+    x_new3 = transformer3.fit_transform(X, y)
+    assert x_new3.shape[1] == min(x_new1.shape[1], x_new2.shape[1])
     selected_indices = transformer3.transform(np.arange(X.shape[1])[np.newaxis, :])
-    assert_allclose(X_new3, X[:, selected_indices[0]])
+    assert_allclose(x_new3, X[:, selected_indices[0]])
 
 
 @skip_if_32bit
@@ -285,12 +285,12 @@ def test_feature_importances():
         transformer.fit(X, y)
         assert hasattr(transformer.estimator_, "feature_importances_")
 
-        X_new = transformer.transform(X)
-        assert X_new.shape[1] < X.shape[1]
+        x_new = transformer.transform(X)
+        assert x_new.shape[1] < X.shape[1]
         importances = transformer.estimator_.feature_importances_
 
         feature_mask = np.abs(importances) > func(importances)
-        assert_array_almost_equal(X_new, X[:, feature_mask])
+        assert_array_almost_equal(x_new, X[:, feature_mask])
 
 
 def test_sample_weight():
