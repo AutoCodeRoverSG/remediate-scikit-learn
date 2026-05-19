@@ -28,7 +28,7 @@ true_proba = [[1, 1.26642e-14], [1.60381e-28, 1], [1.80485e-35, 1]]
 # also load the iris dataset
 # and randomly permute it
 iris = datasets.load_iris()
-rng = np.random.RandomState(1)
+rng = np.random.default_rng(1)
 perm = rng.permutation(iris.target.size)
 iris.data = iris.data[perm]
 iris.target = iris.target[perm]
@@ -150,10 +150,10 @@ def test_shrinkage_threshold_decoded_y():
 def test_predict_translated_data():
     # Test that NearestCentroid gives same results on translated data
 
-    rng = np.random.RandomState(0)
-    X = rng.rand(50, 50)
-    y = rng.randint(0, 3, 50)
-    noise = rng.rand(50)
+    rng = np.random.default_rng(0)
+    X = rng.random((50, 50))
+    y = rng.integers(0, 3, 50)
+    noise = rng.random(50)
     clf = NearestCentroid(shrink_threshold=0.1)
     clf.fit(X, y)
     y_init = clf.predict(X)
@@ -167,12 +167,12 @@ def test_predict_translated_data():
 @pytest.mark.parametrize("csr_container", CSR_CONTAINERS)
 def test_manhattan_metric(csr_container):
     # Test the manhattan metric.
-    X_csr = csr_container(X)
+    x_csr = csr_container(X)
 
     clf = NearestCentroid(metric="manhattan")
     clf.fit(X, y)
     dense_centroid = clf.centroids_
-    clf.fit(X_csr, y)
+    clf.fit(x_csr, y)
     assert_array_equal(clf.centroids_, dense_centroid)
     assert_array_equal(dense_centroid, [[-1, -1], [1, 1]])
 
