@@ -21,5 +21,6 @@ class OneTimeSplitter:
         for index in self.indices:
             yield index
 
-    def get_n_splits(self, X=None, y=None, groups=None):
+    def get_n_splits(self, X=None, y=None, groups=None):  # noqa
+        """Get the number of splits. X, y, groups are part of the splitter API."""
         return self.n_splits
