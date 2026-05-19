@@ -75,20 +75,20 @@ for metric in PAIRWISE_KERNEL_FUNCTIONS:
 def test_kernel_gradient(kernel):
     # Compare analytic and numeric gradient of kernels.
     kernel = clone(kernel)  # make tests independent of one-another
-    K, K_gradient = kernel(X, eval_gradient=True)
+    _, k_gradient = kernel(X, eval_gradient=True)
 
-    assert K_gradient.shape[0] == X.shape[0]
-    assert K_gradient.shape[1] == X.shape[0]
-    assert K_gradient.shape[2] == kernel.theta.shape[0]
+    assert k_gradient.shape[0] == X.shape[0]
+    assert k_gradient.shape[1] == X.shape[0]
+    assert k_gradient.shape[2] == kernel.theta.shape[0]
 
     def eval_kernel_for_theta(theta):
         kernel_clone = kernel.clone_with_theta(theta)
         K = kernel_clone(X, eval_gradient=False)
         return K
 
-    K_gradient_approx = _approx_fprime(kernel.theta, eval_kernel_for_theta, 1e-10)
+    k_gradient_approx = _approx_fprime(kernel.theta, eval_kernel_for_theta, 1e-10)
 
-    assert_almost_equal(K_gradient, K_gradient_approx, 4)
+    assert_almost_equal(k_gradient, k_gradient_approx, 4)
 
 
 @pytest.mark.parametrize(
@@ -104,15 +104,13 @@ def test_kernel_theta(kernel):
     # Check that parameter vector theta of kernel is set correctly.
     kernel = clone(kernel)  # make tests independent of one-another
     theta = kernel.theta
-    _, K_gradient = kernel(X, eval_gradient=True)
+    _, k_gradient = kernel(X, eval_gradient=True)
 
     # Determine kernel parameters that contribute to theta
     init_sign = signature(kernel.__class__.__init__).parameters.values()
     args = [p.name for p in init_sign if p.name != "self"]
-    theta_vars = map(
-        lambda s: s[0 : -len("_bounds")], filter(lambda s: s.endswith("_bounds"), args)
-    )
-    assert set(hyperparameter.name for hyperparameter in kernel.hyperparameters) == set(
+    theta_vars = [s[0 : -len("_bounds")] for s in args if s.endswith("_bounds")]
+    assert {hyperparameter.name for hyperparameter in kernel.hyperparameters} == set(
         theta_vars
     )
 
@@ -130,15 +128,15 @@ def test_kernel_theta(kernel):
         new_kernel = kernel_class(**params)
         # Check that theta and K_gradient are identical with the fixed
         # dimension left out
-        _, K_gradient_new = new_kernel(X, eval_gradient=True)
+        _, k_gradient_new = new_kernel(X, eval_gradient=True)
         assert theta.shape[0] == new_kernel.theta.shape[0] + 1
-        assert K_gradient.shape[2] == K_gradient_new.shape[2] + 1
+        assert k_gradient.shape[2] == k_gradient_new.shape[2] + 1
         if i > 0:
             assert theta[:i] == new_kernel.theta[:i]
-            assert_array_equal(K_gradient[..., :i], K_gradient_new[..., :i])
+            assert_array_equal(k_gradient[..., :i], k_gradient_new[..., :i])
         if i + 1 < len(kernel.hyperparameters):
             assert theta[i + 1 :] == new_kernel.theta[i:]
-            assert_array_equal(K_gradient[..., i + 1 :], K_gradient_new[..., i:])
+            assert_array_equal(k_gradient[..., i + 1 :], k_gradient_new[..., i:])
 
     # Check that values of theta are modified correctly
     for i, hyperparameter in enumerate(kernel.hyperparameters):
@@ -162,18 +160,18 @@ def test_kernel_theta(kernel):
 def test_auto_vs_cross(kernel):
     kernel = clone(kernel)  # make tests independent of one-another
     # Auto-correlation and cross-correlation should be consistent.
-    K_auto = kernel(X)
-    K_cross = kernel(X, X)
-    assert_almost_equal(K_auto, K_cross, 5)
+    k_auto = kernel(X)
+    k_cross = kernel(X, X)
+    assert_almost_equal(k_auto, k_cross, 5)
 
 
 @pytest.mark.parametrize("kernel", kernels)
 def test_kernel_diag(kernel):
     kernel = clone(kernel)  # make tests independent of one-another
     # Test that diag method of kernel returns consistent results.
-    K_call_diag = np.diag(kernel(X))
-    K_diag = kernel.diag(X)
-    assert_almost_equal(K_call_diag, K_diag, 5)
+    k_call_diag = np.diag(kernel(X))
+    k_diag = kernel.diag(X)
+    assert_almost_equal(k_call_diag, k_diag, 5)
 
 
 def test_kernel_operator_commutative():
