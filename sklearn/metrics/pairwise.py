@@ -2247,9 +2247,9 @@ def pairwise_distances_chunked(
     >>> next(gen)
     [array([0, 1])]
     """
-    n_samples_X = _num_samples(X)
+    n_samples_x = _num_samples(X)
     if metric == "precomputed":
-        slices = (slice(0, n_samples_X),)
+        slices = (slice(0, n_samples_x),)
     else:
         if Y is None:
             Y = X
@@ -2264,21 +2264,21 @@ def pairwise_distances_chunked(
         #    distance.
         chunk_n_rows = get_chunk_n_rows(
             row_bytes=8 * _num_samples(Y),
-            max_n_rows=n_samples_X,
+            max_n_rows=n_samples_x,
             working_memory=working_memory,
         )
-        slices = gen_batches(n_samples_X, chunk_n_rows)
+        slices = gen_batches(n_samples_x, chunk_n_rows)
 
     # precompute data-derived metric params
     params = _precompute_metric_params(X, Y, metric=metric, **kwds)
     kwds.update(**params)
 
     for sl in slices:
-        if sl.start == 0 and sl.stop == n_samples_X:
-            X_chunk = X  # enable optimised paths for X is Y
+        if sl.start == 0 and sl.stop == n_samples_x:
+            x_chunk = X  # enable optimised paths for X is Y
         else:
-            X_chunk = X[sl]
-        D_chunk = pairwise_distances(X_chunk, Y, metric=metric, n_jobs=n_jobs, **kwds)
+            x_chunk = X[sl]
+        D_chunk = pairwise_distances(x_chunk, Y, metric=metric, n_jobs=n_jobs, **kwds)
         if (X is Y or Y is None) and PAIRWISE_DISTANCE_FUNCTIONS.get(
             metric, None
         ) is euclidean_distances:
