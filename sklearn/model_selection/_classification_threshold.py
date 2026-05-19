@@ -735,7 +735,9 @@ class TunedThresholdClassifierCV(BaseThresholdClassifier):
                 ) from exc
             cv = self.cv
         else:
-            cv = check_cv(self.cv, y=y, classifier=True)
+            cv = check_cv(
+                self.cv, y=y, classifier=True, random_state=self.random_state
+            )
             if self.refit is False and cv.get_n_splits() > 1:
                 raise ValueError("When cv has several folds, refit cannot be False.")
 
