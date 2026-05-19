@@ -129,7 +129,7 @@ class MockClassifier(ClassifierMixin, BaseEstimator):
     predict_log_proba = predict
     decision_function = predict
 
-    def score(self, X=None, Y=None):
+    def score(self, X=None, Y=None, sample_weight=None):
         if self.foo_param > 1:
             score = 1.0
         else:
@@ -1133,8 +1133,8 @@ def test_search_default_iid(search_cv, specialized_params):
     # split dataset into two folds that are not iid
     # first one contains data of all 4 blobs, second only from two.
     mask = np.ones(X.shape[0], dtype=bool)
-    mask[np.where(y == 1)[0][::2]] = 0
-    mask[np.where(y == 2)[0][::2]] = 0
+    mask[np.nonzero(y == 1)[0][::2]] = 0
+    mask[np.nonzero(y == 2)[0][::2]] = 0
     # this leads to perfect classification on one fold and a score of 1/3 on
     # the other
     # create "cv" for splits
@@ -1375,14 +1375,14 @@ def test_search_cv_sample_weight_equivalence(estimator):
     set_random_state(estimator_weighted, random_state=0)
     set_random_state(estimator_repeated, random_state=0)
 
-    rng = np.random.RandomState(42)
+    rng = np.random.default_rng(42)
     n_classes = 3
     n_samples_per_group = 30
     n_groups = 4
     n_samples = n_groups * n_samples_per_group
-    X = rng.rand(n_samples, n_samples * 2)
-    y = rng.randint(0, n_classes, size=n_samples)
-    sw = rng.randint(0, 5, size=n_samples)
+    X = rng.random((n_samples, n_samples * 2))
+    y = rng.integers(0, n_classes, size=n_samples)
+    sw = rng.integers(0, 5, size=n_samples)
     # we use groups with LeaveOneGroupOut to ensure that
     # the splits are the same in the repeated/weighted datasets
     groups = np.tile(np.arange(n_groups), n_samples_per_group)
@@ -1452,7 +1452,7 @@ def test_search_cv_sample_weight_equivalence(estimator):
 def test_search_cv_score_samples_method(search_cv):
     search_cv = clone(search_cv)  # Avoid side effects from previous tests.
     # Set parameters
-    rng = np.random.RandomState(42)
+    rng = np.random.default_rng(42)
     n_samples = 300
     outliers_fraction = 0.15
     n_outliers = int(outliers_fraction * n_samples)
@@ -1565,7 +1565,7 @@ def test_search_cv_timing():
 
         for key in ["mean_score_time", "std_score_time"]:
             assert search.cv_results_[key][1] >= 0
-            assert search.cv_results_[key][0] == 0.0
+            assert search.cv_results_[key][0] == pytest.approx(0.0)
             assert np.all(search.cv_results_[key] < 1)
 
         assert hasattr(search, "refit_time_")
@@ -1758,7 +1758,7 @@ def test_grid_search_failing_classifier():
 
     assert all(
         (
-            np.all(get_cand_scores(cand_i) == 0.0)
+            np.allclose(get_cand_scores(cand_i), 0.0)
             for cand_i in range(n_candidates)
             if gs.cv_results_["param_parameter"][cand_i]
             == FailingClassifier.FAILING_PARAMETER
@@ -2556,8 +2556,8 @@ def test_scalar_fit_param_compat(search_cv, param_search):
 def test_search_cv_using_minimal_compatible_estimator(search_cv, predictor_cls):
     # Check that third-party library can run tests without inheriting from
     # BaseEstimator.
-    rng = np.random.RandomState(0)
-    X, y = rng.randn(25, 2), np.array([0] * 5 + [1] * 20)
+    rng = np.random.default_rng(0)
+    X, y = rng.standard_normal((25, 2)), np.array([0] * 5 + [1] * 20)
 
     model = Pipeline(
         [("transformer", MinimalTransformer()), ("predictor", predictor_cls())],
@@ -2631,7 +2631,7 @@ def test_search_estimator_param(search_cv, param_search):
     # testing that the original object in params is not changed
     assert params["clf"][0].C == orig_c
     # testing that the GS is setting the parameter of the step correctly
-    assert gs.best_estimator_.named_steps["clf"].C == 0.01
+    assert gs.best_estimator_.named_steps["clf"].C == pytest.approx(0.01)
 
 
 # TODO: remove mark once loky bug is fixed:
@@ -2714,9 +2714,9 @@ def test_multi_metric_search_forwards_metadata(search_cv, param_search):
     """Test that *SearchCV forwards metadata correctly when passed multiple metrics."""
     X, y = make_classification(random_state=42)
     n_samples = _num_samples(X)
-    rng = np.random.RandomState(0)
-    score_weights = rng.rand(n_samples)
-    score_metadata = rng.rand(n_samples)
+    rng = np.random.default_rng(0)
+    score_weights = rng.random(n_samples)
+    score_metadata = rng.random(n_samples)
 
     est = LinearSVC()
     param_grid_search = {param_search: {"C": [1]}}
