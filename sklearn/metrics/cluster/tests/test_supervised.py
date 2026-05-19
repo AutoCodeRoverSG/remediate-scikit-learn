@@ -311,8 +311,8 @@ def test_contingency_matrix_sparse():
     labels_a = np.array([1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3])
     labels_b = np.array([1, 1, 1, 1, 2, 1, 2, 2, 2, 2, 3, 1, 3, 3, 3, 2, 2])
     C = contingency_matrix(labels_a, labels_b)
-    C_sparse = contingency_matrix(labels_a, labels_b, sparse=True).toarray()
-    assert_array_almost_equal(C, C_sparse)
+    c_sparse = contingency_matrix(labels_a, labels_b, sparse=True).toarray()
+    assert_array_almost_equal(C, c_sparse)
     with pytest.raises(ValueError, match="Cannot set 'eps' when sparse=True"):
         contingency_matrix(labels_a, labels_b, eps=1e-10, sparse=True)
 
