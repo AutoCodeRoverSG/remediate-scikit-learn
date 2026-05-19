@@ -679,7 +679,7 @@ class SimpleImputer(_BaseImputer):
                 mask_valid_features = missing_mask[:, valid_statistics_indexes]
             n_missing = np.sum(mask_valid_features, axis=0)
             values = np.repeat(valid_statistics, n_missing)
-            coordinates = np.where(mask_valid_features.transpose())[::-1]
+            coordinates = np.nonzero(mask_valid_features.transpose())[::-1]
 
             X[coordinates] = values
 
@@ -733,21 +733,21 @@ class SimpleImputer(_BaseImputer):
 
         n_features_original = len(self.statistics_)
         shape_original = (X.shape[0], n_features_original)
-        X_original = np.zeros(shape_original)
-        X_original[:, self.indicator_.features_] = missing_mask
-        full_mask = X_original.astype(bool)
+        x_original = np.zeros(shape_original)
+        x_original[:, self.indicator_.features_] = missing_mask
+        full_mask = x_original.astype(bool)
 
         imputed_idx, original_idx = 0, 0
         while imputed_idx < len(array_imputed.T):
-            if not np.all(X_original[:, original_idx]):
-                X_original[:, original_idx] = array_imputed.T[imputed_idx]
+            if not np.all(x_original[:, original_idx]):
+                x_original[:, original_idx] = array_imputed.T[imputed_idx]
                 imputed_idx += 1
                 original_idx += 1
             else:
                 original_idx += 1
 
-        X_original[full_mask] = self.missing_values
-        return X_original
+        x_original[full_mask] = self.missing_values
+        return x_original
 
     def __sklearn_tags__(self):
         tags = super().__sklearn_tags__()
@@ -998,6 +998,7 @@ class MissingIndicator(TransformerMixin, BaseEstimator):
         n_features)
             The imputer mask of the original data.
         """
+        # y is unused but kept for API consistency with fit(X, y) interface
         if precomputed:
             if not (hasattr(X, "dtype") and X.dtype.kind == "b"):
                 raise ValueError("precomputed is True but the input data is not a mask")

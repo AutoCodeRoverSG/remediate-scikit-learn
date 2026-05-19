@@ -794,16 +794,16 @@ class IterativeImputer(_BaseImputer):
         )
 
         super()._fit_indicator(complete_mask)
-        X_indicator = super()._transform_indicator(complete_mask)
+        x_indicator = super()._transform_indicator(complete_mask)
 
         if self.max_iter == 0 or np.all(mask_missing_values):
             self.n_iter_ = 0
-            return super()._concatenate_indicator(x_t, X_indicator)
+            return super()._concatenate_indicator(x_t, x_indicator)
 
         # Edge case: a single feature, we return the initial imputation.
         if x_t.shape[1] == 1:
             self.n_iter_ = 0
-            return super()._concatenate_indicator(x_t, X_indicator)
+            return super()._concatenate_indicator(x_t, x_indicator)
 
         self._min_value = self._validate_limit(
             self.min_value,
@@ -832,7 +832,7 @@ class IterativeImputer(_BaseImputer):
 
         abs_corr_mat = self._get_abs_corr_mat(x_t)
 
-        n_samples, n_features = x_t.shape
+        _, n_features = x_t.shape
         if self.verbose > 0:
             print("[IterativeImputer] Completing matrix with shape %s" % (X.shape,))
         start_t = time()
@@ -889,7 +889,7 @@ class IterativeImputer(_BaseImputer):
                 )
         _assign_where(x_t, X, cond=~mask_missing_values)
 
-        return super()._concatenate_indicator(x_t, X_indicator)
+        return super()._concatenate_indicator(x_t, x_indicator)
 
     def transform(self, X):
         """Impute all missing values in `X`.
@@ -913,10 +913,10 @@ class IterativeImputer(_BaseImputer):
             X, in_fit=False
         )
 
-        X_indicator = super()._transform_indicator(complete_mask)
+        x_indicator = super()._transform_indicator(complete_mask)
 
         if self.n_iter_ == 0 or np.all(mask_missing_values):
-            return super()._concatenate_indicator(x_t, X_indicator)
+            return super()._concatenate_indicator(x_t, x_indicator)
 
         imputations_per_round = len(self.imputation_sequence_) // self.n_iter_
         i_rnd = 0
@@ -943,7 +943,7 @@ class IterativeImputer(_BaseImputer):
 
         _assign_where(x_t, X, cond=~mask_missing_values)
 
-        return super()._concatenate_indicator(x_t, X_indicator)
+        return super()._concatenate_indicator(x_t, x_indicator)
 
     def fit(self, X, y=None, **fit_params):
         """Fit the imputer on `X` and return self.

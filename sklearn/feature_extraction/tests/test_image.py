@@ -239,9 +239,9 @@ def test_reconstruct_patches_edge_patch_size(image_size, patch_size):
 
     Non-regression test for https://github.com/scikit-learn/scikit-learn/issues/10910
     """
-    rng = np.random.RandomState(0)
-    image = rng.rand(*image_size)
-    patches = extract_patches_2d(image, patch_size, random_state=rng)
+    rng = np.random.default_rng(0)
+    image = rng.random(image_size)
+    patches = extract_patches_2d(image, patch_size, random_state=0)
     reconstructed = reconstruct_from_patches_2d(patches, image_size)
     assert_allclose(image, reconstructed)
 
