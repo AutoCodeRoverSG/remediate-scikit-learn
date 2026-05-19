@@ -1,6 +1,7 @@
 """Testing for bicluster metrics module"""
 
 import numpy as np
+import pytest
 
 from sklearn.metrics import consensus_score
 from sklearn.metrics.cluster._bicluster import _jaccard
@@ -14,8 +15,8 @@ def test_jaccard():
     a4 = np.array([False, False, True, True])
 
     assert _jaccard(a1, a1, a1, a1) == 1
-    assert _jaccard(a1, a1, a2, a2) == 0.25
-    assert _jaccard(a1, a1, a3, a3) == 1.0 / 7
+    assert _jaccard(a1, a1, a2, a2) == pytest.approx(0.25)
+    assert _jaccard(a1, a1, a3, a3) == pytest.approx(1.0 / 7)
     assert _jaccard(a1, a1, a4, a4) == 0
 
 

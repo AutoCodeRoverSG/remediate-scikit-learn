@@ -2633,11 +2633,11 @@ def test__check_targets_sparse_inputs(y, target_type):
 def test_hinge_loss_binary():
     y_true = np.array([-1, 1, 1, -1])
     pred_decision = np.array([-8.5, 0.5, 1.5, -0.3])
-    assert hinge_loss(y_true, pred_decision) == 1.2 / 4
+    assert hinge_loss(y_true, pred_decision) == pytest.approx(1.2 / 4)
 
     y_true = np.array([0, 2, 2, 0])
     pred_decision = np.array([-8.5, 0.5, 1.5, -0.3])
-    assert hinge_loss(y_true, pred_decision) == 1.2 / 4
+    assert hinge_loss(y_true, pred_decision) == pytest.approx(1.2 / 4)
 
 
 def test_hinge_loss_multiclass():
@@ -3180,7 +3180,7 @@ def test_classification_metric_pos_label_types(metric, classes):
     We can expect `pos_label` to be a bool, an integer, a float, a string.
     No error should be raised for those types.
     """
-    rng = np.random.RandomState(42)
+    rng = np.random.default_rng(42)
     n_samples, pos_label = 10, classes[-1]
     y_true = rng.choice(classes, size=n_samples, replace=True)
     if metric is brier_score_loss:

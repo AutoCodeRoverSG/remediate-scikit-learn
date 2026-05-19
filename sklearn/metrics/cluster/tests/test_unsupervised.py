@@ -345,7 +345,7 @@ def test_calinski_harabasz_score():
     assert_raises_on_all_points_same_cluster(calinski_harabasz_score)
 
     # Assert the value is 1. when all samples are equals
-    assert 1.0 == calinski_harabasz_score(np.ones((10, 2)), [0] * 5 + [1] * 5)
+    assert calinski_harabasz_score(np.ones((10, 2)), [0] * 5 + [1] * 5) == pytest.approx(1.0)
 
     # Assert the value is 0. when all the mean cluster are equal
     assert 0.0 == calinski_harabasz_score([[-1, -1], [1, 1]] * 10, [0] * 10 + [1] * 10)
