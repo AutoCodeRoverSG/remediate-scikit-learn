@@ -2458,21 +2458,21 @@ def test_search_cv_pairwise_property_equivalence_of_precomputed():
     preds_original = cv.predict(X)
 
     # precompute euclidean metric to validate pairwise is working
-    X_precomputed = euclidean_distances(X)
+    x_precomputed = euclidean_distances(X)
     clf = KNeighborsClassifier(metric="precomputed")
     cv = GridSearchCV(clf, grid_params, cv=n_splits)
-    cv.fit(X_precomputed, y)
-    preds_precomputed = cv.predict(X_precomputed)
+    cv.fit(x_precomputed, y)
+    preds_precomputed = cv.predict(x_precomputed)
 
     attr_message = "GridSearchCV not identical with precomputed metric"
     assert (preds_original == preds_precomputed).all(), attr_message
 
 
 @pytest.mark.parametrize(
-    "SearchCV, param_search",
+    "search_cv, param_search",
     [(GridSearchCV, {"a": [0.1, 0.01]}), (RandomizedSearchCV, {"a": uniform(1, 3)})],
 )
-def test_scalar_fit_param(SearchCV, param_search):
+def test_scalar_fit_param(search_cv, param_search):
     # unofficially sanctioned tolerance for scalar values in fit_params
     # non-regression test for:
     # https://github.com/scikit-learn/scikit-learn/issues/15805
@@ -2486,27 +2486,27 @@ def test_scalar_fit_param(SearchCV, param_search):
         def predict(self, X):
             return np.zeros(shape=(len(X)))
 
-    model = SearchCV(TestEstimator(), param_search)
+    model = search_cv(TestEstimator(), param_search)
     X, y = make_classification(random_state=42)
     model.fit(X, y, r=42)
     assert model.best_estimator_.r_ == 42
 
 
 @pytest.mark.parametrize(
-    "SearchCV, param_search",
+    "search_cv, param_search",
     [
         (GridSearchCV, {"alpha": [0.1, 0.01]}),
         (RandomizedSearchCV, {"alpha": uniform(0.01, 0.1)}),
     ],
 )
-def test_scalar_fit_param_compat(SearchCV, param_search):
+def test_scalar_fit_param_compat(search_cv, param_search):
     # check support for scalar values in fit_params, for instance in LightGBM
     # that do not exactly respect the scikit-learn API contract but that we do
     # not want to break without an explicit deprecation cycle and API
     # recommendations for implementing early stopping with a user provided
     # validation set. non-regression test for:
     # https://github.com/scikit-learn/scikit-learn/issues/15805
-    X_train, X_valid, y_train, y_valid = train_test_split(
+    x_train, x_valid, y_train, y_valid = train_test_split(
         *make_classification(random_state=42), random_state=42
     )
 
@@ -2533,7 +2533,7 @@ def test_scalar_fit_param_compat(SearchCV, param_search):
     def _fit_param_callable():
         pass
 
-    model = SearchCV(_FitParamClassifier(), param_search)
+    model = search_cv(_FitParamClassifier(), param_search)
 
     # NOTE: `fit_params` should be data dependent (e.g. `sample_weight`) which
     # is not the case for the following parameters. But this abuse is common in
@@ -2541,33 +2541,34 @@ def test_scalar_fit_param_compat(SearchCV, param_search):
     # now and be careful not to break support for those without following
     # proper deprecation cycle.
     fit_params = {
-        "tuple_of_arrays": (X_valid, y_valid),
+        "tuple_of_arrays": (x_valid, y_valid),
         "callable_param": _fit_param_callable,
         "scalar_param": 42,
     }
-    model.fit(X_train, y_train, **fit_params)
+    model.fit(x_train, y_train, **fit_params)
 
 
 # FIXME: Replace this test with a full `check_estimator` once we have API only
 # checks.
 @pytest.mark.filterwarnings("ignore:The total space of parameters 4 is")
-@pytest.mark.parametrize("SearchCV", [GridSearchCV, RandomizedSearchCV])
-@pytest.mark.parametrize("Predictor", [MinimalRegressor, MinimalClassifier])
-def test_search_cv_using_minimal_compatible_estimator(SearchCV, Predictor):
+@pytest.mark.parametrize("search_cv", [GridSearchCV, RandomizedSearchCV])
+@pytest.mark.parametrize("predictor_cls", [MinimalRegressor, MinimalClassifier])
+def test_search_cv_using_minimal_compatible_estimator(search_cv, predictor_cls):
     # Check that third-party library can run tests without inheriting from
     # BaseEstimator.
     rng = np.random.RandomState(0)
     X, y = rng.randn(25, 2), np.array([0] * 5 + [1] * 20)
 
     model = Pipeline(
-        [("transformer", MinimalTransformer()), ("predictor", Predictor())]
+        [("transformer", MinimalTransformer()), ("predictor", predictor_cls())],
+        memory=None,
     )
 
     params = {
         "transformer__param": [1, 10],
         "predictor__parama": [1, 10],
     }
-    search = SearchCV(model, params, error_score="raise")
+    search = search_cv(model, params, error_score="raise")
     search.fit(X, y)
 
     assert search.best_params_.keys() == params.keys()
@@ -2606,29 +2607,29 @@ def test_search_cv_verbose_3(capsys, return_train_score):
 
 
 @pytest.mark.parametrize(
-    "SearchCV, param_search",
+    "search_cv, param_search",
     [
         (GridSearchCV, "param_grid"),
         (RandomizedSearchCV, "param_distributions"),
         (HalvingGridSearchCV, "param_grid"),
     ],
 )
-def test_search_estimator_param(SearchCV, param_search):
+def test_search_estimator_param(search_cv, param_search):
     # test that SearchCV object doesn't change the object given in the parameter grid
     X, y = make_classification(random_state=42)
 
     params = {"clf": [LinearSVC()], "clf__C": [0.01]}
-    orig_C = params["clf"][0].C
+    orig_c = params["clf"][0].C
 
-    pipe = Pipeline([("trs", MinimalTransformer()), ("clf", None)])
+    pipe = Pipeline([("trs", MinimalTransformer()), ("clf", None)], memory=None)
 
     param_grid_search = {param_search: params}
-    gs = SearchCV(pipe, refit=True, cv=2, scoring="accuracy", **param_grid_search).fit(
+    gs = search_cv(pipe, refit=True, cv=2, scoring="accuracy", **param_grid_search).fit(
         X, y
     )
 
     # testing that the original object in params is not changed
-    assert params["clf"][0].C == orig_C
+    assert params["clf"][0].C == orig_c
     # testing that the GS is setting the parameter of the step correctly
     assert gs.best_estimator_.named_steps["clf"].C == 0.01
 
