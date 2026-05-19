@@ -46,16 +46,16 @@ class BinomialRegressor(_GeneralizedLinearRegressor):
         return HalfBinomialLoss()
 
 
-def _special_minimize(fun, grad, x, tol_NM, tol):
+def _special_minimize(fun, grad, x, tol_nm, tol):
     # Find good starting point by Nelder-Mead
-    res_NM = minimize(
-        fun, x, method="Nelder-Mead", options={"xatol": tol_NM, "fatol": tol_NM}
+    res_nm = minimize(
+        fun, x, method="Nelder-Mead", options={"xatol": tol_nm, "fatol": tol_nm}
     )
     # Now refine via root finding on the gradient of the function, which is
     # more precise than minimizing the function itself.
     res = root(
         grad,
-        res_NM.x,
+        res_nm.x,
         method="lm",
         options={"ftol": tol, "xtol": tol, "gtol": tol},
     )
@@ -77,7 +77,7 @@ def regression_data():
             BinomialRegressor(),
             PoissonRegressor(),
             GammaRegressor(),
-            # TweedieRegressor(power=3.0),  # too difficult
+            
             # TweedieRegressor(power=0, link="log"),  # too difficult
             TweedieRegressor(power=1.5),
         ],
@@ -133,16 +133,16 @@ def glm_dataset(global_random_seed, request):
     else:
         n_samples, n_features = 4, 12
     k = min(n_samples, n_features)
-    rng = np.random.RandomState(global_random_seed)
+    rng = np.random.default_rng(global_random_seed)
     X = make_low_rank_matrix(
         n_samples=n_samples,
         n_features=n_features,
         effective_rank=k,
         tail_strength=0.1,
-        random_state=rng,
+        random_state=global_random_seed,
     )
     X[:, -1] = 1  # last columns acts as intercept
-    U, s, Vt = linalg.svd(X, full_matrices=False)
+    U, s, vt = linalg.svd(X, full_matrices=False)
     assert np.all(s > 1e-3)  # to be sure
     assert np.max(s) / np.min(s) < 100  # condition number of X
 
@@ -154,7 +154,7 @@ def glm_dataset(global_random_seed, request):
         raw_prediction = rng.uniform(low=-3, high=3, size=n_samples)
         # minimum norm solution min ||w||_2 such that raw_prediction = X w:
         # w = X'(XX')^-1 raw_prediction = V s^-1 U' raw_prediction
-        coef_unpenalized = Vt.T @ np.diag(1 / s) @ U.T @ raw_prediction
+        coef_unpenalized = vt.T @ np.diag(1 / s) @ U.T @ raw_prediction
 
     linear_loss = LinearModelLoss(base_loss=model._get_loss(), fit_intercept=True)
     sw = np.full(shape=n_samples, fill_value=1 / n_samples)
@@ -179,7 +179,7 @@ def glm_dataset(global_random_seed, request):
         l2_reg_strength=l2_reg_strength,
     )
     coef_penalized_with_intercept = _special_minimize(
-        fun, grad, coef_unpenalized, tol_NM=1e-6, tol=1e-14
+        fun, grad, coef_unpenalized, tol_nm=1e-6, tol=1e-14
     )
 
     linear_loss = LinearModelLoss(base_loss=model._get_loss(), fit_intercept=False)
@@ -198,7 +198,7 @@ def glm_dataset(global_random_seed, request):
         l2_reg_strength=l2_reg_strength,
     )
     coef_penalized_without_intercept = _special_minimize(
-        fun, grad, coef_unpenalized[:-1], tol_NM=1e-6, tol=1e-14
+        fun, grad, coef_unpenalized[:-1], tol_nm=1e-6, tol=1e-14
     )
 
     # To be sure
@@ -225,13 +225,13 @@ def test_glm_regression(solver, fit_intercept, glm_dataset):
     We work with a simple constructed data set with known solution.
     """
     model, X, y, _, coef_with_intercept, coef_without_intercept, alpha = glm_dataset
-    params = dict(
-        alpha=alpha,
-        fit_intercept=fit_intercept,
-        solver=solver,
-        tol=1e-12,
-        max_iter=1000,
-    )
+    params = {
+        "alpha": alpha,
+        "fit_intercept": fit_intercept,
+        "solver": solver,
+        "tol": 1e-12,
+        "max_iter": 1000,
+    }
 
     model = clone(model).set_params(**params)
     X = X[:, :-1]  # remove intercept
@@ -259,7 +259,7 @@ def test_glm_regression(solver, fit_intercept, glm_dataset):
 
 @pytest.mark.parametrize("solver", SOLVERS)
 @pytest.mark.parametrize("fit_intercept", [True, False])
-def test_glm_regression_hstacked_X(solver, fit_intercept, glm_dataset):
+def test_glm_regression_hstacked_x(solver, fit_intercept, glm_dataset):
     """Test that GLM converges for all solvers to correct solution on hstacked data.
 
     We work with a simple constructed data set with known solution.
@@ -268,13 +268,13 @@ def test_glm_regression_hstacked_X(solver, fit_intercept, glm_dataset):
     """
     model, X, y, _, coef_with_intercept, coef_without_intercept, alpha = glm_dataset
     n_samples, n_features = X.shape
-    params = dict(
-        alpha=alpha / 2,
-        fit_intercept=fit_intercept,
-        solver=solver,
-        tol=1e-12,
-        max_iter=1000,
-    )
+    params = {
+        "alpha": alpha / 2,
+        "fit_intercept": fit_intercept,
+        "solver": solver,
+        "tol": 1e-12,
+        "max_iter": 1000,
+    }
 
     model = clone(model).set_params(**params)
     X = X[:, :-1]  # remove intercept
@@ -303,7 +303,7 @@ def test_glm_regression_hstacked_X(solver, fit_intercept, glm_dataset):
 
 @pytest.mark.parametrize("solver", SOLVERS)
 @pytest.mark.parametrize("fit_intercept", [True, False])
-def test_glm_regression_vstacked_X(solver, fit_intercept, glm_dataset):
+def test_glm_regression_vstacked_x(solver, fit_intercept, glm_dataset):
     """Test that GLM converges for all solvers to correct solution on vstacked data.
 
     We work with a simple constructed data set with known solution.
@@ -314,13 +314,13 @@ def test_glm_regression_vstacked_X(solver, fit_intercept, glm_dataset):
     """
     model, X, y, _, coef_with_intercept, coef_without_intercept, alpha = glm_dataset
     n_samples, n_features = X.shape
-    params = dict(
-        alpha=alpha,
-        fit_intercept=fit_intercept,
-        solver=solver,
-        tol=1e-12,
-        max_iter=1000,
-    )
+    params = {
+        "alpha": alpha,
+        "fit_intercept": fit_intercept,
+        "solver": solver,
+        "tol": 1e-12,
+        "max_iter": 1000,
+    }
 
     model = clone(model).set_params(**params)
     X = X[:, :-1]  # remove intercept
