@@ -24,7 +24,7 @@ from sklearn.exceptions import NotFittedError
 from sklearn.impute import SimpleImputer
 from sklearn.inspection import partial_dependence
 from sklearn.inspection._partial_dependence import (
-    _grid_from_X,
+    _grid_from_x,
     _partial_dependence_brute,
     _partial_dependence_recursion,
 )
@@ -152,7 +152,7 @@ def test_grid_from_X():
     grid_resolution = 100
     is_categorical = [False, False]
     X = np.asarray([[1, 2], [3, 4]])
-    grid, axes = _grid_from_X(X, percentiles, is_categorical, grid_resolution, {})
+    grid, axes = _grid_from_x(X, percentiles, is_categorical, grid_resolution, {})
     assert_array_equal(grid, [[1, 2], [1, 4], [3, 2], [3, 4]])
     assert_array_equal(axes, X.T)
 
@@ -163,7 +163,7 @@ def test_grid_from_X():
 
     # n_unique_values > grid_resolution
     X = rng.normal(size=(20, 2))
-    grid, axes = _grid_from_X(
+    grid, axes = _grid_from_x(
         X,
         percentiles,
         is_categorical,
@@ -178,7 +178,7 @@ def test_grid_from_X():
     n_unique_values = 12
     X[n_unique_values - 1 :, 0] = 12345
     rng.shuffle(X)  # just to make sure the order is irrelevant
-    grid, axes = _grid_from_X(
+    grid, axes = _grid_from_x(
         X,
         percentiles,
         is_categorical,
@@ -195,7 +195,7 @@ def test_grid_from_X():
     X = rng.normal(size=(20, 2))
     X[n_unique_values - 1 :, 0] = 12345
     col_1_range = [0, 2, 3]
-    grid, axes = _grid_from_X(
+    grid, axes = _grid_from_x(
         X,
         percentiles,
         is_categorical=is_categorical,
@@ -212,7 +212,7 @@ def test_grid_from_X():
     X = rng.normal(size=(20, 2))
     col_0_range = [0, 2, 3, 4, 5, 6]
     grid_resolution = 5
-    grid, axes = _grid_from_X(
+    grid, axes = _grid_from_x(
         X,
         percentiles,
         is_categorical=is_categorical,
@@ -227,7 +227,7 @@ def test_grid_from_X():
 
     X = np.array([[0, "a"], [1, "b"], [2, "c"]])
 
-    grid, axes = _grid_from_X(
+    grid, axes = _grid_from_x(
         X,
         percentiles,
         is_categorical=is_categorical,
@@ -252,7 +252,7 @@ def test_grid_from_X_with_categorical(grid_resolution):
     percentiles = (0.05, 0.95)
     is_categorical = [True]
     X = pd.DataFrame({"cat_feature": ["A", "B", "C", "A", "B", "D", "E"]})
-    grid, axes = _grid_from_X(
+    grid, axes = _grid_from_x(
         X,
         percentiles,
         is_categorical,
@@ -279,7 +279,7 @@ def test_grid_from_X_heterogeneous_type(grid_resolution):
     )
     nunique = X.nunique()
 
-    grid, axes = _grid_from_X(
+    grid, axes = _grid_from_x(
         X,
         percentiles,
         is_categorical,
