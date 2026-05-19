@@ -68,7 +68,7 @@ iris = load_iris()
 
 
 @pytest.mark.parametrize(
-    "Estimator, method, data",
+    "estimator_cls, method, data",
     [
         (GradientBoostingClassifier, "auto", binary_classification_data),
         (GradientBoostingClassifier, "auto", multiclass_classification_data),
@@ -89,7 +89,7 @@ iris = load_iris()
 @pytest.mark.parametrize("kind", ("average", "individual", "both"))
 @pytest.mark.parametrize("use_custom_values", [True, False])
 def test_output_shape(
-    Estimator, method, data, grid_resolution, features, kind, use_custom_values
+    estimator_cls, method, data, grid_resolution, features, kind, use_custom_values
 ):
     # Check that partial_dependence has consistent output shape for different
     # kinds of estimators:
@@ -97,7 +97,7 @@ def test_output_shape(
     # - regressors
     # - multi-task regressors
 
-    est = Estimator()
+    est = estimator_cls()
     if hasattr(est, "n_estimators"):
         est.set_params(n_estimators=2)  # speed-up computations
 
@@ -320,10 +320,10 @@ def test_grid_from_X_error(grid_resolution, percentiles, err_msg):
     "est, method",
     [
         (LinearRegression(), "brute"),
-        (GradientBoostingRegressor(random_state=0), "brute"),
-        (GradientBoostingRegressor(random_state=0), "recursion"),
-        (HistGradientBoostingRegressor(random_state=0), "brute"),
-        (HistGradientBoostingRegressor(random_state=0), "recursion"),
+        (GradientBoostingRegressor(random_state=0, learning_rate=0.1), "brute"),
+        (GradientBoostingRegressor(random_state=0, learning_rate=0.1), "recursion"),
+        (HistGradientBoostingRegressor(random_state=0, learning_rate=0.1), "brute"),
+        (HistGradientBoostingRegressor(random_state=0, learning_rate=0.1), "recursion"),
     ],
 )
 def test_partial_dependence_helpers(est, method, target_feature):
@@ -353,7 +353,7 @@ def test_partial_dependence_helpers(est, method, target_feature):
     grid = np.array([[0.5], [123]])
 
     if method == "brute":
-        pdp, predictions = _partial_dependence_brute(
+        pdp, _ = _partial_dependence_brute(
             est, grid, features, X, response_method="auto"
         )
     else:
@@ -399,6 +399,7 @@ def test_recursion_decision_tree_vs_forest_and_gbdt(seed):
     forest = RandomForestRegressor(
         n_estimators=1,
         max_features=None,
+        min_samples_leaf=1,
         bootstrap=False,
         max_depth=max_depth,
         random_state=tree_seed,
@@ -413,7 +414,9 @@ def test_recursion_decision_tree_vs_forest_and_gbdt(seed):
         max_depth=max_depth,
         random_state=equiv_random_state,
     )
-    tree = DecisionTreeRegressor(max_depth=max_depth, random_state=equiv_random_state)
+    tree = DecisionTreeRegressor(
+        max_depth=max_depth, random_state=equiv_random_state, ccp_alpha=0.0
+    )
 
     forest.fit(X, y)
     gbdt.fit(X, y)
@@ -445,8 +448,8 @@ def test_recursion_decision_tree_vs_forest_and_gbdt(seed):
 @pytest.mark.parametrize(
     "est",
     (
-        GradientBoostingClassifier(random_state=0),
-        HistGradientBoostingClassifier(random_state=0),
+        GradientBoostingClassifier(random_state=0, learning_rate=0.1),
+        HistGradientBoostingClassifier(random_state=0, learning_rate=0.1),
     ),
 )
 @pytest.mark.parametrize("target_feature", (0, 1, 2, 3, 4, 5))
@@ -484,11 +487,11 @@ def test_recursion_decision_function(est, target_feature):
     "est",
     (
         LinearRegression(),
-        GradientBoostingRegressor(random_state=0),
+        GradientBoostingRegressor(random_state=0, learning_rate=0.1),
         HistGradientBoostingRegressor(
-            random_state=0, min_samples_leaf=1, max_leaf_nodes=None, max_iter=1
+            random_state=0, learning_rate=0.1, min_samples_leaf=1, max_leaf_nodes=None, max_iter=1
         ),
-        DecisionTreeRegressor(random_state=0),
+        DecisionTreeRegressor(random_state=0, ccp_alpha=0.0),
     ),
 )
 @pytest.mark.parametrize("power", (1, 2))
@@ -512,19 +515,19 @@ def test_partial_dependence_easy_target(est, power):
         est, features=[target_variable], X=X, grid_resolution=1000, kind="average"
     )
 
-    new_X = pdp["grid_values"][0].reshape(-1, 1)
+    new_x = pdp["grid_values"][0].reshape(-1, 1)
     new_y = pdp["average"][0]
     # add polynomial features if needed
-    new_X = PolynomialFeatures(degree=power).fit_transform(new_X)
+    new_x = PolynomialFeatures(degree=power, interaction_only=False).fit_transform(new_x)
 
-    lr = LinearRegression().fit(new_X, new_y)
-    r2 = r2_score(new_y, lr.predict(new_X))
+    lr = LinearRegression().fit(new_x, new_y)
+    r2 = r2_score(new_y, lr.predict(new_x))
 
     assert r2 > 0.99
 
 
 @pytest.mark.parametrize(
-    "Estimator",
+    "estimator_class",
     (
         sklearn.tree.DecisionTreeClassifier,
         sklearn.tree.ExtraTreeClassifier,
@@ -534,14 +537,14 @@ def test_partial_dependence_easy_target(est, power):
         sklearn.ensemble.RandomForestClassifier,
     ),
 )
-def test_multiclass_multioutput(Estimator):
+def test_multiclass_multioutput(estimator_class):
     # Make sure error is raised for multiclass-multioutput classifiers
 
     # make multiclass-multioutput dataset
     X, y = make_classification(n_classes=3, n_clusters_per_class=1, random_state=0)
     y = np.array([y, y]).T
 
-    est = Estimator()
+    est = estimator_class()
     est.fit(X, y)
 
     with pytest.raises(
@@ -571,7 +574,7 @@ class NoPredictProbaNoDecisionFunction(ClassifierMixin, BaseEstimator):
             "The response_method parameter is ignored for regressors",
         ),
         (
-            GradientBoostingClassifier(random_state=0),
+            GradientBoostingClassifier(random_state=0, learning_rate=0.1),
             {
                 "features": [0],
                 "response_method": "predict_proba",
@@ -580,7 +583,7 @@ class NoPredictProbaNoDecisionFunction(ClassifierMixin, BaseEstimator):
             "'recursion' method, the response_method must be 'decision_function'",
         ),
         (
-            GradientBoostingClassifier(random_state=0),
+            GradientBoostingClassifier(random_state=0, learning_rate=0.1),
             {"features": [0], "response_method": "predict_proba", "method": "auto"},
             "'recursion' method, the response_method must be 'decision_function'",
         ),
@@ -618,7 +621,7 @@ def test_partial_dependence_error(estimator, params, err_msg):
 
 
 @pytest.mark.parametrize(
-    "estimator", [LinearRegression(), GradientBoostingClassifier(random_state=0)]
+    "estimator", [LinearRegression(), GradientBoostingClassifier(random_state=0, learning_rate=0.1)]
 )
 @pytest.mark.parametrize("features", [-1, 10000])
 def test_partial_dependence_unknown_feature_indices(estimator, features):
@@ -631,7 +634,7 @@ def test_partial_dependence_unknown_feature_indices(estimator, features):
 
 
 @pytest.mark.parametrize(
-    "estimator", [LinearRegression(), GradientBoostingClassifier(random_state=0)]
+    "estimator", [LinearRegression(), GradientBoostingClassifier(random_state=0, learning_rate=0.1)]
 )
 def test_partial_dependence_unknown_feature_string(estimator):
     pd = pytest.importorskip("pandas")
@@ -646,7 +649,7 @@ def test_partial_dependence_unknown_feature_string(estimator):
 
 
 @pytest.mark.parametrize(
-    "estimator", [LinearRegression(), GradientBoostingClassifier(random_state=0)]
+    "estimator", [LinearRegression(), GradientBoostingClassifier(random_state=0, learning_rate=0.1)]
 )
 def test_partial_dependence_X_list(estimator):
     # check that array-like objects are accepted
@@ -659,7 +662,7 @@ def test_warning_recursion_non_constant_init():
     # make sure that passing a non-constant init parameter to a GBDT and using
     # recursion method yields a warning.
 
-    gbc = GradientBoostingClassifier(init=DummyClassifier(), random_state=0)
+    gbc = GradientBoostingClassifier(init=DummyClassifier(random_state=0), learning_rate=0.1, random_state=0)
     gbc.fit(X, y)
 
     with pytest.warns(
@@ -691,7 +694,7 @@ def test_partial_dependence_sample_weight_of_fitted_estimator():
     sample_weight = np.ones(N)
     sample_weight[mask] = 1000.0
 
-    clf = GradientBoostingRegressor(n_estimators=10, random_state=1)
+    clf = GradientBoostingRegressor(n_estimators=10, learning_rate=0.1, random_state=1)
     clf.fit(X, y, sample_weight=sample_weight)
 
     pdp = partial_dependence(clf, X, features=[1], kind="average")
@@ -701,7 +704,7 @@ def test_partial_dependence_sample_weight_of_fitted_estimator():
 
 def test_hist_gbdt_sw_not_supported():
     # TODO: remove/fix when PDP supports HGBT with sample weights
-    clf = HistGradientBoostingRegressor(random_state=1)
+    clf = HistGradientBoostingRegressor(learning_rate=0.1, random_state=1)
     clf.fit(X, y, sample_weight=np.ones(len(X)))
 
     with pytest.raises(
@@ -716,7 +719,7 @@ def test_partial_dependence_pipeline():
 
     scaler = StandardScaler()
     clf = DummyClassifier(random_state=42)
-    pipe = make_pipeline(scaler, clf)
+    pipe = make_pipeline(scaler, clf, memory=None)
 
     clf.fit(scaler.fit_transform(iris.data), iris.target)
     pipe.fit(iris.data, iris.target)
@@ -750,7 +753,7 @@ def test_partial_dependence_binary_model_grid_resolution(
     features, grid_resolution, n_vals_expected
 ):
     pd = pytest.importorskip("pandas")
-    model = DummyClassifier()
+    model = DummyClassifier(random_state=0)
 
     rng = np.random.RandomState(0)
     X = pd.DataFrame(
@@ -814,8 +817,8 @@ def test_partial_dependence_pipeline_custom_values(
 ):
     pd = pytest.importorskip("pandas")
     pl = make_pipeline(
-        SimpleImputer(strategy="most_frequent"), OneHotEncoder(), DummyClassifier()
-    )
+        SimpleImputer(strategy="most_frequent"), OneHotEncoder(),
+        DummyClassifier(random_state=0), memory=None)
 
     X = pd.DataFrame({"a": [1.0, 2.0, 3.0, 4.0], "b": ["a", "b", "a", "b"]})
     y = pd.Series([0, 1, 0, 1])
@@ -837,7 +840,7 @@ def test_partial_dependence_pipeline_custom_values(
     "estimator",
     [
         LogisticRegression(max_iter=1000, random_state=0),
-        GradientBoostingClassifier(random_state=0, n_estimators=5),
+        GradientBoostingClassifier(random_state=0, n_estimators=5, learning_rate=0.1),
     ],
     ids=["estimator-brute", "estimator-recursion"],
 )
@@ -971,8 +974,8 @@ def test_partial_dependence_feature_type(features, custom_values, expected_pd_sh
     [
         LinearRegression(),
         LogisticRegression(),
-        GradientBoostingRegressor(),
-        GradientBoostingClassifier(),
+        GradientBoostingRegressor(random_state=0, learning_rate=0.1),
+        GradientBoostingClassifier(random_state=0, learning_rate=0.1),
     ],
 )
 def test_partial_dependence_unfitted(estimator):
@@ -988,14 +991,14 @@ def test_partial_dependence_unfitted(estimator):
 
 
 @pytest.mark.parametrize(
-    "Estimator, data",
+    "estimator_cls, data",
     [
         (LinearRegression, multioutput_regression_data),
         (LogisticRegression, binary_classification_data),
     ],
 )
-def test_kind_average_and_average_of_individual(Estimator, data):
-    est = Estimator()
+def test_kind_average_and_average_of_individual(estimator_cls, data):
+    est = estimator_cls()
     (X, y), n_targets = data
     est.fit(X, y)
 
@@ -1006,15 +1009,15 @@ def test_kind_average_and_average_of_individual(Estimator, data):
 
 
 @pytest.mark.parametrize(
-    "Estimator, data",
+    "estimator_cls, data",
     [
         (LinearRegression, multioutput_regression_data),
         (LogisticRegression, binary_classification_data),
     ],
 )
-def test_partial_dependence_kind_individual_ignores_sample_weight(Estimator, data):
+def test_partial_dependence_kind_individual_ignores_sample_weight(estimator_cls, data):
     """Check that `sample_weight` does not have any effect on reported ICE."""
-    est = Estimator()
+    est = estimator_cls()
     (X, y), n_targets = data
     sample_weight = np.arange(X.shape[0])
     est.fit(X, y)
@@ -1032,8 +1035,8 @@ def test_partial_dependence_kind_individual_ignores_sample_weight(Estimator, dat
     [
         LinearRegression(),
         LogisticRegression(),
-        RandomForestRegressor(),
-        GradientBoostingClassifier(),
+        RandomForestRegressor(random_state=0, min_samples_leaf=1, max_features=1.0),
+        GradientBoostingClassifier(learning_rate=0.1, random_state=0),
     ],
 )
 @pytest.mark.parametrize("non_null_weight_idx", [0, 1, -1])
@@ -1069,16 +1072,16 @@ def test_partial_dependence_non_null_weight_idx(estimator, non_null_weight_idx):
 
 
 @pytest.mark.parametrize(
-    "Estimator, data",
+    "estimator_cls, data",
     [
         (LinearRegression, multioutput_regression_data),
         (LogisticRegression, binary_classification_data),
     ],
 )
-def test_partial_dependence_equivalence_equal_sample_weight(Estimator, data):
+def test_partial_dependence_equivalence_equal_sample_weight(estimator_cls, data):
     """Check that `sample_weight=None` is equivalent to having equal weights."""
 
-    est = Estimator()
+    est = estimator_cls()
     (X, y), n_targets = data
     est.fit(X, y)
 
@@ -1111,7 +1114,9 @@ def test_partial_dependence_sample_weight_with_recursion():
     """Check that we raise an error when `sample_weight` is provided with
     `"recursion"` method.
     """
-    est = RandomForestRegressor()
+    est = RandomForestRegressor(
+        random_state=0, min_samples_leaf=1, max_features="sqrt"
+    )
     (X, y), n_targets = regression_data
     sample_weight = np.ones_like(y)
     est.fit(X, y, sample_weight=sample_weight)
