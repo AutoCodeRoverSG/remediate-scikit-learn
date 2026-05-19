@@ -1690,7 +1690,7 @@ def test_multilabel_jaccard_score(recwarn):
     assert_almost_equal(
         jaccard_score(y_true, y_pred, average="samples", labels=[1, 2]), 1.0 / 2
     )
-    # average=None
+    
     assert_array_equal(
         jaccard_score(y_true, y_pred, average=None), np.array([1.0 / 2, 1.0, 1.0 / 2])
     )
@@ -1698,7 +1698,7 @@ def test_multilabel_jaccard_score(recwarn):
     y_true = np.array([[0, 1, 1], [1, 0, 1]])
     y_pred = np.array([[1, 1, 1], [1, 0, 1]])
     assert_almost_equal(jaccard_score(y_true, y_pred, average="macro"), 5.0 / 6)
-    # average='weighted'
+    
     assert_almost_equal(jaccard_score(y_true, y_pred, average="weighted"), 7.0 / 8)
 
     msg2 = "Got 4 > 2"
@@ -1714,9 +1714,9 @@ def test_multilabel_jaccard_score(recwarn):
     )
 
     with pytest.warns(UndefinedMetricWarning, match=msg):
-        assert (
-            jaccard_score(np.array([[0, 1]]), np.array([[0, 1]]), average="macro")
-            == 0.5
+        assert_almost_equal(
+            jaccard_score(np.array([[0, 1]]), np.array([[0, 1]]), average="macro"),
+            0.5,
         )
 
     msg = (
@@ -1725,13 +1725,13 @@ def test_multilabel_jaccard_score(recwarn):
     )
 
     with pytest.warns(UndefinedMetricWarning, match=msg):
-        assert (
+        assert_almost_equal(
             jaccard_score(
                 np.array([[0, 0], [1, 1]]),
                 np.array([[0, 0], [1, 1]]),
                 average="samples",
-            )
-            == 0.5
+            ),
+            0.5,
         )
 
     assert not list(recwarn)
@@ -1775,18 +1775,18 @@ def test_multiclass_jaccard_score(recwarn):
 
 
 def test_average_binary_jaccard_score(recwarn):
-    # tp=0, fp=0, fn=1, tn=0
-    assert jaccard_score([1], [0], average="binary") == 0.0
-    # tp=0, fp=0, fn=0, tn=1
+    
+    assert_almost_equal(jaccard_score([1], [0], average="binary"), 0.0)
+    
     msg = (
         "Jaccard is ill-defined and being set to 0.0 due to "
         "no true or predicted samples"
     )
     with pytest.warns(UndefinedMetricWarning, match=msg):
-        assert jaccard_score([0, 0], [0, 0], average="binary") == 0.0
+        assert_almost_equal(jaccard_score([0, 0], [0, 0], average="binary"), 0.0)
 
-    # tp=1, fp=0, fn=0, tn=0 (pos_label=0)
-    assert jaccard_score([0], [0], pos_label=0, average="binary") == 1.0
+    
+    assert_almost_equal(jaccard_score([0], [0], pos_label=0, average="binary"), 1.0)
     y_true = np.array([1, 0, 1, 1, 0])
     y_pred = np.array([1, 0, 1, 1, 1])
     assert_almost_equal(jaccard_score(y_true, y_pred, average="binary"), 3.0 / 4)
