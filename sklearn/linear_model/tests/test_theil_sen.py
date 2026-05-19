@@ -44,7 +44,7 @@ def no_stdout_stderr():
 
 
 def gen_toy_problem_1d(intercept=True):
-    random_state = np.random.RandomState(0)
+    random_state = np.random.default_rng(0)
     # Linear model y = 3*x + N(2, 0.1**2)
     w = 3.0
     if intercept:
@@ -72,7 +72,7 @@ def gen_toy_problem_1d(intercept=True):
 
 
 def gen_toy_problem_2d():
-    random_state = np.random.RandomState(0)
+    random_state = np.random.default_rng(0)
     n_samples = 100
     # Linear model y = 5*x_1 + 10*x_2 + N(1, 0.1**2)
     X = random_state.normal(size=(n_samples, 2))
@@ -82,13 +82,13 @@ def gen_toy_problem_2d():
     y = np.dot(X, w) + c + noise
     # Add some outliers
     n_outliers = n_samples // 10
-    ix = random_state.randint(0, n_samples, size=n_outliers)
+    ix = random_state.integers(0, n_samples, size=n_outliers)
     y[ix] = 50 * random_state.normal(size=n_outliers)
     return X, y, w, c
 
 
 def gen_toy_problem_4d():
-    random_state = np.random.RandomState(0)
+    random_state = np.random.default_rng(0)
     n_samples = 10000
     # Linear model y = 5*x_1 + 10*x_2  + 42*x_3 + 7*x_4 + N(1, 0.1**2)
     X = random_state.normal(size=(n_samples, 4))
@@ -98,7 +98,7 @@ def gen_toy_problem_4d():
     y = np.dot(X, w) + c + noise
     # Add some outliers
     n_outliers = n_samples // 10
-    ix = random_state.randint(0, n_samples, size=n_outliers)
+    ix = random_state.integers(0, n_samples, size=n_outliers)
     y[ix] = 50 * random_state.normal(size=n_outliers)
     return X, y, w, c
 
@@ -212,7 +212,7 @@ def test_calc_breakdown_point():
 
 
 @pytest.mark.parametrize(
-    "param, ExceptionCls, match",
+    "param, exception_cls, match",
     [
         (
             {"n_subsamples": 1},
@@ -226,10 +226,10 @@ def test_calc_breakdown_point():
         ),
     ],
 )
-def test_checksubparams_invalid_input(param, ExceptionCls, match):
-    X, y, w, c = gen_toy_problem_1d()
+def test_checksubparams_invalid_input(param, exception_cls, match):
+    X, y, _, _ = gen_toy_problem_1d()
     theil_sen = TheilSenRegressor(**param, random_state=0)
-    with pytest.raises(ExceptionCls, match=match):
+    with pytest.raises(exception_cls, match=match):
         theil_sen.fit(X, y)
 
 
@@ -251,7 +251,7 @@ def test_subpopulation():
 
 
 def test_subsamples():
-    X, y, w, c = gen_toy_problem_4d()
+    X, y, _, _ = gen_toy_problem_4d()
     theil_sen = TheilSenRegressor(n_subsamples=X.shape[0], random_state=0).fit(X, y)
     lstq = LinearRegression().fit(X, y)
     # Check for exact the same results as Least Squares
@@ -260,7 +260,7 @@ def test_subsamples():
 
 @pytest.mark.thread_unsafe  # manually captured stdout
 def test_verbosity():
-    X, y, w, c = gen_toy_problem_1d()
+    X, y, _, _ = gen_toy_problem_1d()
     # Check that Theil-Sen can be verbose
     with no_stdout_stderr():
         TheilSenRegressor(verbose=True, random_state=0).fit(X, y)
