@@ -76,11 +76,11 @@ def _set_order(X, y, order="C"):
         raise ValueError(
             "Unknown value for order. Got {} instead of None, 'C' or 'F'.".format(order)
         )
-    sparse_X = sparse.issparse(X)
+    sparse_x = sparse.issparse(X)
     sparse_y = sparse.issparse(y)
     if order is not None:
         sparse_format = "csc" if order == "F" else "csr"
-        if sparse_X:
+        if sparse_x:
             X = X.asformat(sparse_format, copy=False)
         else:
             X = np.asarray(X, order=order)
@@ -98,7 +98,7 @@ def _set_order(X, y, order="C"):
 def _alpha_grid(
     X,
     y,
-    Xy=None,
+    xy=None,
     l1_ratio=1.0,
     fit_intercept=True,
     eps=1e-3,
@@ -158,16 +158,16 @@ def _alpha_grid(
             "your estimator with the appropriate `alphas=` "
             "argument."
         )
-    if Xy is not None:
-        Xyw = Xy
+    if xy is not None:
+        xyw = xy
     else:
         if fit_intercept:
             # TODO: For y.ndim >> 1, think about avoiding memory of y = y - y.mean()
             y = y - np.average(y, axis=0, weights=sample_weight)
             if sparse.issparse(X):
-                X_mean, _ = mean_variance_axis(X, axis=0, weights=sample_weight)
+                x_mean, _ = mean_variance_axis(X, axis=0, weights=sample_weight)
             else:
-                X_mean = np.average(X, axis=0, weights=sample_weight)
+                x_mean = np.average(X, axis=0, weights=sample_weight)
 
         if sample_weight is None:
             yw = y
@@ -180,14 +180,14 @@ def _alpha_grid(
         if fit_intercept:
             # Avoid copy of X, i.e. avoid explicitly computing X - X_mean
             if y.ndim > 1:
-                Xyw = X.T @ yw - X_mean[:, None] * np.sum(yw, axis=0)
+                xyw = X.T @ yw - x_mean[:, None] * np.sum(yw, axis=0)
             else:
-                Xyw = X.T @ yw - X_mean * np.sum(yw, axis=0)
+                xyw = X.T @ yw - x_mean * np.sum(yw, axis=0)
         else:
-            Xyw = X.T @ yw
+            xyw = X.T @ yw
 
-    if Xyw.ndim == 1:
-        Xyw = Xyw[:, np.newaxis]
+    if xyw.ndim == 1:
+        xyw = xyw[:, np.newaxis]
     if sample_weight is not None:
         n_samples = sample_weight.sum()
     else:
@@ -196,11 +196,11 @@ def _alpha_grid(
     if not positive:
         # Compute np.max(np.sqrt(np.sum(Xyw**2, axis=1))). We switch sqrt and max to
         # avoid many computations of sqrt.
-        alpha_max = np.sqrt(np.max(np.sum(Xyw**2, axis=1))) / (n_samples * l1_ratio)
+        alpha_max = np.sqrt(np.max(np.sum(xyw**2, axis=1))) / (n_samples * l1_ratio)
     else:
         # We may safely assume Xyw.shape[1] == 1, MultiTask estimators do not support
         # positive constraints.
-        alpha_max = max(0, np.max(Xyw)) / (n_samples * l1_ratio)
+        alpha_max = max(0, np.max(xyw)) / (n_samples * l1_ratio)
 
     if alpha_max <= np.finfo(np.float64).resolution:
         return np.full(n_alphas, np.finfo(np.float64).resolution)
@@ -225,8 +225,8 @@ def _alpha_grid(
             Hidden(StrOptions({"warn"})),
         ],
         "precompute": [StrOptions({"auto"}), "boolean", "array-like"],
-        "Xy": ["array-like", None],
-        "copy_X": ["boolean"],
+        "xy": ["array-like", None],
+        "copy_x": ["boolean"],
         "coef_init": ["array-like", None],
         "verbose": ["verbose"],
         "return_n_iter": ["boolean"],
@@ -242,8 +242,8 @@ def lasso_path(
     n_alphas="deprecated",
     alphas="warn",
     precompute="auto",
-    Xy=None,
-    copy_X=True,
+    xy=None,
+    copy_x=True,
     coef_init=None,
     verbose=False,
     return_n_iter=False,
@@ -434,8 +434,8 @@ def lasso_path(
         eps=eps,
         alphas=_alphas,
         precompute=precompute,
-        Xy=Xy,
-        copy_X=copy_X,
+        xy=xy,
+        copy_x=copy_x,
         coef_init=coef_init,
         verbose=verbose,
         positive=positive,
@@ -462,8 +462,8 @@ def lasso_path(
             Hidden(StrOptions({"warn"})),
         ],
         "precompute": [StrOptions({"auto"}), "boolean", "array-like"],
-        "Xy": ["array-like", None],
-        "copy_X": ["boolean"],
+        "xy": ["array-like", None],
+        "copy_x": ["boolean"],
         "coef_init": ["array-like", None],
         "verbose": ["verbose"],
         "return_n_iter": ["boolean"],
@@ -481,8 +481,8 @@ def enet_path(
     n_alphas="deprecated",
     alphas="warn",
     precompute="auto",
-    Xy=None,
-    copy_X=True,
+    xy=None,
+    copy_x=True,
     coef_init=None,
     verbose=False,
     return_n_iter=False,
@@ -662,8 +662,8 @@ def enet_path(
     else:
         _alphas = alphas
 
-    X_offset_param = params.pop("X_offset", None)
-    X_scale_param = params.pop("X_scale", None)
+    x_offset_param = params.pop("X_offset", None)
+    x_scale_param = params.pop("X_scale", None)
     sample_weight = params.pop("sample_weight", None)
     tol = params.pop("tol", 1e-4)
     max_iter = params.pop("max_iter", 1000)
@@ -682,7 +682,7 @@ def enet_path(
             accept_sparse="csc",
             dtype=[np.float64, np.float32],
             order="F",
-            copy=copy_X,
+            copy=copy_x,
         )
         y = check_array(
             y,
@@ -692,10 +692,10 @@ def enet_path(
             copy=False,
             ensure_2d=False,
         )
-        if Xy is not None:
+        if xy is not None:
             # Xy should be a 1d contiguous array or a 2D C ordered array
-            Xy = check_array(
-                Xy, dtype=X.dtype.type, order="C", copy=False, ensure_2d=False
+            xy = check_array(
+                xy, dtype=X.dtype.type, order="C", copy=False, ensure_2d=False
             )
 
     n_samples, n_features = X.shape
@@ -710,10 +710,10 @@ def enet_path(
 
     X_is_sparse = sparse.issparse(X)
     if X_is_sparse:
-        if X_offset_param is not None:
+        if x_offset_param is not None:
             # As sparse matrices are not actually centered we need this to be passed to
             # the CD solver.
-            X_sparse_scaling = X_offset_param / X_scale_param
+            X_sparse_scaling = x_offset_param / x_scale_param
             X_sparse_scaling = np.asarray(X_sparse_scaling, dtype=X.dtype)
         else:
             X_sparse_scaling = np.zeros(n_features, dtype=X.dtype)
@@ -723,10 +723,10 @@ def enet_path(
     # X should have been passed through _pre_fit already if function is called
     # from ElasticNet.fit
     if check_input or precompute is not False:
-        X, y, _, _, _, precompute, Xy = _pre_fit(
+        X, y, _, _, _, precompute, xy = _pre_fit(
             X,
             y,
-            Xy,
+            xy,
             precompute,
             fit_intercept=False,
             copy=False,
@@ -738,7 +738,7 @@ def enet_path(
         alphas = _alpha_grid(
             X,
             y,
-            Xy=Xy,
+            xy=xy,
             l1_ratio=l1_ratio,
             fit_intercept=False,
             positive=positive,
@@ -827,7 +827,7 @@ def enet_path(
                 l1_reg,
                 l2_reg,
                 precompute,
-                Xy,
+                xy,
                 y,
                 max_iter,
                 tol,
@@ -1250,8 +1250,8 @@ class ElasticNet(RegressorMixin, MultiOutputLinearModel):
                 eps=None,
                 alphas=[self.alpha],
                 precompute=precompute,
-                Xy=this_Xy,
-                copy_X=True,
+                xy=this_Xy,
+                copy_x=True,
                 coef_init=coef_[k],
                 verbose=False,
                 return_n_iter=True,
@@ -1624,11 +1624,11 @@ def _path_residuals(
     )
 
     path_params = path_params.copy()
-    path_params["Xy"] = Xy
+    path_params["xy"] = Xy
     path_params["X_offset"] = X_offset
     path_params["X_scale"] = X_scale
     path_params["precompute"] = precompute
-    path_params["copy_X"] = False
+    path_params["copy_x"] = False
     path_params["alphas"] = alphas
     # needed for sparse cd solver
     path_params["sample_weight"] = sw_train
@@ -1894,11 +1894,11 @@ class LinearModelCV(MultiOutputLinearModel, ABC):
             # Making sure alphas is properly ordered.
             alphas = np.tile(np.sort(self.alphas)[::-1], (n_l1_ratio, 1))
 
-        path_params["copy_X"] = copy_X
+        path_params["copy_x"] = copy_X
         # We are not computing in parallel, we can modify X
         # inplace in the folds
         if effective_n_jobs(self.n_jobs) > 1:
-            path_params["copy_X"] = False
+            path_params["copy_x"] = False
 
         # init cross-validation generator
         cv = check_cv(self.cv)
