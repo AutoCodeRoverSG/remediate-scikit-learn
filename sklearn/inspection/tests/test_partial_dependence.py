@@ -824,10 +824,10 @@ def test_partial_dependence_pipeline_custom_values(
     y = pd.Series([0, 1, 0, 1])
     pl.fit(X, y)
 
-    X_holdout = pd.DataFrame({"a": [1.0, 2.0, 3.0, 4.0], "b": ["a", "b", "a", None]})
+    x_holdout = pd.DataFrame({"a": [1.0, 2.0, 3.0, 4.0], "b": ["a", "b", "a", None]})
     part_dep = partial_dependence(
         pl,
-        X_holdout,
+        x_holdout,
         features=features,
         grid_resolution=3,
         custom_values=custom_values,
@@ -870,7 +870,7 @@ def test_partial_dependence_dataframe(estimator, preprocessor, features):
     pd = pytest.importorskip("pandas")
     df = pd.DataFrame(scale(iris.data), columns=iris.feature_names)
 
-    pipe = make_pipeline(preprocessor, clone(estimator))
+    pipe = make_pipeline(preprocessor, clone(estimator), memory=None)
     pipe.fit(df, iris.target)
     pdp_pipe = partial_dependence(
         pipe, df, features=features, grid_resolution=10, kind="average"
@@ -880,16 +880,16 @@ def test_partial_dependence_dataframe(estimator, preprocessor, features):
     # we mixed the index to be sure that we are computing the partial
     # dependence of the right columns
     if preprocessor is not None:
-        X_proc = clone(preprocessor).fit_transform(df)
+        x_proc = clone(preprocessor).fit_transform(df)
         features_clf = [0, 1]
     else:
-        X_proc = df
+        x_proc = df
         features_clf = [0, 2]
 
-    clf = clone(estimator).fit(X_proc, iris.target)
+    clf = clone(estimator).fit(x_proc, iris.target)
     pdp_clf = partial_dependence(
         clf,
-        X_proc,
+        x_proc,
         features=features_clf,
         method="brute",
         grid_resolution=10,
@@ -954,7 +954,7 @@ def test_partial_dependence_feature_type(features, custom_values, expected_pd_sh
         (RobustScaler(), [iris.feature_names[i] for i in (1, 3)]),
     )
     pipe = make_pipeline(
-        preprocessor, LogisticRegression(max_iter=1000, random_state=0)
+        preprocessor, LogisticRegression(max_iter=1000, random_state=0), memory=None
     )
     pipe.fit(df, iris.target)
     pdp_pipe = partial_dependence(
@@ -983,7 +983,7 @@ def test_partial_dependence_unfitted(estimator):
     preprocessor = make_column_transformer(
         (StandardScaler(), [0, 2]), (RobustScaler(), [1, 3])
     )
-    pipe = make_pipeline(preprocessor, estimator)
+    pipe = make_pipeline(preprocessor, estimator, memory=None)
     with pytest.raises(NotFittedError, match="is not fitted yet"):
         partial_dependence(pipe, X, features=[0, 2], grid_resolution=10)
     with pytest.raises(NotFittedError, match="is not fitted yet"):
@@ -999,7 +999,7 @@ def test_partial_dependence_unfitted(estimator):
 )
 def test_kind_average_and_average_of_individual(estimator_cls, data):
     est = estimator_cls()
-    (X, y), n_targets = data
+    (X, y), _ = data
     est.fit(X, y)
 
     pdp_avg = partial_dependence(est, X=X, features=[1, 2], kind="average")
@@ -1018,7 +1018,7 @@ def test_kind_average_and_average_of_individual(estimator_cls, data):
 def test_partial_dependence_kind_individual_ignores_sample_weight(estimator_cls, data):
     """Check that `sample_weight` does not have any effect on reported ICE."""
     est = estimator_cls()
-    (X, y), n_targets = data
+    (X, y), _ = data
     sample_weight = np.arange(X.shape[0])
     est.fit(X, y)
 
@@ -1050,7 +1050,7 @@ def test_partial_dependence_non_null_weight_idx(estimator, non_null_weight_idx):
     preprocessor = make_column_transformer(
         (StandardScaler(), [0, 2]), (RobustScaler(), [1, 3])
     )
-    pipe = make_pipeline(preprocessor, clone(estimator)).fit(X, y)
+    pipe = make_pipeline(preprocessor, clone(estimator), memory=None).fit(X, y)
 
     sample_weight = np.zeros_like(y)
     sample_weight[non_null_weight_idx] = 1
