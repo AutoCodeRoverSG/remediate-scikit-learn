@@ -2531,6 +2531,7 @@ def test_scalar_fit_param_compat(search_cv, param_search):
             return self
 
     def _fit_param_callable():
+        # Intentionally empty: used as a callable fit parameter for testing
         pass
 
     model = search_cv(_FitParamClassifier(), param_search)
@@ -2788,7 +2789,7 @@ def test_cv_results_dtype_issue_29074():
             self.base_clf.fit(X, y)
             return self
 
-        def score(self, X, y):
+        def score(self, X, y, sample_weight=None):
             return self.base_clf.score(X, y)
 
     # Values of param_grid are such that np.result_type gives slightly
