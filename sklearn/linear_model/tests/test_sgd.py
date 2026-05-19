@@ -1864,7 +1864,7 @@ def test_l1_ratio():
 def test_underflow_or_overflow():
     with np.errstate(all="raise"):
         # Generate some weird data with hugely unscaled features
-        rng = np.random.RandomState(0)
+        rng = np.random.default_rng(0)
         n_samples = 100
         n_features = 10
 
@@ -2113,7 +2113,7 @@ def test_multi_core_gridsearch_and_early_stopping():
 
 
 @pytest.mark.parametrize("backend", ["loky", "multiprocessing", "threading"])
-def test_SGDClassifier_fit_for_all_backends(backend):
+def test_sgd_classifier_fit_for_all_backends(backend):
     # This is a non-regression smoke test. In the multi-class case,
     # SGDClassifier.fit fits each class in a one-versus-all fashion using
     # joblib.Parallel.  However, each OvA step updates the coef_ attribute of
@@ -2128,7 +2128,7 @@ def test_SGDClassifier_fit_for_all_backends(backend):
     # a segmentation fault when trying to write in a readonly memory mapped
     # buffer.
 
-    random_state = np.random.RandomState(42)
+    random_state = np.random.default_rng(42)
 
     # Create a classification problem with 50000 features and 20 classes. Using
     # loky or multiprocessing this make the clf.coef_ exceed the threshold

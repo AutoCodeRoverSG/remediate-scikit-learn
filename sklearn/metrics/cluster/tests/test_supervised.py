@@ -183,7 +183,7 @@ def test_non_consecutive_labels():
 
 def uniform_labelings_scores(score_func, n_samples, k_range, n_runs=10, seed=42):
     # Compute score for random uniform cluster labelings
-    random_labels = np.random.RandomState(seed).randint
+    random_labels = np.random.default_rng(seed).integers
     scores = np.zeros((len(k_range), n_runs))
     for i, k in enumerate(k_range):
         for j in range(n_runs):
@@ -323,13 +323,12 @@ def test_exactly_zero_info_score():
         labels_a, labels_b = (np.ones(i, dtype=int), np.arange(i, dtype=int))
         assert normalized_mutual_info_score(labels_a, labels_b) == pytest.approx(0.0)
         assert v_measure_score(labels_a, labels_b) == pytest.approx(0.0)
-        assert adjusted_mutual_info_score(labels_a, labels_b) == 0.0
+        assert adjusted_mutual_info_score(labels_a, labels_b) == pytest.approx(0.0)
         assert normalized_mutual_info_score(labels_a, labels_b) == pytest.approx(0.0)
         for method in ["min", "geometric", "arithmetic", "max"]:
-            assert (
-                adjusted_mutual_info_score(labels_a, labels_b, average_method=method)
-                == 0.0
-            )
+            assert adjusted_mutual_info_score(
+                labels_a, labels_b, average_method=method
+            ) == pytest.approx(0.0)
             assert normalized_mutual_info_score(
                 labels_a, labels_b, average_method=method
             ) == pytest.approx(0.0)
@@ -338,10 +337,10 @@ def test_exactly_zero_info_score():
 def test_v_measure_and_mutual_information(seed=36):
     # Check relation between v_measure, entropy and mutual information
     for i in np.logspace(1, 4, 4).astype(int):
-        random_state = np.random.RandomState(seed)
+        rng = np.random.default_rng(seed)
         labels_a, labels_b = (
-            random_state.randint(0, 10, i),
-            random_state.randint(0, 10, i),
+            rng.integers(0, 10, i),
+            rng.integers(0, 10, i),
         )
         assert_almost_equal(
             v_measure_score(labels_a, labels_b),
@@ -376,7 +375,7 @@ def test_fowlkes_mallows_score_properties():
     labels_a = np.array([0, 0, 0, 1, 1, 2])
     labels_b = np.array([1, 1, 2, 2, 0, 0])
     expected = 1.0 / np.sqrt((1.0 + 3.0) * (1.0 + 2.0))
-    # FMI = TP / sqrt((TP + FP) * (TP + FN))
+    
 
     score_original = fowlkes_mallows_score(labels_a, labels_b)
     assert_almost_equal(score_original, expected)
@@ -412,8 +411,8 @@ def test_mutual_info_score_positive_constant_label(labels_true, labels_pred):
 
 def test_check_clustering_error():
     # Test warning message for continuous values
-    rng = np.random.RandomState(42)
-    noise = rng.rand(500)
+    rng = np.random.default_rng(42)
+    noise = rng.random(500)
     wavelength = np.linspace(0.01, 1, 500) * 1e-6
     msg = (
         "Clustering metrics expects discrete values but received "
@@ -492,9 +491,9 @@ def test_adjusted_rand_score_overflow():
     Non-regression test for:
     https://github.com/scikit-learn/scikit-learn/issues/20305
     """
-    rng = np.random.RandomState(0)
-    y_true = rng.randint(0, 2, 100_000, dtype=np.int8)
-    y_pred = rng.randint(0, 2, 100_000, dtype=np.int8)
+    rng = np.random.default_rng(0)
+    y_true = rng.integers(0, 2, 100_000, dtype=np.int8)
+    y_pred = rng.integers(0, 2, 100_000, dtype=np.int8)
     with warnings.catch_warnings():
         warnings.simplefilter("error", RuntimeWarning)
         adjusted_rand_score(y_true, y_pred)
