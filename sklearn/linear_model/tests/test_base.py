@@ -883,15 +883,15 @@ def test_array_api_move_estimator_to():
     y = rng.normal(size=10)
 
     reg = LinearRegression().fit(X, y)
-    X_xp = xp.asarray(X)
-    reg.predict(X_xp)
+    x_xp = xp.asarray(X)
+    reg.predict(x_xp)
 
     with config_context(array_api_dispatch=True):
         with pytest.raises(ValueError, match=".*must use the same namespace"):
-            reg.predict(X_xp)
-        xp_target, _, device = get_namespace_and_device(X_xp)
+            reg.predict(x_xp)
+        xp_target, _, device = get_namespace_and_device(x_xp)
         reg = move_estimator_to(reg, xp_target, device)
-        reg.predict(X_xp)
+        reg.predict(x_xp)
 
 
 def test_predict_proba_lr_large_values():
@@ -903,6 +903,7 @@ def test_predict_proba_lr_large_values():
 
     class MockClassifier(LinearClassifierMixin, BaseEstimator):
         def __init__(self):
+            # No parameters needed for this mock classifier
             pass
 
         def fit(self, X, y):
