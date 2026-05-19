@@ -105,7 +105,7 @@ def f_oneway(*args):
     dfwn = n_samples - n_classes
     msb = ssbn / float(dfbn)
     msw = sswn / float(dfwn)
-    constant_features_idx = np.where(msw == 0.0)[0]
+    constant_features_idx = np.nonzero(np.isclose(msw, 0.0))[0]
     if np.nonzero(msb)[0].size != msb.size and constant_features_idx.size:
         warnings.warn("Features %s are constant." % constant_features_idx, UserWarning)
     f = msb / msw
@@ -374,16 +374,16 @@ def r_regression(X, y, *, center=True, force_finite=True):
         # for sparse matrices while a `np.array` for dense and sparse arrays.
         # We can reconsider using `isspmatrix` when the minimum version is
         # SciPy >= 1.11
-        X_means = X.mean(axis=0)
-        X_means = X_means.getA1() if isinstance(X_means, np.matrix) else X_means
+        x_means = X.mean(axis=0)
+        x_means = x_means.getA1() if isinstance(x_means, np.matrix) else x_means
         # Compute the scaled standard deviations via moments
-        X_norms = np.sqrt(row_norms(X.T, squared=True) - n_samples * X_means**2)
+        x_norms = np.sqrt(row_norms(X.T, squared=True) - n_samples * x_means**2)
     else:
-        X_norms = row_norms(X.T)
+        x_norms = row_norms(X.T)
 
     correlation_coefficient = safe_sparse_dot(y, X)
     with np.errstate(divide="ignore", invalid="ignore"):
-        correlation_coefficient /= X_norms
+        correlation_coefficient /= x_norms
         correlation_coefficient /= np.linalg.norm(y)
 
     if force_finite and not np.isfinite(correlation_coefficient).all():
@@ -578,6 +578,7 @@ class _BaseFilter(SelectorMixin, BaseEstimator):
         return self
 
     def _check_params(self, X, y):
+        # Intentionally empty: subclasses may override to validate parameters.
         pass
 
     def __sklearn_tags__(self):
@@ -682,7 +683,7 @@ class SelectPercentile(_BaseFilter):
         scores = _clean_nans(self.scores_)
         threshold = np.percentile(scores, 100 - self.percentile)
         mask = scores > threshold
-        ties = np.where(scores == threshold)[0]
+        ties = np.nonzero(scores == threshold)[0]
         if len(ties):
             max_feats = int(len(scores) * self.percentile / 100)
             kept_ties = ties[: max_feats - mask.sum()]

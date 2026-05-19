@@ -172,7 +172,7 @@ class __array_namespace_info__:
 
 
     def _dtypes(self, kind):
-        bool = torch.bool
+        bool_dtype = torch.bool
         int8 = torch.int8
         int16 = torch.int16
         int32 = torch.int32
@@ -188,7 +188,7 @@ class __array_namespace_info__:
 
         if kind is None:
             return {
-                "bool": bool,
+                "bool": bool_dtype,
                 "int8": int8,
                 "int16": int16,
                 "int32": int32,
@@ -200,7 +200,7 @@ class __array_namespace_info__:
                 "complex128": complex128,
             }
         if kind == "bool":
-            return {"bool": bool}
+            return {"bool": bool_dtype}
         if kind == "signed integer":
             return {
                 "int8": int8,
@@ -309,7 +309,7 @@ class __array_namespace_info__:
         for k, v in res.copy().items():
             try:
                 torch.empty((0,), dtype=v, device=device)
-            except:
+            except Exception:
                 del res[k]
         return res
 
@@ -362,7 +362,7 @@ class __array_namespace_info__:
                     if a.device in devices:
                         break
                     devices.append(a.device)
-                except:
+                except Exception:
                     break
                 i += 1
 

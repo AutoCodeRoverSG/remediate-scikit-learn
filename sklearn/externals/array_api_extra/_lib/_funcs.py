@@ -276,7 +276,12 @@ def broadcast_shapes(*shapes: tuple[float | None, ...]) -> tuple[int | None, ...
                 f"{shapes}."
             )
             raise ValueError(msg)
-        out.append(None if none_size else cast(int, sizes.pop()) if sizes else 1)
+        if none_size:
+            out.append(None)
+        elif sizes:
+            out.append(cast(int, sizes.pop()))
+        else:
+            out.append(1)
 
     return tuple(out)
 
