@@ -12,8 +12,8 @@ from sklearn.mixture import BayesianGaussianMixture, GaussianMixture
 def test_gaussian_mixture_n_iter(estimator):
     # check that n_iter is the number of iteration performed.
     estimator = clone(estimator)  # Avoid side effects from shared instances
-    rng = np.random.RandomState(0)
-    X = rng.rand(10, 5)
+    rng = np.random.default_rng(0)
+    X = rng.random((10, 5))
     max_iter = 1
     estimator.set_params(max_iter=max_iter)
     estimator.fit(X)
@@ -24,8 +24,8 @@ def test_gaussian_mixture_n_iter(estimator):
 def test_mixture_n_components_greater_than_n_samples_error(estimator):
     """Check error when n_components <= n_samples"""
     estimator = clone(estimator)  # Avoid side effects from shared instances
-    rng = np.random.RandomState(0)
-    X = rng.rand(10, 5)
+    rng = np.random.default_rng(0)
+    X = rng.random((10, 5))
     estimator.set_params(n_components=12)
 
     msg = "Expected n_samples >= n_components"

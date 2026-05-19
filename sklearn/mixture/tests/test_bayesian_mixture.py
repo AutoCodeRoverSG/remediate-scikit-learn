@@ -426,7 +426,7 @@ def test_bayesian_mixture_fit_predict(seed, max_iter, tol):
 
 def test_bayesian_mixture_fit_predict_n_init():
     # Check that fit_predict is equivalent to fit.predict, when n_init > 1
-    X = np.random.RandomState(0).randn(50, 5)
+    X = np.random.default_rng(0).standard_normal((50, 5))
     gm = BayesianGaussianMixture(n_components=5, n_init=10, random_state=0)
     y_pred1 = gm.fit_predict(X)
     y_pred2 = gm.predict(X)
@@ -435,7 +435,7 @@ def test_bayesian_mixture_fit_predict_n_init():
 
 def test_bayesian_mixture_predict_predict_proba():
     # this is the same test as test_gaussian_mixture_predict_predict_proba()
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
     rand_data = RandomData(rng)
     for prior_type in PRIOR_TYPE:
         for covar_type in COVARIANCE_TYPE:
@@ -443,7 +443,7 @@ def test_bayesian_mixture_predict_predict_proba():
             Y = rand_data.Y
             bgmm = BayesianGaussianMixture(
                 n_components=rand_data.n_components,
-                random_state=rng,
+                random_state=0,
                 weight_concentration_prior_type=prior_type,
                 covariance_type=covar_type,
             )

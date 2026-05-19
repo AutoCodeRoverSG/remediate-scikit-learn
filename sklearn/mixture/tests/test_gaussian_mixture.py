@@ -1480,7 +1480,7 @@ def test_gaussian_mixture_all_init_does_not_estimate_gaussian_parameters(
         sklearn.mixture._gaussian_mixture, "_estimate_gaussian_parameters", mock
     )
 
-    rng = np.random.RandomState(global_random_seed)
+    rng = np.random.default_rng(global_random_seed)
     rand_data = RandomData(rng)
 
     gm = GaussianMixture(
@@ -1488,7 +1488,7 @@ def test_gaussian_mixture_all_init_does_not_estimate_gaussian_parameters(
         weights_init=rand_data.weights,
         means_init=rand_data.means,
         precisions_init=rand_data.precisions["full"],
-        random_state=rng,
+        random_state=global_random_seed,
     )
     gm.fit(rand_data.X["full"])
     # The initial gaussian parameters are not estimated. They are estimated for every
@@ -1514,7 +1514,7 @@ def test_gaussian_mixture_array_api_compliance(
     """Test that array api works in GaussianMixture.fit()."""
     xp, device = _array_api_for_tests(array_namespace, device_name, dtype_name)
 
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
     rand_data = RandomData(rng)
     X = rand_data.X[covariance_type]
     X = X.astype(dtype_name)
