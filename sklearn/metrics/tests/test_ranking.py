@@ -2070,7 +2070,7 @@ def test_ndcg_score():
     _, y_true = make_multilabel_classification(random_state=0, n_classes=10)
     y_score = -y_true + 1
     _test_ndcg_score_for(y_true, y_score)
-    y_true, y_score = np.random.RandomState(0).random_sample((2, 100, 10))
+    y_true, y_score = np.random.default_rng(0).random((2, 100, 10))
     _test_ndcg_score_for(y_true, y_score)
 
 
@@ -2096,17 +2096,17 @@ def test_partial_roc_auc_score():
     assert roc_auc_score(y_true, y_true, max_fpr=1) == 1
     assert roc_auc_score(y_true, y_true, max_fpr=0.001) == 1
     with pytest.raises(ValueError):
-        assert roc_auc_score(y_true, y_true, max_fpr=-0.1)
+        roc_auc_score(y_true, y_true, max_fpr=-0.1)
     with pytest.raises(ValueError):
-        assert roc_auc_score(y_true, y_true, max_fpr=1.1)
+        roc_auc_score(y_true, y_true, max_fpr=1.1)
     with pytest.raises(ValueError):
-        assert roc_auc_score(y_true, y_true, max_fpr=0)
+        roc_auc_score(y_true, y_true, max_fpr=0)
 
     y_scores = np.array([0.1, 0, 0.1, 0.01])
     roc_auc_with_max_fpr_one = roc_auc_score(y_true, y_scores, max_fpr=1)
     unconstrained_roc_auc = roc_auc_score(y_true, y_scores)
     assert roc_auc_with_max_fpr_one == unconstrained_roc_auc
-    assert roc_auc_score(y_true, y_scores, max_fpr=0.3) == 0.5
+    assert_almost_equal(roc_auc_score(y_true, y_scores, max_fpr=0.3), 0.5)
 
     y_true, y_pred, _ = make_prediction(binary=True)
     for max_fpr in np.linspace(1e-4, 1, 5):
@@ -2365,10 +2365,10 @@ def test_ranking_metric_pos_label_types(metric, classes):
     We can expect `pos_label` to be a bool, an integer, a float, a string.
     No error should be raised for those types.
     """
-    rng = np.random.RandomState(42)
+    rng = np.random.default_rng(42)
     n_samples, pos_label = 10, classes[-1]
     y_true = rng.choice(classes, size=n_samples, replace=True)
-    y_proba = rng.rand(n_samples)
+    y_proba = rng.random(n_samples)
     result = metric(y_true, y_proba, pos_label=pos_label)
     if isinstance(result, float):
         assert not np.isnan(result)
@@ -2386,9 +2386,9 @@ def test_roc_curve_with_probability_estimates(global_random_seed):
     Non-regression test for:
     https://github.com/scikit-learn/scikit-learn/issues/26193
     """
-    rng = np.random.RandomState(global_random_seed)
-    y_true = rng.randint(0, 2, size=10)
-    y_score = rng.rand(10)
+    rng = np.random.default_rng(global_random_seed)
+    y_true = rng.integers(0, 2, size=10)
+    y_score = rng.random(10)
     _, _, thresholds = roc_curve(y_true, y_score)
     assert np.isinf(thresholds[0])
 

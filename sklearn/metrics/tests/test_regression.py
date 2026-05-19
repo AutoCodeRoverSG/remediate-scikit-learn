@@ -268,10 +268,6 @@ def test_regression_metrics_at_limits():
     )
     with pytest.raises(ValueError, match=msg):
         root_mean_squared_log_error([1.0, -2.0, 3.0], [1.0, 2.0, 3.0])
-    msg = (
-        "Root Mean Squared Logarithmic Error cannot be used when "
-        "targets contain values less than or equal to -1."
-    )
 
     # Tweedie deviance error
     power = -1.2
@@ -499,10 +495,10 @@ def test_regression_single_sample(metric):
 def test_tweedie_deviance_continuity(global_random_seed):
     n_samples = 100
 
-    rng = np.random.RandomState(global_random_seed)
+    rng = np.random.default_rng(global_random_seed)
 
-    y_true = rng.rand(n_samples) + 0.1
-    y_pred = rng.rand(n_samples) + 0.1
+    y_true = rng.random(n_samples) + 0.1
+    y_pred = rng.random(n_samples) + 0.1
 
     assert_allclose(
         mean_tweedie_deviance(y_true, y_pred, power=0 - 1e-10),
@@ -617,7 +613,7 @@ def test_dummy_quantile_parameter_tuning(global_random_seed):
         regressor = DummyRegressor(strategy="quantile", quantile=0.25)
         grid_search = GridSearchCV(
             regressor,
-            param_grid=dict(quantile=all_quantiles),
+            param_grid={"quantile": all_quantiles},
             scoring=neg_mean_pinball_loss,
         ).fit(X, y)
 
