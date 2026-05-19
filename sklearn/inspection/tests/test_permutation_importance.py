@@ -35,7 +35,7 @@ def test_permutation_importance_correlated_feature_regression(
 ):
     # Make sure that feature highly correlated to the target have a higher
     # importance
-    rng = np.random.RandomState(42)
+    rng = np.random.default_rng(42)
     n_repeats = 5
 
     X, y = load_diabetes(return_X_y=True)
@@ -44,7 +44,10 @@ def test_permutation_importance_correlated_feature_regression(
     X = np.hstack([X, y_with_little_noise])
 
     weights = np.ones_like(y) if sample_weight == "ones" else sample_weight
-    clf = RandomForestRegressor(n_estimators=10, random_state=42)
+    clf = RandomForestRegressor(
+        n_estimators=10, random_state=42,
+        min_samples_leaf=1, max_features=1.0,
+    )
     clf.fit(X, y)
 
     result = permutation_importance(
@@ -53,7 +56,7 @@ def test_permutation_importance_correlated_feature_regression(
         y,
         sample_weight=weights,
         n_repeats=n_repeats,
-        random_state=rng,
+        random_state=42,
         n_jobs=n_jobs,
         max_samples=max_samples,
     )
@@ -74,7 +77,7 @@ def test_permutation_importance_correlated_feature_regression_pandas(
 
     # Make sure that feature highly correlated to the target have a higher
     # importance
-    rng = np.random.RandomState(42)
+    rng = np.random.default_rng(42)
     n_repeats = 5
 
     dataset = load_iris()
@@ -85,7 +88,10 @@ def test_permutation_importance_correlated_feature_regression_pandas(
     X = pd.DataFrame(X, columns=dataset.feature_names)
     X["correlated_feature"] = y_with_little_noise
 
-    clf = RandomForestClassifier(n_estimators=10, random_state=42)
+    clf = RandomForestClassifier(
+        n_estimators=10, random_state=42,
+        min_samples_leaf=1, max_features="sqrt",
+    )
     clf.fit(X, y)
 
     result = permutation_importance(
@@ -93,7 +99,7 @@ def test_permutation_importance_correlated_feature_regression_pandas(
         X,
         y,
         n_repeats=n_repeats,
-        random_state=rng,
+        random_state=42,
         n_jobs=n_jobs,
         max_samples=max_samples,
     )
@@ -111,7 +117,7 @@ def test_robustness_to_high_cardinality_noisy_feature(n_jobs, max_samples, seed=
     # Permutation variable importance should not be affected by the high
     # cardinality bias of traditional feature importances, especially when
     # computed on a held-out test set:
-    rng = np.random.RandomState(seed)
+    rng = np.random.default_rng(seed)
     n_repeats = 5
     n_samples = 1000
     n_classes = 5
@@ -133,16 +139,21 @@ def test_robustness_to_high_cardinality_noisy_feature(n_jobs, max_samples, seed=
 
     # Add 10 other noisy features with high cardinality (numerical) values
     # that can be used to overfit the training data.
-    X = np.concatenate([X, rng.randn(n_samples, n_noise_features)], axis=1)
+    X = np.concatenate(
+        [X, rng.standard_normal((n_samples, n_noise_features))], axis=1
+    )
     assert X.shape == (n_samples, n_features)
 
     # Split the dataset to be able to evaluate on a held-out test set. The
     # Test size should be large enough for importance measurements to be
     # stable:
     X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.5, random_state=rng
+        X, y, test_size=0.5, random_state=seed
     )
-    clf = RandomForestClassifier(n_estimators=5, random_state=rng)
+    clf = RandomForestClassifier(
+        n_estimators=5, random_state=seed,
+        min_samples_leaf=1, max_features="sqrt",
+    )
     clf.fit(X_train, y_train)
 
     # Variable importances computed by impurity decrease on the tree node
@@ -160,7 +171,7 @@ def test_robustness_to_high_cardinality_noisy_feature(n_jobs, max_samples, seed=
         X_test,
         y_test,
         n_repeats=n_repeats,
-        random_state=rng,
+        random_state=seed,
         n_jobs=n_jobs,
         max_samples=max_samples,
     )
@@ -187,16 +198,15 @@ def test_robustness_to_high_cardinality_noisy_feature(n_jobs, max_samples, seed=
 
 
 def test_permutation_importance_mixed_types():
-    rng = np.random.RandomState(42)
     n_repeats = 4
 
     # Last column is correlated with y
     X = np.array([[1.0, 2.0, 3.0, np.nan], [2, 1, 2, 1]]).T
     y = np.array([0, 1, 0, 1])
 
-    clf = make_pipeline(SimpleImputer(), LogisticRegression(solver="lbfgs"))
+    clf = make_pipeline(SimpleImputer(), LogisticRegression(solver="lbfgs"), memory=None)
     clf.fit(X, y)
-    result = permutation_importance(clf, X, y, n_repeats=n_repeats, random_state=rng)
+    result = permutation_importance(clf, X, y, n_repeats=n_repeats, random_state=42)
 
     assert result.importances.shape == (X.shape[1], n_repeats)
 
@@ -205,8 +215,7 @@ def test_permutation_importance_mixed_types():
     assert np.all(result.importances_mean[-1] > result.importances_mean[:-1])
 
     # use another random state
-    rng = np.random.RandomState(0)
-    result2 = permutation_importance(clf, X, y, n_repeats=n_repeats, random_state=rng)
+    result2 = permutation_importance(clf, X, y, n_repeats=n_repeats, random_state=0)
     assert result2.importances.shape == (X.shape[1], n_repeats)
 
     assert not np.allclose(result.importances, result2.importances)
@@ -218,7 +227,6 @@ def test_permutation_importance_mixed_types():
 
 def test_permutation_importance_mixed_types_pandas():
     pd = pytest.importorskip("pandas")
-    rng = np.random.RandomState(42)
     n_repeats = 5
 
     # Last column is correlated with y
@@ -229,10 +237,10 @@ def test_permutation_importance_mixed_types_pandas():
     preprocess = ColumnTransformer(
         [("num", num_preprocess, ["col1"]), ("cat", OneHotEncoder(), ["col2"])]
     )
-    clf = make_pipeline(preprocess, LogisticRegression(solver="lbfgs"))
+    clf = make_pipeline(preprocess, LogisticRegression(solver="lbfgs"), memory=None)
     clf.fit(X, y)
 
-    result = permutation_importance(clf, X, y, n_repeats=n_repeats, random_state=rng)
+    result = permutation_importance(clf, X, y, n_repeats=n_repeats, random_state=42)
 
     assert result.importances.shape == (X.shape[1], n_repeats)
     # the correlated feature with y is the last column and should
@@ -309,7 +317,7 @@ def test_permutation_importance_equivalence_array_dataframe(n_jobs, max_samples)
     # regression test to make sure that sequential and parallel calls will
     # output the same results.
     X, y = make_regression(n_samples=100, n_features=5, random_state=0)
-    X_df = pd.DataFrame(X)
+    x_df = pd.DataFrame(X)
 
     # Add a categorical feature that is statistically linked to y:
     binner = KBinsDiscretizer(
@@ -326,14 +334,17 @@ def test_permutation_importance_equivalence_array_dataframe(n_jobs, max_samples)
 
     # Insert extra column as a non-numpy-native dtype:
     cat_column = pd.Categorical(cat_column.ravel())
-    new_col_idx = len(X_df.columns)
-    X_df[new_col_idx] = cat_column
-    assert X_df[new_col_idx].dtype == cat_column.dtype
+    new_col_idx = len(x_df.columns)
+    x_df[new_col_idx] = cat_column
+    assert x_df[new_col_idx].dtype == cat_column.dtype
 
     # Stitch an arbitrary index to the dataframe:
-    X_df.index = np.arange(len(X_df)).astype(str)
+    x_df.index = np.arange(len(x_df)).astype(str)
 
-    rf = RandomForestRegressor(n_estimators=5, max_depth=3, random_state=0)
+    rf = RandomForestRegressor(
+        n_estimators=5, max_depth=3, random_state=0,
+        min_samples_leaf=1, max_features=1.0,
+    )
     rf.fit(X, y)
 
     n_repeats = 3
@@ -357,7 +368,7 @@ def test_permutation_importance_equivalence_array_dataframe(n_jobs, max_samples)
     # of those computed on the array with the same data.
     importance_dataframe = permutation_importance(
         rf,
-        X_df,
+        x_df,
         y,
         n_repeats=n_repeats,
         random_state=0,
@@ -380,7 +391,7 @@ def test_permutation_importance_large_memmaped_data(input_type):
     assert X.nbytes > 1e6  # trigger joblib memmaping
 
     X = _convert_container(X, input_type)
-    clf = DummyClassifier(strategy="prior").fit(X, y)
+    clf = DummyClassifier(strategy="prior", random_state=0).fit(X, y)
 
     # Actual smoke test: should not raise any error:
     n_repeats = 5
