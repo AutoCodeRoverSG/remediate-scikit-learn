@@ -1052,7 +1052,7 @@ class Exponentiation(Kernel):
         params : dict
             Parameter names mapped to their values.
         """
-        params = dict(kernel=self.kernel, exponent=self.exponent)
+        params = {"kernel": self.kernel, "exponent": self.exponent}
         if deep:
             deep_items = self.kernel.get_params().items()
             params.update(("kernel__" + k, val) for k, val in deep_items)
@@ -1145,9 +1145,9 @@ class Exponentiation(Kernel):
             is True.
         """
         if eval_gradient:
-            K, K_gradient = self.kernel(X, Y, eval_gradient=True)
-            K_gradient *= self.exponent * K[:, :, np.newaxis] ** (self.exponent - 1)
-            return K**self.exponent, K_gradient
+            K, k_gradient = self.kernel(X, Y, eval_gradient=True)
+            k_gradient *= self.exponent * K[:, :, np.newaxis] ** (self.exponent - 1)
+            return K**self.exponent, k_gradient
         else:
             K = self.kernel(X, Y, eval_gradient=False)
             return K**self.exponent
@@ -1574,15 +1574,15 @@ class RBF(StationaryKernelMixin, NormalizedKernelMixin, Kernel):
                 # Hyperparameter l kept fixed
                 return K, np.empty((X.shape[0], X.shape[0], 0))
             elif not self.anisotropic or length_scale.shape[0] == 1:
-                K_gradient = (K * squareform(dists))[:, :, np.newaxis]
-                return K, K_gradient
+                k_gradient = (K * squareform(dists))[:, :, np.newaxis]
+                return K, k_gradient
             elif self.anisotropic:
                 # We need to recompute the pairwise dimension-wise distances
-                K_gradient = (X[:, np.newaxis, :] - X[np.newaxis, :, :]) ** 2 / (
+                k_gradient = (X[:, np.newaxis, :] - X[np.newaxis, :, :]) ** 2 / (
                     length_scale**2
                 )
-                K_gradient *= K[..., np.newaxis]
-                return K, K_gradient
+                k_gradient *= K[..., np.newaxis]
+                return K, k_gradient
         else:
             return K
 
@@ -1719,19 +1719,19 @@ class Matern(RBF):
                 raise ValueError("Gradient can only be evaluated when Y is None.")
             dists = cdist(X / length_scale, Y / length_scale, metric="euclidean")
 
-        if self.nu == 0.5:
+        if math.isclose(self.nu, 0.5):
             K = np.exp(-dists)
-        elif self.nu == 1.5:
+        elif math.isclose(self.nu, 1.5):
             K = dists * math.sqrt(3)
             K = (1.0 + K) * np.exp(-K)
-        elif self.nu == 2.5:
+        elif math.isclose(self.nu, 2.5):
             K = dists * math.sqrt(5)
             K = (1.0 + K + K**2 / 3.0) * np.exp(-K)
-        elif self.nu == np.inf:
+        elif np.isinf(self.nu):
             K = np.exp(-(dists**2) / 2.0)
         else:  # general case; expensive to evaluate
             K = dists
-            K[K == 0.0] += np.finfo(float).eps  # strict zeros result in nan
+            K[K <= 0.0] += np.finfo(float).eps  # strict zeros result in nan
             tmp = math.sqrt(2 * self.nu) * K
             K.fill((2 ** (1.0 - self.nu)) / gamma(self.nu))
             K *= tmp**self.nu
@@ -1745,8 +1745,8 @@ class Matern(RBF):
         if eval_gradient:
             if self.hyperparameter_length_scale.fixed:
                 # Hyperparameter l kept fixed
-                K_gradient = np.empty((X.shape[0], X.shape[0], 0))
-                return K, K_gradient
+                k_gradient = np.empty((X.shape[0], X.shape[0], 0))
+                return K, k_gradient
 
             # We need to recompute the pairwise dimension-wise distances
             if self.anisotropic:
@@ -1754,7 +1754,7 @@ class Matern(RBF):
             else:
                 D = squareform(dists**2)[:, :, np.newaxis]
 
-            if self.nu == 0.5:
+            if math.isclose(self.nu, 0.5):
                 denominator = np.sqrt(D.sum(axis=2))[:, :, np.newaxis]
                 divide_result = np.zeros_like(D)
                 np.divide(
@@ -1763,14 +1763,14 @@ class Matern(RBF):
                     out=divide_result,
                     where=denominator != 0,
                 )
-                K_gradient = K[..., np.newaxis] * divide_result
-            elif self.nu == 1.5:
-                K_gradient = 3 * D * np.exp(-np.sqrt(3 * D.sum(-1)))[..., np.newaxis]
-            elif self.nu == 2.5:
+                k_gradient = K[..., np.newaxis] * divide_result
+            elif math.isclose(self.nu, 1.5):
+                k_gradient = 3 * D * np.exp(-np.sqrt(3 * D.sum(-1)))[..., np.newaxis]
+            elif math.isclose(self.nu, 2.5):
                 tmp = np.sqrt(5 * D.sum(-1))[..., np.newaxis]
-                K_gradient = 5.0 / 3.0 * D * (tmp + 1) * np.exp(-tmp)
-            elif self.nu == np.inf:
-                K_gradient = D * K[..., np.newaxis]
+                k_gradient = 5.0 / 3.0 * D * (tmp + 1) * np.exp(-tmp)
+            elif np.isinf(self.nu):
+                k_gradient = D * K[..., np.newaxis]
             else:
                 # approximate gradient numerically
                 def f(theta):  # helper function
@@ -1779,9 +1779,9 @@ class Matern(RBF):
                 return K, _approx_fprime(self.theta, f, 1e-10)
 
             if not self.anisotropic:
-                return K, K_gradient[:, :].sum(-1)[:, :, np.newaxis]
+                return K, k_gradient[:, :].sum(-1)[:, :, np.newaxis]
             else:
-                return K, K_gradient
+                return K, k_gradient
         else:
             return K
 
@@ -2202,9 +2202,9 @@ class DotProduct(Kernel):
 
         if eval_gradient:
             if not self.hyperparameter_sigma_0.fixed:
-                K_gradient = np.empty((K.shape[0], K.shape[1], 1))
-                K_gradient[..., 0] = 2 * self.sigma_0**2
-                return K, K_gradient
+                k_gradient = np.empty((K.shape[0], K.shape[1], 1))
+                k_gradient[..., 0] = 2 * self.sigma_0**2
+                return K, k_gradient
             else:
                 return K, np.empty((X.shape[0], X.shape[0], 0))
         else:
