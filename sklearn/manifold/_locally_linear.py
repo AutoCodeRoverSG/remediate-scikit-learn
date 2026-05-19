@@ -124,7 +124,7 @@ def barycenter_kneighbors_graph(X, n_neighbors, reg=1e-3, n_jobs=None):
 
 
 def null_space(
-    M, k, k_skip=1, eigen_solver="arpack", tol=1e-6, max_iter=100, random_state=None
+    mat, k, k_skip=1, eigen_solver="arpack", tol=1e-6, max_iter=100, random_state=None
 ):
     """
     Find the null space of a matrix M.
@@ -165,17 +165,19 @@ def null_space(
         Pass an int for reproducible results across multiple function calls.
         See :term:`Glossary <random_state>`.
     """
+    random_state = check_random_state(random_state)
+
     if eigen_solver == "auto":
-        if M.shape[0] > 200 and k + k_skip < 10:
+        if mat.shape[0] > 200 and k + k_skip < 10:
             eigen_solver = "arpack"
         else:
             eigen_solver = "dense"
 
     if eigen_solver == "arpack":
-        v0 = _init_arpack_v0(M.shape[0], random_state)
+        v0 = _init_arpack_v0(mat.shape[0], random_state)
         try:
             eigen_values, eigen_vectors = eigsh(
-                M, k + k_skip, sigma=0.0, tol=tol, maxiter=max_iter, v0=v0
+                mat, k + k_skip, sigma=0.0, tol=tol, maxiter=max_iter, v0=v0
             )
         except RuntimeError as e:
             raise ValueError(
@@ -188,10 +190,10 @@ def null_space(
 
         return eigen_vectors[:, k_skip:], np.sum(eigen_values[k_skip:])
     elif eigen_solver == "dense":
-        if hasattr(M, "toarray"):
-            M = M.toarray()
+        if hasattr(mat, "toarray"):
+            mat = mat.toarray()
         eigen_values, eigen_vectors = eigh(
-            M, subset_by_index=(k_skip, k + k_skip - 1), overwrite_a=True
+            mat, subset_by_index=(k_skip, k + k_skip - 1), overwrite_a=True
         )
         index = np.argsort(np.abs(eigen_values))
         return eigen_vectors[:, index], np.sum(eigen_values)
@@ -230,8 +232,8 @@ def _locally_linear_embedding(
             % (N, n_neighbors)
         )
 
-    M_sparse = eigen_solver != "dense"
-    M_container_constructor = lil_array if M_sparse else np.zeros
+    m_sparse = eigen_solver != "dense"
+    m_container_constructor = lil_array if m_sparse else np.zeros
 
     if method == "standard":
         W = barycenter_kneighbors_graph(
@@ -240,7 +242,7 @@ def _locally_linear_embedding(
 
         # we'll compute M = (I-W)'(I-W)
         # depending on the solver, we'll do this differently
-        if M_sparse:
+        if m_sparse:
             M = _sparse_eye_array(*W.shape, format=W.format, dtype=W.dtype) - W
             M = M.T @ M  # M = (I - W)' (I - W) = W' W - W' - W + I
         else:
@@ -262,32 +264,32 @@ def _locally_linear_embedding(
         )
         neighbors = neighbors[:, 1:]
 
-        Yi = np.empty((n_neighbors, 1 + n_components + dp), dtype=np.float64)
-        Yi[:, 0] = 1
+        yi = np.empty((n_neighbors, 1 + n_components + dp), dtype=np.float64)
+        yi[:, 0] = 1
 
-        M = M_container_constructor((N, N), dtype=np.float64)
+        M = m_container_constructor((N, N), dtype=np.float64)
 
         use_svd = n_neighbors > d_in
 
         for i in range(N):
-            Gi = X[neighbors[i]]
-            Gi -= Gi.mean(0)
+            gi = X[neighbors[i]]
+            gi -= gi.mean(0)
 
             # build Hessian estimator
             if use_svd:
-                U = svd(Gi, full_matrices=0)[0]
+                U = svd(gi, full_matrices=0)[0]
             else:
-                Ci = np.dot(Gi, Gi.T)
-                U = eigh(Ci)[1][:, ::-1]
+                ci = np.dot(gi, gi.T)
+                U = eigh(ci)[1][:, ::-1]
 
-            Yi[:, 1 : 1 + n_components] = U[:, :n_components]
+            yi[:, 1 : 1 + n_components] = U[:, :n_components]
 
             j = 1 + n_components
             for k in range(n_components):
-                Yi[:, j : j + n_components - k] = U[:, k : k + 1] * U[:, k:n_components]
+                yi[:, j : j + n_components - k] = U[:, k : k + 1] * U[:, k:n_components]
                 j += n_components - k
 
-            Q, R = qr(Yi)
+            Q, _ = qr(yi)
 
             w = Q[:, n_components + 1 :]
             S = w.sum(0)
@@ -319,14 +321,14 @@ def _locally_linear_embedding(
 
         if use_svd:
             for i in range(N):
-                X_nbrs = X[neighbors[i]] - X[i]
-                V[i], evals[i], _ = svd(X_nbrs, full_matrices=True)
+                x_nbrs = X[neighbors[i]] - X[i]
+                V[i], evals[i], _ = svd(x_nbrs, full_matrices=True)
             evals **= 2
         else:
             for i in range(N):
-                X_nbrs = X[neighbors[i]] - X[i]
-                C_nbrs = np.dot(X_nbrs, X_nbrs.T)
-                evi, vi = eigh(C_nbrs)
+                x_nbrs = X[neighbors[i]] - X[i]
+                c_nbrs = np.dot(x_nbrs, x_nbrs.T)
+                evi, vi = eigh(c_nbrs)
                 evals[i] = evi[::-1]
                 V[i] = vi[:, ::-1]
 
@@ -361,7 +363,7 @@ def _locally_linear_embedding(
 
         # Now calculate M.
         # This is the [N x N] matrix whose null space is the desired embedding
-        M = M_container_constructor((N, N), dtype=np.float64)
+        M = m_container_constructor((N, N), dtype=np.float64)
 
         for i in range(N):
             s_i = s_range[i]
@@ -411,7 +413,7 @@ def _locally_linear_embedding(
         )
         neighbors = neighbors[:, 1:]
 
-        M = M_container_constructor((N, N), dtype=np.float64)
+        M = m_container_constructor((N, N), dtype=np.float64)
 
         use_svd = n_neighbors > d_in
 
@@ -423,21 +425,21 @@ def _locally_linear_embedding(
             if use_svd:
                 v = svd(Xi, full_matrices=True)[0]
             else:
-                Ci = np.dot(Xi, Xi.T)
-                v = eigh(Ci)[1][:, ::-1]
+                ci = np.dot(Xi, Xi.T)
+                v = eigh(ci)[1][:, ::-1]
 
-            Gi = np.zeros((n_neighbors, n_components + 1))
-            Gi[:, 1:] = v[:, :n_components]
-            Gi[:, 0] = 1.0 / np.sqrt(n_neighbors)
+            gi = np.zeros((n_neighbors, n_components + 1))
+            gi[:, 1:] = v[:, :n_components]
+            gi[:, 0] = 1.0 / np.sqrt(n_neighbors)
 
-            GiGiT = np.dot(Gi, Gi.T)
+            gi_gi_t = np.dot(gi, gi.T)
 
             nbrs_x, nbrs_y = np.meshgrid(neighbors[i], neighbors[i])
-            M[nbrs_x, nbrs_y] -= GiGiT
+            M[nbrs_x, nbrs_y] -= gi_gi_t
 
             M[neighbors[i], neighbors[i]] += np.ones(shape=n_neighbors)
 
-    if M_sparse:
+    if m_sparse:
         M = _align_api_if_sparse(M.tocsr())
 
     return null_space(
