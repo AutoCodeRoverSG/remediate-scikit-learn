@@ -84,13 +84,13 @@ def test_f_classif(csr_container):
     )
 
     F, pv = f_classif(X, y)
-    F_sparse, pv_sparse = f_classif(csr_container(X), y)
+    f_sparse, pv_sparse = f_classif(csr_container(X), y)
     assert (F > 0).all()
     assert (pv > 0).all()
     assert (pv < 1).all()
     assert (pv[:5] < 0.05).all()
     assert (pv[5:] > 1.0e-4).all()
-    assert_array_almost_equal(F_sparse, F)
+    assert_array_almost_equal(f_sparse, F)
     assert_array_almost_equal(pv_sparse, pv)
 
 
@@ -104,9 +104,9 @@ def test_r_regression(center):
     assert (-1 < corr_coeffs).all()
     assert (corr_coeffs < 1).all()
 
-    sparse_X = _convert_container(X, "sparse")
+    sparse_x = _convert_container(X, "sparse")
 
-    sparse_corr_coeffs = r_regression(sparse_X, y, center=center)
+    sparse_corr_coeffs = r_regression(sparse_x, y, center=center)
     assert_allclose(sparse_corr_coeffs, corr_coeffs)
 
     # Testing against numpy for reference
@@ -133,14 +133,14 @@ def test_f_regression(csr_container):
 
     # with centering, compare with sparse
     F, pv = f_regression(X, y, center=True)
-    F_sparse, pv_sparse = f_regression(csr_container(X), y, center=True)
-    assert_allclose(F_sparse, F)
+    f_sparse, pv_sparse = f_regression(csr_container(X), y, center=True)
+    assert_allclose(f_sparse, F)
     assert_allclose(pv_sparse, pv)
 
     # again without centering, compare with sparse
     F, pv = f_regression(X, y, center=False)
-    F_sparse, pv_sparse = f_regression(csr_container(X), y, center=False)
-    assert_allclose(F_sparse, F)
+    f_sparse, pv_sparse = f_regression(csr_container(X), y, center=False)
+    assert_allclose(f_sparse, F)
     assert_allclose(pv_sparse, pv)
 
 
@@ -347,13 +347,13 @@ def test_select_percentile_classif():
     )
 
     univariate_filter = SelectPercentile(f_classif, percentile=25)
-    X_r = univariate_filter.fit(X, y).transform(X)
-    X_r2 = (
+    x_r = univariate_filter.fit(X, y).transform(X)
+    x_r2 = (
         GenericUnivariateSelect(f_classif, mode="percentile", param=25)
         .fit(X, y)
         .transform(X)
     )
-    assert_array_equal(X_r, X_r2)
+    assert_array_equal(x_r, x_r2)
     support = univariate_filter.get_support()
     gtruth = np.zeros(20)
     gtruth[:5] = 1
@@ -380,25 +380,25 @@ def test_select_percentile_classif_sparse(csr_container):
     )
     X = csr_container(X)
     univariate_filter = SelectPercentile(f_classif, percentile=25)
-    X_r = univariate_filter.fit(X, y).transform(X)
-    X_r2 = (
+    x_r = univariate_filter.fit(X, y).transform(X)
+    x_r2 = (
         GenericUnivariateSelect(f_classif, mode="percentile", param=25)
         .fit(X, y)
         .transform(X)
     )
-    assert_array_equal(X_r.toarray(), X_r2.toarray())
+    assert_array_equal(x_r.toarray(), x_r2.toarray())
     support = univariate_filter.get_support()
     gtruth = np.zeros(20)
     gtruth[:5] = 1
     assert_array_equal(support, gtruth)
 
-    X_r2inv = univariate_filter.inverse_transform(X_r2)
-    assert sparse.issparse(X_r2inv)
-    support_mask = safe_mask(X_r2inv, support)
-    assert X_r2inv.shape == X.shape
-    assert_array_equal(X_r2inv[:, support_mask].toarray(), X_r.toarray())
+    x_r2inv = univariate_filter.inverse_transform(x_r2)
+    assert sparse.issparse(x_r2inv)
+    support_mask = safe_mask(x_r2inv, support)
+    assert x_r2inv.shape == X.shape
+    assert_array_equal(x_r2inv[:, support_mask].toarray(), x_r.toarray())
     # Check other columns are empty
-    assert X_r2inv.nnz == X_r.nnz
+    assert x_r2inv.nnz == x_r.nnz
 
 
 ##############################################################################
@@ -424,13 +424,13 @@ def test_select_kbest_classif():
     )
 
     univariate_filter = SelectKBest(f_classif, k=5)
-    X_r = univariate_filter.fit(X, y).transform(X)
-    X_r2 = (
+    x_r = univariate_filter.fit(X, y).transform(X)
+    x_r2 = (
         GenericUnivariateSelect(f_classif, mode="k_best", param=5)
         .fit(X, y)
         .transform(X)
     )
-    assert_array_equal(X_r, X_r2)
+    assert_array_equal(x_r, x_r2)
     support = univariate_filter.get_support()
     gtruth = np.zeros(20)
     gtruth[:5] = 1
@@ -842,7 +842,7 @@ def test_invalid_k():
 def test_f_classif_constant_feature():
     # Test that f_classif warns if a feature is constant throughout.
 
-    X, y = make_classification(n_samples=10, n_features=5)
+    X, y = make_classification(n_samples=10, n_features=5, random_state=0)
     X[:, 0] = 2.0
     with pytest.warns(UserWarning):
         f_classif(X, y)
