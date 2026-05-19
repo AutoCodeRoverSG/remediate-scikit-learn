@@ -88,9 +88,9 @@ def test_set_order_sparse(order, input_order, coo_container):
 @pytest.mark.parametrize("sparse_csc_type", [sparse.csc_array, sparse.csc_matrix])
 def test_cython_solver_equivalence(sparse_csc_type):
     """Test that all 3 Cython solvers for 1-d targets give same results."""
-    X, y = make_regression()
-    X_mean = X.mean(axis=0)
-    X_centered = np.asfortranarray(X - X_mean)
+    X, y = make_regression(random_state=0)
+    x_mean = X.mean(axis=0)
+    x_centered = np.asfortranarray(X - x_mean)
     y -= y.mean()
     alpha_max = np.linalg.norm(X.T @ y, ord=np.inf)
     alpha = alpha_max / 10
@@ -113,7 +113,7 @@ def test_cython_solver_equivalence(sparse_csc_type):
         cd_fast.enet_coordinate_descent(
             w=coef_1,
             alpha=alpha_max,
-            X=X_centered,
+            X=x_centered,
             y=y,
             **params,
             do_screening=do_screening,
@@ -123,7 +123,7 @@ def test_cython_solver_equivalence(sparse_csc_type):
     # Without gap safe screening rules
     coef_1 = zc()
     cd_fast.enet_coordinate_descent(
-        w=coef_1, alpha=alpha, X=X_centered, y=y, **params, do_screening=False
+        w=coef_1, alpha=alpha, X=x_centered, y=y, **params, do_screening=False
     )
     # At least 2 coefficients are non-zero
     assert 2 <= np.sum(np.abs(coef_1) > 1e-8) < X.shape[1]
@@ -131,23 +131,23 @@ def test_cython_solver_equivalence(sparse_csc_type):
     # With gap safe screening rules
     coef_2 = zc()
     cd_fast.enet_coordinate_descent(
-        w=coef_2, alpha=alpha, X=X_centered, y=y, **params, do_screening=True
+        w=coef_2, alpha=alpha, X=x_centered, y=y, **params, do_screening=True
     )
     assert_allclose(coef_2, coef_1)
 
     # Sparse
-    Xs = sparse_csc_type(X)
+    x_sparse = sparse_csc_type(X)
     for do_screening in [True, False]:
         coef_3 = zc()
         cd_fast.sparse_enet_coordinate_descent(
             w=coef_3,
             alpha=alpha,
-            X_data=Xs.data,
-            X_indices=Xs.indices,
-            X_indptr=Xs.indptr,
+            X_data=x_sparse.data,
+            X_indices=x_sparse.indices,
+            X_indptr=x_sparse.indptr,
             y=y,
             sample_weight=None,
-            X_mean=X_mean,
+            X_mean=x_mean,
             **params,
             do_screening=do_screening,
         )
@@ -159,8 +159,8 @@ def test_cython_solver_equivalence(sparse_csc_type):
         cd_fast.enet_coordinate_descent_gram(
             w=coef_4,
             alpha=alpha,
-            Q=X_centered.T @ X_centered,
-            q=X_centered.T @ y,
+            Q=x_centered.T @ x_centered,
+            q=x_centered.T @ y,
             y=y,
             **params,
             do_screening=do_screening,
@@ -355,12 +355,14 @@ def test_lasso_cv_with_some_model_selection():
     X = diabetes.data
     y = diabetes.target
 
-    pipe = make_pipeline(StandardScaler(), LassoCV(cv=ShuffleSplit(random_state=0)))
+    pipe = make_pipeline(
+        StandardScaler(), LassoCV(cv=ShuffleSplit(random_state=0)), memory=None
+    )
     pipe.fit(X, y)
 
 
 def test_lasso_cv_positive_constraint():
-    X, y, X_test, y_test = build_dataset()
+    X, y, _, _ = build_dataset()
     max_iter = 500
 
     # Ensure the unconstrained fit has a negative coefficient
@@ -542,7 +544,7 @@ def test_enet_positive_constraint():
 
 
 def test_enet_cv_positive_constraint():
-    X, y, X_test, y_test = build_dataset()
+    X, y, _, _ = build_dataset()
     max_iter = 500
 
     # Ensure the unconstrained fit has a negative coefficient
@@ -603,12 +605,12 @@ def test_multi_task_lasso_vs_skglm():
     X = np.vander(np.arange(n_samples), n_features)
     Y = np.arange(n_samples * n_tasks).reshape(n_samples, n_tasks)
 
-    def obj(W, X, y, alpha):
-        intercept = W[:, -1]
-        W = W[:, :-1]
-        l21_norm = np.sqrt(np.sum(W**2, axis=0)).sum()
+    def obj(w, X, y, alpha):
+        intercept = w[:, -1]
+        w = w[:, :-1]
+        l21_norm = np.sqrt(np.sum(w**2, axis=0)).sum()
         return (
-            np.linalg.norm(Y - X @ W.T - intercept, ord="fro") ** 2 / (2 * n_samples)
+            np.linalg.norm(Y - X @ w.T - intercept, ord="fro") ** 2 / (2 * n_samples)
             + alpha * l21_norm
         )
 
@@ -632,7 +634,7 @@ def test_multi_task_lasso_vs_skglm():
 
 
 def test_multi_task_lasso_and_enet():
-    X, y, X_test, y_test = build_dataset()
+    X, y, _, _ = build_dataset()
     Y = np.c_[y, y]
     # Y_test = np.c_[y_test, y_test]
     clf = MultiTaskLasso(alpha=1, tol=1e-8).fit(X, Y)
@@ -1594,7 +1596,7 @@ def test_linear_models_cv_fit_with_loky(estimator):
     # Create a problem sufficiently large to cause memmapping (1MB).
     # Unfortunately the scikit-learn and joblib APIs do not make it possible to
     # change the max_nbyte of the inner Parallel call.
-    X, y = make_regression(int(1e6) // 8 + 1, 1)
+    X, y = make_regression(int(1e6) // 8 + 1, 1, random_state=0)
     assert X.nbytes > 1e6  # 1 MB
     with joblib.parallel_backend("loky"):
         estimator(n_jobs=2, cv=3).fit(X, y)
