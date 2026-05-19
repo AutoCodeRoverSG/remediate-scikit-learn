@@ -62,9 +62,9 @@ def test_bayesian_ridge_score_values():
     score = lambda_1 * log(lambda_) - lambda_2 * lambda_
     score += alpha_1 * log(alpha_) - alpha_2 * alpha_
     M = 1.0 / alpha_ * np.eye(n_samples) + 1.0 / lambda_ * np.dot(X, X.T)
-    M_inv_dot_y = np.linalg.solve(M, y)
+    m_inv_dot_y = np.linalg.solve(M, y)
     score += -0.5 * (
-        fast_logdet(M) + np.dot(y.T, M_inv_dot_y) + n_samples * log(2 * np.pi)
+        fast_logdet(M) + np.dot(y.T, m_inv_dot_y) + n_samples * log(2 * np.pi)
     )
 
     # compute score with BayesianRidge
@@ -185,16 +185,16 @@ def test_std_bayesian_ridge_ard_with_constant_input(global_random_seed):
         assert_array_less(y_std, expected_upper_boundary)
 
 
-@pytest.mark.parametrize("Estimator", [BayesianRidge, ARDRegression])
-def test_std_bayesian_ridge_noncentered(Estimator, global_random_seed):
+@pytest.mark.parametrize("estimator_class", [BayesianRidge, ARDRegression])
+def test_std_bayesian_ridge_noncentered(estimator_class, global_random_seed):
     # Test BayesianRidge and ARDRegression std when data is not centered.
     # The std should be smallest at the center of the data, not at the origin.
     # Non-regression test for issue #33757
-    rng = np.random.RandomState(global_random_seed)
+    rng = np.random.default_rng(global_random_seed)
     n_samples = 4
     X_train = np.linspace(80, 100, n_samples).reshape(-1, 1)
     y_train = X_train.reshape(-1) + 10 * rng.standard_normal(n_samples)
-    model = Estimator(fit_intercept=True).fit(X_train, y_train)
+    model = estimator_class(fit_intercept=True).fit(X_train, y_train)
     X = np.array([[0.0], [90.0]])
     _, y_std = model.predict(X, return_std=True)
     assert y_std[1] < y_std[0]
@@ -230,7 +230,7 @@ def test_toy_ard_object():
 def test_ard_accuracy_on_easy_problem(global_random_seed, n_samples, n_features):
     # Check that ARD converges with reasonable accuracy on an easy problem
     # (Github issue #14055)
-    X = np.random.RandomState(global_random_seed).normal(size=(250, 3))
+    X = np.random.default_rng(global_random_seed).normal(size=(250, 3))
     y = X[:, 1]
 
     regressor = ARDRegression()
@@ -243,13 +243,13 @@ def test_ard_accuracy_on_easy_problem(global_random_seed, n_samples, n_features)
 @pytest.mark.parametrize("constructor_name", ["array", "pandas"])
 def test_return_std(constructor_name, global_random_seed):
     # Test return_std option for both Bayesian regressors
-    rng = np.random.RandomState(global_random_seed)
+    rng = np.random.default_rng(global_random_seed)
 
     def f(X):
         return np.dot(X, w) + b
 
     def f_noise(X, noise_mult):
-        return f(X) + rng.randn(X.shape[0]) * noise_mult
+        return f(X) + rng.standard_normal(X.shape[0]) * noise_mult
 
     d = 5
     n_train = 50
@@ -258,10 +258,10 @@ def test_return_std(constructor_name, global_random_seed):
     w = np.array([1.0, 0.0, 1.0, -1.0, 0.0])
     b = 1.0
 
-    X = rng.random_sample((n_train, d))
+    X = rng.random((n_train, d))
     X = _convert_container(X, constructor_name)
 
-    X_test = rng.random_sample((n_test, d))
+    X_test = rng.random((n_test, d))
     X_test = _convert_container(X_test, constructor_name)
 
     for decimal, noise_mult in enumerate([1, 0.1, 0.01]):
@@ -269,12 +269,12 @@ def test_return_std(constructor_name, global_random_seed):
 
         m1 = BayesianRidge()
         m1.fit(X, y)
-        y_mean1, y_std1 = m1.predict(X_test, return_std=True)
+        _, y_std1 = m1.predict(X_test, return_std=True)
         assert_array_almost_equal(y_std1, noise_mult, decimal=decimal)
 
         m2 = ARDRegression()
         m2.fit(X, y)
-        y_mean2, y_std2 = m2.predict(X_test, return_std=True)
+        _, y_std2 = m2.predict(X_test, return_std=True)
         assert_array_almost_equal(y_std2, noise_mult, decimal=decimal)
 
 
@@ -283,13 +283,13 @@ def test_update_sigma(global_random_seed):
     # formula is used when n_samples < n_features, and the other one is used
     # otherwise.
 
-    rng = np.random.RandomState(global_random_seed)
+    rng = np.random.default_rng(global_random_seed)
 
     # set n_samples == n_features to avoid instability issues when inverting
     # the matrices. Using the woodbury formula would be unstable when
     # n_samples > n_features
     n_samples = n_features = 10
-    X = rng.randn(n_samples, n_features)
+    X = rng.standard_normal((n_samples, n_features))
     alpha = 1
     lmbda = np.arange(1, n_features + 1)
     keep_lambda = np.array([True] * n_features)
@@ -303,13 +303,13 @@ def test_update_sigma(global_random_seed):
 
 
 @pytest.mark.parametrize("dtype", [np.float32, np.float64])
-@pytest.mark.parametrize("Estimator", [BayesianRidge, ARDRegression])
-def test_dtype_match(dtype, Estimator):
+@pytest.mark.parametrize("estimator", [BayesianRidge, ARDRegression])
+def test_dtype_match(dtype, estimator):
     # Test that np.float32 input data is not cast to np.float64 when possible
     X = np.array([[1, 1], [3, 4], [5, 7], [4, 1], [2, 6], [3, 10], [3, 2]], dtype=dtype)
     y = np.array([1, 2, 3, 2, 0, 4, 5]).T
 
-    model = Estimator()
+    model = estimator()
     # check type consistency
     model.fit(X, y)
     attributes = ["coef_", "sigma_"]
@@ -321,11 +321,11 @@ def test_dtype_match(dtype, Estimator):
     assert y_std.dtype == X.dtype
 
 
-@pytest.mark.parametrize("Estimator", [BayesianRidge, ARDRegression])
-def test_dtype_correctness(Estimator):
+@pytest.mark.parametrize("estimator", [BayesianRidge, ARDRegression])
+def test_dtype_correctness(estimator):
     X = np.array([[1, 1], [3, 4], [5, 7], [4, 1], [2, 6], [3, 10], [3, 2]])
     y = np.array([1, 2, 3, 2, 0, 4, 5]).T
-    model = Estimator()
+    model = estimator()
     coef_32 = model.fit(X.astype(np.float32), y).coef_
     coef_64 = model.fit(X.astype(np.float64), y).coef_
     np.testing.assert_allclose(coef_32, coef_64, rtol=1e-4)
