@@ -161,31 +161,31 @@ def test_pairwise_distances_array_api(array_namespace, device_name, dtype_name, 
 
     rng = np.random.RandomState(0)
     # Euclidean distance should be equivalent to calling the function.
-    X_np = rng.random_sample((5, 4)).astype(dtype_name, copy=False)
-    Y_np = rng.random_sample((5, 4)).astype(dtype_name, copy=False)
-    X_xp = xp.asarray(X_np, device=device)
-    Y_xp = xp.asarray(Y_np, device=device)
+    x_np = rng.random_sample((5, 4)).astype(dtype_name, copy=False)
+    y_np = rng.random_sample((5, 4)).astype(dtype_name, copy=False)
+    x_xp = xp.asarray(x_np, device=device)
+    y_xp = xp.asarray(y_np, device=device)
 
     with config_context(array_api_dispatch=True):
         # Test with Y=None
-        D_xp = pairwise_distances(X_xp, metric=metric)
-        D_xp_np = move_to(D_xp, xp=np, device="cpu")
-        assert get_namespace(D_xp)[0].__name__ == xp.__name__
-        assert D_xp.device == X_xp.device
-        assert D_xp.dtype == X_xp.dtype
+        d_xp = pairwise_distances(x_xp, metric=metric)
+        d_xp_np = move_to(d_xp, xp=np, device="cpu")
+        assert get_namespace(d_xp)[0].__name__ == xp.__name__
+        assert d_xp.device == x_xp.device
+        assert d_xp.dtype == x_xp.dtype
 
-        D_np = pairwise_distances(X_np, metric=metric)
-        assert_allclose(D_xp_np, D_np)
+        d_np = pairwise_distances(x_np, metric=metric)
+        assert_allclose(d_xp_np, d_np)
 
         # Test with Y=Y_np/Y_xp
-        D_xp = pairwise_distances(X_xp, Y=Y_xp, metric=metric)
-        D_xp_np = move_to(D_xp, xp=np, device="cpu")
-        assert get_namespace(D_xp)[0].__name__ == xp.__name__
-        assert D_xp.device == X_xp.device
-        assert D_xp.dtype == X_xp.dtype
+        d_xp = pairwise_distances(x_xp, Y=y_xp, metric=metric)
+        d_xp_np = move_to(d_xp, xp=np, device="cpu")
+        assert get_namespace(d_xp)[0].__name__ == xp.__name__
+        assert d_xp.device == x_xp.device
+        assert d_xp.dtype == x_xp.dtype
 
-        D_np = pairwise_distances(X_np, Y=Y_np, metric=metric)
-        assert_allclose(D_xp_np, D_np)
+        d_np = pairwise_distances(x_np, Y=y_np, metric=metric)
+        assert_allclose(d_xp_np, d_np)
 
 
 def test_pairwise_distances_array_api_no_warnings():
@@ -195,15 +195,15 @@ def test_pairwise_distances_array_api_no_warnings():
     xp, device = _array_api_for_tests("array_api_strict")
 
     rng = np.random.RandomState(0)
-    X_np = rng.random_sample((5, 4))
-    Y_np = rng.random_sample((3, 4))
-    X_xp = xp.asarray(X_np, device=device)
-    Y_xp = xp.asarray(Y_np, device=device)
+    x_np = rng.random_sample((5, 4))
+    y_np = rng.random_sample((3, 4))
+    x_xp = xp.asarray(x_np, device=device)
+    y_xp = xp.asarray(y_np, device=device)
 
     with config_context(array_api_dispatch=True):
         with warnings.catch_warnings():
             warnings.simplefilter("error")
-            pairwise_distances(X_xp, Y_xp, metric="euclidean")
+            pairwise_distances(x_xp, y_xp, metric="euclidean")
 
 
 @pytest.mark.parametrize("coo_container", COO_CONTAINERS)
