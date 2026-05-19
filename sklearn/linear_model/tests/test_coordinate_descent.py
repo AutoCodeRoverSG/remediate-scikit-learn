@@ -77,12 +77,12 @@ def test_set_order_sparse(order, input_order, coo_container):
     y = coo_container(np.array([0, 0, 0]))
     sparse_format = "csc" if input_order == "F" else "csr"
     X = X.asformat(sparse_format)
-    y = X.asformat(sparse_format)
+    y = y.asformat(sparse_format)
     X2, y2 = _set_order(X, y, order=order)
 
-    format = "csc" if order == "F" else "csr"
-    assert sparse.issparse(X2) and X2.format == format
-    assert sparse.issparse(y2) and y2.format == format
+    expected_format = "csc" if order == "F" else "csr"
+    assert sparse.issparse(X2) and X2.format == expected_format
+    assert sparse.issparse(y2) and y2.format == expected_format
 
 
 @pytest.mark.parametrize("sparse_csc_type", [sparse.csc_array, sparse.csc_matrix])
@@ -98,7 +98,7 @@ def test_cython_solver_equivalence(sparse_csc_type):
         "beta": 0,
         "max_iter": 100,
         "tol": 1e-10,
-        "rng": np.random.RandomState(0),  # not used, but needed as argument
+        "rng": np.random.default_rng(0),  # not used, but needed as argument
         "random": False,
         "positive": False,
     }
@@ -184,11 +184,11 @@ def test_lasso_zero():
 def test_enet_nonfinite_params():
     # Check ElasticNet throws ValueError when dealing with non-finite parameter
     # values
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
     n_samples = 10
     fmax = np.finfo(np.float64).max
     X = fmax * rng.uniform(size=(n_samples, 2))
-    y = rng.randint(0, 2, size=n_samples)
+    y = rng.integers(0, 2, size=n_samples)
 
     clf = ElasticNet(alpha=0.1)
     msg = "Coordinate descent iterations resulted in non-finite parameter values"
@@ -304,15 +304,15 @@ def build_dataset(n_samples=50, n_features=200, n_informative_features=10, n_tar
     build an ill-posed linear regression problem with many noisy features and
     comparatively few samples
     """
-    random_state = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
     if n_targets > 1:
-        w = random_state.randn(n_features, n_targets)
+        w = rng.standard_normal((n_features, n_targets))
     else:
-        w = random_state.randn(n_features)
+        w = rng.standard_normal(n_features)
     w[n_informative_features:] = 0.0
-    X = random_state.randn(n_samples, n_features)
+    X = rng.standard_normal((n_samples, n_features))
     y = np.dot(X, w)
-    X_test = random_state.randn(n_samples, n_features)
+    X_test = rng.standard_normal((n_samples, n_features))
     y_test = np.dot(X_test, w)
     return X, y, X_test, y_test
 
@@ -398,9 +398,9 @@ def test_lassocv_alphas_validation(alphas, err_type, err_msg):
     """Check the `alphas` validation in LassoCV."""
 
     n_samples, n_features = 5, 5
-    rng = np.random.RandomState(0)
-    X = rng.randn(n_samples, n_features)
-    y = rng.randint(0, 2, n_samples)
+    rng = np.random.default_rng(0)
+    X = rng.standard_normal((n_samples, n_features))
+    y = rng.integers(0, 2, n_samples)
     lassocv = LassoCV(alphas=alphas)
     with pytest.raises(err_type, match=err_msg):
         lassocv.fit(X, y)
@@ -1725,13 +1725,13 @@ def test_sample_weight_invariance(estimator):
     cutoff = X.shape[0] // 3
     sw_with_null = sw.copy()
     sw_with_null[:cutoff] = 0.0
-    X_trimmed, y_trimmed = X[cutoff:, :], y[cutoff:]
+    x_trimmed, y_trimmed = X[cutoff:, :], y[cutoff:]
     sw_trimmed = sw[cutoff:]
 
     reg_trimmed = (
         clone(estimator)
         .set_params(**params)
-        .fit(X_trimmed, y_trimmed, sample_weight=sw_trimmed)
+        .fit(x_trimmed, y_trimmed, sample_weight=sw_trimmed)
     )
     reg_null_weighted = (
         clone(estimator).set_params(**params).fit(X, y, sample_weight=sw_with_null)
@@ -1741,13 +1741,13 @@ def test_sample_weight_invariance(estimator):
 
     # Check that duplicating the training dataset is equivalent to multiplying
     # the weights by 2:
-    X_dup = np.concatenate([X, X], axis=0)
+    x_dup = np.concatenate([X, X], axis=0)
     y_dup = np.concatenate([y, y], axis=0)
     sw_dup = np.concatenate([sw, sw], axis=0)
 
     reg_2sw = clone(estimator).set_params(**params).fit(X, y, sample_weight=2 * sw)
     reg_dup = (
-        clone(estimator).set_params(**params).fit(X_dup, y_dup, sample_weight=sw_dup)
+        clone(estimator).set_params(**params).fit(x_dup, y_dup, sample_weight=sw_dup)
     )
 
     assert_allclose(reg_2sw.coef_, reg_dup.coef_)
@@ -1755,16 +1755,16 @@ def test_sample_weight_invariance(estimator):
 
 
 @pytest.mark.parametrize(
-    "EstimatorCV",
+    "estimator_cv",
     [ElasticNetCV, LassoCV, MultiTaskElasticNetCV, MultiTaskLassoCV],
 )
-def test_cv_estimators_reject_params_with_no_routing_enabled(EstimatorCV):
+def test_cv_estimators_reject_params_with_no_routing_enabled(estimator_cv):
     """Check that the models inheriting from class:`LinearModelCV` raise an
     error when any `params` are passed when routing is not enabled.
     """
     X, y = make_regression(random_state=42)
     groups = np.array([0, 1] * (len(y) // 2))
-    estimator = EstimatorCV()
+    estimator = estimator_cv()
     msg = "is only supported if enable_metadata_routing=True"
     with pytest.raises(ValueError, match=msg):
         estimator.fit(X, y, groups=groups)
@@ -1775,7 +1775,7 @@ def test_enet_path_check_input_false(precompute):
     """Test enet_path works with check_input=False and various precompute settings."""
     X, y = make_regression(n_samples=100, n_features=5, n_informative=2, random_state=0)
     X = np.asfortranarray(X)
-    alphas, _, _ = enet_path(X, y, alphas=3, check_input=False, precompute=precompute)
+    _, _, _ = enet_path(X, y, alphas=3, check_input=False, precompute=precompute)
 
 
 # TODO(1.11): remove
