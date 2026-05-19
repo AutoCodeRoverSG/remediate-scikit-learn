@@ -55,20 +55,20 @@ S, true_labels = make_blobs(
 )
 
 
-def _assert_equal_with_sign_flipping(A, B, tol=0.0):
+def _assert_equal_with_sign_flipping(a, b, tol=0.0):
     """Check array A and B are equal with possible sign flipping on
     each column"""
     tol_squared = tol**2
-    for A_col, B_col in zip(A.T, B.T):
+    for a_col, b_col in zip(a.T, b.T):
         assert (
-            np.max((A_col - B_col) ** 2) <= tol_squared
-            or np.max((A_col + B_col) ** 2) <= tol_squared
+            np.max((a_col - b_col) ** 2) <= tol_squared
+            or np.max((a_col + b_col) ** 2) <= tol_squared
         )
 
 
 @pytest.mark.parametrize("coo_container", COO_CONTAINERS)
 def test_sparse_graph_connected_component(coo_container):
-    rng = np.random.RandomState(42)
+    rng = np.random.default_rng(42)
     n_samples = 300
     boundaries = [0, 42, 121, 200, n_samples]
     p = rng.permutation(n_samples)
@@ -84,8 +84,8 @@ def test_sparse_graph_connected_component(coo_container):
         # Add some more random connections within the group
         min_idx, max_idx = 0, len(group) - 1
         n_random_connections = 1000
-        source = rng.randint(min_idx, max_idx, size=n_random_connections)
-        target = rng.randint(min_idx, max_idx, size=n_random_connections)
+        source = rng.integers(min_idx, max_idx, size=n_random_connections)
+        target = rng.integers(min_idx, max_idx, size=n_random_connections)
         connections.extend(zip(group[source], group[target]))
 
     # Build a symmetric affinity matrix
@@ -110,8 +110,8 @@ def test_sparse_graph_connected_component(coo_container):
     not pyamg_available, reason="PyAMG is required for the tests in this function."
 )
 def test_fallback_amg():
-    random_state = np.random.RandomState(36)
-    data = random_state.randn(10, 30)
+    rng = np.random.default_rng(36)
+    data = rng.standard_normal((10, 30))
     sims = rbf_kernel(data)
 
     # eigen_solver='amg' should raise a warning and fallback to 'arpack'
@@ -140,16 +140,16 @@ def test_fallback_amg():
 @pytest.mark.parametrize("dtype", [np.float32, np.float64])
 def test_spectral_embedding_two_components(eigen_solver, dtype, seed=0):
     # Test spectral embedding with two components
-    random_state = np.random.RandomState(seed)
+    random_state = np.random.default_rng(seed)
     n_sample = 100
     affinity = np.zeros(shape=[n_sample * 2, n_sample * 2])
     # first component
     affinity[0:n_sample, 0:n_sample] = (
-        np.abs(random_state.randn(n_sample, n_sample)) + 2
+        np.abs(random_state.standard_normal((n_sample, n_sample))) + 2
     )
     # second component
     affinity[n_sample::, n_sample::] = (
-        np.abs(random_state.randn(n_sample, n_sample)) + 2
+        np.abs(random_state.standard_normal((n_sample, n_sample))) + 2
     )
 
     # Test of internal _graph_connected_component before connection
@@ -172,7 +172,7 @@ def test_spectral_embedding_two_components(eigen_solver, dtype, seed=0):
     se_precomp = SpectralEmbedding(
         n_components=1,
         affinity="precomputed",
-        random_state=np.random.RandomState(seed),
+        random_state=seed,
         eigen_solver=eigen_solver,
     )
 
@@ -202,14 +202,14 @@ def test_spectral_embedding_precomputed_affinity(
     se_precomp = SpectralEmbedding(
         n_components=2,
         affinity="precomputed",
-        random_state=np.random.RandomState(seed),
+        random_state=seed,
         eigen_solver=eigen_solver,
     )
     se_rbf = SpectralEmbedding(
         n_components=2,
         affinity="rbf",
         gamma=gamma,
-        random_state=np.random.RandomState(seed),
+        random_state=seed,
         eigen_solver=eigen_solver,
     )
     embed_precomp = se_precomp.fit_transform(rbf_kernel(X.astype(dtype), gamma=gamma))
