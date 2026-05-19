@@ -27,8 +27,8 @@ def test_nonmetric_lower_normalized_stress():
     # compared to metric MDS (non-regression test for issue 27028)
     X, _ = load_iris(return_X_y=True)
     sim = euclidean_distances(X)
-    np.random.seed(42)
-    Z = np.random.normal(size=(X.shape[0], 2))
+    rng = np.random.default_rng(42)
+    Z = rng.normal(size=(X.shape[0], 2))
 
     _, stress1 = mds.smacof(
         sim, init=Z, n_components=2, max_iter=1000, n_init=1, normalized_stress=True
@@ -127,7 +127,7 @@ def test_smacof_error():
 # TODO: remove mark once loky bug is fixed:
 # https://github.com/joblib/loky/issues/458
 @pytest.mark.thread_unsafe
-def test_MDS():
+def test_mds():
     sim = np.array([[0, 5, 3, 4], [5, 0, 2, 2], [3, 2, 0, 1], [4, 2, 1, 0]])
     mds_clf = mds.MDS(
         metric_mds=False,
@@ -157,18 +157,18 @@ def test_normed_stress(k):
 @pytest.mark.filterwarnings("ignore::FutureWarning")
 @pytest.mark.parametrize("metric", [True, False])
 def test_normalized_stress_auto(metric, monkeypatch):
-    rng = np.random.RandomState(0)
-    X = rng.randn(4, 3)
+    rng = np.random.default_rng(0)
+    X = rng.standard_normal((4, 3))
     dist = euclidean_distances(X)
 
     mock = Mock(side_effect=mds._smacof_single)
     monkeypatch.setattr("sklearn.manifold._mds._smacof_single", mock)
 
-    est = mds.MDS(metric=metric, normalized_stress="auto", random_state=rng)
+    est = mds.MDS(metric=metric, normalized_stress="auto", random_state=0)
     est.fit_transform(X)
     assert mock.call_args[1]["normalized_stress"] != metric
 
-    mds.smacof(dist, metric=metric, normalized_stress="auto", random_state=rng)
+    mds.smacof(dist, metric=metric, normalized_stress="auto", random_state=0)
     assert mock.call_args[1]["normalized_stress"] != metric
 
 
@@ -279,7 +279,6 @@ def test_classical_mds_init_to_mds():
     mds1 = mds.MDS(init="classical_mds")
     Z1 = mds1.fit_transform(X)
 
-    mds2 = mds.MDS(init="random")
     Z2 = mds1.fit_transform(X, init=z_classical)
 
     assert_allclose(Z1, Z2)

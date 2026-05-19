@@ -147,7 +147,7 @@ class ConfusionMatrixDisplay:
         cm = self.confusion_matrix
         n_classes = cm.shape[0]
 
-        default_im_kw = dict(interpolation="nearest", cmap=cmap)
+        default_im_kw = {"interpolation": "nearest", "cmap": cmap}
         im_kw = im_kw or {}
         im_kw = _validate_style_kwargs(default_im_kw, im_kw)
         text_kw = text_kw or {}
@@ -174,7 +174,7 @@ class ConfusionMatrixDisplay:
                 else:
                     text_cm = format(cm[i, j], values_format)
 
-                default_text_kwargs = dict(ha="center", va="center", color=color)
+                default_text_kwargs = {"ha": "center", "va": "center", "color": color}
                 text_kwargs = _validate_style_kwargs(default_text_kwargs, text_kw)
 
                 self.text_[i, j] = ax.text(j, i, text_cm, **text_kwargs)
