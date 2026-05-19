@@ -1663,12 +1663,12 @@ def test_knn_imputer_keep_empty_features(keep_empty_features):
     imputer = KNNImputer(keep_empty_features=keep_empty_features)
 
     for method in ["fit_transform", "transform"]:
-        X_imputed = getattr(imputer, method)(X)
+        x_imputed = getattr(imputer, method)(X)
         if keep_empty_features:
-            assert X_imputed.shape == X.shape
-            assert_array_equal(X_imputed[:, 1], 0)
+            assert x_imputed.shape == X.shape
+            assert_array_equal(x_imputed[:, 1], 0)
         else:
-            assert X_imputed.shape == (X.shape[0], X.shape[1] - 1)
+            assert x_imputed.shape == (X.shape[0], X.shape[1] - 1)
 
 
 def test_simple_impute_pd_na():
@@ -1758,9 +1758,9 @@ def test_imputer_lists_fit_transform():
 
     X = [["a", "b"], ["c", "b"], ["a", "a"]]
     imp_frequent = SimpleImputer(strategy="most_frequent").fit(X)
-    X_trans = imp_frequent.transform([[np.nan, np.nan]])
-    assert X_trans.dtype == object
-    assert_array_equal(X_trans, [["a", "b"]])
+    x_trans = imp_frequent.transform([[np.nan, np.nan]])
+    assert x_trans.dtype == object
+    assert_array_equal(x_trans, [["a", "b"]])
 
 
 @pytest.mark.parametrize("dtype_test", [np.float32, np.float64])
@@ -1772,8 +1772,8 @@ def test_imputer_transform_preserves_numeric_dtype(dtype_test):
     imp = SimpleImputer().fit(X)
 
     X_test = np.asarray([[np.nan, np.nan, np.nan]], dtype=dtype_test)
-    X_trans = imp.transform(X_test)
-    assert X_trans.dtype == dtype_test
+    x_trans = imp.transform(X_test)
+    assert x_trans.dtype == dtype_test
 
 
 @pytest.mark.parametrize("array_type", ["array", "sparse"])
@@ -1788,17 +1788,17 @@ def test_simple_imputer_keep_empty_features(strategy, array_type, keep_empty_fea
     imputer = SimpleImputer(strategy=strategy, keep_empty_features=keep_empty_features)
 
     for method in ["fit_transform", "transform"]:
-        X_imputed = getattr(imputer, method)(X)
+        x_imputed = getattr(imputer, method)(X)
         if keep_empty_features:
-            assert X_imputed.shape == X.shape
+            assert x_imputed.shape == X.shape
             if SCIPY_VERSION_BELOW_1_12 and array_type == "sparse":
-                constant_feature = X_imputed[:, [0]].toarray()
+                constant_feature = x_imputed[:, [0]].toarray()
             else:
-                col0 = X_imputed[:, 0]
+                col0 = x_imputed[:, 0]
                 constant_feature = col0.toarray() if array_type == "sparse" else col0
             assert_array_equal(constant_feature, 0)
         else:
-            assert X_imputed.shape == (X.shape[0], X.shape[1] - 1)
+            assert x_imputed.shape == (X.shape[0], X.shape[1] - 1)
 
 
 @pytest.mark.parametrize("csc_container", CSC_CONTAINERS)
@@ -1814,7 +1814,7 @@ def test_imputation_custom(csc_container):
         ]
     )
 
-    X_true = np.array(
+    x_true = np.array(
         [
             [1.1, 1.1, 1.1],
             [3.9, 1.2, 1.1],
@@ -1826,13 +1826,13 @@ def test_imputation_custom(csc_container):
     )
 
     imputer = SimpleImputer(missing_values=np.nan, strategy=np.min)
-    X_trans = imputer.fit_transform(X)
-    assert_array_equal(X_trans, X_true)
+    x_trans = imputer.fit_transform(X)
+    assert_array_equal(x_trans, x_true)
 
     # Sparse matrix
     imputer = SimpleImputer(missing_values=np.nan, strategy=np.min)
-    X_trans = imputer.fit_transform(csc_container(X))
-    assert_array_equal(X_trans.toarray(), X_true)
+    x_trans = imputer.fit_transform(csc_container(X))
+    assert_array_equal(x_trans.toarray(), x_true)
 
 
 def test_simple_imputer_constant_fill_value_casting():
@@ -1844,33 +1844,33 @@ def test_simple_imputer_constant_fill_value_casting():
     """
     # cannot cast fill_value at fit
     fill_value = 1.5
-    X_int64 = np.array([[1, 2, 3], [2, 3, 4]], dtype=np.int64)
+    x_int64 = np.array([[1, 2, 3], [2, 3, 4]], dtype=np.int64)
     imputer = SimpleImputer(
         strategy="constant", fill_value=fill_value, missing_values=2
     )
     err_msg = f"fill_value={fill_value!r} (of type {type(fill_value)!r}) cannot be cast"
     with pytest.raises(ValueError, match=re.escape(err_msg)):
-        imputer.fit(X_int64)
+        imputer.fit(x_int64)
 
     # cannot cast fill_value at transform
-    X_float64 = np.array([[1, 2, 3], [2, 3, 4]], dtype=np.float64)
-    imputer.fit(X_float64)
+    x_float64 = np.array([[1, 2, 3], [2, 3, 4]], dtype=np.float64)
+    imputer.fit(x_float64)
     err_msg = (
         f"The dtype of the filling value (i.e. {imputer._fill_dtype!r}) cannot be cast"
     )
     with pytest.raises(ValueError, match=re.escape(err_msg)):
-        imputer.transform(X_int64)
+        imputer.transform(x_int64)
 
     # check that no error is raised when having the same kind of dtype
     fill_value_list = [np.float64(1.5), 1.5, 1]
-    X_float32 = X_float64.astype(np.float32)
+    x_float32 = x_float64.astype(np.float32)
 
     for fill_value in fill_value_list:
         imputer = SimpleImputer(
             strategy="constant", fill_value=fill_value, missing_values=2
         )
-        X_trans = imputer.fit_transform(X_float32)
-        assert X_trans.dtype == X_float32.dtype
+        x_trans = imputer.fit_transform(x_float32)
+        assert x_trans.dtype == x_float32.dtype
 
 
 @pytest.mark.parametrize("strategy", ["mean", "median", "most_frequent", "constant"])
