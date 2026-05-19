@@ -15,8 +15,9 @@ class OneTimeSplitter:
         self.n_samples = n_samples
         self.indices = iter(KFold(n_splits=n_splits).split(np.ones(n_samples)))
 
-    def split(self, X=None, y=None, groups=None):
-        """Split can be called only once"""
+    def split(self, X=None, y=None, groups=None):  # noqa
+        """Split can be called only once
+        X, y, and groups are unused but kept for API compatibility."""
         for index in self.indices:
             yield index
 
