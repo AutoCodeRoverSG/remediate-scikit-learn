@@ -453,7 +453,7 @@ def test_input_errors(est, params, expected_error_message):
 def test_input_errors_randomized(params, expected_error_message):
     # tests specific to HalvingRandomSearchCV
 
-    base_estimator = FastClassifier()
+    base_estimator = FastClassifier(random_state=0)
     param_grid = {"a": [1]}
     X, y = make_classification(100)
 
@@ -484,7 +484,7 @@ def test_subsample_splitter_shapes(
         base_cv=KFold(5),
         fraction=fraction,
         subsample_test=subsample_test,
-        random_state=None,
+        random_state=0,
     )
 
     for train, test in cv.split(X, y):
@@ -510,12 +510,15 @@ def test_subsample_splitter_determinism(subsample_test):
 
     n_samples = 100
     X, y = make_classification(n_samples)
-    cv = _SubsampleMetaSplitter(
-        base_cv=KFold(5), fraction=0.5, subsample_test=subsample_test, random_state=None
+    cv_a = _SubsampleMetaSplitter(
+        base_cv=KFold(5), fraction=0.5, subsample_test=subsample_test, random_state=0
+    )
+    cv_b = _SubsampleMetaSplitter(
+        base_cv=KFold(5), fraction=0.5, subsample_test=subsample_test, random_state=1
     )
 
-    folds_a = list(cv.split(X, y, groups=None))
-    folds_b = list(cv.split(X, y, groups=None))
+    folds_a = list(cv_a.split(X, y, groups=None))
+    folds_b = list(cv_b.split(X, y, groups=None))
 
     for (train_a, test_a), (train_b, test_b) in zip(folds_a, folds_b):
         assert not np.all(train_a == train_b)
@@ -551,8 +554,8 @@ def test_top_k(k, itr, expected):
     assert np.all(got == expected)
 
 
-@pytest.mark.parametrize("Est", (HalvingRandomSearchCV, HalvingGridSearchCV))
-def test_cv_results(Est):
+@pytest.mark.parametrize("est", (HalvingRandomSearchCV, HalvingGridSearchCV))
+def test_cv_results(est):
     # test that the cv_results_ matches correctly the logic of the
     # tournament: in particular that the candidates continued in each
     # successive iteration are those that were best in the previous iteration
@@ -563,15 +566,15 @@ def test_cv_results(Est):
     n_samples = 1000
     X, y = make_classification(n_samples=n_samples, random_state=0)
     param_grid = {"a": ("l1", "l2"), "b": list(range(30))}
-    base_estimator = FastClassifier()
+    base_estimator = FastClassifier(random_state=0)
 
     # generate random scores: we want to avoid ties, which would otherwise
     # mess with the ordering and make testing harder
     def scorer(est, X, y):
         return rng.rand()
 
-    sh = Est(base_estimator, param_grid, factor=2, scoring=scorer)
-    if Est is HalvingRandomSearchCV:
+    sh = est(base_estimator, param_grid, factor=2, scoring=scorer)
+    if est is HalvingRandomSearchCV:
         # same number of candidates as with the grid
         sh.set_params(n_candidates=2 * 30, min_resources="exhaust")
 
@@ -652,8 +655,8 @@ def test_cv_results(Est):
     )
 
 
-@pytest.mark.parametrize("Est", (HalvingGridSearchCV, HalvingRandomSearchCV))
-def test_base_estimator_inputs(Est):
+@pytest.mark.parametrize("est", (HalvingGridSearchCV, HalvingRandomSearchCV))
+def test_base_estimator_inputs(est):
     # make sure that the base estimators are passed the correct parameters and
     # number of samples at each iteration.
     pd = pytest.importorskip("pandas")
@@ -681,7 +684,7 @@ def test_base_estimator_inputs(Est):
     param_grid = {"a": ("l1", "l2"), "b": list(range(30))}
     base_estimator = FastClassifierBookKeeping()
 
-    sh = Est(
+    sh = est(
         base_estimator,
         param_grid,
         factor=2,
@@ -689,7 +692,7 @@ def test_base_estimator_inputs(Est):
         return_train_score=False,
         refit=False,
     )
-    if Est is HalvingRandomSearchCV:
+    if est is HalvingRandomSearchCV:
         # same number of candidates as with the grid
         sh.set_params(n_candidates=2 * 30, min_resources="exhaust")
 
@@ -719,8 +722,8 @@ def test_base_estimator_inputs(Est):
     assert (cv_results_df["n_resources"] == passed_n_samples).all()
 
 
-@pytest.mark.parametrize("Est", (HalvingGridSearchCV, HalvingRandomSearchCV))
-def test_groups_support(Est):
+@pytest.mark.parametrize("est", (HalvingGridSearchCV, HalvingRandomSearchCV))
+def test_groups_support(est):
     # Check if ValueError (when groups is None) propagates to
     # HalvingGridSearchCV and HalvingRandomSearchCV
     # And also check if groups is correctly passed to the cv object
@@ -740,34 +743,34 @@ def test_groups_support(Est):
     ]
     error_msg = "The 'groups' parameter should not be None."
     for cv in group_cvs:
-        gs = Est(clf, grid, cv=cv, random_state=0)
+        gs = est(clf, grid, cv=cv, random_state=0)
         with pytest.raises(ValueError, match=error_msg):
             gs.fit(X, y)
         gs.fit(X, y, groups=groups)
 
     non_group_cvs = [StratifiedKFold(), StratifiedShuffleSplit(random_state=0)]
     for cv in non_group_cvs:
-        gs = Est(clf, grid, cv=cv)
+        gs = est(clf, grid, cv=cv)
         # Should not raise an error
         gs.fit(X, y)
 
 
-@pytest.mark.parametrize("SearchCV", [HalvingRandomSearchCV, HalvingGridSearchCV])
-def test_min_resources_null(SearchCV):
+@pytest.mark.parametrize("search_cv", [HalvingRandomSearchCV, HalvingGridSearchCV])
+def test_min_resources_null(search_cv):
     """Check that we raise an error if the minimum resources is set to 0."""
-    base_estimator = FastClassifier()
+    base_estimator = FastClassifier(random_state=0)
     param_grid = {"a": [1]}
     X = np.empty(0).reshape(0, 3)
 
-    search = SearchCV(base_estimator, param_grid, min_resources="smallest")
+    search = search_cv(base_estimator, param_grid, min_resources="smallest")
 
     err_msg = "min_resources_=0: you might have passed an empty dataset X."
     with pytest.raises(ValueError, match=err_msg):
         search.fit(X, [])
 
 
-@pytest.mark.parametrize("SearchCV", [HalvingGridSearchCV, HalvingRandomSearchCV])
-def test_select_best_index(SearchCV):
+@pytest.mark.parametrize("search_cv", [HalvingGridSearchCV, HalvingRandomSearchCV])
+def test_select_best_index(search_cv):
     """Check the selection strategy of the halving search."""
     results = {  # this isn't a 'real world' result dict
         "iter": np.array([0, 0, 0, 0, 1, 1, 2, 2, 2]),
@@ -776,7 +779,7 @@ def test_select_best_index(SearchCV):
     }
 
     # we expect the index of 'i'
-    best_index = SearchCV._select_best_index(None, None, results)
+    best_index = search_cv._select_best_index(None, None, results)
     assert best_index == 8
 
 
