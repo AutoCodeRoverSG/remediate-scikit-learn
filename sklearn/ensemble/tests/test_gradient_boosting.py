@@ -1450,7 +1450,7 @@ def test_huber_vs_mean_and_median():
     x2 = np.minimum(-y, -n_samples / 2)
     X = np.c_[x1, x2]
 
-    rng = np.random.RandomState(42)
+    rng = np.random.default_rng(42)
     # We want an asymmetric distribution.
     y = y + rng.exponential(scale=1, size=y.shape)
 
@@ -1470,7 +1470,7 @@ def test_safe_divide():
         assert _safe_divide(np.float64(1e300), 0) == 0
         assert _safe_divide(np.float64(0.0), np.float64(0.0)) == 0
     with pytest.warns(RuntimeWarning, match="overflow"):
-        # np.finfo(float).max = 1.7976931348623157e+308
+        
         _safe_divide(np.float64(1e300), 1e-10)
 
 

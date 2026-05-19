@@ -92,7 +92,7 @@ class DictVectorizer(TransformerMixin, BaseEstimator):
     """
 
     # This isn't something that people should be routing / using in a pipeline.
-    __metadata_request__inverse_transform = {"dict_type": metadata_routing.UNUSED}
+    _metadata_request__inverse_transform = {"dict_type": metadata_routing.UNUSED}
 
     _parameter_constraints: dict = {
         "dtype": "no_validation",  # validation delegated to numpy,
@@ -178,10 +178,9 @@ class DictVectorizer(TransformerMixin, BaseEstimator):
                     feature_name = None
                     self._add_iterable_element(f, v, feature_names, vocab)
 
-                if feature_name is not None:
-                    if feature_name not in vocab:
-                        vocab[feature_name] = len(feature_names)
-                        feature_names.append(feature_name)
+                if feature_name is not None and feature_name not in vocab:
+                    vocab[feature_name] = len(feature_names)
+                    feature_names.append(feature_name)
 
         if self.sort:
             feature_names.sort()
@@ -436,7 +435,7 @@ class DictVectorizer(TransformerMixin, BaseEstimator):
         check_is_fitted(self, "feature_names_")
 
         if not indices:
-            support = np.where(support)[0]
+            support = np.nonzero(support)[0]
 
         names = self.feature_names_
         new_vocab = {}

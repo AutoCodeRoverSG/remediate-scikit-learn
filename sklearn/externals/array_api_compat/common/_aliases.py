@@ -411,11 +411,13 @@ def clip(
 
     # At least handle the case of Python integers correctly (see
     # https://github.com/numpy/numpy/pull/26892).
+    _min = min
+    _max = max
     if wrapped_xp.isdtype(x.dtype, "integral"):
-        if type(min) is int and min <= wrapped_xp.iinfo(x.dtype).min:
-            min = None
-        if type(max) is int and max >= wrapped_xp.iinfo(x.dtype).max:
-            max = None
+        if type(_min) is int and _min <= wrapped_xp.iinfo(x.dtype).min:
+            _min = None
+        if type(_max) is int and _max >= wrapped_xp.iinfo(x.dtype).max:
+            _max = None
 
     dev = _get_device(x)
     if out is None:
@@ -423,14 +425,14 @@ def clip(
     assert out is not None  # workaround for a type-narrowing issue in pyright
     out[()] = x
 
-    if min is not None:
-        a = wrapped_xp.asarray(min, dtype=x.dtype, device=dev)
+    if _min is not None:
+        a = wrapped_xp.asarray(_min, dtype=x.dtype, device=dev)
         a = xp.broadcast_to(a, result_shape)
         ia = (out < a) | xp.isnan(a)
         out[ia] = a[ia]
 
-    if max is not None:
-        b = wrapped_xp.asarray(max, dtype=x.dtype, device=dev)
+    if _max is not None:
+        b = wrapped_xp.asarray(_max, dtype=x.dtype, device=dev)
         b = xp.broadcast_to(b, result_shape)
         ib = (out > b) | xp.isnan(b)
         out[ib] = b[ib]

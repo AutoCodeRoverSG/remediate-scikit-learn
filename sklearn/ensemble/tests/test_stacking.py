@@ -68,7 +68,8 @@ X_binary, y_binary = make_classification(n_classes=2, random_state=42)
     "cv", [3, StratifiedKFold(n_splits=3, shuffle=True, random_state=42)]
 )
 @pytest.mark.parametrize(
-    "final_estimator", [None, RandomForestClassifier(random_state=42)]
+    "final_estimator",
+    [None, RandomForestClassifier(random_state=42, min_samples_leaf=1, max_features="sqrt")],
 )
 @pytest.mark.parametrize("passthrough", [False, True])
 def test_stacking_classifier_iris(cv, final_estimator, passthrough):
@@ -120,7 +121,7 @@ def test_stacking_classifier_drop_column_binary_classification():
     # both classifiers implement 'predict_proba' and will both drop one column
     estimators = [
         ("lr", LogisticRegression()),
-        ("rf", RandomForestClassifier(random_state=42)),
+        ("rf", RandomForestClassifier(random_state=42, min_samples_leaf=1, max_features="sqrt")),
     ]
     clf = StackingClassifier(estimators=estimators, cv=3)
 
@@ -144,7 +145,9 @@ def test_stacking_classifier_drop_estimator():
         scale(X_iris), y_iris, stratify=y_iris, random_state=42
     )
     estimators = [("lr", "drop"), ("svc", LinearSVC(random_state=0))]
-    rf = RandomForestClassifier(n_estimators=10, random_state=42)
+    rf = RandomForestClassifier(
+        n_estimators=10, random_state=42, min_samples_leaf=1, max_features="sqrt"
+    )
     clf = StackingClassifier(
         estimators=[("svc", LinearSVC(random_state=0))],
         final_estimator=rf,
@@ -166,7 +169,9 @@ def test_stacking_regressor_drop_estimator():
         scale(X_diabetes), y_diabetes, random_state=42
     )
     estimators = [("lr", "drop"), ("ridge", Ridge(alpha=1.0))]
-    rf = RandomForestRegressor(n_estimators=10, random_state=42)
+    rf = RandomForestRegressor(
+        n_estimators=10, random_state=42, min_samples_leaf=1, max_features=1.0
+    )
     reg = StackingRegressor(
         estimators=[("ridge", Ridge(alpha=1.0))],
         final_estimator=rf,
@@ -185,7 +190,7 @@ def test_stacking_regressor_drop_estimator():
     "final_estimator, predict_params",
     [
         (None, {}),
-        (RandomForestRegressor(random_state=42), {}),
+        (RandomForestRegressor(random_state=42, min_samples_leaf=1, max_features=1.0), {}),
         (DummyRegressor(), {"return_std": True}),
     ],
 )
@@ -235,7 +240,9 @@ def test_stacking_regressor_sparse_passthrough(sparse_container):
         sparse_container(scale(X_diabetes)), y_diabetes, random_state=42
     )
     estimators = [("lr", LinearRegression()), ("svr", LinearSVR())]
-    rf = RandomForestRegressor(n_estimators=10, random_state=42)
+    rf = RandomForestRegressor(
+        n_estimators=10, random_state=42, min_samples_leaf=1, max_features=1.0
+    )
     clf = StackingRegressor(
         estimators=estimators, final_estimator=rf, cv=5, passthrough=True
     )
@@ -255,7 +262,9 @@ def test_stacking_classifier_sparse_passthrough(sparse_container):
         sparse_container(scale(X_iris)), y_iris, random_state=42
     )
     estimators = [("lr", LogisticRegression()), ("svc", LinearSVC())]
-    rf = RandomForestClassifier(n_estimators=10, random_state=42)
+    rf = RandomForestClassifier(
+        n_estimators=10, random_state=42, min_samples_leaf=1, max_features="sqrt"
+    )
     clf = StackingClassifier(
         estimators=estimators, final_estimator=rf, cv=5, passthrough=True
     )
@@ -273,7 +282,7 @@ def test_stacking_classifier_drop_binary_prob():
     # Select only the 2 first classes
     X_, y_ = scale(X_iris[:100]), y_iris[:100]
 
-    estimators = [("lr", LogisticRegression()), ("rf", RandomForestClassifier())]
+    estimators = [("lr", LogisticRegression()), ("rf", RandomForestClassifier(random_state=42, min_samples_leaf=1, max_features="sqrt"))]
     clf = StackingClassifier(estimators=estimators)
     clf.fit(X_, y_)
     x_meta = clf.transform(X_)
@@ -403,13 +412,13 @@ def test_stacking_randomness(estimator, X, y):
     # results
     estimator_full = clone(estimator)
     estimator_full.set_params(
-        cv=KFold(shuffle=True, random_state=np.random.RandomState(0))
+        cv=KFold(shuffle=True, random_state=0)
     )
 
     estimator_drop = clone(estimator)
     estimator_drop.set_params(first="drop")
     estimator_drop.set_params(
-        cv=KFold(shuffle=True, random_state=np.random.RandomState(0))
+        cv=KFold(shuffle=True, random_state=0)
     )
 
     assert_allclose(
@@ -685,7 +694,7 @@ def test_stacking_without_n_features_in(make_dataset, stacking_class, estimator_
         MLPClassifier(random_state=42),
         # output a list of 2D array containing the probability of each class
         # for each output
-        RandomForestClassifier(random_state=42),
+        RandomForestClassifier(random_state=42, min_samples_leaf=1, max_features="sqrt"),
     ],
     ids=["MLPClassifier", "RandomForestClassifier"],
 )
@@ -755,7 +764,7 @@ def test_stacking_classifier_multilabel_auto_predict(stack_method, passthrough):
 
     estimators = [
         ("mlp", MLPClassifier(random_state=42)),
-        ("rf", RandomForestClassifier(random_state=42)),
+        ("rf", RandomForestClassifier(random_state=42, max_features="sqrt", min_samples_leaf=1)),
         ("ridge", RidgeClassifier()),
     ]
     final_estimator = KNeighborsClassifier()
@@ -888,11 +897,11 @@ def test_stacking_final_estimator_attribute_error():
 
     estimators = [
         ("lr", LogisticRegression()),
-        ("rf", RandomForestClassifier(n_estimators=2, random_state=42)),
+        ("rf", RandomForestClassifier(n_estimators=2, random_state=42, min_samples_leaf=1, max_features="sqrt")),
     ]
     # RandomForestClassifier does not implement 'decision_function' and should raise
     # an AttributeError
-    final_estimator = RandomForestClassifier(n_estimators=2, random_state=42)
+    final_estimator = RandomForestClassifier(n_estimators=2, random_state=42, min_samples_leaf=1, max_features="sqrt")
     clf = StackingClassifier(
         estimators=estimators, final_estimator=final_estimator, cv=3
     )
