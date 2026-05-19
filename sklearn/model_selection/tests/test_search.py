@@ -833,7 +833,7 @@ def test_pandas_input():
 
     for input_feature_type, target_type in types:
         # X dataframe, y series
-        X_df, y_ser = input_feature_type(X), target_type(y)
+        x_df, y_ser = input_feature_type(X), target_type(y)
 
         def check_df(x, input_feature_type=input_feature_type):
             return isinstance(x, input_feature_type)
@@ -841,11 +841,13 @@ def test_pandas_input():
         def check_series(x, target_type=target_type):
             return isinstance(x, target_type)
 
-        clf = CheckingClassifier(check_X=check_df, check_y=check_series)
+        clf = CheckingClassifier(
+            check_X=check_df, check_y=check_series, random_state=0
+        )
 
         grid_search = GridSearchCV(clf, {"foo_param": [1, 2, 3]})
-        grid_search.fit(X_df, y_ser).score(X_df, y_ser)
-        grid_search.predict(X_df)
+        grid_search.fit(x_df, y_ser).score(x_df, y_ser)
+        grid_search.predict(x_df)
         assert hasattr(grid_search, "cv_results_")
 
 
@@ -858,7 +860,10 @@ def test_unsupervised_grid_search():
     scoring = ["adjusted_rand_score", "fowlkes_mallows_score"]
     for refit in ["adjusted_rand_score", "fowlkes_mallows_score"]:
         grid_search = GridSearchCV(
-            km, param_grid=dict(n_clusters=[2, 3, 4]), scoring=scoring, refit=refit
+            km,
+            param_grid={"n_clusters": [2, 3, 4]},
+            scoring=scoring,
+            refit=refit,
         )
         grid_search.fit(X, y)
         # Both ARI and FMS can find the right number :)
@@ -866,13 +871,13 @@ def test_unsupervised_grid_search():
 
     # Single metric evaluation unsupervised
     grid_search = GridSearchCV(
-        km, param_grid=dict(n_clusters=[2, 3, 4]), scoring="fowlkes_mallows_score"
+        km, param_grid={"n_clusters": [2, 3, 4]}, scoring="fowlkes_mallows_score"
     )
     grid_search.fit(X, y)
     assert grid_search.best_params_["n_clusters"] == 3
 
     # Now without a score, and without y
-    grid_search = GridSearchCV(km, param_grid=dict(n_clusters=[2, 3, 4]))
+    grid_search = GridSearchCV(km, param_grid={"n_clusters": [2, 3, 4]})
     grid_search.fit(X)
     assert grid_search.best_params_["n_clusters"] == 4
 
@@ -886,7 +891,7 @@ def test_gridsearch_no_predict():
     X, _ = make_blobs(cluster_std=0.1, random_state=1, centers=[[0, 1], [1, 0], [0, 0]])
     search = GridSearchCV(
         KernelDensity(),
-        param_grid=dict(bandwidth=[0.01, 0.1, 1]),
+        param_grid={"bandwidth": [0.01, 0.1, 1]},
         scoring=custom_scoring,
     )
     search.fit(X)
