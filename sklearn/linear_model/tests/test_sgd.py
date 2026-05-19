@@ -363,9 +363,9 @@ def test_late_onset_averaging_not_reached(klass):
 def test_late_onset_averaging_reached(klass):
     eta0 = 0.001
     alpha = 0.0001
-    Y_encode = np.array(Y)
-    Y_encode[Y_encode == 1] = -1.0
-    Y_encode[Y_encode == 2] = 1.0
+    y_encode = np.array(Y)
+    y_encode[y_encode == 1] = -1.0
+    y_encode[y_encode == 2] = 1.0
 
     clf1 = klass(
         average=7,
@@ -386,13 +386,13 @@ def test_late_onset_averaging_reached(klass):
         shuffle=False,
     )
 
-    clf1.fit(X, Y_encode)
-    clf2.fit(X, Y_encode)
+    clf1.fit(X, y_encode)
+    clf2.fit(X, y_encode)
 
     average_weights, average_intercept = asgd(
         klass,
         X,
-        Y_encode,
+        y_encode,
         eta0,
         alpha,
         weight_init=clf2.coef_.ravel(),
@@ -464,7 +464,7 @@ def test_validation_set_not_used_for_training(klass):
         cv = StratifiedShuffleSplit(test_size=validation_fraction, random_state=seed)
     else:
         cv = ShuffleSplit(test_size=validation_fraction, random_state=seed)
-    idx_train, idx_val = next(cv.split(X, Y))
+    idx_train, _ = next(cv.split(X, Y))
     idx_train = np.sort(idx_train)  # remove shuffling
     clf2.fit(X[idx_train], Y[idx_train])
     assert clf2.n_iter_ == max_iter
@@ -503,21 +503,21 @@ def test_not_enough_sample_for_early_stopping(klass):
         clf.fit(X3, Y3)
 
 
-@pytest.mark.parametrize("Estimator", [SGDClassifier, SGDRegressor])
+@pytest.mark.parametrize("estimator", [SGDClassifier, SGDRegressor])
 @pytest.mark.parametrize("l1_ratio", [0, 0.7, 1])
-def test_sgd_l1_ratio_not_used(Estimator, l1_ratio):
+def test_sgd_l1_ratio_not_used(estimator, l1_ratio):
     """Check that l1_ratio is not used when penalty is not 'elasticnet'"""
-    clf1 = Estimator(penalty="l1", l1_ratio=None, random_state=0).fit(X, Y)
-    clf2 = Estimator(penalty="l1", l1_ratio=l1_ratio, random_state=0).fit(X, Y)
+    clf1 = estimator(penalty="l1", l1_ratio=None, random_state=0).fit(X, Y)
+    clf2 = estimator(penalty="l1", l1_ratio=l1_ratio, random_state=0).fit(X, Y)
 
     assert_allclose(clf1.coef_, clf2.coef_)
 
 
 @pytest.mark.parametrize(
-    "Estimator", [SGDClassifier, SparseSGDClassifier, SGDRegressor, SparseSGDRegressor]
+    "estimator", [SGDClassifier, SparseSGDClassifier, SGDRegressor, SparseSGDRegressor]
 )
-def test_sgd_failing_penalty_validation(Estimator):
-    clf = Estimator(penalty="elasticnet", l1_ratio=None)
+def test_sgd_failing_penalty_validation(estimator):
+    clf = estimator(penalty="elasticnet", l1_ratio=None)
     with pytest.raises(
         ValueError, match="l1_ratio must be set when penalty is 'elasticnet'"
     ):
@@ -723,13 +723,13 @@ def test_sgd_multiclass_average(klass):
         shuffle=False,
     )
 
-    np_Y2 = np.array(Y2)
-    clf.fit(X2, np_Y2)
-    classes = np.unique(np_Y2)
+    np_y2 = np.array(Y2)
+    clf.fit(X2, np_y2)
+    classes = np.unique(np_y2)
 
     for i, cl in enumerate(classes):
-        y_i = np.ones(np_Y2.shape[0])
-        y_i[np_Y2 != cl] = -1
+        y_i = np.ones(np_y2.shape[0])
+        y_i[np_y2 != cl] = -1
         average_coef, average_intercept = asgd(klass, X2, y_i, eta, alpha)
         assert_array_almost_equal(average_coef, clf.coef_[i], decimal=16)
         assert_almost_equal(average_intercept, clf.intercept_[i], decimal=16)
@@ -1016,18 +1016,18 @@ def test_balanced_weight(klass):
     X_0 = X[y == 0, :]
     y_0 = y[y == 0]
 
-    X_imbalanced = np.vstack([X] + [X_0] * 10)
+    x_imbalanced = np.vstack([X] + [X_0] * 10)
     y_imbalanced = np.concatenate([y] + [y_0] * 10)
 
     # fit a model on the imbalanced data without class weight info
     clf = klass(max_iter=1000, class_weight=None, shuffle=False)
-    clf.fit(X_imbalanced, y_imbalanced)
+    clf.fit(x_imbalanced, y_imbalanced)
     y_pred = clf.predict(X)
     assert metrics.f1_score(y, y_pred, average="weighted") < 0.96
 
     # fit a model with balanced class_weight enabled
     clf = klass(max_iter=1000, class_weight="balanced", shuffle=False)
-    clf.fit(X_imbalanced, y_imbalanced)
+    clf.fit(x_imbalanced, y_imbalanced)
     y_pred = clf.predict(X)
     assert metrics.f1_score(y, y_pred, average="weighted") > 0.96
 
@@ -1139,17 +1139,17 @@ def test_fit_then_partial_fit(klass):
 @pytest.mark.parametrize("klass", [SGDClassifier, SparseSGDClassifier])
 @pytest.mark.parametrize("lr", ["constant", "optimal", "invscaling", "adaptive"])
 def test_partial_fit_equal_fit_classif(klass, lr):
-    for X_, Y_, T_ in ((X, Y, T), (X2, Y2, T2)):
+    for x_data, y_data, t_data in ((X, Y, T), (X2, Y2, T2)):
         clf = klass(alpha=0.01, eta0=0.01, max_iter=2, learning_rate=lr, shuffle=False)
-        clf.fit(X_, Y_)
-        y_pred = clf.decision_function(T_)
+        clf.fit(x_data, y_data)
+        y_pred = clf.decision_function(t_data)
         t = clf.t_
 
-        classes = np.unique(Y_)
+        classes = np.unique(y_data)
         clf = klass(alpha=0.01, eta0=0.01, learning_rate=lr, shuffle=False)
-        for i in range(2):
-            clf.partial_fit(X_, Y_, classes=classes)
-        y_pred2 = clf.decision_function(T_)
+        for _ in range(2):
+            clf.partial_fit(x_data, y_data, classes=classes)
+        y_pred2 = clf.decision_function(t_data)
 
         assert clf.t_ == t
         assert_array_almost_equal(y_pred, y_pred2, decimal=2)
