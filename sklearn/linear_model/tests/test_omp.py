@@ -122,7 +122,7 @@ def test_orthogonal_mp_gram_readonly():
     Xy_readonly = Xy.copy()
     Xy_readonly.setflags(write=False)
     gamma_gram = orthogonal_mp_gram(
-        G_readonly, Xy_readonly[:, 0], n_nonzero_coefs=5, copy_Gram=False, copy_Xy=False
+        G_readonly, Xy_readonly[:, 0], n_nonzero_coefs=5, copy_gram=False, copy_xy=False
     )
     assert_array_equal(idx, np.flatnonzero(gamma_gram))
     assert_array_almost_equal(gamma[:, 0], gamma_gram, decimal=2)

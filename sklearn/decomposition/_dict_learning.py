@@ -191,11 +191,11 @@ def _sparse_encode_precomputed(
     elif algorithm == "omp":
         new_code = orthogonal_mp_gram(
             gram=gram,
-            Xy=cov,
+            xy=cov,
             n_nonzero_coefs=int(regularization),
             tol=None,
             norms_squared=row_norms(X, squared=True),
-            copy_Xy=copy_cov,
+            copy_xy=copy_cov,
         ).T
 
     return new_code.reshape(n_samples, n_components)
