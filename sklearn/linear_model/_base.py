@@ -387,8 +387,8 @@ class LinearClassifierMixin(ClassifierMixin):
         check_same_namespace(X, self, attribute="coef_", method="decision_function")
 
         X = validate_data(self, X, accept_sparse="csr", reset=False)
-        coef_T = self.coef_.T if self.coef_.ndim == 2 else self.coef_
-        scores = safe_sparse_dot(X, coef_T, dense_output=True) + self.intercept_
+        coef_t = self.coef_.T if self.coef_.ndim == 2 else self.coef_
+        scores = safe_sparse_dot(X, coef_t, dense_output=True) + self.intercept_
         return (
             xp.reshape(scores, (-1,))
             if (scores.ndim > 1 and scores.shape[1] == 1)
@@ -632,7 +632,7 @@ class LinearRegression(RegressorMixin, MultiOutputLinearModel):
         self,
         *,
         fit_intercept=True,
-        copy_X=True,
+        copy_X=True,  # NOSONAR
         tol=1e-6,
         n_jobs=None,
         positive=False,
@@ -690,13 +690,13 @@ class LinearRegression(RegressorMixin, MultiOutputLinearModel):
         # Note that neither _rescale_data nor the rest of the fit method of
         # LinearRegression can benefit from in-place operations when X is a
         # sparse matrix. Therefore, let's not copy X when it is sparse.
-        copy_X_in_preprocess_data = self.copy_X and not sp.issparse(X)
+        copy_x_in_preprocess_data = self.copy_X and not sp.issparse(X)
 
-        X, y, X_offset, y_offset, _, sample_weight_sqrt = _preprocess_data(
+        X, y, x_offset, y_offset, _, sample_weight_sqrt = _preprocess_data(
             X,
             y,
             fit_intercept=self.fit_intercept,
-            copy=copy_X_in_preprocess_data,
+            copy=copy_x_in_preprocess_data,
             sample_weight=sample_weight,
         )
 
@@ -713,30 +713,30 @@ class LinearRegression(RegressorMixin, MultiOutputLinearModel):
             if has_sw:
 
                 def matvec(b):
-                    return X.dot(b) - sample_weight_sqrt * b.dot(X_offset)
+                    return X.dot(b) - sample_weight_sqrt * b.dot(x_offset)
 
                 def rmatvec(b):
-                    return X.T.dot(b) - X_offset * b.dot(sample_weight_sqrt)
+                    return X.T.dot(b) - x_offset * b.dot(sample_weight_sqrt)
 
             else:
 
                 def matvec(b):
-                    return X.dot(b) - b.dot(X_offset)
+                    return X.dot(b) - b.dot(x_offset)
 
                 def rmatvec(b):
-                    return X.T.dot(b) - X_offset * b.sum()
+                    return X.T.dot(b) - x_offset * b.sum()
 
-            X_centered = sparse.linalg.LinearOperator(
+            x_centered = sparse.linalg.LinearOperator(
                 shape=X.shape, matvec=matvec, rmatvec=rmatvec
             )
 
             if y.ndim < 2:
-                self.coef_ = lsqr(X_centered, y, atol=self.tol, btol=self.tol)[0]
+                self.coef_ = lsqr(x_centered, y, atol=self.tol, btol=self.tol)[0]
             else:
                 # sparse_lstsq cannot handle y with shape (M, K)
                 outs = Parallel(n_jobs=n_jobs_)(
                     delayed(lsqr)(
-                        X_centered, y[:, j].ravel(), atol=self.tol, btol=self.tol
+                        x_centered, y[:, j].ravel(), atol=self.tol, btol=self.tol
                     )
                     for j in range(y.shape[1])
                 )
@@ -749,7 +749,7 @@ class LinearRegression(RegressorMixin, MultiOutputLinearModel):
 
         if y.ndim == 1:
             self.coef_ = np.ravel(self.coef_)
-        self._set_intercept(X_offset, y_offset)
+        self._set_intercept(x_offset, y_offset)
         return self
 
     def __sklearn_tags__(self):
@@ -759,7 +759,7 @@ class LinearRegression(RegressorMixin, MultiOutputLinearModel):
 
 
 def _check_precomputed_gram_matrix(
-    X, precompute, X_offset, X_scale, rtol=None, atol=1e-5
+    X, precompute, x_offset, x_scale, rtol=None, atol=1e-5
 ):
     """Computes a single element of the gram matrix and compares it to
     the corresponding element of the user supplied gram matrix.
@@ -800,8 +800,8 @@ def _check_precomputed_gram_matrix(
     f1 = n_features // 2
     f2 = min(f1 + 1, n_features - 1)
 
-    v1 = (X[:, f1] - X_offset[f1]) * X_scale[f1]
-    v2 = (X[:, f2] - X_offset[f2]) * X_scale[f2]
+    v1 = (X[:, f1] - x_offset[f1]) * x_scale[f1]
+    v2 = (X[:, f2] - x_offset[f2]) * x_scale[f2]
 
     expected = np.dot(v1, v2)
     actual = precompute[f1, f2]
@@ -825,7 +825,7 @@ def _check_precomputed_gram_matrix(
 def _pre_fit(
     X,
     y,
-    Xy,
+    xy,
     precompute,
     fit_intercept,
     copy,
@@ -862,7 +862,7 @@ def _pre_fit(
         # copy was done in fit if necessary
         rescale_with_sw = True
 
-    X, y, X_offset, y_offset, X_scale, _ = _preprocess_data(
+    X, y, x_offset, y_offset, x_scale, _ = _preprocess_data(
         X,
         y,
         fit_intercept=fit_intercept,
@@ -873,7 +873,7 @@ def _pre_fit(
     )
 
     if hasattr(precompute, "__array__"):
-        if fit_intercept and not np.allclose(X_offset, np.zeros(n_features)):
+        if fit_intercept and not np.allclose(x_offset, np.zeros(n_features)):
             warnings.warn(
                 (
                     "Gram matrix was provided but X was centered to fit "
@@ -886,11 +886,11 @@ def _pre_fit(
             # when `copy=True`).
             # recompute Gram
             precompute = "auto"
-            Xy = None
+            xy = None
         elif check_gram:
             # If we're going to use the user's precomputed gram matrix, we
             # do a quick check to make sure its not totally bogus.
-            _check_precomputed_gram_matrix(X, precompute, X_offset, X_scale)
+            _check_precomputed_gram_matrix(X, precompute, x_offset, x_scale)
 
     # precompute if n_samples > n_features
     if isinstance(precompute, str) and precompute == "auto":
@@ -902,20 +902,20 @@ def _pre_fit(
         np.dot(X.T, X, out=precompute)
 
     if not hasattr(precompute, "__array__"):
-        Xy = None  # cannot use Xy if precompute is not Gram
+        xy = None  # cannot use Xy if precompute is not Gram
 
-    if hasattr(precompute, "__array__") and Xy is None:
+    if hasattr(precompute, "__array__") and xy is None:
         common_dtype = np.result_type(X.dtype, y.dtype)
         if y.ndim == 1:
             # Xy is 1d, make sure it is contiguous.
-            Xy = np.empty(shape=n_features, dtype=common_dtype, order="C")
-            np.dot(X.T, y, out=Xy)
+            xy = np.empty(shape=n_features, dtype=common_dtype, order="C")
+            np.dot(X.T, y, out=xy)
         else:
             # Make sure that Xy is always F contiguous even if X or y are not
             # contiguous: the goal is to make it fast to extract the data for a
             # specific target.
             n_targets = y.shape[1]
-            Xy = np.empty(shape=(n_features, n_targets), dtype=common_dtype, order="F")
-            np.dot(y.T, X, out=Xy.T)
+            xy = np.empty(shape=(n_features, n_targets), dtype=common_dtype, order="F")
+            np.dot(y.T, X, out=xy.T)
 
-    return X, y, X_offset, y_offset, X_scale, precompute, Xy
+    return X, y, x_offset, y_offset, x_scale, precompute, xy
