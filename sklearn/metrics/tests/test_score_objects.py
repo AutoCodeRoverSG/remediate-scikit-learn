@@ -750,7 +750,7 @@ def test_multimetric_scorer_calls_method_once(
     expected_decision_func_count,
 ):
     X, y = np.array([[1], [1], [0], [0], [0]]), np.array([0, 1, 1, 1, 0])
-    pos_proba = np.random.rand(X.shape[0])
+    pos_proba = np.random.default_rng(0).random(X.shape[0])
     proba = np.c_[1 - pos_proba, pos_proba]
 
     class MyClassifier(ClassifierMixin, BaseEstimator):
@@ -1325,7 +1325,7 @@ def test_metadata_kwarg_conflict():
 
 
 @config_context(enable_metadata_routing=True)
-def test_PassthroughScorer_set_score_request():
+def test_passthrough_scorer_set_score_request():
     """Test that _PassthroughScorer.set_score_request raises when routing enabled."""
     est = LogisticRegression().set_score_request(sample_weight="estimator_weights")
     # make a `_PassthroughScorer` with `check_scoring`:
@@ -1337,7 +1337,7 @@ def test_PassthroughScorer_set_score_request():
         scorer.set_score_request(sample_weight=True)
 
 
-def test_PassthroughScorer_set_score_request_raises_without_routing_enabled():
+def test_passthrough_scorer_set_score_request_raises_without_routing_enabled():
     """Test that _PassthroughScorer.set_score_request raises if metadata routing is
     disabled."""
     scorer = check_scoring(LogisticRegression(), None)
