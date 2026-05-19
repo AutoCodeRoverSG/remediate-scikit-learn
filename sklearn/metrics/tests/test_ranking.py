@@ -90,8 +90,8 @@ def make_prediction(dataset=None, binary=False):
     half = int(n_samples / 2)
 
     # add noisy features to make the problem harder and avoid perfect results
-    rng = np.random.RandomState(0)
-    X = np.c_[X, rng.randn(n_samples, 200 * n_features)]
+    rng = np.random.default_rng(0)
+    X = np.c_[X, rng.standard_normal((n_samples, 200 * n_features))]
 
     # run classifier, get class probabilities and label predictions
     clf = LogisticRegression(random_state=0)
@@ -166,7 +166,7 @@ def _average_precision_slow(y_true, y_score):
     .. [1] `Wikipedia entry for the Average precision
        <https://en.wikipedia.org/wiki/Average_precision>`_
     """
-    precision, recall, threshold = precision_recall_curve(y_true, y_score)
+    precision, recall, _ = precision_recall_curve(y_true, y_score)
     precision = list(reversed(precision))
     recall = list(reversed(recall))
     average_precision = 0
@@ -220,9 +220,9 @@ def test_roc_curve(drop):
 def test_roc_curve_end_points():
     # Make sure that roc_curve returns a curve start at 0 and ending and
     # 1 even in corner cases
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
     y_true = np.array([0] * 50 + [1] * 50)
-    y_pred = rng.randint(3, size=100)
+    y_pred = rng.integers(3, size=100)
     fpr, tpr, thr = roc_curve(y_true, y_pred, drop_intermediate=True)
     assert fpr[0] == 0
     assert fpr[-1] == 1
@@ -270,7 +270,7 @@ def test_roc_curve_confidence():
 
 def test_roc_curve_hard():
     # roc_curve for hard decisions
-    y_true, pred, y_score = make_prediction(binary=True)
+    y_true, pred, _ = make_prediction(binary=True)
 
     # always predict one
     trivial_pred = np.ones(y_true.shape)
@@ -441,13 +441,13 @@ def test_roc_curve_drop_intermediate():
     # Test that drop_intermediate drops the correct thresholds
     y_true = [0, 0, 0, 0, 1, 1]
     y_score = [0.0, 0.2, 0.5, 0.6, 0.7, 1.0]
-    tpr, fpr, thresholds = roc_curve(y_true, y_score, drop_intermediate=True)
+    _, _, thresholds = roc_curve(y_true, y_score, drop_intermediate=True)
     assert_array_almost_equal(thresholds, [np.inf, 1.0, 0.7, 0.0])
 
     # Test dropping thresholds with repeating scores
     y_true = [0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1]
     y_score = [0.0, 0.1, 0.6, 0.6, 0.7, 0.8, 0.9, 0.6, 0.7, 0.8, 0.9, 0.9, 1.0]
-    tpr, fpr, thresholds = roc_curve(y_true, y_score, drop_intermediate=True)
+    _, _, thresholds = roc_curve(y_true, y_score, drop_intermediate=True)
     assert_array_almost_equal(thresholds, [np.inf, 1.0, 0.9, 0.7, 0.6, 0.0])
 
 
@@ -929,10 +929,10 @@ def test_sort_inputs_and_compute_classification_thresholds_sorting():
 
 def test_confusion_matrix_at_thresholds(global_random_seed):
     """Smoke test for confusion_matrix_at_thresholds."""
-    rng = np.random.RandomState(global_random_seed)
+    rng = np.random.default_rng(global_random_seed)
 
     n_samples = 100
-    y_true = rng.randint(0, 2, size=100)
+    y_true = rng.integers(0, 2, size=100)
     y_score = rng.uniform(size=100)
 
     n_pos = np.sum(y_true)
@@ -1230,7 +1230,7 @@ def test_precision_recall_curve_drop_intermediate():
     """Check the behaviour of the `drop_intermediate` parameter."""
     y_true = [0, 0, 0, 0, 1, 1]
     y_score = [0.0, 0.2, 0.5, 0.6, 0.7, 1.0]
-    precision, recall, thresholds = precision_recall_curve(
+    _, _, thresholds = precision_recall_curve(
         y_true, y_score, drop_intermediate=True
     )
     assert_allclose(thresholds, [0.0, 0.7, 1.0])
@@ -1238,7 +1238,7 @@ def test_precision_recall_curve_drop_intermediate():
     # Test dropping thresholds with repeating scores
     y_true = [0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1]
     y_score = [0.0, 0.1, 0.6, 0.6, 0.7, 0.8, 0.9, 0.6, 0.7, 0.8, 0.9, 0.9, 1.0]
-    precision, recall, thresholds = precision_recall_curve(
+    _, _, thresholds = precision_recall_curve(
         y_true, y_score, drop_intermediate=True
     )
     assert_allclose(thresholds, [0.0, 0.6, 0.7, 0.8, 0.9, 1.0])
@@ -1246,7 +1246,7 @@ def test_precision_recall_curve_drop_intermediate():
     # Test all false keeps only endpoints
     y_true = [0, 0, 0, 0]
     y_score = [0.0, 0.1, 0.2, 0.3]
-    precision, recall, thresholds = precision_recall_curve(
+    _, _, thresholds = precision_recall_curve(
         y_true, y_score, drop_intermediate=True
     )
     assert_allclose(thresholds, [0.0, 0.3])
@@ -1254,7 +1254,7 @@ def test_precision_recall_curve_drop_intermediate():
     # Test all true keeps all thresholds
     y_true = [1, 1, 1, 1]
     y_score = [0.0, 0.1, 0.2, 0.3]
-    precision, recall, thresholds = precision_recall_curve(
+    _, _, thresholds = precision_recall_curve(
         y_true, y_score, drop_intermediate=True
     )
     assert_allclose(thresholds, [0.0, 0.1, 0.2, 0.3])
@@ -1756,10 +1756,9 @@ def test_lrap_error_raised():
 
 @pytest.mark.parametrize("n_samples", (1, 2, 8, 20))
 @pytest.mark.parametrize("n_classes", (2, 5, 10))
-@pytest.mark.parametrize("random_state", range(1))
-def test_alternative_lrap_implementation(n_samples, n_classes, random_state):
+def test_alternative_lrap_implementation(n_samples, n_classes):
     check_alternative_lrap_implementation(
-        label_ranking_average_precision_score, n_classes, n_samples, random_state
+        label_ranking_average_precision_score, n_classes, n_samples, random_state=0
     )
 
 
