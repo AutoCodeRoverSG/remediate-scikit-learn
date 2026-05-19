@@ -175,29 +175,29 @@ def test_logistic_glmnet(solver):
 @pytest.mark.filterwarnings("ignore:The default value.*scoring.*:FutureWarning")
 # TODO(1.10): remove filterwarnings with deprecation period of use_legacy_attributes
 @pytest.mark.filterwarnings("ignore:.*use_legacy_attributes.*:FutureWarning")
-@pytest.mark.parametrize("LR", [LogisticRegression, LogisticRegressionCV])
-def test_check_solver_option(LR):
+@pytest.mark.parametrize("lr_estimator", [LogisticRegression, LogisticRegressionCV])
+def test_check_solver_option(lr_estimator):
     X, y = iris.data, iris.target
 
     # only 'liblinear' solver
     for solver in ["liblinear"]:
         msg = f"The '{solver}' solver does not support multiclass classification."
-        lr = LR(solver=solver)
+        lr = lr_estimator(solver=solver)
         with pytest.raises(ValueError, match=msg):
             lr.fit(X, y)
 
     # all solvers except 'liblinear' and 'saga'
     for solver in ["lbfgs", "newton-cg", "newton-cholesky", "sag"]:
         msg = "Solver %s supports only 'l2' or None penalties," % solver
-        if LR == LogisticRegression:
-            lr = LR(solver=solver, l1_ratio=1)
+        if lr_estimator == LogisticRegression:
+            lr = lr_estimator(solver=solver, l1_ratio=1)
         else:
-            lr = LR(solver=solver, l1_ratios=(1,))
+            lr = lr_estimator(solver=solver, l1_ratios=(1,))
         with pytest.raises(ValueError, match=msg):
             lr.fit(X, y)
     for solver in ["lbfgs", "newton-cg", "newton-cholesky", "sag", "saga"]:
         msg = "Solver %s supports only dual=False, got dual=True" % solver
-        lr = LR(solver=solver, dual=True)
+        lr = lr_estimator(solver=solver, dual=True)
         with pytest.raises(ValueError, match=msg):
             lr.fit(X, y)
 
@@ -206,18 +206,18 @@ def test_check_solver_option(LR):
     # penalties)
     for solver in ["liblinear"]:
         msg = f"Only 'saga' solver supports elasticnet penalty, got solver={solver}."
-        if LR == LogisticRegression:
-            lr = LR(solver=solver, l1_ratio=0.5)
+        if lr_estimator == LogisticRegression:
+            lr = lr_estimator(solver=solver, l1_ratio=0.5)
         else:
-            lr = LR(solver=solver, l1_ratios=(0.5,))
+            lr = lr_estimator(solver=solver, l1_ratios=(0.5,))
         with pytest.raises(ValueError, match=msg):
             lr.fit(X, y)
 
     # liblinear does not support penalty='none'
     # (LogisticRegressionCV does not supports penalty='none' at all)
-    if LR is LogisticRegression:
+    if lr_estimator is LogisticRegression:
         msg = "penalty=None is not supported for the liblinear solver"
-        lr = LR(C=np.inf, solver="liblinear")
+        lr = lr_estimator(C=np.inf, solver="liblinear")
         with pytest.raises(ValueError, match=msg):
             lr.fit(X, y)
 
@@ -227,13 +227,13 @@ def test_check_solver_option(LR):
 # TODO(1.10): remove test with removal of penalty
 @pytest.mark.filterwarnings("ignore::FutureWarning")
 @pytest.mark.parametrize(
-    ["LR", "arg"],
+    ["lr", "arg"],
     [(LogisticRegression, "l1_ratio"), (LogisticRegressionCV, "l1_ratios")],
 )
-def test_elasticnet_l1_ratio_err_helpful(LR, arg):
+def test_elasticnet_l1_ratio_err_helpful(lr, arg):
     # Check that an informative error message is raised when penalty="elasticnet"
     # but l1_ratio is not specified.
-    model = LR(penalty="elasticnet", solver="saga", **{arg: None})
+    model = lr(penalty="elasticnet", solver="saga", **{arg: None})
     with pytest.raises(ValueError, match=r".*l1_ratio.*"):
         model.fit(np.array([[1, 2], [3, 4]]), np.array([0, 1]))
 
@@ -241,7 +241,6 @@ def test_elasticnet_l1_ratio_err_helpful(LR, arg):
 @pytest.mark.parametrize("coo_container", COO_CONTAINERS)
 def test_sparsify(coo_container):
     # Test sparsify and densify members.
-    n_samples, n_features = iris.data.shape
     target = iris.target_names[iris.target]
     X = scale(iris.data)
     clf = LogisticRegression().fit(X, target)
@@ -297,12 +296,12 @@ def test_write_parameters():
 def test_nan():
     # Test proper NaN handling.
     # Regression test for Issue #252: fit used to go into an infinite loop.
-    Xnan = np.array(X, dtype=np.float64)
-    Xnan[0, 1] = np.nan
+    x_nan = np.array(X, dtype=np.float64)
+    x_nan[0, 1] = np.nan
     clf = LogisticRegression()
 
     with pytest.raises(ValueError, match="Input X contains NaN."):
-        clf.fit(Xnan, Y1)
+        clf.fit(x_nan, Y1)
 
 
 def test_consistency_path(global_random_seed):
@@ -310,24 +309,24 @@ def test_consistency_path(global_random_seed):
     rng = np.random.RandomState(global_random_seed)
     X = np.concatenate((rng.randn(100, 2) + [1, 1], rng.randn(100, 2)))
     y = [1] * 100 + [-1] * 100
-    Cs = np.logspace(0, 4, 10)
+    c_values = np.logspace(0, 4, 10)
 
     f = ignore_warnings
     # can't test with fit_intercept=True since LIBLINEAR
     # penalizes the intercept
     for solver in ["sag", "saga"]:
-        coefs, Cs, _ = f(_logistic_regression_path)(
+        coefs, c_values, _ = f(_logistic_regression_path)(
             X,
             y,
             classes=[0, 1],
-            Cs=Cs,
+            Cs=c_values,
             fit_intercept=False,
             tol=1e-5,
             solver=solver,
             max_iter=1000,
             random_state=global_random_seed,
         )
-        for i, C in enumerate(Cs):
+        for i, C in enumerate(c_values):
             lr = LogisticRegression(
                 C=C,
                 fit_intercept=False,
@@ -344,19 +343,19 @@ def test_consistency_path(global_random_seed):
 
     # test for fit_intercept=True
     for solver in ("lbfgs", "newton-cg", "newton-cholesky", "liblinear", "sag", "saga"):
-        Cs = [1e3]
-        coefs, Cs, _ = f(_logistic_regression_path)(
+        c_values = [1e3]
+        coefs, c_values, _ = f(_logistic_regression_path)(
             X,
             y,
             classes=[0, 1],
-            Cs=Cs,
+            Cs=c_values,
             tol=1e-6,
             solver=solver,
             intercept_scaling=10000.0,
             random_state=global_random_seed,
         )
         lr = LogisticRegression(
-            C=Cs[0],
+            C=c_values[0],
             tol=1e-6,
             intercept_scaling=10000.0,
             random_state=global_random_seed,
@@ -373,14 +372,14 @@ def test_logistic_regression_path_convergence_fail():
     rng = np.random.RandomState(0)
     X = np.concatenate((rng.randn(100, 2) + [1, 1], rng.randn(100, 2)))
     y = [1] * 100 + [-1] * 100
-    Cs = [1e3]
+    cs = [1e3]
 
     # Check that the convergence message points to both a model agnostic
     # advice (scaling the data) and to the logistic regression specific
     # documentation that includes hints on the solver configuration.
     with pytest.warns(ConvergenceWarning) as record:
         _logistic_regression_path(
-            X, y, classes=[0, 1], Cs=Cs, tol=0.0, max_iter=1, random_state=0, verbose=0
+            X, y, classes=[0, 1], Cs=cs, tol=0.0, max_iter=1, random_state=0, verbose=0
         )
 
     assert len(record) == 1
@@ -433,10 +432,10 @@ def test_logistic_cv(global_random_seed, use_legacy_attributes):
     # test for LogisticRegressionCV object
     n_samples, n_features, n_cv = 50, 5, 3
     rng = np.random.RandomState(global_random_seed)
-    X_ref = rng.randn(n_samples, n_features)
-    y = np.sign(X_ref.dot(5 * rng.randn(n_features)))
-    X_ref -= X_ref.mean()
-    X_ref /= X_ref.std()
+    x_ref = rng.randn(n_samples, n_features)
+    y = np.sign(x_ref.dot(5 * rng.randn(n_features)))
+    x_ref -= x_ref.mean()
+    x_ref /= x_ref.std()
     lr_cv = LogisticRegressionCV(
         Cs=[1.0],
         l1_ratios=(0.0,),  # TODO(1.10): remove because it is default now.
@@ -447,30 +446,30 @@ def test_logistic_cv(global_random_seed, use_legacy_attributes):
         scoring="neg_log_loss",  # TODO(1.11): remove because it is default now
         use_legacy_attributes=use_legacy_attributes,
     )
-    lr_cv.fit(X_ref, y)
+    lr_cv.fit(x_ref, y)
     lr = LogisticRegression(
         C=1.0, fit_intercept=False, random_state=global_random_seed, solver="liblinear"
     )
-    lr.fit(X_ref, y)
+    lr.fit(x_ref, y)
     assert_array_almost_equal(lr.coef_, lr_cv.coef_)
 
     assert lr_cv.coef_.shape == (1, n_features)
     assert_array_equal(lr_cv.classes_, [-1, 1])
     assert len(lr_cv.classes_) == 2
     assert lr_cv.Cs_.shape == (1,)
-    n_Cs = lr_cv.Cs_.shape[0]
+    n_cs = lr_cv.Cs_.shape[0]
     assert lr_cv.l1_ratios_.shape == (1,)
     n_l1_ratios = lr_cv.l1_ratios_.shape[0]
     if use_legacy_attributes:
         coefs_paths = np.asarray(list(lr_cv.coefs_paths_.values()))
-        assert coefs_paths.shape == (1, n_cv, n_Cs, n_l1_ratios, n_features)
+        assert coefs_paths.shape == (1, n_cv, n_cs, n_l1_ratios, n_features)
         scores = np.asarray(list(lr_cv.scores_.values()))
-        assert scores.shape == (1, n_cv, n_Cs, n_l1_ratios)
+        assert scores.shape == (1, n_cv, n_cs, n_l1_ratios)
     else:
-        assert lr_cv.coefs_paths_.shape == (n_cv, n_l1_ratios, n_Cs, 1, n_features)
+        assert lr_cv.coefs_paths_.shape == (n_cv, n_l1_ratios, n_cs, 1, n_features)
         assert isinstance(lr_cv.C_, float)
         assert isinstance(lr_cv.l1_ratio_, float)
-        assert lr_cv.scores_.shape == (n_cv, n_l1_ratios, n_Cs)
+        assert lr_cv.scores_.shape == (n_cv, n_l1_ratios, n_cs)
 
 
 # TODO(1.11): remove filterwarnings with change of default scoring
@@ -508,11 +507,11 @@ def test_logistic_cv_mock_scorer():
             return score
 
     mock_scorer = MockScorer()
-    Cs = [1, 2, 3, 4]
+    c_values = [1, 2, 3, 4]
     cv = 2
 
     lr = LogisticRegressionCV(
-        Cs=Cs,
+        Cs=c_values,
         l1_ratios=(0,),  # TODO(1.10): remove with new default of l1_ratios
         scoring=mock_scorer,
         cv=cv,
@@ -522,10 +521,10 @@ def test_logistic_cv_mock_scorer():
     lr.fit(X, y)
 
     # Cs[2] has the highest score (0.8) from MockScorer
-    assert lr.C_ == Cs[2]
+    assert lr.C_ == c_values[2]
 
     # scorer called 8 times (cv*len(Cs))
-    assert mock_scorer.calls == cv * len(Cs)
+    assert mock_scorer.calls == cv * len(c_values)
 
     # reset mock_scorer
     mock_scorer.calls = 0
@@ -660,7 +659,7 @@ def test_multinomial_cv_iris(use_legacy_attributes):
 
     # The cv indices from stratified kfold
     n_cv = 2
-    cv = StratifiedKFold(n_cv)
+    cv = StratifiedKFold(n_cv, shuffle=True, random_state=0)
     precomputed_folds = list(cv.split(X, y))
 
     # Train clf on the original dataset
@@ -756,17 +755,17 @@ def test_multinomial_cv_iris(use_legacy_attributes):
     # Test CV folds with missing class labels:
     # The iris target variable has 3 classes and is ordered such that a simple
     # CV split with 3 folds separates the classes.
-    cv = KFold(n_splits=3)
+    cv_folds = list(KFold(n_splits=3).split(X, y))
     # Check this assumption.
     classes = np.unique(y)
     assert len(classes) == 3
-    for train, test in cv.split(X, y):
+    for train, test in cv_folds:
         assert len(np.unique(y[train])) == 2
         assert len(np.unique(y[test])) == 1
         assert set(y[train]) & set(y[test]) == set()
 
     clf = LogisticRegressionCV(
-        cv=cv,
+        cv=cv_folds,
         use_legacy_attributes=False,
         scoring="accuracy",
     ).fit(X, y)
@@ -777,7 +776,7 @@ def test_multinomial_cv_iris(use_legacy_attributes):
     # We use a proper scoring rule, i.e. the Brier score, to evaluate our classifier.
     # We set small Cs, that is strong penalty as the best C is likely the smallest one.
     clf = LogisticRegressionCV(
-        cv=cv,
+        cv=cv_folds,
         scoring="neg_brier_score",
         Cs=np.logspace(-6, 3, 10),
         use_legacy_attributes=False,
@@ -802,7 +801,7 @@ def test_logistic_cv_folds_with_classes_missing(enable_metadata_routing, n_class
         X = np.arange(2 * n_classes)[:, None]
 
         # Test CV folds have missing class labels.
-        cv = KFold(n_splits=n_classes)
+        cv = KFold(n_splits=n_classes, random_state=0)
         # Check this assumption.
         for train, test in cv.split(X, y):
             assert len(np.unique(y[train])) == n_classes - 1
@@ -1875,7 +1874,7 @@ def test_LogisticRegressionCV_GridSearchCV_elastic_net(n_classes):
         random_state=0,
     )
 
-    cv = StratifiedKFold(5)
+    cv = StratifiedKFold(5, random_state=0)
 
     l1_ratios = np.linspace(0, 1, 3)
     Cs = np.logspace(-4, 4, 3)
@@ -2002,7 +2001,7 @@ def test_LogisticRegressionCV_on_folds():
     ).fit(X, y)
 
     # Reproduce the exact same split as default LogisticRegressionCV.
-    cv = StratifiedKFold(5)
+    cv = StratifiedKFold(5, random_state=42)
     folds = list(cv.split(X, y))
 
     # Some combinations of fold and value of C.
@@ -2303,7 +2302,7 @@ def test_scores_attribute_layout_elasticnet():
     # the third dimension corresponds to l1_ratios.
 
     X, y = make_classification(n_samples=1000, random_state=0)
-    cv = StratifiedKFold(n_splits=5)
+    cv = StratifiedKFold(n_splits=5, random_state=0, shuffle=True)
 
     l1_ratios = [0.1, 0.9]
     Cs = [0.1, 1, 10]
@@ -2650,7 +2649,7 @@ def test_liblinear_multiclass_raises(Estimator):
 @pytest.mark.parametrize("est", [LogisticRegression, LogisticRegressionCV])
 def test_penalty_deprecated(est):
     """Check that penalty in LogisticRegression and *CV is deprecated."""
-    X, y = make_classification(n_classes=2, n_samples=20, n_informative=6)
+    X, y = make_classification(n_classes=2, n_samples=20, n_informative=6, random_state=42)
     lr = est(penalty="l2")
     msg = "'penalty' was deprecated"
     with pytest.warns(FutureWarning, match=msg):
@@ -2659,9 +2658,12 @@ def test_penalty_deprecated(est):
 
 # TODO(1.10): use_legacy_attributes gets deprecated
 def test_logisticregressioncv_warns_with_use_legacy_attributes():
-    X, y = make_classification(n_classes=3, n_samples=50, n_informative=6)
+    X, y = make_classification(
+        n_classes=3, n_samples=50, n_informative=6, random_state=42
+    )
     lr = LogisticRegressionCV(
         scoring="neg_log_loss",  # TODO(1.11): remove because it is default now
+        random_state=42,
     )
     msg = "The default value of use_legacy_attributes will change from True"
     with pytest.warns(FutureWarning, match=msg):
@@ -2673,7 +2675,9 @@ def test_logisticregressioncv_warns_with_use_legacy_attributes():
 @pytest.mark.filterwarnings("ignore:.*default.*use_legacy_attributes.*:FutureWarning")
 def test_l1_ratio_None_deprecated():
     """Check that l1_ratio=None in LogisticRegression is deprecated."""
-    X, y = make_classification(n_classes=2, n_samples=20, n_informative=6)
+    X, y = make_classification(
+        n_classes=2, n_samples=20, n_informative=6, random_state=0
+    )
 
     lr = LogisticRegression(l1_ratio=None)
     msg = "'l1_ratio=None' was deprecated"
@@ -2698,8 +2702,10 @@ def test_l1_ratio_None_deprecated():
 
 # TODO(1.10): remove this test when n_jobs gets removed
 def test_logisticregression_warns_with_n_jobs():
-    X, y = make_classification(n_classes=3, n_samples=50, n_informative=6)
-    lr = LogisticRegression(n_jobs=1)
+    X, y = make_classification(
+        n_classes=3, n_samples=50, n_informative=6, random_state=42
+    )
+    lr = LogisticRegression(n_jobs=1, random_state=42)
     msg = "'n_jobs' has no effect"
     with pytest.warns(FutureWarning, match=msg):
         lr.fit(X, y)
@@ -2844,7 +2850,9 @@ def test_logistic_regression_array_api_compliance(
 def test_lr_penalty_l1ratio_incompatible(penalty, l1_ratio):
     """Check that incompatible penalty and l1_ratio raise a warning."""
     X, y = make_classification(n_samples=20)
-    lr = LogisticRegression(solver="saga", penalty=penalty, l1_ratio=l1_ratio)
+    lr = LogisticRegression(
+        solver="saga", penalty=penalty, l1_ratio=l1_ratio, random_state=42
+    )
     msg = f"Inconsistent values: penalty={penalty} with l1_ratio={l1_ratio}"
     with pytest.warns(UserWarning, match=msg):
         lr.fit(X, y)
@@ -2855,7 +2863,7 @@ def test_lr_penalty_l1ratio_incompatible(penalty, l1_ratio):
 def test_lr_scoring_warns():
     """Check that scoring raises a warning."""
     X, y = make_classification(n_samples=20)
-    lr = LogisticRegressionCV(l1_ratios=[0])
+    lr = LogisticRegressionCV(l1_ratios=[0], random_state=42)
     msg = "The default value of the parameter 'scoring' will change"
     with pytest.warns(FutureWarning, match=msg):
         lr.fit(X, y)
