@@ -1083,7 +1083,7 @@ def test_pickling_built_processors(factory):
 def test_countvectorizer_vocab_sets_when_pickling():
     # ensure that vocabulary of type set is coerced to a list to
     # preserve iteration ordering after deserialization
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
     vocab_words = np.array(
         [
             "beer",
@@ -1109,7 +1109,7 @@ def test_countvectorizer_vocab_sets_when_pickling():
 
 
 def test_countvectorizer_vocab_dicts_when_pickling():
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
     vocab_words = np.array(
         [
             "beer",
@@ -1448,12 +1448,12 @@ def test_callable_analyzer_change_behavior(estimator_class, analyzer, input_type
 def test_callable_analyzer_reraise_error(tmpdir, estimator_cls):
     # check if a custom exception from the analyzer is shown to the user
     def analyzer(doc):
-        raise Exception("testing")
+        raise ValueError("testing")
 
     f = tmpdir.join("file.txt")
     f.write("sample content\n")
 
-    with pytest.raises(Exception, match="testing"):
+    with pytest.raises(ValueError, match="testing"):
         estimator_cls(analyzer=analyzer, input="file").fit_transform([f])
 
 
