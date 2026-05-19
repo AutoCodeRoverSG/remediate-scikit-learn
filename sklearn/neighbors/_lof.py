@@ -292,7 +292,7 @@ class LocalOutlierFactor(KNeighborsMixin, OutlierMixin, NeighborsBase):
             )
         self.n_neighbors_ = max(1, min(self.n_neighbors, n_samples - 1))
 
-        self._distances_fit_X_, _neighbors_indices_fit_X_ = self.kneighbors(
+        self._distances_fit_X_, _neighbors_indices_fit_x_ = self.kneighbors(
             n_neighbors=self.n_neighbors_
         )
 
@@ -303,12 +303,12 @@ class LocalOutlierFactor(KNeighborsMixin, OutlierMixin, NeighborsBase):
             )
 
         self._lrd = self._local_reachability_density(
-            self._distances_fit_X_, _neighbors_indices_fit_X_
+            self._distances_fit_X_, _neighbors_indices_fit_x_
         )
 
         # Compute lof score over training samples to define offset_:
         lrd_ratios_array = (
-            self._lrd[_neighbors_indices_fit_X_] / self._lrd[:, np.newaxis]
+            self._lrd[_neighbors_indices_fit_x_] / self._lrd[:, np.newaxis]
         )
 
         self.negative_outlier_factor_ = -np.mean(lrd_ratios_array, axis=1)
@@ -478,24 +478,24 @@ class LocalOutlierFactor(KNeighborsMixin, OutlierMixin, NeighborsBase):
         check_is_fitted(self)
         X = check_array(X, accept_sparse="csr")
 
-        distances_X, neighbors_indices_X = self.kneighbors(
+        distances_x, neighbors_indices_x = self.kneighbors(
             X, n_neighbors=self.n_neighbors_
         )
 
         if X.dtype == np.float32:
-            distances_X = distances_X.astype(X.dtype, copy=False)
+            distances_x = distances_x.astype(X.dtype, copy=False)
 
-        X_lrd = self._local_reachability_density(
-            distances_X,
-            neighbors_indices_X,
+        x_lrd = self._local_reachability_density(
+            distances_x,
+            neighbors_indices_x,
         )
 
-        lrd_ratios_array = self._lrd[neighbors_indices_X] / X_lrd[:, np.newaxis]
+        lrd_ratios_array = self._lrd[neighbors_indices_x] / x_lrd[:, np.newaxis]
 
         # as bigger is better:
         return -np.mean(lrd_ratios_array, axis=1)
 
-    def _local_reachability_density(self, distances_X, neighbors_indices):
+    def _local_reachability_density(self, distances_x, neighbors_indices):
         """The local reachability density (LRD)
 
         The LRD of a sample is the inverse of the average reachability
@@ -517,7 +517,7 @@ class LocalOutlierFactor(KNeighborsMixin, OutlierMixin, NeighborsBase):
             The local reachability density of each sample.
         """
         dist_k = self._distances_fit_X_[neighbors_indices, self.n_neighbors_ - 1]
-        reach_dist_array = np.maximum(distances_X, dist_k)
+        reach_dist_array = np.maximum(distances_x, dist_k)
 
         # 1e-10 to avoid `nan' when nb of duplicates > n_neighbors_:
         return 1.0 / (np.mean(reach_dist_array, axis=1) + 1e-10)
