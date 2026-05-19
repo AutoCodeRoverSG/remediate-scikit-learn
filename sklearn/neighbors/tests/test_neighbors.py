@@ -381,46 +381,46 @@ def check_precomputed(make_train_test, estimators):
         # TODO: also test radius_neighbors, but requires different assertion
 
         # As a feature matrix (n_samples by n_features)
-        nbrs_X = neighbors.NearestNeighbors(n_neighbors=3)
-        nbrs_X.fit(X)
-        dist_X, ind_X = getattr(nbrs_X, method)(Y)
+        nbrs_x = neighbors.NearestNeighbors(n_neighbors=3)
+        nbrs_x.fit(X)
+        dist_x, ind_x = getattr(nbrs_x, method)(Y)
 
         # As a dense distance matrix (n_samples by n_samples)
-        nbrs_D = neighbors.NearestNeighbors(
+        nbrs_d = neighbors.NearestNeighbors(
             n_neighbors=3, algorithm="brute", metric="precomputed"
         )
-        nbrs_D.fit(DXX)
-        dist_D, ind_D = getattr(nbrs_D, method)(DYX)
-        assert_allclose(dist_X, dist_D)
-        assert_array_equal(ind_X, ind_D)
+        nbrs_d.fit(DXX)
+        dist_d, ind_d = getattr(nbrs_d, method)(DYX)
+        assert_allclose(dist_x, dist_d)
+        assert_array_equal(ind_x, ind_d)
 
         # Check auto works too
-        nbrs_D = neighbors.NearestNeighbors(
+        nbrs_d = neighbors.NearestNeighbors(
             n_neighbors=3, algorithm="auto", metric="precomputed"
         )
-        nbrs_D.fit(DXX)
-        dist_D, ind_D = getattr(nbrs_D, method)(DYX)
-        assert_allclose(dist_X, dist_D)
-        assert_array_equal(ind_X, ind_D)
+        nbrs_d.fit(DXX)
+        dist_d, ind_d = getattr(nbrs_d, method)(DYX)
+        assert_allclose(dist_x, dist_d)
+        assert_array_equal(ind_x, ind_d)
 
         # Check X=None in prediction
-        dist_X, ind_X = getattr(nbrs_X, method)(None)
-        dist_D, ind_D = getattr(nbrs_D, method)(None)
-        assert_allclose(dist_X, dist_D)
-        assert_array_equal(ind_X, ind_D)
+        dist_x, ind_x = getattr(nbrs_x, method)(None)
+        dist_d, ind_d = getattr(nbrs_d, method)(None)
+        assert_allclose(dist_x, dist_d)
+        assert_array_equal(ind_x, ind_d)
 
         # Must raise a ValueError if the matrix is not of correct shape
         with pytest.raises(ValueError):
-            getattr(nbrs_D, method)(X)
+            getattr(nbrs_d, method)(X)
 
     target = np.arange(X.shape[0])
-    for Est in estimators:
-        est = Est(metric="euclidean")
+    for est_class in estimators:
+        est = est_class(metric="euclidean")
         est.radius = est.n_neighbors = 1
-        pred_X = est.fit(X, target).predict(Y)
+        pred_x = est.fit(X, target).predict(Y)
         est.metric = "precomputed"
-        pred_D = est.fit(DXX, target).predict(DYX)
-        assert_allclose(pred_X, pred_D)
+        pred_d = est.fit(DXX, target).predict(DYX)
+        assert_allclose(pred_x, pred_d)
 
 
 def test_precomputed_dense():
@@ -507,8 +507,8 @@ def test_sort_graph_by_row_values(function, csr_container):
     # Test that sort_graph_by_row_values returns a graph sorted by row values
     X = csr_container(np.abs(np.random.RandomState(42).randn(10, 10)))
     assert not _is_sorted_by_data(X)
-    Xt = function(X)
-    assert _is_sorted_by_data(Xt)
+    x_sorted = function(X)
+    assert _is_sorted_by_data(x_sorted)
 
     # test with a different number of nonzero entries for each sample
     mask = np.random.RandomState(42).randint(2, size=(10, 10))
@@ -516,8 +516,8 @@ def test_sort_graph_by_row_values(function, csr_container):
     X[mask == 1] = 0
     X = csr_container(X)
     assert not _is_sorted_by_data(X)
-    Xt = function(X)
-    assert _is_sorted_by_data(Xt)
+    x_sorted = function(X)
+    assert _is_sorted_by_data(x_sorted)
 
 
 @pytest.mark.filterwarnings("ignore:EfficiencyWarning")
