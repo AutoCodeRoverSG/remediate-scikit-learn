@@ -44,10 +44,10 @@ DIMENSION = 3
 METRICS = {
     "euclidean": {},
     "manhattan": {},
-    "minkowski": dict(p=3),
+    "minkowski": {"p": 3},
     "chebyshev": {},
-    "seuclidean": dict(V=rng.random_sample(DIMENSION)),
-    "mahalanobis": dict(V=V_mahalanobis),
+    "seuclidean": {"V": rng.random_sample(DIMENSION)},
+    "mahalanobis": {"V": V_mahalanobis},
 }
 
 KD_TREE_METRICS = ["euclidean", "manhattan", "chebyshev", "minkowski"]
@@ -85,7 +85,7 @@ def brute_force_neighbors(X, Y, k, metric, **kwargs):
     return dist, ind
 
 
-@pytest.mark.parametrize("Cls", [KDTree, BallTree])
+@pytest.mark.parametrize("tree_cls", [KDTree, BallTree])
 @pytest.mark.parametrize(
     "kernel", ["gaussian", "tophat", "epanechnikov", "exponential", "linear", "cosine"]
 )
@@ -94,28 +94,28 @@ def brute_force_neighbors(X, Y, k, metric, **kwargs):
 @pytest.mark.parametrize("atol", [1e-6, 1e-2])
 @pytest.mark.parametrize("breadth_first", [True, False])
 def test_kernel_density(
-    Cls, kernel, h, rtol, atol, breadth_first, n_samples=100, n_features=3
+    tree_cls, kernel, h, rtol, atol, breadth_first, n_samples=100, n_features=3
 ):
     rng = check_random_state(1)
     X = rng.random_sample((n_samples, n_features))
     Y = rng.random_sample((n_samples, n_features))
     dens_true = compute_kernel_slow(Y, X, kernel, h)
 
-    tree = Cls(X, leaf_size=10)
+    tree = tree_cls(X, leaf_size=10)
     dens = tree.kernel_density(
         Y, h, atol=atol, rtol=rtol, kernel=kernel, breadth_first=breadth_first
     )
     assert_allclose(dens, dens_true, atol=atol, rtol=max(rtol, 1e-7))
 
 
-@pytest.mark.parametrize("Cls", [KDTree, BallTree])
-def test_neighbor_tree_query_radius(Cls, n_samples=100, n_features=10):
+@pytest.mark.parametrize("tree_cls", [KDTree, BallTree])
+def test_neighbor_tree_query_radius(tree_cls, n_samples=100, n_features=10):
     rng = check_random_state(0)
     X = 2 * rng.random_sample(size=(n_samples, n_features)) - 1
     query_pt = np.zeros(n_features, dtype=float)
 
     eps = 1e-15  # roundoff error can cause test to fail
-    tree = Cls(X, leaf_size=5)
+    tree = tree_cls(X, leaf_size=5)
     rad = np.sqrt(((X - query_pt) ** 2).sum(1))
 
     for r in np.linspace(rad[0], rad[-1], 100):
@@ -128,14 +128,14 @@ def test_neighbor_tree_query_radius(Cls, n_samples=100, n_features=10):
         assert_array_almost_equal(i, ind)
 
 
-@pytest.mark.parametrize("Cls", [KDTree, BallTree])
-def test_neighbor_tree_query_radius_distance(Cls, n_samples=100, n_features=10):
+@pytest.mark.parametrize("tree_cls", [KDTree, BallTree])
+def test_neighbor_tree_query_radius_distance(tree_cls, n_samples=100, n_features=10):
     rng = check_random_state(0)
     X = 2 * rng.random_sample(size=(n_samples, n_features)) - 1
     query_pt = np.zeros(n_features, dtype=float)
 
     eps = 1e-15  # roundoff error can cause test to fail
-    tree = Cls(X, leaf_size=5)
+    tree = tree_cls(X, leaf_size=5)
     rad = np.sqrt(((X - query_pt) ** 2).sum(1))
 
     for r in np.linspace(rad[0], rad[-1], 100):
@@ -149,14 +149,14 @@ def test_neighbor_tree_query_radius_distance(Cls, n_samples=100, n_features=10):
         assert_array_almost_equal(d, dist)
 
 
-@pytest.mark.parametrize("Cls", [KDTree, BallTree])
+@pytest.mark.parametrize("tree_cls", [KDTree, BallTree])
 @pytest.mark.parametrize("dualtree", (True, False))
-def test_neighbor_tree_two_point(Cls, dualtree, n_samples=100, n_features=3):
+def test_neighbor_tree_two_point(tree_cls, dualtree, n_samples=100, n_features=3):
     rng = check_random_state(0)
     X = rng.random_sample((n_samples, n_features))
     Y = rng.random_sample((n_samples, n_features))
     r = np.linspace(0, 1, 10)
-    tree = Cls(X, leaf_size=10)
+    tree = tree_cls(X, leaf_size=10)
 
     D = DistanceMetric.get_metric("euclidean").pairwise(Y, X)
     counts_true = [(D <= ri).sum() for ri in r]
@@ -165,9 +165,9 @@ def test_neighbor_tree_two_point(Cls, dualtree, n_samples=100, n_features=3):
     assert_array_almost_equal(counts, counts_true)
 
 
-@pytest.mark.parametrize("NeighborsHeap", [NeighborsHeapBT, NeighborsHeapKDT])
-def test_neighbors_heap(NeighborsHeap, n_pts=5, n_nbrs=10):
-    heap = NeighborsHeap(n_pts, n_nbrs)
+@pytest.mark.parametrize("neighbors_heap", [NeighborsHeapBT, NeighborsHeapKDT])
+def test_neighbors_heap(neighbors_heap, n_pts=5, n_nbrs=10):
+    heap = neighbors_heap(n_pts, n_nbrs)
     rng = check_random_state(0)
 
     for row in range(n_pts):
@@ -222,8 +222,8 @@ def test_simultaneous_sort(simultaneous_sort, n_rows=10, n_pts=201):
     assert_array_almost_equal(ind, ind2)
 
 
-@pytest.mark.parametrize("Cls", [KDTree, BallTree])
-def test_gaussian_kde(Cls, n_samples=1000):
+@pytest.mark.parametrize("tree_cls", [KDTree, BallTree])
+def test_gaussian_kde(tree_cls, n_samples=1000):
     # Compare gaussian KDE results to scipy.stats.gaussian_kde
     from scipy.stats import gaussian_kde
 
@@ -232,7 +232,7 @@ def test_gaussian_kde(Cls, n_samples=1000):
     x_out = np.linspace(-5, 5, 30)
 
     for h in [0.01, 0.1, 1]:
-        tree = Cls(x_in[:, None])
+        tree = tree_cls(x_in[:, None])
         gkde = gaussian_kde(x_in, bw_method=h / np.std(x_in))
 
         dens_tree = tree.kernel_density(x_out[:, None], h) / n_samples
@@ -242,7 +242,7 @@ def test_gaussian_kde(Cls, n_samples=1000):
 
 
 @pytest.mark.parametrize(
-    "Cls, metric",
+    "tree_cls, metric",
     itertools.chain(
         [(KDTree, metric) for metric in KD_TREE_METRICS],
         [(BallTree, metric) for metric in BALL_TREE_METRICS],
@@ -251,14 +251,14 @@ def test_gaussian_kde(Cls, n_samples=1000):
 @pytest.mark.parametrize("k", (1, 3, 5))
 @pytest.mark.parametrize("dualtree", (True, False))
 @pytest.mark.parametrize("breadth_first", (True, False))
-def test_nn_tree_query(Cls, metric, k, dualtree, breadth_first):
+def test_nn_tree_query(tree_cls, metric, k, dualtree, breadth_first):
     rng = check_random_state(0)
     X = rng.random_sample((40, DIMENSION))
     Y = rng.random_sample((10, DIMENSION))
 
     kwargs = METRICS[metric]
 
-    kdt = Cls(X, leaf_size=1, metric=metric, **kwargs)
+    kdt = tree_cls(X, leaf_size=1, metric=metric, **kwargs)
     dist1, ind1 = kdt.query(Y, k, dualtree=dualtree, breadth_first=breadth_first)
     dist2, ind2 = brute_force_neighbors(X, Y, k, metric, **kwargs)
 
