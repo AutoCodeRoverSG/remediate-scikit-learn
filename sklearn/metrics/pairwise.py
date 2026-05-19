@@ -539,10 +539,10 @@ def nan_euclidean_distances(
     distances = euclidean_distances(X, Y, squared=True)
 
     # Adjust distances for missing values
-    XX = X * X
-    YY = Y * Y
-    distances -= np.dot(XX, missing_y.T)
-    distances -= np.dot(missing_x, YY.T)
+    xx = X * X
+    yy = Y * Y
+    distances -= np.dot(xx, missing_y.T)
+    distances -= np.dot(missing_x, yy.T)
 
     np.clip(distances, 0, None, out=distances)
 
@@ -576,11 +576,11 @@ def _euclidean_distances_upcast(X, xx=None, Y=None, yy=None, batch_size=None):
     memory increase by approximately 10% (at least 10MiB).
     """
     xp, _, device_ = get_namespace_and_device(X, Y)
-    n_samples_X = X.shape[0]
-    n_samples_Y = Y.shape[0]
+    n_samples_x = X.shape[0]
+    n_samples_y = Y.shape[0]
     n_features = X.shape[1]
 
-    distances = xp.empty((n_samples_X, n_samples_Y), dtype=xp.float32, device=device_)
+    distances = xp.empty((n_samples_x, n_samples_y), dtype=xp.float32, device=device_)
 
     if batch_size is None:
         x_density = X.nnz / np.prod(X.shape) if issparse(X) else 1
@@ -590,8 +590,8 @@ def _euclidean_distances_upcast(X, xx=None, Y=None, yy=None, batch_size=None):
         # least 10MiB)
         maxmem = max(
             (
-                (x_density * n_samples_X + y_density * n_samples_Y) * n_features
-                + (x_density * n_samples_X * y_density * n_samples_Y)
+                (x_density * n_samples_x + y_density * n_samples_y) * n_features
+                + (x_density * n_samples_x * y_density * n_samples_y)
             )
             / 10,
             10 * 2**17,
@@ -607,16 +607,16 @@ def _euclidean_distances_upcast(X, xx=None, Y=None, yy=None, batch_size=None):
         batch_size = (-tmp + math.sqrt(tmp**2 + 4 * maxmem)) / 2
         batch_size = max(int(batch_size), 1)
 
-    x_batches = gen_batches(n_samples_X, batch_size)
+    x_batches = gen_batches(n_samples_x, batch_size)
     xp_max_float = _max_precision_float_dtype(xp=xp, device=device_)
     for i, x_slice in enumerate(x_batches):
-        X_chunk = xp.astype(X[x_slice, :], xp_max_float)
+        x_chunk = xp.astype(X[x_slice, :], xp_max_float)
         if xx is None:
-            xx_chunk = row_norms(X_chunk, squared=True)[:, None]
+            xx_chunk = row_norms(x_chunk, squared=True)[:, None]
         else:
             xx_chunk = xx[x_slice]
 
-        y_batches = gen_batches(n_samples_Y, batch_size)
+        y_batches = gen_batches(n_samples_y, batch_size)
 
         for j, y_slice in enumerate(y_batches):
             if X is Y and j < i:
@@ -625,13 +625,13 @@ def _euclidean_distances_upcast(X, xx=None, Y=None, yy=None, batch_size=None):
                 d = distances[y_slice, x_slice].T
 
             else:
-                Y_chunk = xp.astype(Y[y_slice, :], xp_max_float)
+                y_chunk = xp.astype(Y[y_slice, :], xp_max_float)
                 if yy is None:
-                    yy_chunk = row_norms(Y_chunk, squared=True)[None, :]
+                    yy_chunk = row_norms(y_chunk, squared=True)[None, :]
                 else:
                     yy_chunk = yy[:, y_slice]
 
-                d = -2 * safe_sparse_dot(X_chunk, Y_chunk.T, dense_output=True)
+                d = -2 * safe_sparse_dot(x_chunk, y_chunk.T, dense_output=True)
                 d += xx_chunk
                 d += yy_chunk
 
@@ -1116,12 +1116,12 @@ def manhattan_distances(X, Y=None):
     batch_size = 1024
     for i in range(0, n_x, batch_size):
         i_end = min(i + batch_size, n_x)
-        batch_X = X[i:i_end, ...]
+        batch_x = X[i:i_end, ...]
         for j in range(0, n_y, batch_size):
             j_end = min(j + batch_size, n_y)
-            batch_Y = Y[j:j_end, ...]
+            batch_y = Y[j:j_end, ...]
             block_dist = xp.sum(
-                xp.abs(batch_X[:, None, :] - batch_Y[None, :, :]), axis=2
+                xp.abs(batch_x[:, None, :] - batch_y[None, :, :]), axis=2
             )
             out[i:i_end, j:j_end] = block_dist
 
@@ -1743,13 +1743,13 @@ def cosine_similarity(X, Y=None, dense_output=True):
     """
     X, Y = check_pairwise_arrays(X, Y)
 
-    X_normalized = normalize(X, copy=True)
+    x_normalized = normalize(X, copy=True)
     if X is Y:
-        Y_normalized = X_normalized
+        y_normalized = x_normalized
     else:
-        Y_normalized = normalize(Y, copy=True)
+        y_normalized = normalize(Y, copy=True)
 
-    K = safe_sparse_dot(X_normalized, Y_normalized.T, dense_output=dense_output)
+    K = safe_sparse_dot(x_normalized, y_normalized.T, dense_output=dense_output)
 
     return _align_api_if_sparse(K)
 
