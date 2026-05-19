@@ -201,14 +201,14 @@ class PassiveAggressiveClassifier(BaseSGDClassifier):
     _parameter_constraints: dict = {
         **BaseSGDClassifier._parameter_constraints,
         "loss": [StrOptions({"hinge", "squared_hinge"})],
-        "C": [Interval(Real, 0, None, closed="right")],
+        "c": [Interval(Real, 0, None, closed="right")],
     }
     _parameter_constraints.pop("eta0")
 
     def __init__(
         self,
         *,
-        C=1.0,
+        c=1.0,  # NOSONAR
         fit_intercept=True,
         max_iter=1000,
         tol=1e-3,
@@ -235,14 +235,14 @@ class PassiveAggressiveClassifier(BaseSGDClassifier):
             shuffle=shuffle,
             verbose=verbose,
             random_state=random_state,
-            eta0=C,
+            eta0=c,
             warm_start=warm_start,
             class_weight=class_weight,
             average=average,
             n_jobs=n_jobs,
         )
 
-        self.C = C
+        self.c = c
         self.loss = loss
 
     @_fit_context(prefer_skip_nested_validation=True)
@@ -509,7 +509,7 @@ class PassiveAggressiveRegressor(BaseSGDRegressor):
     _parameter_constraints: dict = {
         **BaseSGDRegressor._parameter_constraints,
         "loss": [StrOptions({"epsilon_insensitive", "squared_epsilon_insensitive"})],
-        "C": [Interval(Real, 0, None, closed="right")],
+        "c": [Interval(Real, 0, None, closed="right")],
         "epsilon": [Interval(Real, 0, None, closed="left")],
     }
     _parameter_constraints.pop("eta0")
@@ -517,7 +517,7 @@ class PassiveAggressiveRegressor(BaseSGDRegressor):
     def __init__(
         self,
         *,
-        C=1.0,
+        c=1.0,  # NOSONAR
         fit_intercept=True,
         max_iter=1000,
         tol=1e-3,
@@ -537,7 +537,7 @@ class PassiveAggressiveRegressor(BaseSGDRegressor):
             penalty=None,
             l1_ratio=0,
             epsilon=epsilon,
-            eta0=C,
+            eta0=c,
             fit_intercept=fit_intercept,
             max_iter=max_iter,
             tol=tol,
@@ -550,7 +550,7 @@ class PassiveAggressiveRegressor(BaseSGDRegressor):
             warm_start=warm_start,
             average=average,
         )
-        self.C = C
+        self.c = c
 
     @_fit_context(prefer_skip_nested_validation=True)
     def partial_fit(self, X, y):

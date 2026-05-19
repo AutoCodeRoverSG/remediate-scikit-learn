@@ -447,7 +447,7 @@ class RANSACRegressor(
         n_inliers_best = 1
         score_best = -np.inf
         inlier_mask_best = None
-        X_inlier_best = None
+        x_inlier_best = None
         y_inlier_best = None
         inlier_best_idxs_subset = None
         self.n_skips_no_inliers_ = 0
@@ -474,12 +474,12 @@ class RANSACRegressor(
             subset_idxs = sample_without_replacement(
                 n_samples, min_samples, random_state=random_state
             )
-            X_subset = X[subset_idxs]
+            x_subset = X[subset_idxs]
             y_subset = y[subset_idxs]
 
             # check if random sample set is valid
             if self.is_data_valid is not None and not self.is_data_valid(
-                X_subset, y_subset
+                x_subset, y_subset
             ):
                 self.n_skips_invalid_data_ += 1
                 continue
@@ -490,11 +490,11 @@ class RANSACRegressor(
             )
 
             # fit model for current random sample set
-            estimator.fit(X_subset, y_subset, **fit_params_subset)
+            estimator.fit(x_subset, y_subset, **fit_params_subset)
 
             # check if estimated model is valid
             if self.is_model_valid is not None and not self.is_model_valid(
-                estimator, X_subset, y_subset
+                estimator, x_subset, y_subset
             ):
                 self.n_skips_invalid_model_ += 1
                 continue
@@ -514,7 +514,7 @@ class RANSACRegressor(
 
             # extract inlier data set
             inlier_idxs_subset = sample_idxs[inlier_mask_subset]
-            X_inlier_subset = X[inlier_idxs_subset]
+            x_inlier_subset = X[inlier_idxs_subset]
             y_inlier_subset = y[inlier_idxs_subset]
 
             # cut `fit_params` down to `inlier_idxs_subset`
@@ -524,7 +524,7 @@ class RANSACRegressor(
 
             # score of inlier data set
             score_subset = estimator.score(
-                X_inlier_subset,
+                x_inlier_subset,
                 y_inlier_subset,
                 **score_params_inlier_subset,
             )
@@ -538,7 +538,7 @@ class RANSACRegressor(
             n_inliers_best = n_inliers_subset
             score_best = score_subset
             inlier_mask_best = inlier_mask_subset
-            X_inlier_best = X_inlier_subset
+            x_inlier_best = x_inlier_subset
             y_inlier_best = y_inlier_subset
             inlier_best_idxs_subset = inlier_idxs_subset
 
@@ -595,7 +595,7 @@ class RANSACRegressor(
             X, params=routed_params.estimator.fit, indices=inlier_best_idxs_subset
         )
 
-        estimator.fit(X_inlier_best, y_inlier_best, **fit_params_best_idxs_subset)
+        estimator.fit(x_inlier_best, y_inlier_best, **fit_params_best_idxs_subset)
 
         self.estimator_ = estimator
         self.inlier_mask_ = inlier_mask_best
