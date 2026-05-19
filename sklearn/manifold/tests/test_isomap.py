@@ -57,13 +57,13 @@ def test_isomap_simple_grid(
     clf.fit(X)
 
     if n_neighbors is not None:
-        G_iso = neighbors.kneighbors_graph(clf.embedding_, n_neighbors, mode="distance")
+        g_iso = neighbors.kneighbors_graph(clf.embedding_, n_neighbors, mode="distance")
     else:
-        G_iso = neighbors.radius_neighbors_graph(
+        g_iso = neighbors.radius_neighbors_graph(
             clf.embedding_, radius, mode="distance"
         )
     atol = 1e-5 if global_dtype == np.float32 else 0
-    assert_allclose_dense_sparse(G, G_iso, atol=atol)
+    assert_allclose_dense_sparse(G, g_iso, atol=atol)
 
 
 @pytest.mark.parametrize("n_neighbors, radius", [(24, None), (None, np.inf)])
@@ -101,16 +101,16 @@ def test_isomap_reconstruction_error(
 
     # compute output kernel
     if n_neighbors is not None:
-        G_iso = neighbors.kneighbors_graph(clf.embedding_, n_neighbors, mode="distance")
+        g_iso = neighbors.kneighbors_graph(clf.embedding_, n_neighbors, mode="distance")
     else:
-        G_iso = neighbors.radius_neighbors_graph(
+        g_iso = neighbors.radius_neighbors_graph(
             clf.embedding_, radius, mode="distance"
         )
-    G_iso = G_iso.toarray()
-    K_iso = centerer.fit_transform(-0.5 * G_iso**2)
+    g_iso = g_iso.toarray()
+    k_iso = centerer.fit_transform(-0.5 * g_iso**2)
 
     # make sure error agrees
-    reconstruction_error = np.linalg.norm(K - K_iso) / n_pts
+    reconstruction_error = np.linalg.norm(K - k_iso) / n_pts
     atol = 1e-5 if global_dtype == np.float32 else 0
     assert_allclose(reconstruction_error, clf.reconstruction_error(), atol=atol)
 
@@ -122,7 +122,7 @@ def test_transform(global_dtype, n_neighbors, radius):
     noise_scale = 0.01
 
     # Create S-curve dataset
-    X, y = datasets.make_s_curve(n_samples, random_state=0)
+    X, _ = datasets.make_s_curve(n_samples, random_state=0)
 
     X = X.astype(global_dtype, copy=False)
 
@@ -130,15 +130,15 @@ def test_transform(global_dtype, n_neighbors, radius):
     iso = manifold.Isomap(
         n_components=n_components, n_neighbors=n_neighbors, radius=radius
     )
-    X_iso = iso.fit_transform(X)
+    x_iso = iso.fit_transform(X)
 
     # Re-embed a noisy version of the points
     rng = np.random.RandomState(0)
     noise = noise_scale * rng.randn(*X.shape)
-    X_iso2 = iso.transform(X + noise)
+    x_iso2 = iso.transform(X + noise)
 
     # Make sure the rms error on re-embedding is comparable to noise_scale
-    assert np.sqrt(np.mean((X_iso - X_iso2) ** 2)) < 2 * noise_scale
+    assert np.sqrt(np.mean((x_iso - x_iso2) ** 2)) < 2 * noise_scale
 
 
 @pytest.mark.parametrize("n_neighbors, radius", [(2, None), (None, 10.0)])
@@ -152,7 +152,8 @@ def test_pipeline(n_neighbors, radius, global_dtype):
         [
             ("isomap", manifold.Isomap(n_neighbors=n_neighbors, radius=radius)),
             ("clf", neighbors.KNeighborsClassifier()),
-        ]
+        ],
+        memory=None,
     )
     clf.fit(X, y)
     assert 0.9 < clf.score(X, y)
@@ -176,18 +177,19 @@ def test_pipeline_with_nearest_neighbors_transformer(global_dtype):
             n_neighbors=n_neighbors, algorithm=algorithm, mode="distance"
         ),
         manifold.Isomap(n_neighbors=n_neighbors, metric="precomputed"),
+        memory=None,
     )
     est_compact = manifold.Isomap(
         n_neighbors=n_neighbors, neighbors_algorithm=algorithm
     )
 
-    Xt_chain = est_chain.fit_transform(X)
-    Xt_compact = est_compact.fit_transform(X)
-    assert_allclose(Xt_chain, Xt_compact)
+    xt_chain = est_chain.fit_transform(X)
+    xt_compact = est_compact.fit_transform(X)
+    assert_allclose(xt_chain, xt_compact)
 
-    Xt_chain = est_chain.transform(X2)
-    Xt_compact = est_compact.transform(X2)
-    assert_allclose(Xt_chain, Xt_compact)
+    xt_chain = est_chain.transform(X2)
+    xt_compact = est_compact.transform(X2)
+    assert_allclose(xt_chain, xt_compact)
 
 
 @pytest.mark.parametrize(
