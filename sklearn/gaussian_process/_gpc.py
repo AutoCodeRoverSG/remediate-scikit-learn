@@ -157,7 +157,7 @@ class _BinaryGaussianProcessClassifierLaplace(BaseEstimator):
         n_restarts_optimizer=0,
         max_iter_predict=100,
         warm_start=False,
-        copy_X_train=True,
+        copy_X_train=True,  # NOSONAR
         random_state=None,
     ):
         self.kernel = kernel
@@ -239,7 +239,7 @@ class _BinaryGaussianProcessClassifierLaplace(BaseEstimator):
                         "requires that all bounds are finite."
                     )
                 bounds = self.kernel_.bounds
-                for iteration in range(self.n_restarts_optimizer):
+                for _ in range(self.n_restarts_optimizer):
                     theta_initial = np.exp(self.rng.uniform(bounds[:, 0], bounds[:, 1]))
                     optima.append(
                         self._constrained_optimization(obj_func, theta_initial, bounds)
@@ -284,8 +284,8 @@ class _BinaryGaussianProcessClassifierLaplace(BaseEstimator):
         # As discussed on Section 3.4.2 of GPML, for making hard binary
         # decisions, it is enough to compute the MAP of the posterior and
         # pass it through the link function
-        K_star = self.kernel_(self.X_train_, X)  # K_star =k(x_star)
-        f_star = K_star.T.dot(self.y_train_ - self.pi_)  # Algorithm 3.2,Line 4
+        k_star = self.kernel_(self.X_train_, X)  # K_star =k(x_star)
+        f_star = k_star.T.dot(self.y_train_ - self.pi_)  # Algorithm 3.2,Line 4
 
         return np.where(f_star > 0, self.classes_[1], self.classes_[0])
 
@@ -372,22 +372,22 @@ class _BinaryGaussianProcessClassifierLaplace(BaseEstimator):
             kernel.theta = theta
 
         if eval_gradient:
-            K, K_gradient = kernel(self.X_train_, eval_gradient=True)
+            K, k_gradient = kernel(self.X_train_, eval_gradient=True)
         else:
             K = kernel(self.X_train_)
 
         # Compute log-marginal-likelihood Z and also store some temporaries
         # which can be reused for computing Z's gradient
-        Z, (pi, W_sr, L, b, a) = self._posterior_mode(K, return_temporaries=True)
+        Z, (pi, w_sr, L, b, a) = self._posterior_mode(K, return_temporaries=True)
 
         if not eval_gradient:
             return Z
 
         # Compute gradient based on Algorithm 5.1 of GPML
-        d_Z = np.empty(theta.shape[0])
+        d_z = np.empty(theta.shape[0])
         # XXX: Get rid of the np.diag() in the next line
-        R = W_sr[:, np.newaxis] * cho_solve((L, True), np.diag(W_sr))  # Line 7
-        C = solve(L, W_sr[:, np.newaxis] * K)  # Line 8
+        R = w_sr[:, np.newaxis] * cho_solve((L, True), np.diag(w_sr))  # Line 7
+        C = solve(L, w_sr[:, np.newaxis] * K)  # Line 8
         # Line 9: (use einsum to compute np.diag(C.T.dot(C))))
         s_2 = (
             -0.5
@@ -395,17 +395,17 @@ class _BinaryGaussianProcessClassifierLaplace(BaseEstimator):
             * (pi * (1 - pi) * (1 - 2 * pi))
         )  # third derivative
 
-        for j in range(d_Z.shape[0]):
-            C = K_gradient[:, :, j]  # Line 11
+        for j in range(d_z.shape[0]):
+            C = k_gradient[:, :, j]  # Line 11
             # Line 12: (R.T.ravel().dot(C.ravel()) = np.trace(R.dot(C)))
             s_1 = 0.5 * a.T.dot(C).dot(a) - 0.5 * R.T.ravel().dot(C.ravel())
 
             b = C.dot(self.y_train_ - pi)  # Line 13
             s_3 = b - K.dot(R.dot(b))  # Line 14
 
-            d_Z[j] = s_1 + s_2.T.dot(s_3)  # Line 15
+            d_z[j] = s_1 + s_2.T.dot(s_3)  # Line 15
 
-        return Z, d_Z
+        return Z, d_z
 
     def latent_mean_and_variance(self, X):
         """Compute the mean and variance of the latent function values.
@@ -432,15 +432,15 @@ class _BinaryGaussianProcessClassifierLaplace(BaseEstimator):
         check_is_fitted(self)
 
         # Based on Algorithm 3.2 of GPML
-        K_star = self.kernel_(self.X_train_, X)  # K_star =k(x_star)
-        latent_mean = K_star.T.dot(self.y_train_ - self.pi_)  # Line 4
-        v = solve(self.L_, self.W_sr_[:, np.newaxis] * K_star)  # Line 5
+        k_star = self.kernel_(self.X_train_, X)  # K_star =k(x_star)
+        latent_mean = k_star.T.dot(self.y_train_ - self.pi_)  # Line 4
+        v = solve(self.L_, self.W_sr_[:, np.newaxis] * k_star)  # Line 5
         # Line 6 (compute np.diag(v.T.dot(v)) via einsum)
         latent_var = self.kernel_.diag(X) - np.einsum("ij,ij->j", v, v)
 
         return latent_mean, latent_var
 
-    def _posterior_mode(self, K, return_temporaries=False):
+    def _posterior_mode(self, kernel_matrix, return_temporaries=False):
         """Mode-finding for binary Laplace GPC and fixed kernel.
 
         This approximates the posterior of the latent function values for given
@@ -467,16 +467,16 @@ class _BinaryGaussianProcessClassifierLaplace(BaseEstimator):
             pi = expit(f)
             W = pi * (1 - pi)
             # Line 5
-            W_sr = np.sqrt(W)
-            W_sr_K = W_sr[:, np.newaxis] * K
-            B = np.eye(W.shape[0]) + W_sr_K * W_sr
+            w_sr = np.sqrt(W)
+            w_sr_k = w_sr[:, np.newaxis] * kernel_matrix
+            B = np.eye(W.shape[0]) + w_sr_k * w_sr
             L = cholesky(B, lower=True)
             # Line 6
             b = W * f + (self.y_train_ - pi)
             # Line 7
-            a = b - W_sr * cho_solve((L, True), W_sr_K.dot(b))
+            a = b - w_sr * cho_solve((L, True), w_sr_k.dot(b))
             # Line 8
-            f = K.dot(a)
+            f = kernel_matrix.dot(a)
 
             # Line 10: Compute log marginal likelihood in loop and use as
             #          convergence criterion
@@ -494,7 +494,7 @@ class _BinaryGaussianProcessClassifierLaplace(BaseEstimator):
 
         self.f_cached = f  # Remember solution for later warm-starts
         if return_temporaries:
-            return log_marginal_likelihood, (pi, W_sr, L, b, a)
+            return log_marginal_likelihood, (pi, w_sr, L, b, a)
         else:
             return log_marginal_likelihood
 
