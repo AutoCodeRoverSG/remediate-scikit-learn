@@ -1285,12 +1285,12 @@ def test_missing_indicator_sparse_param(arr_type, missing_values, param_sparse):
 def test_missing_indicator_string():
     X = np.array([["a", "b", "c"], ["b", "c", "a"]], dtype=object)
     indicator = MissingIndicator(missing_values="a", features="all")
-    X_trans = indicator.fit_transform(X)
-    assert_array_equal(X_trans, np.array([[True, False, False], [False, False, True]]))
+    x_trans = indicator.fit_transform(X)
+    assert_array_equal(x_trans, np.array([[True, False, False], [False, False, True]]))
 
 
 @pytest.mark.parametrize(
-    "X, missing_values, X_trans_exp",
+    "X, missing_values, x_trans_exp",
     [
         (
             np.array([["a", "b"], ["b", "a"]], dtype=object),
@@ -1314,13 +1314,13 @@ def test_missing_indicator_string():
         ),
     ],
 )
-def test_missing_indicator_with_imputer(X, missing_values, X_trans_exp):
+def test_missing_indicator_with_imputer(X, missing_values, x_trans_exp):
     trans = make_union(
         SimpleImputer(missing_values=missing_values, strategy="most_frequent"),
         MissingIndicator(missing_values=missing_values),
     )
-    X_trans = trans.fit_transform(X)
-    assert_array_equal(X_trans, X_trans_exp)
+    x_trans = trans.fit_transform(X)
+    assert_array_equal(x_trans, x_trans_exp)
 
 
 @pytest.mark.parametrize("imputer_constructor", [SimpleImputer, IterativeImputer])
@@ -1352,9 +1352,9 @@ def test_missing_indicator_no_missing():
     X = np.array([[1, 1], [1, 1]])
 
     mi = MissingIndicator(features="missing-only", missing_values=-1)
-    Xt = mi.fit_transform(X)
+    x_t = mi.fit_transform(X)
 
-    assert Xt.shape[1] == 0
+    assert x_t.shape[1] == 0
 
 
 @pytest.mark.parametrize("csr_container", CSR_CONTAINERS)
@@ -1364,9 +1364,9 @@ def test_missing_indicator_sparse_no_explicit_zeros(csr_container):
     X = csr_container([[0, 1, 2], [1, 2, 0], [2, 0, 1]])
 
     mi = MissingIndicator(features="all", missing_values=1)
-    Xt = mi.fit_transform(X)
+    x_t = mi.fit_transform(X)
 
-    assert Xt.nnz == Xt.sum()
+    assert x_t.nnz == x_t.sum()
 
 
 @pytest.mark.parametrize("imputer_constructor", [SimpleImputer, IterativeImputer])
@@ -1383,8 +1383,8 @@ def test_imputer_without_indicator(imputer_constructor):
     CSC_CONTAINERS + CSR_CONTAINERS + COO_CONTAINERS + LIL_CONTAINERS + BSR_CONTAINERS,
 )
 def test_simple_imputation_add_indicator_sparse_matrix(arr_type):
-    X_sparse = arr_type([[np.nan, 1, 5], [2, np.nan, 1], [6, 3, np.nan], [1, 2, 9]])
-    X_true = np.array(
+    x_sparse = arr_type([[np.nan, 1, 5], [2, np.nan, 1], [6, 3, np.nan], [1, 2, 9]])
+    x_true = np.array(
         [
             [3.0, 1.0, 5.0, 1.0, 0.0, 0.0],
             [2.0, 2.0, 1.0, 0.0, 1.0, 0.0],
@@ -1394,11 +1394,11 @@ def test_simple_imputation_add_indicator_sparse_matrix(arr_type):
     )
 
     imputer = SimpleImputer(missing_values=np.nan, add_indicator=True)
-    X_trans = imputer.fit_transform(X_sparse)
+    x_trans = imputer.fit_transform(x_sparse)
 
-    assert sparse.issparse(X_trans)
-    assert X_trans.shape == X_true.shape
-    assert_allclose(X_trans.toarray(), X_true)
+    assert sparse.issparse(x_trans)
+    assert x_trans.shape == x_true.shape
+    assert_allclose(x_trans.toarray(), x_true)
 
 
 @pytest.mark.parametrize(
@@ -1407,12 +1407,12 @@ def test_simple_imputation_add_indicator_sparse_matrix(arr_type):
 def test_simple_imputation_string_list(strategy, expected):
     X = [["a", "b"], ["c", np.nan]]
 
-    X_true = np.array([["a", "b"], ["c", expected]], dtype=object)
+    x_true = np.array([["a", "b"], ["c", expected]], dtype=object)
 
     imputer = SimpleImputer(strategy=strategy)
-    X_trans = imputer.fit_transform(X)
+    x_trans = imputer.fit_transform(X)
 
-    assert_array_equal(X_trans, X_true)
+    assert_array_equal(x_trans, x_true)
 
 
 @pytest.mark.parametrize(
