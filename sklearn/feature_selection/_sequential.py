@@ -316,10 +316,10 @@ class SequentialFeatureSelector(SelectorMixin, MetaEstimatorMixin, BaseEstimator
             candidate_mask[feature_idx] = True
             if self.direction == "backward":
                 candidate_mask = ~candidate_mask
-            X_new = X[:, candidate_mask]
+            x_new = X[:, candidate_mask]
             scores[feature_idx] = cross_val_score(
                 estimator,
-                X_new,
+                x_new,
                 y,
                 cv=cv,
                 scoring=self.scoring,

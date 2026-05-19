@@ -770,7 +770,7 @@ class RFECV(RFE):
         "n_jobs": [None, Integral],
     }
     _parameter_constraints.pop("n_features_to_select")
-    __metadata_request__fit = {"groups": metadata_routing.UNUSED}
+    _metadata_request__fit = {"groups": metadata_routing.UNUSED}
 
     def __init__(
         self,

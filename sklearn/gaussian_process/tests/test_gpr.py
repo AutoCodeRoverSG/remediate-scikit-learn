@@ -830,9 +830,9 @@ def test_n_targets_error():
     """Check that an error is raised when the number of targets seen at fit is
     inconsistent with n_targets.
     """
-    rng = np.random.RandomState(0)
-    X = rng.randn(10, 3)
-    y = rng.randn(10, 2)
+    rng = np.random.default_rng(0)
+    X = rng.standard_normal((10, 3))
+    y = rng.standard_normal((10, 2))
 
     model = GaussianProcessRegressor(n_targets=1)
     with pytest.raises(ValueError, match="The number of targets seen in `y`"):

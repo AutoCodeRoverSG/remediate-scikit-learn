@@ -26,6 +26,11 @@ from sklearn.utils.validation import (
 )
 
 
+_PREFIT_ESTIMATOR_EXPECTED_MSG = (
+    "When `prefit=True`, `estimator` is expected to be a fitted estimator."
+)
+
+
 def _calculate_threshold(estimator, importances, threshold):
     """Interpret the threshold value"""
 
@@ -281,8 +286,7 @@ class SelectFromModel(MetaEstimatorMixin, SelectorMixin, BaseEstimator):
                 check_is_fitted(self.estimator)
             except NotFittedError as exc:
                 raise NotFittedError(
-                    "When `prefit=True`, `estimator` is expected to be a fitted "
-                    "estimator."
+                    _PREFIT_ESTIMATOR_EXPECTED_MSG
                 ) from exc
         if callable(max_features):
             # This branch is executed when `transform` is called directly and thus
@@ -370,8 +374,7 @@ class SelectFromModel(MetaEstimatorMixin, SelectorMixin, BaseEstimator):
                 check_is_fitted(self.estimator)
             except NotFittedError as exc:
                 raise NotFittedError(
-                    "When `prefit=True`, `estimator` is expected to be a fitted "
-                    "estimator."
+                    _PREFIT_ESTIMATOR_EXPECTED_MSG
                 ) from exc
             self.estimator_ = deepcopy(self.estimator)
         else:
@@ -451,8 +454,7 @@ class SelectFromModel(MetaEstimatorMixin, SelectorMixin, BaseEstimator):
                     check_is_fitted(self.estimator)
                 except NotFittedError as exc:
                     raise NotFittedError(
-                        "When `prefit=True`, `estimator` is expected to be a fitted "
-                        "estimator."
+                        _PREFIT_ESTIMATOR_EXPECTED_MSG
                     ) from exc
                 self.estimator_ = deepcopy(self.estimator)
             return self

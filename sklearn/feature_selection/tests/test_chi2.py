@@ -31,7 +31,6 @@ def test_chi2(csr_container):
     # Test Chi2 feature extraction
 
     chi2 = mkchi2(k=1).fit(X, y)
-    chi2 = mkchi2(k=1).fit(X, y)
     assert_array_equal(chi2.get_support(indices=True), [0])
     assert_array_equal(chi2.transform(X), np.array(X)[:, [0]])
 
