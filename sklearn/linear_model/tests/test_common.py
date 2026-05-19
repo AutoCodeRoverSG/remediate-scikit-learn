@@ -122,14 +122,16 @@ def test_balance_property(model, with_sample_weight, global_random_seed):
     elif hasattr(model, "solver") and model.solver == "saga":
         rel = 1e-2
 
-    rng = np.random.RandomState(global_random_seed)
+    rng = np.random.default_rng(global_random_seed)
     n_train, n_features, n_targets = 100, 10, None
     if isinstance(
         model,
         (MultiTaskElasticNet, MultiTaskElasticNetCV, MultiTaskLasso, MultiTaskLassoCV),
     ):
         n_targets = 3
-    X = make_low_rank_matrix(n_samples=n_train, n_features=n_features, random_state=rng)
+    X = make_low_rank_matrix(
+        n_samples=n_train, n_features=n_features, random_state=global_random_seed
+    )
     if n_targets:
         coef = (
             rng.uniform(low=-2, high=2, size=(n_features, n_targets))
@@ -168,7 +170,7 @@ def test_balance_property(model, with_sample_weight, global_random_seed):
 @pytest.mark.filterwarnings("ignore:lbfgs failed to converge")
 @pytest.mark.filterwarnings("ignore:A column-vector y was passed when a 1d array.*")
 @pytest.mark.parametrize(
-    "Regressor",
+    "regressor_cls",
     [
         ARDRegression,
         BayesianRidge,
@@ -197,23 +199,23 @@ def test_balance_property(model, with_sample_weight, global_random_seed):
     ],
 )
 @pytest.mark.parametrize("ndim", [1, 2])
-def test_linear_model_regressor_coef_shape(Regressor, ndim):
+def test_linear_model_regressor_coef_shape(regressor_cls, ndim):
     """Check the consistency of linear models `coef` shape."""
-    if Regressor is LinearRegression:
+    if regressor_cls is LinearRegression:
         pytest.xfail("LinearRegression does not follow `coef_` shape contract!")
 
     X, y = make_regression(random_state=0, n_samples=200, n_features=20)
     y = MinMaxScaler().fit_transform(y.reshape(-1, 1))[:, 0] + 1
     y = y[:, np.newaxis] if ndim == 2 else y
 
-    regressor = Regressor()
-    set_random_state(regressor)
+    regressor = regressor_cls()
+    set_random_state(regressor, random_state=0)
     regressor.fit(X, y)
     assert regressor.coef_.shape == (X.shape[1],)
 
 
 @pytest.mark.parametrize(
-    ["Classifier", "params"],
+    ["classifier_class", "params"],
     [
         (LinearSVC, {}),
         (LogisticRegression, {}),
@@ -234,22 +236,24 @@ def test_linear_model_regressor_coef_shape(Regressor, ndim):
     ],
 )
 @pytest.mark.parametrize("n_classes", [2, 3])
-def test_linear_model_classifier_coef_shape(Classifier, params, n_classes):
-    if Classifier in (RidgeClassifier, RidgeClassifierCV):
-        pytest.xfail(f"{Classifier} does not follow `coef_` shape contract!")
+def test_linear_model_classifier_coef_shape(classifier_class, params, n_classes):
+    if classifier_class in (RidgeClassifier, RidgeClassifierCV):
+        pytest.xfail(
+            f"{classifier_class} does not follow `coef_` shape contract!"
+        )
 
     X, y = make_classification(n_informative=10, n_classes=n_classes, random_state=0)
     n_features = X.shape[1]
 
-    classifier = Classifier(**params)
-    set_random_state(classifier)
+    classifier = classifier_class(**params)
+    set_random_state(classifier, random_state=0)
     classifier.fit(X, y)
     expected_shape = (1, n_features) if n_classes == 2 else (n_classes, n_features)
     assert classifier.coef_.shape == expected_shape
 
 
 @pytest.mark.parametrize(
-    "LinearModel, params",
+    "linear_model, params",
     [
         (Lasso, {"tol": 1e-15, "alpha": 0.01}),
         (LassoCV, {"tol": 1e-15}),
@@ -264,34 +268,38 @@ def test_linear_model_classifier_coef_shape(Classifier, params, n_classes):
     ],
 )
 @pytest.mark.parametrize("csr_container", CSR_CONTAINERS)
-def test_model_pipeline_same_dense_and_sparse(LinearModel, params, csr_container):
+def test_model_pipeline_same_dense_and_sparse(linear_model, params, csr_container):
     """Test that sparse and dense linear models give same results.
 
     Models use a preprocessing pipeline with a StandardScaler.
     """
-    model_dense = make_pipeline(StandardScaler(with_mean=False), LinearModel(**params))
+    model_dense = make_pipeline(
+        StandardScaler(with_mean=False), linear_model(**params), memory=None
+    )
 
-    model_sparse = make_pipeline(StandardScaler(with_mean=False), LinearModel(**params))
+    model_sparse = make_pipeline(
+        StandardScaler(with_mean=False), linear_model(**params), memory=None
+    )
 
     # prepare the data
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
     n_samples = 100
     n_features = 2
-    X = rng.randn(n_samples, n_features)
+    X = rng.standard_normal((n_samples, n_features))
     X[X < 0.1] = 0.0
 
-    X_sparse = csr_container(X)
-    y = rng.rand(n_samples)
+    x_sparse = csr_container(X)
+    y = rng.random(n_samples)
 
     if is_classifier(model_dense):
         y = np.sign(y)
 
     model_dense.fit(X, y)
-    model_sparse.fit(X_sparse, y)
+    model_sparse.fit(x_sparse, y)
 
     assert_allclose(model_sparse[1].coef_, model_dense[1].coef_, atol=1e-15)
     y_pred_dense = model_dense.predict(X)
-    y_pred_sparse = model_sparse.predict(X_sparse)
+    y_pred_sparse = model_sparse.predict(x_sparse)
     assert_allclose(y_pred_dense, y_pred_sparse)
 
     assert_allclose(model_dense[1].intercept_, model_sparse[1].intercept_)
