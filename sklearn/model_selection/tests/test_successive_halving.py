@@ -76,30 +76,30 @@ class SometimesFailClassifier(DummyClassifier):
             strategy=strategy, random_state=random_state, constant=constant
         )
 
-    def fit(self, X, y):
+    def fit(self, X, y, sample_weight=None):
         if self.fail_fit:
-            raise Exception("fitting failed")
-        return super().fit(X, y)
+            raise ValueError("fitting failed")
+        return super().fit(X, y, sample_weight=sample_weight)
 
     def predict(self, X):
         if self.fail_predict:
-            raise Exception("predict failed")
+            raise RuntimeError("predict failed")
         return super().predict(X)
 
 
 @pytest.mark.filterwarnings("ignore::sklearn.exceptions.FitFailedWarning")
 @pytest.mark.filterwarnings("ignore:Scoring failed:UserWarning")
 @pytest.mark.filterwarnings("ignore:One or more of the:UserWarning")
-@pytest.mark.parametrize("HalvingSearch", (HalvingGridSearchCV, HalvingRandomSearchCV))
+@pytest.mark.parametrize("halving_search", (HalvingGridSearchCV, HalvingRandomSearchCV))
 @pytest.mark.parametrize("fail_at", ("fit", "predict"))
-def test_nan_handling(HalvingSearch, fail_at):
+def test_nan_handling(halving_search, fail_at):
     """Check the selection of the best scores in presence of failure represented by
     NaN values."""
     n_samples = 1_000
     X, y = make_classification(n_samples=n_samples, random_state=0)
 
-    search = HalvingSearch(
-        SometimesFailClassifier(),
+    search = halving_search(
+        SometimesFailClassifier(random_state=0),
         {f"fail_{fail_at}": [False, True], "a": range(3)},
         resource="n_estimators",
         max_resources=6,
@@ -125,7 +125,7 @@ def test_nan_handling(HalvingSearch, fail_at):
     assert (unique_nan_ranks[0] >= ranks).all()
 
 
-@pytest.mark.parametrize("Est", (HalvingGridSearchCV, HalvingRandomSearchCV))
+@pytest.mark.parametrize("est", (HalvingGridSearchCV, HalvingRandomSearchCV))
 @pytest.mark.parametrize(
     (
         "aggressive_elimination,"
@@ -154,7 +154,7 @@ def test_nan_handling(HalvingSearch, fail_at):
     ],
 )
 def test_aggressive_elimination(
-    Est,
+    est,
     aggressive_elimination,
     max_resources,
     expected_n_iterations,
@@ -169,14 +169,14 @@ def test_aggressive_elimination(
     n_samples = 1000
     X, y = make_classification(n_samples=n_samples, random_state=0)
     param_grid = {"a": ("l1", "l2"), "b": list(range(30))}
-    base_estimator = FastClassifier()
+    base_estimator = FastClassifier(random_state=0)
 
     if max_resources == "limited":
         max_resources = 180
     else:
         max_resources = n_samples
 
-    sh = Est(
+    sh = est(
         base_estimator,
         param_grid,
         aggressive_elimination=aggressive_elimination,
@@ -185,7 +185,7 @@ def test_aggressive_elimination(
     )
     sh.set_params(verbose=True)  # just for test coverage
 
-    if Est is HalvingRandomSearchCV:
+    if est is HalvingRandomSearchCV:
         # same number of candidates as with the grid
         sh.set_params(n_candidates=2 * 30, min_resources="exhaust")
 
@@ -200,7 +200,7 @@ def test_aggressive_elimination(
     assert ceil(sh.n_candidates_[-1] / sh.factor) == sh.n_remaining_candidates_
 
 
-@pytest.mark.parametrize("Est", (HalvingGridSearchCV, HalvingRandomSearchCV))
+@pytest.mark.parametrize("est", (HalvingGridSearchCV, HalvingRandomSearchCV))
 @pytest.mark.parametrize(
     (
         "min_resources,"
@@ -229,7 +229,7 @@ def test_aggressive_elimination(
     ],
 )
 def test_min_max_resources(
-    Est,
+    est,
     min_resources,
     max_resources,
     expected_n_iterations,
@@ -243,14 +243,14 @@ def test_min_max_resources(
     param_grid = {"a": [1, 2], "b": [1, 2, 3]}
     base_estimator = FastClassifier()
 
-    sh = Est(
+    sh = est(
         base_estimator,
         param_grid,
         factor=3,
         min_resources=min_resources,
         max_resources=max_resources,
     )
-    if Est is HalvingRandomSearchCV:
+    if est is HalvingRandomSearchCV:
         sh.set_params(n_candidates=6)  # same number as with the grid
 
     sh.fit(X, y)
