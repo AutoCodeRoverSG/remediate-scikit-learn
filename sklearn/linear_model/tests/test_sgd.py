@@ -634,7 +634,7 @@ def test_average_binary_computed_correctly(klass):
     alpha = 2.0
     n_samples = 20
     n_features = 10
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
     X = rng.normal(size=(n_samples, n_features))
     w = rng.normal(size=n_features)
 
@@ -767,7 +767,7 @@ def test_set_coef_multiclass(klass):
         clf.fit(X2, Y2, coef_init=np.zeros((2, 2)))
 
     # Provided coef_ does match dataset
-    clf = klass().fit(X2, Y2, coef_init=np.zeros((3, 2)))
+    klass().fit(X2, Y2, coef_init=np.zeros((3, 2)))
 
     # Provided intercept_ does not match dataset
     clf = klass()
@@ -775,7 +775,7 @@ def test_set_coef_multiclass(klass):
         clf.fit(X2, Y2, intercept_init=np.zeros((1,)))
 
     # Provided intercept_ does match dataset.
-    clf = klass().fit(X2, Y2, intercept_init=np.zeros((3,)))
+    klass().fit(X2, Y2, intercept_init=np.zeros((3,)))
 
 
 @pytest.mark.parametrize("klass", [SGDClassifier, SparseSGDClassifier])
@@ -889,7 +889,7 @@ def test_sgd_proba(klass):
 def test_sgd_l1(klass):
     # Test L1 regularization
     n = len(X4)
-    rng = np.random.RandomState(13)
+    rng = np.random.default_rng(13)
     idx = np.arange(n)
     rng.shuffle(idx)
 
@@ -970,8 +970,8 @@ def test_wrong_class_weight_label(klass):
 def test_weights_multiplied(klass):
     # Tests that class_weight and sample_weight are multiplicative
     class_weights = {1: 0.6, 2: 0.3}
-    rng = np.random.RandomState(0)
-    sample_weights = rng.random_sample(Y4.shape[0])
+    rng = np.random.default_rng(0)
+    sample_weights = rng.random(Y4.shape[0])
     multiplied_together = np.copy(sample_weights)
     multiplied_together[Y4 == 1] *= class_weights[1]
     multiplied_together[Y4 == 2] *= class_weights[2]
@@ -993,7 +993,7 @@ def test_balanced_weight(klass):
     X, y = iris.data, iris.target
     X = scale(X)
     idx = np.arange(X.shape[0])
-    rng = np.random.RandomState(6)
+    rng = np.random.default_rng(6)
     rng.shuffle(idx)
     X = X[idx]
     y = y[idx]
@@ -1157,7 +1157,7 @@ def test_partial_fit_equal_fit_classif(klass, lr):
 
 @pytest.mark.parametrize("klass", [SGDClassifier, SparseSGDClassifier])
 def test_regression_losses(klass):
-    random_state = np.random.RandomState(1)
+    random_state = 1
     clf = klass(
         alpha=0.01,
         learning_rate="constant",
@@ -1166,7 +1166,7 @@ def test_regression_losses(klass):
         random_state=random_state,
     )
     clf.fit(X, Y)
-    assert 1.0 == np.mean(clf.predict(X) == Y)
+    assert np.mean(clf.predict(X) == Y) == pytest.approx(1.0)
 
     clf = klass(
         alpha=0.01,
@@ -1176,11 +1176,11 @@ def test_regression_losses(klass):
         random_state=random_state,
     )
     clf.fit(X, Y)
-    assert 1.0 == np.mean(clf.predict(X) == Y)
+    assert np.mean(clf.predict(X) == Y) == pytest.approx(1.0)
 
     clf = klass(alpha=0.01, loss="huber", random_state=random_state)
     clf.fit(X, Y)
-    assert 1.0 == np.mean(clf.predict(X) == Y)
+    assert np.mean(clf.predict(X) == Y) == pytest.approx(1.0)
 
     clf = klass(
         alpha=0.01,
@@ -1190,7 +1190,7 @@ def test_regression_losses(klass):
         random_state=random_state,
     )
     clf.fit(X, Y)
-    assert 1.0 == np.mean(clf.predict(X) == Y)
+    assert np.mean(clf.predict(X) == Y) == pytest.approx(1.0)
 
 
 @pytest.mark.parametrize("klass", [SGDClassifier, SparseSGDClassifier])
