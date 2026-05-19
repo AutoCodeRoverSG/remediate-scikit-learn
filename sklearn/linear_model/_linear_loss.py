@@ -17,7 +17,7 @@ from sklearn.utils._sparse import _align_api_if_sparse
 from sklearn.utils.extmath import safe_sparse_dot, squared_norm
 
 
-def sandwich_dot(X, W):
+def sandwich_dot(X, w):
     """Compute the sandwich product X.T @ diag(W) @ X."""
     # TODO: This "sandwich product" is the main computational bottleneck for solvers
     # that use the full hessian matrix. Here, thread parallelism would pay-off the
@@ -33,14 +33,14 @@ def sandwich_dot(X, W):
         return _align_api_if_sparse(
             safe_sparse_dot(
                 X.T,
-                sparse.dia_array((W, 0), shape=(n_samples, n_samples)) @ X,
+                sparse.dia_array((w, 0), shape=(n_samples, n_samples)) @ X,
                 dense_output=True,
             )
         )
     else:
         # np.einsum may use less memory but the following, using BLAS matrix
         # multiplication (GEMM), is by far faster.
-        WX = W[:, None] * X
+        WX = w[:, None] * X
         return X.T @ WX
 
 
@@ -269,9 +269,9 @@ class LinearModelLoss:
         """
         n_samples = X.shape[0]
         if raw_prediction is None:
-            weights, intercept, raw_prediction = self.weight_intercept_raw(coef, X)
+            weights, _, raw_prediction = self.weight_intercept_raw(coef, X)
         else:
-            weights, intercept = self.weight_intercept(coef)
+            weights, _ = self.weight_intercept(coef)
 
         loss = self.base_loss.loss(
             y_true=y,
@@ -334,9 +334,9 @@ class LinearModelLoss:
         n_dof = n_features + int(self.fit_intercept)
 
         if raw_prediction is None:
-            weights, intercept, raw_prediction = self.weight_intercept_raw(coef, X)
+            weights, _, raw_prediction = self.weight_intercept_raw(coef, X)
         else:
-            weights, intercept = self.weight_intercept(coef)
+            weights, _ = self.weight_intercept(coef)
 
         loss, grad_pointwise = self.base_loss.loss_gradient(
             y_true=y,
@@ -353,9 +353,9 @@ class LinearModelLoss:
 
         if not self.base_loss.is_multiclass:
             grad = np.empty_like(coef, dtype=weights.dtype)
-            X_grad = X.T @ grad_pointwise
+            x_grad = X.T @ grad_pointwise
             grad[:n_features] = (
-                move_to(X_grad, xp=np, device="cpu") + l2_reg_strength * weights
+                move_to(x_grad, xp=np, device="cpu") + l2_reg_strength * weights
             )
             if self.fit_intercept:
                 grad[-1] = xp.sum(grad_pointwise)
@@ -364,10 +364,10 @@ class LinearModelLoss:
             # because the relevant `scipy.optimize` functions do not currently
             # support the array API.
             grad = np.empty((n_classes, n_dof), dtype=weights.dtype, order="F")
-            # grad_pointwise.shape = (n_samples, n_classes)
-            grad_X = grad_pointwise.T @ X
+            
+            grad_x = grad_pointwise.T @ X
             grad[:, :n_features] = (
-                move_to(grad_X, xp=np, device="cpu") + l2_reg_strength * weights
+                move_to(grad_x, xp=np, device="cpu") + l2_reg_strength * weights
             )
             if self.fit_intercept:
                 grad[:, -1] = move_to(
@@ -421,9 +421,9 @@ class LinearModelLoss:
         n_dof = n_features + int(self.fit_intercept)
 
         if raw_prediction is None:
-            weights, intercept, raw_prediction = self.weight_intercept_raw(coef, X)
+            weights, _, raw_prediction = self.weight_intercept_raw(coef, X)
         else:
-            weights, intercept = self.weight_intercept(coef)
+            weights, _ = self.weight_intercept(coef)
 
         grad_pointwise = self.base_loss.gradient(
             y_true=y,
@@ -442,7 +442,7 @@ class LinearModelLoss:
             return grad
         else:
             grad = np.empty((n_classes, n_dof), dtype=weights.dtype, order="F")
-            # gradient.shape = (n_samples, n_classes)
+            
             grad[:, :n_features] = grad_pointwise.T @ X + l2_reg_strength * weights
             if self.fit_intercept:
                 grad[:, -1] = grad_pointwise.sum(axis=0)
@@ -509,9 +509,9 @@ class LinearModelLoss:
         (n_samples, n_features), n_classes = X.shape, self.base_loss.n_classes
         n_dof = n_features + int(self.fit_intercept)
         if raw_prediction is None:
-            weights, intercept, raw_prediction = self.weight_intercept_raw(coef, X)
+            weights, _, raw_prediction = self.weight_intercept_raw(coef, X)
         else:
-            weights, intercept = self.weight_intercept(coef)
+            weights, _ = self.weight_intercept(coef)
         sw_sum = n_samples if sample_weight is None else np.sum(sample_weight)
 
         # Allocate gradient.
