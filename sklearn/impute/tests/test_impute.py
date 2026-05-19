@@ -49,7 +49,7 @@ def _assert_allclose_and_same_dtype(x, y):
 
 
 def _check_statistics(
-    X, X_true, strategy, statistics, missing_values, sparse_container
+    X, x_true, strategy, statistics, missing_values, sparse_container
 ):
     """Utility function for testing imputation for a given strategy.
 
@@ -66,25 +66,25 @@ def _check_statistics(
 
     assert_ae = assert_array_equal
 
-    if X.dtype.kind == "f" or X_true.dtype.kind == "f":
+    if X.dtype.kind == "f" or x_true.dtype.kind == "f":
         assert_ae = assert_array_almost_equal
 
     # Normal matrix
     imputer = SimpleImputer(missing_values=missing_values, strategy=strategy)
-    X_trans = imputer.fit(X).transform(X.copy())
+    x_trans = imputer.fit(X).transform(X.copy())
     assert_ae(imputer.statistics_, statistics, err_msg=err_msg.format(False))
-    assert_ae(X_trans, X_true, err_msg=err_msg.format(False))
+    assert_ae(x_trans, x_true, err_msg=err_msg.format(False))
 
     # Sparse matrix
     imputer = SimpleImputer(missing_values=missing_values, strategy=strategy)
     imputer.fit(sparse_container(X))
-    X_trans = imputer.transform(sparse_container(X.copy()))
+    x_trans = imputer.transform(sparse_container(X.copy()))
 
-    if sparse.issparse(X_trans):
-        X_trans = X_trans.toarray()
+    if sparse.issparse(x_trans):
+        x_trans = x_trans.toarray()
 
     assert_ae(imputer.statistics_, statistics, err_msg=err_msg.format(True))
-    assert_ae(X_trans, X_true, err_msg=err_msg.format(True))
+    assert_ae(x_trans, x_true, err_msg=err_msg.format(True))
 
 
 @pytest.mark.parametrize("strategy", ["mean", "median", "most_frequent", "constant"])
@@ -95,14 +95,14 @@ def test_imputation_shape(strategy, csr_container):
     X[::2] = np.nan
 
     imputer = SimpleImputer(strategy=strategy)
-    X_imputed = imputer.fit_transform(csr_container(X))
-    assert X_imputed.shape == (10, 2)
-    X_imputed = imputer.fit_transform(X)
-    assert X_imputed.shape == (10, 2)
+    x_imputed = imputer.fit_transform(csr_container(X))
+    assert x_imputed.shape == (10, 2)
+    x_imputed = imputer.fit_transform(X)
+    assert x_imputed.shape == (10, 2)
 
     iterative_imputer = IterativeImputer(initial_strategy=strategy)
-    X_imputed = iterative_imputer.fit_transform(X)
-    assert X_imputed.shape == (10, 2)
+    x_imputed = iterative_imputer.fit_transform(X)
+    assert x_imputed.shape == (10, 2)
 
 
 @pytest.mark.parametrize("strategy", ["mean", "median", "most_frequent"])
@@ -191,7 +191,7 @@ def test_imputation_mean_median(csc_container):
 
     for strategy, test_missing_values, true_value_fun in tests:
         X = np.empty(shape)
-        X_true = np.empty(shape)
+        x_true = np.empty(shape)
         true_statistics = np.empty(shape[1])
 
         # Create a matrix X with columns
@@ -215,28 +215,28 @@ def test_imputation_mean_median(csc_container):
 
             if 0 == test_missing_values:
                 # XXX unreached code as of v0.22
-                X_true[:, j] = np.hstack(
+                x_true[:, j] = np.hstack(
                     (v, np.repeat(true_statistics[j], nb_missing_values + nb_zeros))
                 )
             else:
-                X_true[:, j] = np.hstack(
+                x_true[:, j] = np.hstack(
                     (v, z, np.repeat(true_statistics[j], nb_missing_values))
                 )
 
             # Shuffle them the same way
             np.random.RandomState(j).shuffle(X[:, j])
-            np.random.RandomState(j).shuffle(X_true[:, j])
+            np.random.RandomState(j).shuffle(x_true[:, j])
 
         # Mean doesn't support columns containing NaNs, median does
         if strategy == "median":
-            cols_to_keep = ~np.isnan(X_true).any(axis=0)
+            cols_to_keep = ~np.isnan(x_true).any(axis=0)
         else:
-            cols_to_keep = ~np.isnan(X_true).all(axis=0)
+            cols_to_keep = ~np.isnan(x_true).all(axis=0)
 
-        X_true = X_true[:, cols_to_keep]
+        x_true = x_true[:, cols_to_keep]
 
         _check_statistics(
-            X, X_true, strategy, true_statistics, test_missing_values, csc_container
+            X, x_true, strategy, true_statistics, test_missing_values, csc_container
         )
 
 
@@ -256,7 +256,7 @@ def test_imputation_median_special_cases(csc_container):
         ]
     ).transpose()
 
-    X_imputed_median = np.array(
+    x_imputed_median = np.array(
         [
             [0, 0, 0],
             [5, 5, 5],
@@ -271,7 +271,7 @@ def test_imputation_median_special_cases(csc_container):
     statistics_median = [0, 5, 0, -2.5, 2.5, 4.5, -4.5, 0.5]
 
     _check_statistics(
-        X, X_imputed_median, "median", statistics_median, np.nan, csc_container
+        X, x_imputed_median, "median", statistics_median, np.nan, csc_container
     )
 
 
@@ -331,7 +331,7 @@ def test_imputation_most_frequent(csc_container):
         ]
     )
 
-    X_true = np.array(
+    x_true = np.array(
         [
             [2, 0, 5],
             [2, 3, 3],
@@ -344,7 +344,7 @@ def test_imputation_most_frequent(csc_container):
     # frequent as promised in the doc but the lowest most frequent. When this
     # test will fail after an update of scipy, SimpleImputer will need to be
     # updated to be consistent with the new (correct) behaviour
-    _check_statistics(X, X_true, "most_frequent", [np.nan, 2, 3, 3], -1, csc_container)
+    _check_statistics(X, x_true, "most_frequent", [np.nan, 2, 3, 3], -1, csc_container)
 
 
 @pytest.mark.parametrize("marker", [None, np.nan, "NAN", "", 0])
@@ -360,7 +360,7 @@ def test_imputation_most_frequent_objects(marker):
         dtype=object,
     )
 
-    X_true = np.array(
+    x_true = np.array(
         [
             ["c", "a", "f"],
             ["c", "d", "d"],
@@ -371,9 +371,9 @@ def test_imputation_most_frequent_objects(marker):
     )
 
     imputer = SimpleImputer(missing_values=marker, strategy="most_frequent")
-    X_trans = imputer.fit(X).transform(X)
+    x_trans = imputer.fit(X).transform(X)
 
-    assert_array_equal(X_trans, X_true)
+    assert_array_equal(x_trans, x_true)
 
 
 @pytest.mark.parametrize("dtype", [object, "category"])
@@ -385,15 +385,15 @@ def test_imputation_most_frequent_pandas(dtype):
 
     df = pd.read_csv(f, dtype=dtype)
 
-    X_true = np.array(
+    x_true = np.array(
         [["a", "i", "x"], ["a", "j", "y"], ["a", "j", "x"], ["b", "j", "x"]],
         dtype=object,
     )
 
     imputer = SimpleImputer(strategy="most_frequent")
-    X_trans = imputer.fit_transform(df)
+    x_trans = imputer.fit_transform(df)
 
-    assert_array_equal(X_trans, X_true)
+    assert_array_equal(x_trans, x_true)
 
 
 @pytest.mark.parametrize("X_data, missing_value", [(1, 0), (1.0, np.nan)])
