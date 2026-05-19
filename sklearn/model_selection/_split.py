@@ -55,6 +55,8 @@ __all__ = [
     "train_test_split",
 ]
 
+_GROUPS_NOT_NONE_MSG = "The 'groups' parameter should not be None."
+
 
 class _UnsupportedGroupCVMixin:
     """Mixin for splitters that do not support Groups."""
@@ -612,7 +614,7 @@ class GroupKFold(GroupsConsumerMixin, _BaseKFold):
 
     def _iter_test_indices(self, X=None, y=None, groups=None):
         if groups is None:
-            raise ValueError("The 'groups' parameter should not be None.")
+            raise ValueError(_GROUPS_NOT_NONE_MSG)
         groups = check_array(groups, input_name="groups", ensure_2d=False, dtype=None)
 
         unique_groups, group_idx = np.unique(groups, return_inverse=True)
@@ -632,7 +634,7 @@ class GroupKFold(GroupsConsumerMixin, _BaseKFold):
 
             for test_group_ids in split_groups:
                 test_mask = np.isin(groups, test_group_ids)
-                yield np.where(test_mask)[0]
+                yield np.nonzero(test_mask)[0]
 
         else:
             # Weight groups by their number of occurrences
@@ -657,7 +659,7 @@ class GroupKFold(GroupsConsumerMixin, _BaseKFold):
             indices = group_to_fold[group_idx]
 
             for f in range(self.n_splits):
-                yield np.where(indices == f)[0]
+                yield np.nonzero(indices == f)[0]
 
     def split(self, X, y=None, groups=None):
         """Generate indices to split data into training and test set.
@@ -779,7 +781,7 @@ class StratifiedKFold(_BaseKFold):
         # without attempting to leverage array API namespace features. However
         # they might be fed by array API inputs, e.g. in CV-enabled estimators so
         # we need the following explicit conversion:
-        xp, is_array_api = get_namespace(y)
+        _, is_array_api = get_namespace(y)
         if is_array_api:
             y = move_to(y, xp=np, device="cpu")
         else:
@@ -843,7 +845,7 @@ class StratifiedKFold(_BaseKFold):
             test_folds[y_encoded == k] = folds_for_class
         return test_folds
 
-    def _iter_test_masks(self, X, y=None, groups=None):
+    def _iter_test_masks(self, X=None, y=None, groups=None):
         test_folds = self._make_test_folds(X, y)
         for i in range(self.n_splits):
             yield test_folds == i
@@ -999,7 +1001,7 @@ class StratifiedGroupKFold(GroupsConsumerMixin, _BaseKFold):
     def __init__(self, n_splits=5, shuffle=False, random_state=None):
         super().__init__(n_splits=n_splits, shuffle=shuffle, random_state=random_state)
 
-    def _iter_test_indices(self, X, y, groups):
+    def _iter_test_indices(self, X=None, y=None, groups=None):
         # Implementation is based on this kaggle kernel:
         # https://www.kaggle.com/jakubwasikowski/stratified-group-k-fold-cross-validation
         # and is a subject to Apache 2.0 License. You may obtain a copy of the
@@ -1378,7 +1380,7 @@ class LeaveOneGroupOut(GroupsConsumerMixin, BaseCrossValidator):
 
     def _iter_test_masks(self, X, y, groups):
         if groups is None:
-            raise ValueError("The 'groups' parameter should not be None.")
+            raise ValueError(_GROUPS_NOT_NONE_MSG)
         # We make a copy of groups to avoid side-effects during iteration
         groups = check_array(
             groups, input_name="groups", copy=True, ensure_2d=False, dtype=None
@@ -1415,7 +1417,7 @@ class LeaveOneGroupOut(GroupsConsumerMixin, BaseCrossValidator):
             Returns the number of splitting iterations in the cross-validator.
         """
         if groups is None:
-            raise ValueError("The 'groups' parameter should not be None.")
+            raise ValueError(_GROUPS_NOT_NONE_MSG)
         groups = check_array(groups, input_name="groups", ensure_2d=False, dtype=None)
         return len(np.unique(groups))
 
@@ -1504,7 +1506,7 @@ class LeavePGroupsOut(GroupsConsumerMixin, BaseCrossValidator):
 
     def _iter_test_masks(self, X, y, groups):
         if groups is None:
-            raise ValueError("The 'groups' parameter should not be None.")
+            raise ValueError(_GROUPS_NOT_NONE_MSG)
         groups = check_array(
             groups, input_name="groups", copy=True, ensure_2d=False, dtype=None
         )
@@ -1546,7 +1548,7 @@ class LeavePGroupsOut(GroupsConsumerMixin, BaseCrossValidator):
             Returns the number of splitting iterations in the cross-validator.
         """
         if groups is None:
-            raise ValueError("The 'groups' parameter should not be None.")
+            raise ValueError(_GROUPS_NOT_NONE_MSG)
         groups = check_array(groups, input_name="groups", ensure_2d=False, dtype=None)
         return int(comb(len(np.unique(groups)), self.n_groups, exact=True))
 
@@ -1649,7 +1651,7 @@ class _RepeatedSplits(_MetadataRequester, metaclass=ABCMeta):
         n_repeats = self.n_repeats
         rng = check_random_state(self.random_state)
 
-        for idx in range(n_repeats):
+        for _ in range(n_repeats):
             cv = self.cv(random_state=rng, shuffle=True, **self.cvargs)
             for train_index, test_index in cv.split(X, y, groups):
                 yield train_index, test_index
@@ -1948,7 +1950,7 @@ class BaseShuffleSplit(_MetadataRequester, metaclass=ABCMeta):
         )
 
         rng = check_random_state(self.random_state)
-        for i in range(self.n_splits):
+        for _ in range(self.n_splits):
             # random partition
             permutation = rng.permutation(n_samples)
             ind_test = permutation[:n_test]
@@ -2187,7 +2189,7 @@ class GroupShuffleSplit(GroupsConsumerMixin, BaseShuffleSplit):
 
     def _iter_indices(self, X, y, groups):
         if groups is None:
-            raise ValueError("The 'groups' parameter should not be None.")
+            raise ValueError(_GROUPS_NOT_NONE_MSG)
         groups = check_array(groups, input_name="groups", ensure_2d=False, dtype=None)
         classes, group_indices = np.unique(groups, return_inverse=True)
         for group_train, group_test in super()._iter_indices(X=classes):
