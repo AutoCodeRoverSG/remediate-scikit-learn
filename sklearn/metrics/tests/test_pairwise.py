@@ -90,19 +90,19 @@ def test_pairwise_distances_for_dense_data(global_dtype):
     assert S.dtype == S2.dtype == global_dtype
 
     # Check to ensure NaNs work with pairwise_distances.
-    X_masked = rng.random_sample((5, 4)).astype(global_dtype, copy=False)
-    Y_masked = rng.random_sample((2, 4)).astype(global_dtype, copy=False)
-    X_masked[0, 0] = np.nan
-    Y_masked[0, 0] = np.nan
-    S_masked = pairwise_distances(X_masked, Y_masked, metric="nan_euclidean")
-    S2_masked = nan_euclidean_distances(X_masked, Y_masked)
-    assert_allclose(S_masked, S2_masked)
-    assert S_masked.dtype == S2_masked.dtype == global_dtype
+    x_masked = rng.random_sample((5, 4)).astype(global_dtype, copy=False)
+    y_masked = rng.random_sample((2, 4)).astype(global_dtype, copy=False)
+    x_masked[0, 0] = np.nan
+    y_masked[0, 0] = np.nan
+    s_masked = pairwise_distances(x_masked, y_masked, metric="nan_euclidean")
+    s2_masked = nan_euclidean_distances(x_masked, y_masked)
+    assert_allclose(s_masked, s2_masked)
+    assert s_masked.dtype == s2_masked.dtype == global_dtype
 
     # Test with tuples as X and Y
-    X_tuples = tuple([tuple([v for v in row]) for row in X])
-    Y_tuples = tuple([tuple([v for v in row]) for row in Y])
-    S2 = pairwise_distances(X_tuples, Y_tuples, metric="euclidean")
+    x_tuples = tuple(tuple(row) for row in X)
+    y_tuples = tuple(tuple(row) for row in Y)
+    S2 = pairwise_distances(x_tuples, y_tuples, metric="euclidean")
     assert_allclose(S, S2)
     assert S.dtype == S2.dtype == global_dtype
 
