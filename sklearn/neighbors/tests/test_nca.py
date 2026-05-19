@@ -200,7 +200,7 @@ def test_n_components():
 
 
 def test_init_transformation():
-    rng = np.random.RandomState(42)
+    rng = np.random.default_rng(42)
     X, y = make_blobs(n_samples=30, centers=6, n_features=5, random_state=0)
 
     # Start learning from scratch
@@ -223,12 +223,12 @@ def test_init_transformation():
     nca_lda = NeighborhoodComponentsAnalysis(init="lda")
     nca_lda.fit(X, y)
 
-    init = rng.rand(X.shape[1], X.shape[1])
+    init = rng.random((X.shape[1], X.shape[1]))
     nca = NeighborhoodComponentsAnalysis(init=init)
     nca.fit(X, y)
 
     # init.shape[1] must match X.shape[1]
-    init = rng.rand(X.shape[1], X.shape[1] + 1)
+    init = rng.random((X.shape[1], X.shape[1] + 1))
     nca = NeighborhoodComponentsAnalysis(init=init)
     msg = (
         f"The input dimensionality ({init.shape[1]}) of the given "
@@ -239,7 +239,7 @@ def test_init_transformation():
         nca.fit(X, y)
 
     # init.shape[0] must be <= init.shape[1]
-    init = rng.rand(X.shape[1] + 1, X.shape[1])
+    init = rng.random((X.shape[1] + 1, X.shape[1]))
     nca = NeighborhoodComponentsAnalysis(init=init)
     msg = (
         f"The output dimensionality ({init.shape[0]}) of the given "
@@ -250,7 +250,7 @@ def test_init_transformation():
         nca.fit(X, y)
 
     # init.shape[0] must match n_components
-    init = rng.rand(X.shape[1], X.shape[1])
+    init = rng.random((X.shape[1], X.shape[1]))
     n_components = X.shape[1] - 2
     nca = NeighborhoodComponentsAnalysis(init=init, n_components=n_components)
     msg = (
@@ -270,16 +270,16 @@ def test_init_transformation():
 def test_auto_init(n_samples, n_features, n_classes, n_components):
     # Test that auto choose the init as expected with every configuration
     # of order of n_samples, n_features, n_classes and n_components.
-    rng = np.random.RandomState(42)
+    rng = np.random.default_rng(42)
     nca_base = NeighborhoodComponentsAnalysis(
-        init="auto", n_components=n_components, max_iter=1, random_state=rng
+        init="auto", n_components=n_components, max_iter=1, random_state=42
     )
     if n_classes >= n_samples:
-        pass
         # n_classes > n_samples is impossible, and n_classes == n_samples
         # throws an error from lda but is an absurd case
+        pass
     else:
-        X = rng.randn(n_samples, n_features)
+        X = rng.standard_normal((n_samples, n_features))
         y = np.tile(range(n_classes), n_samples // n_classes + 1)[:n_samples]
         if n_components > n_features:
             # this would return a ValueError, which is already tested in
@@ -366,7 +366,7 @@ def test_warm_start_effectiveness():
 def test_verbose(init_name, capsys):
     # assert there is proper output when verbose = 1, for every initialization
     # except auto because auto will call one of the others
-    rng = np.random.RandomState(42)
+    rng = np.random.default_rng(42)
     X, y = make_blobs(n_samples=30, centers=6, n_features=5, random_state=0)
     regexp_init = r"... done in \ *\d+\.\d{2}s"
     msgs = {
@@ -374,7 +374,7 @@ def test_verbose(init_name, capsys):
         "lda": "Finding most discriminative components" + regexp_init,
     }
     if init_name == "precomputed":
-        init = rng.randn(X.shape[1], X.shape[1])
+        init = rng.standard_normal((X.shape[1], X.shape[1]))
     else:
         init = init_name
     nca = NeighborhoodComponentsAnalysis(verbose=1, init=init)
@@ -422,7 +422,7 @@ def test_singleton_class():
 
     # one singleton class
     singleton_class = 1
-    (ind_singleton,) = np.where(y == singleton_class)
+    (ind_singleton,) = np.nonzero(y == singleton_class)
     y[ind_singleton] = 2
     y[ind_singleton[0]] = singleton_class
 
@@ -430,8 +430,8 @@ def test_singleton_class():
     nca.fit(X, y)
 
     # One non-singleton class
-    (ind_1,) = np.where(y == 1)
-    (ind_2,) = np.where(y == 2)
+    (ind_1,) = np.nonzero(y == 1)
+    (ind_2,) = np.nonzero(y == 2)
     y[ind_1] = 0
     y[ind_1[0]] = 1
     y[ind_2] = 0
@@ -441,9 +441,9 @@ def test_singleton_class():
     nca.fit(X, y)
 
     # Only singleton classes
-    (ind_0,) = np.where(y == 0)
-    (ind_1,) = np.where(y == 1)
-    (ind_2,) = np.where(y == 2)
+    (ind_0,) = np.nonzero(y == 0)
+    (ind_1,) = np.nonzero(y == 1)
+    (ind_2,) = np.nonzero(y == 2)
     X = X[[ind_0[0], ind_1[0], ind_2[0]]]
     y = y[[ind_0[0], ind_1[0], ind_2[0]]]
 
