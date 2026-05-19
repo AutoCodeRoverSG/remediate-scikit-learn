@@ -12,7 +12,7 @@ the lower the better.
 
 import warnings
 from contextlib import nullcontext
-from math import sqrt
+from math import isclose, sqrt
 from numbers import Integral, Real
 
 import numpy as np
@@ -157,9 +157,8 @@ def _check_targets(y_true, y_pred, sample_weight=None):
                 raise
 
     unique_labels_ = unique_labels(y_true, y_pred, ys_types={y_type})
-    if y_type == "binary":
-        if unique_labels_.shape[0] > 2:
-            y_type = "multiclass"
+    if y_type == "binary" and unique_labels_.shape[0] > 2:
+        y_type = "multiclass"
 
     xp, _ = get_namespace(y_true, y_pred)
     if y_type.startswith("multilabel"):
@@ -1910,12 +1909,11 @@ def _check_set_wise_labels(y_true, y_pred, average, labels, pos_label):
     y_type, present_labels, y_true, y_pred, _ = _check_targets(y_true, y_pred)
     if average == "binary":
         if y_type == "binary":
-            if pos_label not in present_labels:
-                if len(present_labels) >= 2:
-                    raise ValueError(
-                        f"pos_label={pos_label} is not a valid label. It "
-                        f"should be one of {present_labels}"
-                    )
+            if pos_label not in present_labels and len(present_labels) >= 2:
+                raise ValueError(
+                    f"pos_label={pos_label} is not a valid label. It "
+                    f"should be one of {present_labels}"
+                )
             labels = [pos_label]
         else:
             average_options = list(average_options)
@@ -2369,7 +2367,7 @@ def class_likelihood_ratios(
             f"problems, got targets of type: {y_type}"
         )
 
-    if replace_undefined_by == 1.0:
+    if isinstance(replace_undefined_by, Real) and isclose(replace_undefined_by, 1.0):
         replace_undefined_by = {"LR+": 1.0, "LR-": 1.0}
 
     if isinstance(replace_undefined_by, dict):
@@ -3185,7 +3183,7 @@ def classification_report(
                 report += row_fmt.format(line_heading, *avg, width=width, digits=digits)
 
     if output_dict:
-        if "accuracy" in report_dict.keys():
+        if "accuracy" in report_dict:
             report_dict["accuracy"] = report_dict["accuracy"]["precision"]
         return report_dict
     else:
