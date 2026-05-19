@@ -678,12 +678,12 @@ def test_compute_covariance(shape, uniform_weights, csr_container):
     else:
         sw = rng.chisquare(1, shape[0])
     sqrt_sw = np.sqrt(sw)
-    X_mean = np.average(X, axis=0, weights=sw)
-    X_centered = (X - X_mean) * sqrt_sw[:, None]
-    true_covariance = X_centered.T.dot(X_centered)
-    X_sparse = csr_container(X * sqrt_sw[:, None])
+    x_mean = np.average(X, axis=0, weights=sw)
+    x_centered = (X - x_mean) * sqrt_sw[:, None]
+    true_covariance = x_centered.T.dot(x_centered)
+    x_sparse = csr_container(X * sqrt_sw[:, None])
     gcv = _RidgeGCV(fit_intercept=True)
-    computed_cov = gcv._compute_covariance(X_sparse, X_mean, sqrt_sw)
+    computed_cov = gcv._compute_covariance(x_sparse, x_mean, sqrt_sw)
     assert_allclose(true_covariance, computed_cov)
 
 
@@ -694,7 +694,7 @@ def _make_sparse_offset_regression(
     n_informative=10,
     n_targets=1,
     bias=13.0,
-    X_offset=30.0,
+    x_offset=30.0,
     noise=30.0,
     shuffle=True,
     coef=False,
@@ -714,14 +714,14 @@ def _make_sparse_offset_regression(
     )
     if n_features == 1:
         c = np.asarray([c])
-    X += X_offset
+    X += x_offset
     mask = (
         np.random.RandomState(random_state).binomial(1, proportion_nonzero, X.shape) > 0
     )
-    removed_X = X.copy()
+    removed_x = X.copy()
     X[~mask] = 0.0
-    removed_X[mask] = 0.0
-    y -= removed_X.dot(c)
+    removed_x[mask] = 0.0
+    y -= removed_x.dot(c)
     if positive:
         y += X.dot(np.abs(c) + 1 - c)
         c = np.abs(c) + 1
@@ -799,7 +799,7 @@ def test_ridge_gcv_integer_arrays():
     X = rng.randint(0, 5, size=(n_samples, n_features))
     y = rng.randint(0, 5, size=(n_samples,))
 
-    X_float = X.astype(np.float64)
+    x_float = X.astype(np.float64)
     y_float = y.astype(np.float64)
 
     ridge_gcv = RidgeCV(
@@ -808,7 +808,7 @@ def test_ridge_gcv_integer_arrays():
     ridge_gcv.fit(X, y)
 
     ridge_gcv_float = clone(ridge_gcv)
-    ridge_gcv_float.fit(X_float, y_float)
+    ridge_gcv_float.fit(x_float, y_float)
 
     assert_allclose(ridge_gcv.coef_, ridge_gcv_float.coef_)
     assert_allclose(ridge_gcv.cv_results_, ridge_gcv_float.cv_results_)
@@ -817,8 +817,8 @@ def test_ridge_gcv_integer_arrays():
 
 @pytest.mark.parametrize("gcv_mode", ["svd", "eigen"])
 @pytest.mark.parametrize("dtype", [np.float32, np.float64])
-@pytest.mark.parametrize("X_container", [np.asarray] + CSR_CONTAINERS)
-@pytest.mark.parametrize("X_shape", [(11, 8), (11, 20)], ids=["tall", "wide"])
+@pytest.mark.parametrize("x_container", [np.asarray] + CSR_CONTAINERS)
+@pytest.mark.parametrize("x_shape", [(11, 8), (11, 20)], ids=["tall", "wide"])
 @pytest.mark.parametrize("fit_intercept", [True, False])
 @pytest.mark.parametrize(
     "y_shape, noise",
@@ -829,11 +829,11 @@ def test_ridge_gcv_integer_arrays():
     ],
 )
 def test_ridge_gcv_vs_ridge_loo_cv(
-    gcv_mode, dtype, X_container, X_shape, y_shape, fit_intercept, noise
+    gcv_mode, dtype, x_container, x_shape, y_shape, fit_intercept, noise
 ):
-    if gcv_mode == "svd" and (X_container in CSR_CONTAINERS):
+    if gcv_mode == "svd" and (x_container in CSR_CONTAINERS):
         pytest.skip("`svd` mode not supported for sparse X.")
-    n_samples, n_features = X_shape
+    n_samples, n_features = x_shape
     n_targets = y_shape[-1] if len(y_shape) == 2 else 1
     X, y = _make_sparse_offset_regression(
         n_samples=n_samples,
@@ -861,7 +861,7 @@ def test_ridge_gcv_vs_ridge_loo_cv(
 
     loo_ridge.fit(X, y)
 
-    X = X_container(X)
+    X = x_container(X)
     X = X.astype(dtype)
     y = y.astype(dtype)
     gcv_ridge.fit(X, y)
@@ -2000,7 +2000,7 @@ def test_ridge_fit_intercept_sparse_sag(
     with_sample_weight, global_random_seed, csr_container
 ):
     X, y = _make_sparse_offset_regression(
-        n_features=5, n_samples=20, random_state=global_random_seed, X_offset=5.0
+        n_features=5, n_samples=20, random_state=global_random_seed, x_offset=5.0
     )
     if with_sample_weight:
         rng = np.random.RandomState(global_random_seed)
