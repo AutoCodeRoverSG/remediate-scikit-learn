@@ -286,7 +286,7 @@ class KNNImputer(_BaseImputer):
         mask_fit_X = self._mask_fit_X
         valid_mask = self._valid_mask
 
-        X_indicator = super()._transform_indicator(mask)
+        x_indicator = super()._transform_indicator(mask)
 
         # Removes columns where the training data is all nan
         if not np.any(mask[:, valid_mask]):
@@ -301,7 +301,7 @@ class KNNImputer(_BaseImputer):
             # with the missing value indicator matrix, X_indicator.
             # This is to ensure that the output maintains consistency in terms
             # of columns, regardless of whether missing values exist in X or not.
-            return super()._concatenate_indicator(Xc, X_indicator)
+            return super()._concatenate_indicator(Xc, x_indicator)
 
         row_missing_idx = np.flatnonzero(mask[:, valid_mask].any(axis=1))
 
@@ -383,7 +383,7 @@ class KNNImputer(_BaseImputer):
         else:
             Xc = X[:, valid_mask]
 
-        return super()._concatenate_indicator(Xc, X_indicator)
+        return super()._concatenate_indicator(Xc, x_indicator)
 
     def get_feature_names_out(self, input_features=None):
         """Get output feature names for transformation.

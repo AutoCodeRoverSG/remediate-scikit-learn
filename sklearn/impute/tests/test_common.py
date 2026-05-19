@@ -121,15 +121,15 @@ def test_imputers_pandas_na_integer_array_support(imputer, add_indicator):
         ]
     )
     # fit on numpy array
-    X_trans_expected = imputer.fit_transform(X)
+    x_trans_expected = imputer.fit_transform(X)
 
     # Creates dataframe with IntegerArrays with pd.NA
-    X_df = pd.DataFrame(X, dtype="Int16", columns=["a", "b", "c", "d", "e"])
+    x_df = pd.DataFrame(X, dtype="Int16", columns=["a", "b", "c", "d", "e"])
 
     # fit on pandas dataframe with IntegerArrays
-    X_trans = imputer.fit_transform(X_df)
+    x_trans = imputer.fit_transform(x_df)
 
-    assert_allclose(X_trans_expected, X_trans)
+    assert_allclose(x_trans_expected, x_trans)
 
 
 @pytest.mark.parametrize("imputer", imputers(), ids=lambda x: x.__class__.__name__)
@@ -148,8 +148,8 @@ def test_imputers_feature_names_out_pandas(imputer, add_indicator):
             [1, 2, 9, 8, marker, 4],
         ]
     )
-    X_df = pd.DataFrame(X, columns=["a", "b", "c", "d", "e", "f"])
-    imputer.fit(X_df)
+    x_df = pd.DataFrame(X, columns=["a", "b", "c", "d", "e", "f"])
+    imputer.fit(x_df)
 
     names = imputer.get_feature_names_out()
 
@@ -182,11 +182,11 @@ def test_keep_empty_features(imputer, keep_empty_features):
     )
 
     for method in ["fit_transform", "transform"]:
-        X_imputed = getattr(imputer, method)(X)
+        x_imputed = getattr(imputer, method)(X)
         if keep_empty_features:
-            assert X_imputed.shape == X.shape
+            assert x_imputed.shape == X.shape
         else:
-            assert X_imputed.shape == (X.shape[0], X.shape[1] - 1)
+            assert x_imputed.shape == (X.shape[0], X.shape[1] - 1)
 
 
 @pytest.mark.parametrize("imputer", imputers(), ids=lambda x: x.__class__.__name__)
@@ -207,20 +207,20 @@ def test_imputation_adds_missing_indicator_if_add_indicator_is_true(
     imputer.set_params(add_indicator=True)
     imputer.fit(X_train)
 
-    X_test_imputed_with_indicator = imputer.transform(X_test)
-    assert X_test_imputed_with_indicator.shape == (2, 3)
+    x_test_imputed_with_indicator = imputer.transform(X_test)
+    assert x_test_imputed_with_indicator.shape == (2, 3)
 
     imputer.set_params(add_indicator=False)
     imputer.fit(X_train)
-    X_test_imputed_without_indicator = imputer.transform(X_test)
-    assert X_test_imputed_without_indicator.shape == (2, 2)
+    x_test_imputed_without_indicator = imputer.transform(X_test)
+    assert x_test_imputed_without_indicator.shape == (2, 2)
 
     assert_allclose(
-        X_test_imputed_with_indicator[:, :-1], X_test_imputed_without_indicator
+        x_test_imputed_with_indicator[:, :-1], x_test_imputed_without_indicator
     )
     if np.isnan(missing_value_test):
         expected_missing_indicator = [1, 0]
     else:
         expected_missing_indicator = [0, 0]
 
-    assert_allclose(X_test_imputed_with_indicator[:, -1], expected_missing_indicator)
+    assert_allclose(x_test_imputed_with_indicator[:, -1], expected_missing_indicator)

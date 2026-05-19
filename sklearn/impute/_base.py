@@ -529,13 +529,13 @@ class SimpleImputer(_BaseImputer):
     def _dense_fit(self, X, strategy, missing_values, fill_value):
         """Fit the transformer on dense data."""
         missing_mask = _get_mask(X, missing_values)
-        masked_X = ma.masked_array(X, mask=missing_mask)
+        masked_x = ma.masked_array(X, mask=missing_mask)
 
         super()._fit_indicator(missing_mask)
 
         # Mean
         if strategy == "mean":
-            mean_masked = np.ma.mean(masked_X, axis=0)
+            mean_masked = np.ma.mean(masked_x, axis=0)
             # Avoid the warning "Warning: converting a masked element to nan."
             mean = np.ma.getdata(mean_masked)
             mean[np.ma.getmask(mean_masked)] = 0 if self.keep_empty_features else np.nan
@@ -544,7 +544,7 @@ class SimpleImputer(_BaseImputer):
 
         # Median
         elif strategy == "median":
-            median_masked = np.ma.median(masked_X, axis=0)
+            median_masked = np.ma.median(masked_x, axis=0)
             # Avoid the warning "Warning: converting a masked element to nan."
             median = np.ma.getdata(median_masked)
             median[np.ma.getmaskarray(median_masked)] = (
@@ -593,9 +593,9 @@ class SimpleImputer(_BaseImputer):
 
         # Custom
         elif isinstance(strategy, Callable):
-            statistics = np.empty(masked_X.shape[1])
-            for i in range(masked_X.shape[1]):
-                statistics[i] = self.strategy(masked_X[:, i].compressed())
+            statistics = np.empty(masked_x.shape[1])
+            for i in range(masked_x.shape[1]):
+                statistics[i] = self.strategy(masked_x[:, i].compressed())
             return statistics
 
     def transform(self, X):
@@ -683,9 +683,9 @@ class SimpleImputer(_BaseImputer):
 
             X[coordinates] = values
 
-        X_indicator = super()._transform_indicator(missing_mask)
+        x_indicator = super()._transform_indicator(missing_mask)
 
-        return super()._concatenate_indicator(X, X_indicator)
+        return super()._concatenate_indicator(X, x_indicator)
 
     def inverse_transform(self, X):
         """Convert the data back to the original representation.
