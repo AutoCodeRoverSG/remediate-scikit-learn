@@ -197,7 +197,7 @@ class BayesianRidge(RegressorMixin, LinearModel):
         lambda_init=None,
         compute_score=False,
         fit_intercept=True,
-        copy_X=True,
+        copy_X=True,  # NOSONAR
         verbose=False,
     ):
         self.max_iter = max_iter
@@ -254,7 +254,7 @@ class BayesianRidge(RegressorMixin, LinearModel):
             y_mean = np.average(y, weights=sample_weight)
             y_var = np.average((y - y_mean) ** 2, weights=sample_weight)
 
-        X, y, X_offset_, y_offset_, X_scale_, _ = _preprocess_data(
+        X, y, x_offset_, y_offset_, x_scale_, _ = _preprocess_data(
             X,
             y,
             fit_intercept=self.fit_intercept,
@@ -264,8 +264,8 @@ class BayesianRidge(RegressorMixin, LinearModel):
             rescale_with_sw=True,
         )
 
-        self.X_offset_ = X_offset_
-        self.X_scale_ = X_scale_
+        self.X_offset_ = x_offset_
+        self.X_scale_ = x_scale_
 
         # Initialization of the values of the parameters
         eps = np.finfo(np.float64).eps
@@ -287,10 +287,10 @@ class BayesianRidge(RegressorMixin, LinearModel):
         alpha_1 = self.alpha_1
         alpha_2 = self.alpha_2
 
-        self.scores_ = list()
+        self.scores_ = []
         coef_old_ = None
 
-        XT_y = np.dot(X.T, y)
+        xt_y = np.dot(X.T, y)
         # Let M, N = n_samples, n_features and K = min(M, N).
         # The posterior covariance matrix needs Vh_full: (N, N).
         # The full SVD is only required when n_samples < n_features.
@@ -298,19 +298,19 @@ class BayesianRidge(RegressorMixin, LinearModel):
         # U: (M, M), S: M, Vh_full: (N, N), Vh: (M, N)
         # When n_samples > n_features, K=N and full_matrices=False
         # U: (M, N), S: N, Vh_full: (N, N), Vh: (N, N)
-        U, S, Vh_full = linalg.svd(X, full_matrices=(n_samples < n_features))
+        U, S, vh_full = linalg.svd(X, full_matrices=(n_samples < n_features))
         K = len(S)
         eigen_vals_ = S**2
         eigen_vals_full = np.zeros(n_features, dtype=dtype)
         eigen_vals_full[0:K] = eigen_vals_
-        Vh = Vh_full[0:K, :]
+        vh = vh_full[0:K, :]
 
         # Convergence loop of the bayesian ridge regression
         for iter_ in range(self.max_iter):
             # update posterior mean coef_ based on alpha_ and lambda_ and
             # compute corresponding sse (sum of squared errors)
             coef_, sse_ = self._update_coef_(
-                X, y, n_samples, n_features, XT_y, U, Vh, eigen_vals_, alpha_, lambda_
+                X, y, n_samples, n_features, xt_y, U, vh, eigen_vals_, alpha_, lambda_
             )
             if self.compute_score:
                 # compute the log marginal likelihood
@@ -345,7 +345,7 @@ class BayesianRidge(RegressorMixin, LinearModel):
         self.alpha_ = alpha_
         self.lambda_ = lambda_
         self.coef_, sse_ = self._update_coef_(
-            X, y, n_samples, n_features, XT_y, U, Vh, eigen_vals_, alpha_, lambda_
+            X, y, n_samples, n_features, xt_y, U, vh, eigen_vals_, alpha_, lambda_
         )
         if self.compute_score:
             # compute the log marginal likelihood
@@ -364,10 +364,10 @@ class BayesianRidge(RegressorMixin, LinearModel):
 
         # posterior covariance
         self.sigma_ = np.dot(
-            Vh_full.T, Vh_full / (alpha_ * eigen_vals_full + lambda_)[:, np.newaxis]
+            vh_full.T, vh_full / (alpha_ * eigen_vals_full + lambda_)[:, np.newaxis]
         )
 
-        self._set_intercept(X_offset_, y_offset_, X_scale_)
+        self._set_intercept(x_offset_, y_offset_, x_scale_)
 
         return self
 
@@ -403,7 +403,7 @@ class BayesianRidge(RegressorMixin, LinearModel):
             return y_mean, y_std
 
     def _update_coef_(
-        self, X, y, n_samples, n_features, XT_y, U, Vh, eigen_vals_, alpha_, lambda_
+        self, X, y, n_samples, n_features, xt_y, u, vh, eigen_vals_, alpha_, lambda_
     ):
         """Update posterior mean and compute corresponding sse (sum of squared errors).
 
@@ -414,11 +414,11 @@ class BayesianRidge(RegressorMixin, LinearModel):
 
         if n_samples > n_features:
             coef_ = np.linalg.multi_dot(
-                [Vh.T, Vh / (eigen_vals_ + lambda_ / alpha_)[:, np.newaxis], XT_y]
+                [vh.T, vh / (eigen_vals_ + lambda_ / alpha_)[:, np.newaxis], xt_y]
             )
         else:
             coef_ = np.linalg.multi_dot(
-                [X.T, U / (eigen_vals_ + lambda_ / alpha_)[None, :], U.T, y]
+                [X.T, u / (eigen_vals_ + lambda_ / alpha_)[None, :], u.T, y]
             )
 
         # Note: we do not need to explicitly use the weights in this sum because
@@ -622,7 +622,7 @@ class ARDRegression(RegressorMixin, LinearModel):
         compute_score=False,
         threshold_lambda=1.0e4,
         fit_intercept=True,
-        copy_X=True,
+        copy_X=True,  # NOSONAR
         verbose=False,
     ):
         self.max_iter = max_iter
