@@ -16,7 +16,7 @@ from sklearn.utils.fixes import CSR_CONTAINERS
 
 def test_bad_n_features_to_select():
     n_features = 5
-    X, y = make_regression(n_features=n_features)
+    X, y = make_regression(n_features=n_features, random_state=0)
     sfs = SequentialFeatureSelector(LinearRegression(), n_features_to_select=n_features)
     with pytest.raises(ValueError, match="n_features_to_select must be < n_features"):
         sfs.fit(X, y)
@@ -103,25 +103,25 @@ def test_n_features_to_select_stopping_criterion(direction):
         cv=2,
     )
     sfs.fit(X, y)
-    selected_X = sfs.transform(X)
+    selected_x = sfs.transform(X)
 
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
 
     added_candidates = list(set(range(X.shape[1])) - set(sfs.get_support(indices=True)))
-    added_X = np.hstack(
+    added_x = np.hstack(
         [
-            selected_X,
+            selected_x,
             (X[:, rng.choice(added_candidates)])[:, np.newaxis],
         ]
     )
 
     removed_candidate = rng.choice(list(range(sfs.n_features_to_select_)))
-    removed_X = np.delete(selected_X, removed_candidate, axis=1)
+    removed_x = np.delete(selected_x, removed_candidate, axis=1)
 
     plain_cv_score = cross_val_score(LinearRegression(), X, y, cv=2).mean()
-    sfs_cv_score = cross_val_score(LinearRegression(), selected_X, y, cv=2).mean()
-    added_cv_score = cross_val_score(LinearRegression(), added_X, y, cv=2).mean()
-    removed_cv_score = cross_val_score(LinearRegression(), removed_X, y, cv=2).mean()
+    sfs_cv_score = cross_val_score(LinearRegression(), selected_x, y, cv=2).mean()
+    added_cv_score = cross_val_score(LinearRegression(), added_x, y, cv=2).mean()
+    removed_cv_score = cross_val_score(LinearRegression(), removed_x, y, cv=2).mean()
 
     assert sfs_cv_score >= plain_cv_score
 
@@ -144,7 +144,7 @@ def test_n_features_to_select_stopping_criterion(direction):
 )
 def test_n_features_to_select_float(direction, n_features_to_select, expected):
     # Test passing a float as n_features_to_select
-    X, y = make_regression(n_features=10)
+    X, y = make_regression(n_features=10, random_state=0)
     sfs = SequentialFeatureSelector(
         LinearRegression(),
         n_features_to_select=n_features_to_select,
@@ -169,9 +169,9 @@ def test_sanity(seed, direction, n_features_to_select, expected_selected_feature
     # target, f2 having a stronger correlation than f0. We expect f1 to be
     # dropped, and f2 to always be selected.
 
-    rng = np.random.RandomState(seed)
+    rng = np.random.default_rng(seed)
     n_samples = 100
-    X = rng.randn(n_samples, 3)
+    X = rng.standard_normal((n_samples, 3))
     y = 3 * X[:, 0] - 10 * X[:, 2]
 
     sfs = SequentialFeatureSelector(
@@ -188,7 +188,7 @@ def test_sanity(seed, direction, n_features_to_select, expected_selected_feature
 def test_sparse_support(csr_container):
     # Make sure sparse data is supported
 
-    X, y = make_regression(n_features=10)
+    X, y = make_regression(n_features=10, random_state=0)
     X = csr_container(X)
     sfs = SequentialFeatureSelector(
         LinearRegression(), n_features_to_select="auto", cv=2
@@ -206,7 +206,9 @@ def test_nan_support():
     nan_mask = rng.randint(0, 2, size=(n_samples, n_features), dtype=bool)
     X[nan_mask] = np.nan
     sfs = SequentialFeatureSelector(
-        HistGradientBoostingRegressor(), n_features_to_select="auto", cv=2
+        HistGradientBoostingRegressor(learning_rate=0.1, random_state=0),
+        n_features_to_select="auto",
+        cv=2,
     )
     sfs.fit(X, y)
     sfs.transform(X)
@@ -226,7 +228,7 @@ def test_pipeline_support():
     X, y = make_regression(n_samples, n_features, random_state=0)
 
     # pipeline in SFS
-    pipe = make_pipeline(StandardScaler(), LinearRegression())
+    pipe = make_pipeline(StandardScaler(), LinearRegression(), memory=None)
     sfs = SequentialFeatureSelector(pipe, n_features_to_select="auto", cv=2)
     sfs.fit(X, y)
     sfs.transform(X)
@@ -235,7 +237,7 @@ def test_pipeline_support():
     sfs = SequentialFeatureSelector(
         LinearRegression(), n_features_to_select="auto", cv=2
     )
-    pipe = make_pipeline(StandardScaler(), sfs)
+    pipe = make_pipeline(StandardScaler(), sfs, memory=None)
     pipe.fit(X, y)
     pipe.transform(X)
 
@@ -245,7 +247,7 @@ def test_unsupervised_model_fit(n_features_to_select):
     # Make sure that models without classification labels are not being
     # validated
 
-    X, y = make_blobs(n_features=4)
+    X, _ = make_blobs(n_features=4, random_state=0)
     sfs = SequentialFeatureSelector(
         KMeans(n_init=1),
         n_features_to_select=n_features_to_select,
@@ -258,7 +260,7 @@ def test_unsupervised_model_fit(n_features_to_select):
 def test_no_y_validation_model_fit(y):
     # Make sure that other non-conventional y labels are not accepted
 
-    X, clusters = make_blobs(n_features=6)
+    X, _ = make_blobs(n_features=6, random_state=0)
     sfs = SequentialFeatureSelector(
         KMeans(),
         n_features_to_select=3,
@@ -297,8 +299,8 @@ def test_backward_neg_tol():
         direction="backward",
         tol=-1e-3,
     )
-    Xr = sfs.fit_transform(X, y)
-    new_score = lr.fit(Xr, y).score(Xr, y)
+    x_reduced = sfs.fit_transform(X, y)
+    new_score = lr.fit(x_reduced, y).score(x_reduced, y)
 
     assert 0 < sfs.get_support().sum() < X.shape[1]
     assert new_score < initial_score
