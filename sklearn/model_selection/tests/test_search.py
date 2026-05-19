@@ -2646,7 +2646,8 @@ def test_search_with_2d_array():
         [
             ("vect", TfidfVectorizer()),
             ("clf", ComplementNB()),
-        ]
+        ],
+        memory=None,
     )
     random_search = RandomizedSearchCV(
         estimator=pipeline,
@@ -2670,7 +2671,10 @@ def test_search_html_repr():
     """Test different HTML representations for GridSearchCV."""
     X, y = make_classification(random_state=42)
 
-    pipeline = Pipeline([("scale", StandardScaler()), ("clf", DummyClassifier())])
+    pipeline = Pipeline(
+        [("scale", StandardScaler()), ("clf", DummyClassifier(random_state=42))],
+        memory=None,
+    )
     param_grid = {"clf": [DummyClassifier(), LogisticRegression()]}
 
     # Unfitted shows the original pipeline
@@ -2699,14 +2703,14 @@ def test_search_html_repr():
 
 
 @pytest.mark.parametrize(
-    "SearchCV, param_search",
+    "search_cv, param_search",
     [
         (GridSearchCV, "param_grid"),
         (RandomizedSearchCV, "param_distributions"),
     ],
 )
 @config_context(enable_metadata_routing=True)
-def test_multi_metric_search_forwards_metadata(SearchCV, param_search):
+def test_multi_metric_search_forwards_metadata(search_cv, param_search):
     """Test that *SearchCV forwards metadata correctly when passed multiple metrics."""
     X, y = make_classification(random_state=42)
     n_samples = _num_samples(X)
@@ -2721,8 +2725,8 @@ def test_multi_metric_search_forwards_metadata(SearchCV, param_search):
     scorer = ConsumingScorer(registry=scorer_registry).set_score_request(
         sample_weight="score_weights", metadata="score_metadata"
     )
-    scoring = dict(my_scorer=scorer, accuracy="accuracy")
-    SearchCV(est, refit="accuracy", cv=2, scoring=scoring, **param_grid_search).fit(
+    scoring = {"my_scorer": scorer, "accuracy": "accuracy"}
+    search_cv(est, refit="accuracy", cv=2, scoring=scoring, **param_grid_search).fit(
         X, y, score_weights=score_weights, score_metadata=score_metadata
     )
     assert len(scorer_registry)
@@ -2738,21 +2742,21 @@ def test_multi_metric_search_forwards_metadata(SearchCV, param_search):
 
 
 @pytest.mark.parametrize(
-    "SearchCV, param_search",
+    "search_cv, param_search",
     [
         (GridSearchCV, "param_grid"),
         (RandomizedSearchCV, "param_distributions"),
         (HalvingGridSearchCV, "param_grid"),
     ],
 )
-def test_score_rejects_params_with_no_routing_enabled(SearchCV, param_search):
+def test_score_rejects_params_with_no_routing_enabled(search_cv, param_search):
     """*SearchCV should reject **params when metadata routing is not enabled
     since this is added only when routing is enabled."""
     X, y = make_classification(random_state=42)
     est = LinearSVC()
     param_grid_search = {param_search: {"C": [1]}}
 
-    gs = SearchCV(est, cv=2, **param_grid_search).fit(X, y)
+    gs = search_cv(est, cv=2, **param_grid_search).fit(X, y)
 
     with pytest.raises(ValueError, match="is only supported if"):
         gs.score(X, y, metadata=1)
@@ -2827,7 +2831,8 @@ def test_search_with_estimators_issue_29157():
         [
             ("enc", enc),
             ("regressor", LinearRegression()),
-        ]
+        ],
+        memory=None,
     )
     grid_params = {
         "enc__enc": [
@@ -2851,6 +2856,7 @@ def test_cv_results_multi_size_array():
     spline_reg_pipe = make_pipeline(
         SplineTransformer(extrapolation="periodic"),
         LogisticRegression(),
+        memory=None,
     )
 
     n_knots_list = [n_features * i for i in [10, 11, 12]]
@@ -2875,9 +2881,9 @@ def test_cv_results_multi_size_array():
     "array_namespace, device_name, dtype_name",
     yield_namespace_device_dtype_combinations(),
 )
-@pytest.mark.parametrize("SearchCV", [GridSearchCV, RandomizedSearchCV])
+@pytest.mark.parametrize("search_cv", [GridSearchCV, RandomizedSearchCV])
 def test_array_api_search_cv_classifier(
-    SearchCV, array_namespace, device_name, dtype_name
+    search_cv, array_namespace, device_name, dtype_name
 ):
     xp, device = _array_api_for_tests(array_namespace, device_name, dtype_name)
 
@@ -2890,7 +2896,7 @@ def test_array_api_search_cv_classifier(
     y_xp = xp.asarray(y_np, device=device)
 
     with config_context(array_api_dispatch=True):
-        searcher = SearchCV(
+        searcher = search_cv(
             LinearDiscriminantAnalysis(),
             {"tol": [1e-2, 1e-3, 1e-4, 1e-5, 1e-6, 1e-7]},
             cv=2,
