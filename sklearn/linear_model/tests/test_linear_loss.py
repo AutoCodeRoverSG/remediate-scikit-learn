@@ -25,16 +25,16 @@ from sklearn.utils.fixes import CSR_CONTAINERS
 LOSSES = [HalfBinomialLoss, HalfMultinomialLoss, HalfPoissonLoss]
 
 
-def random_X_y_coef(
+def random_x_y_coef(
     linear_model_loss, n_samples, n_features, coef_bound=(-2, 2), seed=42
 ):
     """Random generate y, X and coef in valid range."""
-    rng = np.random.RandomState(seed)
+    rng = np.random.default_rng(seed)
     n_dof = n_features + linear_model_loss.fit_intercept
     X = make_low_rank_matrix(
         n_samples=n_samples,
         n_features=n_features,
-        random_state=rng,
+        random_state=seed,
     )
     coef = linear_model_loss.init_zero_coef(X)
 
@@ -55,7 +55,7 @@ def random_X_y_coef(
         # See https://stackoverflow.com/a/34190035/16761084
         def choice_vectorized(items, p):
             s = p.cumsum(axis=1)
-            r = rng.rand(p.shape[0])[:, None]
+            r = rng.random(p.shape[0])[:, None]
             k = (s < r).sum(axis=1)
             return items[k]
 
@@ -86,7 +86,7 @@ def test_init_zero_coef(
 ):
     """Test that init_zero_coef initializes coef correctly."""
     loss = LinearModelLoss(base_loss=base_loss(), fit_intercept=fit_intercept)
-    rng = np.random.RandomState(global_random_seed)
+    rng = np.random.default_rng(global_random_seed)
     X = rng.normal(size=(5, n_features))
     coef = loss.init_zero_coef(X, dtype=dtype)
     if loss.base_loss.is_multiclass:
@@ -119,7 +119,7 @@ def test_loss_grad_hess_are_the_same(
 ):
     """Test that loss and gradient are the same across different functions."""
     loss = LinearModelLoss(base_loss=base_loss(), fit_intercept=fit_intercept)
-    X, y, coef = random_X_y_coef(
+    X, y, coef = random_x_y_coef(
         linear_model_loss=loss, n_samples=10, n_features=5, seed=global_random_seed
     )
     x_old, y_old, coef_old = X.copy(), y.copy(), coef.copy()
@@ -211,7 +211,7 @@ def test_loss_gradients_hessp_intercept(
     loss = LinearModelLoss(base_loss=base_loss(), fit_intercept=False)
     loss_inter = LinearModelLoss(base_loss=base_loss(), fit_intercept=True)
     n_samples, n_features = 10, 5
-    X, y, coef = random_X_y_coef(
+    X, y, coef = random_x_y_coef(
         linear_model_loss=loss,
         n_samples=n_samples,
         n_features=n_features,
@@ -251,7 +251,7 @@ def test_loss_gradients_hessp_intercept(
     g_inter_corrected.T[-1] += l2_reg_strength * coef.T[-1]
     assert_allclose(g, g_inter_corrected)
 
-    s = np.random.RandomState(global_random_seed).randn(*coef.shape)
+    s = np.random.default_rng(global_random_seed).standard_normal(coef.shape)
     h = hessp(s)
     h_inter = hessp_inter(s)
     h_inter_corrected = h_inter
@@ -273,7 +273,7 @@ def test_gradients_hessians_numerically(
     """
     loss = LinearModelLoss(base_loss=base_loss(), fit_intercept=fit_intercept)
     n_samples, n_features = 10, 5
-    X, y, coef = random_X_y_coef(
+    X, y, coef = random_x_y_coef(
         linear_model_loss=loss,
         n_samples=n_samples,
         n_features=n_features,
@@ -304,7 +304,7 @@ def test_gradients_hessians_numerically(
         ),
         2 * eps,
     )
-    # approx_g2 = (f(x + 2*eps) - f(x - 2*eps)) / (4*eps)
+    
     approx_g2 = optimize.approx_fprime(
         coef,
         lambda coef: loss.loss(
@@ -352,13 +352,13 @@ def test_multinomial_coef_shape(fit_intercept, global_random_seed):
     """Test that multinomial LinearModelLoss respects shape of coef."""
     loss = LinearModelLoss(base_loss=HalfMultinomialLoss(), fit_intercept=fit_intercept)
     n_samples, n_features = 10, 5
-    X, y, coef = random_X_y_coef(
+    X, y, coef = random_x_y_coef(
         linear_model_loss=loss,
         n_samples=n_samples,
         n_features=n_features,
         seed=global_random_seed,
     )
-    s = np.random.RandomState(global_random_seed).randn(*coef.shape)
+    s = np.random.default_rng(global_random_seed).standard_normal(coef.shape)
 
     _, g = loss.loss_gradient(coef, X, y)
     g1 = loss.gradient(coef, X, y)
@@ -406,7 +406,7 @@ def test_multinomial_hessian_3_classes(sample_weight, global_random_seed):
     loss = LinearModelLoss(
         base_loss=HalfMultinomialLoss(n_classes=n_classes), fit_intercept=False
     )
-    X, y, coef = random_X_y_coef(
+    X, y, coef = random_x_y_coef(
         linear_model_loss=loss,
         n_samples=n_samples,
         n_features=n_features,
@@ -451,7 +451,7 @@ def test_multinomial_hessian_3_classes(sample_weight, global_random_seed):
         h /= n_samples
     else:
         h *= sample_weight / np.sum(sample_weight)
-    # hess_expected.shape = (n_features, n_classes, n_classes, n_features)
+    
     hess_expected = np.einsum("ij, mini, ik->jmnk", X, h, X)
     hess_expected = np.moveaxis(hess_expected, 2, 3)
     hess_expected = hess_expected.reshape(
