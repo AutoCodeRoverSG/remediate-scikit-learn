@@ -89,7 +89,7 @@ def _check_pos_label_statistics(
             y_score,
             pos_label=pos_label,
         )
-    else:  # constructor_name = "from_cv_results"
+    else:  
         display = display_class.from_cv_results(
             cv_results,
             X,
@@ -116,7 +116,7 @@ def _check_pos_label_statistics(
             y_score,
             pos_label=pos_label,
         )
-    else:  # constructor_name = "from_cv_results"
+    else:  
         display = display_class.from_cv_results(
             cv_results,
             X,
@@ -254,7 +254,7 @@ def test_display_curve_name_overwritten_by_plot_multiple_calls(
         disp = display_class.from_estimator(clf, X, y, name=clf_name)
     elif constructor_name == "from_predictions":
         disp = display_class.from_predictions(y, y_pred, name=clf_name)
-    else:  # constructor_name = "from_cv_results"
+    else:  
         if display_class in (RocCurveDisplay, PrecisionRecallDisplay):
             disp = display_class.from_cv_results(cv_results, X, y, name=clf_name)
         else:
@@ -573,7 +573,7 @@ def test_display_default_name(
 
     if constructor_name == "from_estimator":
         disp = Display.from_estimator(lr, X, y)
-    else:  # constructor_name = "from_predictions"
+    else:  
         disp = Display.from_predictions(y, y_score)
 
     assert expected_clf_name in disp.name
@@ -756,10 +756,10 @@ def test_display_from_cv_results_curve_kwargs(
     )
     if curve_kwargs is None:
         # Default `alpha` used
-        assert all(line.get_alpha() == 0.5 for line in display.line_)
+        assert all(line.get_alpha() == pytest.approx(0.5) for line in display.line_)
     elif isinstance(curve_kwargs, Mapping):
         # `alpha` from dict used for all curves
-        assert all(line.get_alpha() == 0.2 for line in display.line_)
+        assert all(line.get_alpha() == pytest.approx(0.2) for line in display.line_)
     else:
         # Different `alpha` used for each curve
         assert all(
@@ -813,7 +813,7 @@ def test_display_estimator_name_deprecation(pyplot, Display, display_kwargs):
 
 
 @pytest.mark.parametrize(
-    "Display, display_kwargs",
+    "display_class, display_kwargs",
     [
         # TODO(1.11): Remove
         (
@@ -826,7 +826,7 @@ def test_display_estimator_name_deprecation(pyplot, Display, display_kwargs):
     "constructor_name", ["from_estimator", "from_predictions", "plot"]
 )
 def test_display_kwargs_deprecation(
-    pyplot, data_binary, constructor_name, Display, display_kwargs
+    pyplot, data_binary, constructor_name, display_class, display_kwargs
 ):
     """Check **kwargs deprecated correctly in favour of `curve_kwargs`."""
     X, y = data_binary
@@ -836,17 +836,23 @@ def test_display_kwargs_deprecation(
     # Error when both `curve_kwargs` and `**kwargs` provided
     with pytest.raises(ValueError, match="Cannot provide both `curve_kwargs`"):
         if constructor_name == "from_estimator":
-            Display.from_estimator(lr, X, y, curve_kwargs={"alpha": 1}, label="test")
+            display_class.from_estimator(
+                lr, X, y, curve_kwargs={"alpha": 1}, label="test"
+            )
         elif constructor_name == "from_predictions":
-            Display.from_predictions(y, y, curve_kwargs={"alpha": 1}, label="test")
-        else:  # constructor_name = "plot"
-            Display(**display_kwargs).plot(curve_kwargs={"alpha": 1}, label="test")
+            display_class.from_predictions(
+                y, y, curve_kwargs={"alpha": 1}, label="test"
+            )
+        else:  
+            display_class(**display_kwargs).plot(
+                curve_kwargs={"alpha": 1}, label="test"
+            )
 
     # Warning when `**kwargs`` provided
     with pytest.warns(FutureWarning, match=r"`\*\*kwargs` is deprecated and will be"):
         if constructor_name == "from_estimator":
-            Display.from_estimator(lr, X, y, label="test")
+            display_class.from_estimator(lr, X, y, label="test")
         elif constructor_name == "from_predictions":
-            Display.from_predictions(y, y, label="test")
-        else:  # constructor_name = "plot"
-            Display(**display_kwargs).plot(label="test")
+            display_class.from_predictions(y, y, label="test")
+        else:  
+            display_class(**display_kwargs).plot(label="test")
