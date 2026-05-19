@@ -1256,13 +1256,13 @@ def test_tfidf_transformer_type(x_dtype):
 )
 def test_tfidf_transformer_sparse(csc_container, csr_container):
     X = sparse.rand(10, 20000, dtype=np.float64, random_state=42)
-    X_csc = csc_container(X)
-    X_csr = csr_container(X)
+    x_csc = csc_container(X)
+    x_csr = csr_container(X)
 
-    X_trans_csc = TfidfTransformer().fit_transform(X_csc)
-    X_trans_csr = TfidfTransformer().fit_transform(X_csr)
-    assert_allclose_dense_sparse(X_trans_csc, X_trans_csr)
-    assert X_trans_csc.format == X_trans_csr.format
+    x_trans_csc = TfidfTransformer().fit_transform(x_csc)
+    x_trans_csr = TfidfTransformer().fit_transform(x_csr)
+    assert_allclose_dense_sparse(x_trans_csc, x_trans_csr)
+    assert x_trans_csc.format == x_trans_csr.format
 
 
 @pytest.mark.parametrize(
@@ -1281,12 +1281,12 @@ def test_tfidf_vectorizer_type(vectorizer_dtype, output_dtype, warning_expected)
     warning_msg_match = "'dtype' should be used."
     if warning_expected:
         with pytest.warns(UserWarning, match=warning_msg_match):
-            X_idf = vectorizer.fit_transform(X)
+            x_idf = vectorizer.fit_transform(X)
     else:
         with warnings.catch_warnings():
             warnings.simplefilter("error", UserWarning)
-            X_idf = vectorizer.fit_transform(X)
-    assert X_idf.dtype == output_dtype
+            x_idf = vectorizer.fit_transform(X)
+    assert x_idf.dtype == output_dtype
 
 
 @pytest.mark.parametrize(
@@ -1373,41 +1373,41 @@ def test_countvectorizer_sort_features_64bit_sparse_indices(csr_container):
 
     vocabulary = {"scikit-learn": 0, "is": 1, "great!": 2}
 
-    Xs = CountVectorizer()._sort_features(X, vocabulary)
+    x_sorted = CountVectorizer()._sort_features(X, vocabulary)
 
-    assert INDICES_DTYPE == Xs.indices.dtype
+    assert INDICES_DTYPE == x_sorted.indices.dtype
 
 
 @pytest.mark.parametrize(
-    "Estimator", [CountVectorizer, TfidfVectorizer, HashingVectorizer]
+    "estimator_class", [CountVectorizer, TfidfVectorizer, HashingVectorizer]
 )
-def test_stop_word_validation_custom_preprocessor(Estimator):
+def test_stop_word_validation_custom_preprocessor(estimator_class):
     data = [{"text": "some text"}]
 
-    vec = Estimator()
+    vec = estimator_class()
     assert _check_stop_words_consistency(vec) is True
 
-    vec = Estimator(preprocessor=lambda x: x["text"], stop_words=["and"])
+    vec = estimator_class(preprocessor=lambda x: x["text"], stop_words=["and"])
     assert _check_stop_words_consistency(vec) == "error"
     # checks are cached
     assert _check_stop_words_consistency(vec) is None
     vec.fit_transform(data)
 
-    class CustomEstimator(Estimator):
+    class CustomEstimator(estimator_class):
         def build_preprocessor(self):
             return lambda x: x["text"]
 
     vec = CustomEstimator(stop_words=["and"])
     assert _check_stop_words_consistency(vec) == "error"
 
-    vec = Estimator(
-        tokenizer=lambda doc: re.compile(r"\w{1,}").findall(doc), stop_words=["and"]
+    vec = estimator_class(
+        tokenizer=lambda doc: re.compile(r"\w+").findall(doc), stop_words=["and"]
     )
     assert _check_stop_words_consistency(vec) is True
 
 
 @pytest.mark.parametrize(
-    "Estimator", [CountVectorizer, TfidfVectorizer, HashingVectorizer]
+    "estimator_class", [CountVectorizer, TfidfVectorizer, HashingVectorizer]
 )
 @pytest.mark.parametrize(
     "input_type, err_type, err_msg",
@@ -1416,14 +1416,16 @@ def test_stop_word_validation_custom_preprocessor(Estimator):
         ("file", AttributeError, "'str' object has no attribute 'read'"),
     ],
 )
-def test_callable_analyzer_error(Estimator, input_type, err_type, err_msg):
+def test_callable_analyzer_error(estimator_class, input_type, err_type, err_msg):
     data = ["this is text, not file or filename"]
     with pytest.raises(err_type, match=err_msg):
-        Estimator(analyzer=lambda x: x.split(), input=input_type).fit_transform(data)
+        estimator_class(analyzer=lambda x: x.split(), input=input_type).fit_transform(
+            data
+        )
 
 
 @pytest.mark.parametrize(
-    "Estimator",
+    "estimator_class",
     [
         CountVectorizer,
         TfidfVectorizer,
@@ -1434,10 +1436,10 @@ def test_callable_analyzer_error(Estimator, input_type, err_type, err_msg):
     "analyzer", [lambda doc: open(doc, "r"), lambda doc: doc.read()]
 )
 @pytest.mark.parametrize("input_type", ["file", "filename"])
-def test_callable_analyzer_change_behavior(Estimator, analyzer, input_type):
+def test_callable_analyzer_change_behavior(estimator_class, analyzer, input_type):
     data = ["this is text, not file or filename"]
     with pytest.raises((FileNotFoundError, AttributeError)):
-        Estimator(analyzer=analyzer, input=input_type).fit_transform(data)
+        estimator_class(analyzer=analyzer, input=input_type).fit_transform(data)
 
 
 @pytest.mark.parametrize(
