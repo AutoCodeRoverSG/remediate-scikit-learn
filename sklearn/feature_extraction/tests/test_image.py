@@ -368,15 +368,15 @@ def test_width_patch():
     # width and height of the patch should be less than the image
     x = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
     with pytest.raises(ValueError):
-        extract_patches_2d(x, (4, 1))
+        extract_patches_2d(x, (4, 1), random_state=0)
     with pytest.raises(ValueError):
-        extract_patches_2d(x, (1, 4))
+        extract_patches_2d(x, (1, 4), random_state=0)
 
 
 def test_patch_extractor_wrong_input(orange_face):
     """Check that an informative error is raised if the patch_size is not valid."""
     faces = _make_images(orange_face)
     err_msg = "patch_size must be a tuple of two integers"
-    extractor = PatchExtractor(patch_size=(8, 8, 8))
+    extractor = PatchExtractor(patch_size=(8, 8, 8), random_state=0)
     with pytest.raises(ValueError, match=err_msg):
         extractor.transform(faces)
