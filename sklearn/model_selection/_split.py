@@ -98,7 +98,9 @@ class GroupsConsumerMixin(_MetadataRequester):
     .. versionadded:: 1.3
     """
 
-    __metadata_request__split = {"groups": True}
+    # The single leading underscore avoids Python name mangling while still
+    # being discovered by _MetadataRequester via substring matching.
+    _metadata_request__split = {"groups": True}
 
 
 class BaseCrossValidator(_MetadataRequester, metaclass=ABCMeta):
@@ -111,7 +113,7 @@ class BaseCrossValidator(_MetadataRequester, metaclass=ABCMeta):
     # unless indicated by inheriting from ``GroupsConsumerMixin``.
     # This also prevents ``set_split_request`` to be generated for splitters
     # which don't support ``groups``.
-    __metadata_request__split = {"groups": metadata_routing.UNUSED}
+    _metadata_request__split = {"groups": metadata_routing.UNUSED}
 
     def split(self, X, y=None, groups=None):
         """Generate indices to split data into training and test set.
@@ -214,7 +216,7 @@ class LeaveOneOut(_UnsupportedGroupCVMixin, BaseCrossValidator):
     GroupKFold : K-fold iterator variant with non-overlapping groups.
     """
 
-    def _iter_test_indices(self, X, y=None, groups=None):
+    def _iter_test_indices(self, X=None, y=None, groups=None):
         n_samples = _num_samples(X)
         if n_samples <= 1:
             raise ValueError(
@@ -222,7 +224,7 @@ class LeaveOneOut(_UnsupportedGroupCVMixin, BaseCrossValidator):
             )
         return range(n_samples)
 
-    def get_n_splits(self, X, y=None, groups=None):
+    def get_n_splits(self, X=None, y=None, groups=None):
         """Returns the number of splitting iterations in the cross-validator.
 
         Parameters
@@ -308,7 +310,7 @@ class LeavePOut(_UnsupportedGroupCVMixin, BaseCrossValidator):
     def __init__(self, p):
         self.p = p
 
-    def _iter_test_indices(self, X, y=None, groups=None):
+    def _iter_test_indices(self, X=None, y=None, groups=None):
         n_samples = _num_samples(X)
         if n_samples <= self.p:
             raise ValueError(
@@ -319,7 +321,7 @@ class LeavePOut(_UnsupportedGroupCVMixin, BaseCrossValidator):
         for combination in combinations(range(n_samples), self.p):
             yield np.array(combination)
 
-    def get_n_splits(self, X, y=None, groups=None):
+    def get_n_splits(self, X=None, y=None, groups=None):
         """Returns the number of splitting iterations in the cross-validator.
 
         Parameters
@@ -514,7 +516,7 @@ class KFold(_UnsupportedGroupCVMixin, _BaseKFold):
     def __init__(self, n_splits=5, *, shuffle=False, random_state=None):
         super().__init__(n_splits=n_splits, shuffle=shuffle, random_state=random_state)
 
-    def _iter_test_indices(self, X, y=None, groups=None):
+    def _iter_test_indices(self, X=None, y=None, groups=None):
         n_samples = _num_samples(X)
         indices = np.arange(n_samples)
         if self.shuffle:
@@ -608,7 +610,7 @@ class GroupKFold(GroupsConsumerMixin, _BaseKFold):
     def __init__(self, n_splits=5, *, shuffle=False, random_state=None):
         super().__init__(n_splits, shuffle=shuffle, random_state=random_state)
 
-    def _iter_test_indices(self, X, y, groups):
+    def _iter_test_indices(self, X=None, y=None, groups=None):
         if groups is None:
             raise ValueError("The 'groups' parameter should not be None.")
         groups = check_array(groups, input_name="groups", ensure_2d=False, dtype=None)
