@@ -297,14 +297,14 @@ def test_matern_kernel():
     # the diagonal elements of a matern kernel are 1
     assert_array_almost_equal(np.diag(K), np.ones(X.shape[0]))
     # matern kernel for coef0==0.5 is equal to absolute exponential kernel
-    K_absexp = np.exp(-euclidean_distances(X, X, squared=False))
+    k_absexp = np.exp(-euclidean_distances(X, X, squared=False))
     K = Matern(nu=0.5, length_scale=1.0)(X)
-    assert_array_almost_equal(K, K_absexp)
+    assert_array_almost_equal(K, k_absexp)
     # matern kernel with coef0==inf is equal to RBF kernel
-    K_rbf = RBF(length_scale=1.0)(X)
+    k_rbf = RBF(length_scale=1.0)(X)
     K = Matern(nu=np.inf, length_scale=1.0)(X)
-    assert_array_almost_equal(K, K_rbf)
-    assert_allclose(K, K_rbf)
+    assert_array_almost_equal(K, k_rbf)
+    assert_allclose(K, k_rbf)
     # test that special cases of matern kernel (coef0 in [0.5, 1.5, 2.5])
     # result in nearly identical results as the general case for coef0 in
     # [0.5 + tiny, 1.5 + tiny, 2.5 + tiny]
