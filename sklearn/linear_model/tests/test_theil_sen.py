@@ -146,8 +146,8 @@ def test_spatial_median_1d():
     _, median = _spatial_median(X)
     assert_array_almost_equal(median, true_median)
     # Test larger problem and for exact solution in 1d case
-    random_state = np.random.RandomState(0)
-    X = random_state.randint(100, size=(1000, 1))
+    random_state = np.random.default_rng(0)
+    X = random_state.integers(100, size=(1000, 1))
     true_median = np.median(X.ravel())
     _, median = _spatial_median(X)
     assert_array_equal(median, true_median)
@@ -234,10 +234,10 @@ def test_checksubparams_invalid_input(param, exception_cls, match):
 
 
 def test_checksubparams_n_subsamples_if_less_samples_than_features():
-    random_state = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
     n_samples, n_features = 10, 20
-    X = random_state.normal(size=(n_samples, n_features))
-    y = random_state.normal(size=n_samples)
+    X = rng.normal(size=(n_samples, n_features))
+    y = rng.normal(size=n_samples)
     theil_sen = TheilSenRegressor(n_subsamples=9, random_state=0)
     with pytest.raises(ValueError):
         theil_sen.fit(X, y)

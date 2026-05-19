@@ -96,8 +96,8 @@ def make_prediction(dataset=None, binary=False):
     half = int(n_samples / 2)
 
     # add noisy features to make the problem harder and avoid perfect results
-    rng = np.random.RandomState(0)
-    X = np.c_[X, rng.randn(n_samples, 200 * n_features)]
+    rng = np.random.default_rng(0)
+    X = np.c_[X, rng.standard_normal((n_samples, 200 * n_features))]
 
     # run classifier, get class probabilities and label predictions
     clf = CalibratedClassifierCV(
@@ -232,7 +232,7 @@ def test_multilabel_accuracy_score_subset_accuracy():
     y1 = np.array([[0, 1, 1], [1, 0, 1]])
     y2 = np.array([[0, 0, 1], [1, 0, 1]])
 
-    assert accuracy_score(y1, y2) == 0.5
+    assert accuracy_score(y1, y2) == pytest.approx(0.5)
     assert accuracy_score(y1, y1) == 1
     assert accuracy_score(y2, y2) == 1
     assert accuracy_score(y2, np.logical_not(y2)) == 0
@@ -280,15 +280,15 @@ def test_precision_recall_f_binary_single_class():
     # Test precision, recall and F-scores behave with a single positive or
     # negative class
     # Such a case may occur with non-stratified cross-validation
-    assert 1.0 == precision_score([1, 1], [1, 1])
-    assert 1.0 == recall_score([1, 1], [1, 1])
-    assert 1.0 == f1_score([1, 1], [1, 1])
-    assert 1.0 == fbeta_score([1, 1], [1, 1], beta=0)
+    assert precision_score([1, 1], [1, 1]) == pytest.approx(1.0)
+    assert recall_score([1, 1], [1, 1]) == pytest.approx(1.0)
+    assert f1_score([1, 1], [1, 1]) == pytest.approx(1.0)
+    assert fbeta_score([1, 1], [1, 1], beta=0) == pytest.approx(1.0)
 
-    assert 0.0 == precision_score([-1, -1], [-1, -1])
-    assert 0.0 == recall_score([-1, -1], [-1, -1])
-    assert 0.0 == f1_score([-1, -1], [-1, -1])
-    assert 0.0 == fbeta_score([-1, -1], [-1, -1], beta=float("inf"))
+    assert precision_score([-1, -1], [-1, -1]) == pytest.approx(0.0)
+    assert recall_score([-1, -1], [-1, -1]) == pytest.approx(0.0)
+    assert f1_score([-1, -1], [-1, -1]) == pytest.approx(0.0)
+    assert fbeta_score([-1, -1], [-1, -1], beta=float("inf")) == pytest.approx(0.0)
     assert fbeta_score([-1, -1], [-1, -1], beta=float("inf")) == pytest.approx(
         fbeta_score([-1, -1], [-1, -1], beta=1e5)
     )
