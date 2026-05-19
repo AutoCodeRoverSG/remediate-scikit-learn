@@ -160,7 +160,7 @@ def sag_sparse(
 
     counter = 0
     for epoch in range(n_iter):
-        for k in range(n_samples):
+        for _ in range(n_samples):
             # idx = k
             idx = int(rng.rand() * n_samples)
             entry = X[idx]
@@ -278,6 +278,7 @@ def test_classifier_matching():
             dloss=log_dloss,
             fit_intercept=fit_intercept,
             saga=solver == "saga",
+            random_state=0,
         )
         weights2, intercept2 = sag(
             X,
@@ -331,6 +332,7 @@ def test_regressor_matching():
         n_iter=n_iter,
         dloss=squared_dloss,
         fit_intercept=fit_intercept,
+        random_state=0,
     )
     weights2, intercept2 = sag(
         X,
@@ -472,7 +474,7 @@ def test_sag_regressor_computed_correctly(csr_container):
         random_state=rng,
     )
 
-    spweights2, spintercept2 = sag_sparse(
+    _, _ = sag_sparse(
         X,
         y,
         step_size,
@@ -507,12 +509,12 @@ def test_get_auto_step_size():
     for saga in [True, False]:
         for fit_intercept in (True, False):
             if saga:
-                L_sqr = max_squared_sum + alpha + int(fit_intercept)
-                L_log = (max_squared_sum + 4.0 * alpha + int(fit_intercept)) / 4.0
-                mun_sqr = min(2 * n_samples * alpha, L_sqr)
-                mun_log = min(2 * n_samples * alpha, L_log)
-                step_size_sqr = 1 / (2 * L_sqr + mun_sqr)
-                step_size_log = 1 / (2 * L_log + mun_log)
+                l_sqr = max_squared_sum + alpha + int(fit_intercept)
+                l_log = (max_squared_sum + 4.0 * alpha + int(fit_intercept)) / 4.0
+                mun_sqr = min(2 * n_samples * alpha, l_sqr)
+                mun_log = min(2 * n_samples * alpha, l_log)
+                step_size_sqr = 1 / (2 * l_sqr + mun_sqr)
+                step_size_log = 1 / (2 * l_log + mun_log)
             else:
                 step_size_sqr = 1.0 / (max_squared_sum + alpha + int(fit_intercept))
                 step_size_log = 4.0 / (
@@ -630,6 +632,7 @@ def test_sag_classifier_computed_correctly(csr_container):
         n_iter=n_iter,
         dloss=log_dloss,
         fit_intercept=fit_intercept,
+        random_state=77,
     )
     spweights2, spintercept2 = sag_sparse(
         X,
@@ -640,6 +643,7 @@ def test_sag_classifier_computed_correctly(csr_container):
         dloss=log_dloss,
         sparse=True,
         fit_intercept=fit_intercept,
+        random_state=77,
     )
 
     assert_array_almost_equal(clf1.coef_.ravel(), spweights.ravel(), decimal=2)
@@ -693,6 +697,7 @@ def test_sag_multiclass_computed_correctly(csr_container):
             dloss=log_dloss,
             n_iter=max_iter,
             fit_intercept=fit_intercept,
+            random_state=77,
         )
         spweights2, spintercept2 = sag_sparse(
             X,
@@ -703,6 +708,7 @@ def test_sag_multiclass_computed_correctly(csr_container):
             n_iter=max_iter,
             sparse=True,
             fit_intercept=fit_intercept,
+            random_state=77,
         )
         coef1.append(spweights1)
         intercept1.append(spintercept1)
