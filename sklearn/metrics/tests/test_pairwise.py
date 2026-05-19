@@ -887,10 +887,10 @@ def test_parallel_pairwise_distances_y_norm_squared():
     Y_norm_squared = (Y**2).sum(axis=1)
 
     D_single = pairwise_distances(
-        X, Y, metric="euclidean", n_jobs=1, Y_norm_squared=Y_norm_squared
+        X, Y, metric="euclidean", n_jobs=1, y_norm_squared=Y_norm_squared
     )
     D_parallel = pairwise_distances(
-        X, Y, metric="euclidean", n_jobs=2, Y_norm_squared=Y_norm_squared
+        X, Y, metric="euclidean", n_jobs=2, y_norm_squared=Y_norm_squared
     )
     assert_allclose(D_parallel, D_single)
 
@@ -969,9 +969,9 @@ def test_euclidean_distances_with_norms(global_dtype, y_array_constr):
     Y = y_array_constr(Y)
 
     D1 = euclidean_distances(X, Y)
-    D2 = euclidean_distances(X, Y, X_norm_squared=X_norm_sq)
-    D3 = euclidean_distances(X, Y, Y_norm_squared=Y_norm_sq)
-    D4 = euclidean_distances(X, Y, X_norm_squared=X_norm_sq, Y_norm_squared=Y_norm_sq)
+    D2 = euclidean_distances(X, Y, x_norm_squared=X_norm_sq)
+    D3 = euclidean_distances(X, Y, y_norm_squared=Y_norm_sq)
+    D4 = euclidean_distances(X, Y, x_norm_squared=X_norm_sq, y_norm_squared=Y_norm_sq)
     assert_allclose(D2, D1)
     assert_allclose(D3, D1)
     assert_allclose(D4, D1)
@@ -980,8 +980,8 @@ def test_euclidean_distances_with_norms(global_dtype, y_array_constr):
     wrong_D = euclidean_distances(
         X,
         Y,
-        X_norm_squared=np.zeros_like(X_norm_sq),
-        Y_norm_squared=np.zeros_like(Y_norm_sq),
+        x_norm_squared=np.zeros_like(X_norm_sq),
+        y_norm_squared=np.zeros_like(Y_norm_sq),
     )
     with pytest.raises(AssertionError):
         assert_allclose(wrong_D, D1)
@@ -996,9 +996,9 @@ def test_euclidean_distances_float32_norms(global_random_seed, symmetric):
     X_norm_sq = (X.astype(np.float32) ** 2).sum(axis=1).reshape(1, -1)
     Y_norm_sq = (Y.astype(np.float32) ** 2).sum(axis=1).reshape(1, -1)
     D1 = euclidean_distances(X, Y)
-    D2 = euclidean_distances(X, Y, X_norm_squared=X_norm_sq)
-    D3 = euclidean_distances(X, Y, Y_norm_squared=Y_norm_sq)
-    D4 = euclidean_distances(X, Y, X_norm_squared=X_norm_sq, Y_norm_squared=Y_norm_sq)
+    D2 = euclidean_distances(X, Y, x_norm_squared=X_norm_sq)
+    D3 = euclidean_distances(X, Y, y_norm_squared=Y_norm_sq)
+    D4 = euclidean_distances(X, Y, x_norm_squared=X_norm_sq, y_norm_squared=Y_norm_sq)
     assert_allclose(D2, D1)
     assert_allclose(D3, D1)
     assert_allclose(D4, D1)
@@ -1014,28 +1014,28 @@ def test_euclidean_distances_norm_shapes():
     Y_norm_squared = (Y**2).sum(axis=1)
 
     D1 = euclidean_distances(
-        X, Y, X_norm_squared=X_norm_squared, Y_norm_squared=Y_norm_squared
+        X, Y, x_norm_squared=X_norm_squared, y_norm_squared=Y_norm_squared
     )
     D2 = euclidean_distances(
         X,
         Y,
-        X_norm_squared=X_norm_squared.reshape(-1, 1),
-        Y_norm_squared=Y_norm_squared.reshape(-1, 1),
+        x_norm_squared=X_norm_squared.reshape(-1, 1),
+        y_norm_squared=Y_norm_squared.reshape(-1, 1),
     )
     D3 = euclidean_distances(
         X,
         Y,
-        X_norm_squared=X_norm_squared.reshape(1, -1),
-        Y_norm_squared=Y_norm_squared.reshape(1, -1),
+        x_norm_squared=X_norm_squared.reshape(1, -1),
+        y_norm_squared=Y_norm_squared.reshape(1, -1),
     )
 
     assert_allclose(D2, D1)
     assert_allclose(D3, D1)
 
     with pytest.raises(ValueError, match="Incompatible dimensions for X"):
-        euclidean_distances(X, Y, X_norm_squared=X_norm_squared[:5])
+        euclidean_distances(X, Y, x_norm_squared=X_norm_squared[:5])
     with pytest.raises(ValueError, match="Incompatible dimensions for Y"):
-        euclidean_distances(X, Y, Y_norm_squared=Y_norm_squared[:5])
+        euclidean_distances(X, Y, y_norm_squared=Y_norm_squared[:5])
 
 
 @pytest.mark.parametrize(

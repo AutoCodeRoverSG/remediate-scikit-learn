@@ -238,7 +238,7 @@ def _kmeans_plusplus(
 
     # Initialize list of closest distances and calculate current potential
     closest_dist_sq = _euclidean_distances(
-        centers[0, np.newaxis], X, Y_norm_squared=x_squared_norms, squared=True
+        centers[0, np.newaxis], X, y_norm_squared=x_squared_norms, squared=True
     )
     current_pot = closest_dist_sq @ sample_weight
 
@@ -255,7 +255,7 @@ def _kmeans_plusplus(
 
         # Compute distances to center candidates
         distance_to_candidates = _euclidean_distances(
-            X[candidate_ids], X, Y_norm_squared=x_squared_norms, squared=True
+            X[candidate_ids], X, y_norm_squared=x_squared_norms, squared=True
         )
 
         # update closest distances squared and potential for each candidate
