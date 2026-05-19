@@ -101,13 +101,14 @@ def test_compute_mi_cd(global_dtype):
 
 def test_compute_mi_cd_unique_label(global_dtype):
     # Test that adding unique label doesn't change MI.
+    rng = np.random.default_rng(0)
     n_samples = 100
-    x = np.random.uniform(size=n_samples) > 0.5
+    x = rng.uniform(size=n_samples) > 0.5
 
     y = np.empty(n_samples, global_dtype)
     mask = x == 0
-    y[mask] = np.random.uniform(-1, 1, size=np.sum(mask))
-    y[~mask] = np.random.uniform(0, 2, size=np.sum(~mask))
+    y[mask] = rng.uniform(-1, 1, size=np.sum(mask))
+    y[~mask] = rng.uniform(0, 2, size=np.sum(~mask))
 
     mi_1 = _compute_mi(x, y, x_discrete=True, y_discrete=False)
 
@@ -220,9 +221,9 @@ def test_mutual_information_symmetry_classif_regression(correlated, global_rando
     Non-regression test for:
     https://github.com/scikit-learn/scikit-learn/issues/23720
     """
-    rng = np.random.RandomState(global_random_seed)
+    rng = np.random.default_rng(global_random_seed)
     n = 100
-    d = rng.randint(10, size=n)
+    d = rng.integers(10, size=n)
 
     if correlated:
         c = d.astype(np.float64)
@@ -240,15 +241,15 @@ def test_mutual_information_symmetry_classif_regression(correlated, global_rando
     assert mi_classif == pytest.approx(mi_regression)
 
 
-def test_mutual_info_regression_X_int_dtype(global_random_seed):
+def test_mutual_info_regression_x_int_dtype(global_random_seed):
     """Check that results agree when X is integer dtype and float dtype.
 
     Non-regression test for Issue #26696.
     """
-    rng = np.random.RandomState(global_random_seed)
-    X = rng.randint(100, size=(100, 10))
+    rng = np.random.default_rng(global_random_seed)
+    X = rng.integers(100, size=(100, 10))
     X_float = X.astype(np.float64, copy=True)
-    y = rng.randint(100, size=100)
+    y = rng.integers(100, size=100)
 
     expected = mutual_info_regression(X_float, y, random_state=global_random_seed)
     result = mutual_info_regression(X, y, random_state=global_random_seed)
