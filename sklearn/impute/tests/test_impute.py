@@ -1479,19 +1479,19 @@ def test_simple_imputation_inverse_transform(missing_value):
         missing_values=missing_value, strategy="mean", add_indicator=True
     )
 
-    X_1_trans = imputer.fit_transform(X_1)
-    X_1_inv_trans = imputer.inverse_transform(X_1_trans)
+    x_1_trans = imputer.fit_transform(X_1)
+    x_1_inv_trans = imputer.inverse_transform(x_1_trans)
 
-    X_2_trans = imputer.transform(X_2)  # test on new data
-    X_2_inv_trans = imputer.inverse_transform(X_2_trans)
+    x_2_trans = imputer.transform(X_2)  # test on new data
+    x_2_inv_trans = imputer.inverse_transform(x_2_trans)
 
-    assert_array_equal(X_1_inv_trans, X_1)
-    assert_array_equal(X_2_inv_trans, X_2)
+    assert_array_equal(x_1_inv_trans, X_1)
+    assert_array_equal(x_2_inv_trans, X_2)
 
     for X in [X_3, X_4]:
-        X_trans = imputer.fit_transform(X)
-        X_inv_trans = imputer.inverse_transform(X_trans)
-        assert_array_equal(X_inv_trans, X)
+        x_trans = imputer.fit_transform(X)
+        x_inv_trans = imputer.inverse_transform(x_trans)
+        assert_array_equal(x_inv_trans, X)
 
 
 @pytest.mark.parametrize("missing_value", [-1, np.nan])
@@ -1506,11 +1506,11 @@ def test_simple_imputation_inverse_transform_exceptions(missing_value):
     )
 
     imputer = SimpleImputer(missing_values=missing_value, strategy="mean")
-    X_1_trans = imputer.fit_transform(X_1)
+    x_1_trans = imputer.fit_transform(X_1)
     with pytest.raises(
         ValueError, match=f"Got 'add_indicator={imputer.add_indicator}'"
     ):
-        imputer.inverse_transform(X_1_trans)
+        imputer.inverse_transform(x_1_trans)
 
 
 @pytest.mark.parametrize(
@@ -1572,10 +1572,10 @@ def test_iterative_imputer_keep_empty_features(initial_strategy):
     imputer = IterativeImputer(
         initial_strategy=initial_strategy, keep_empty_features=True
     )
-    X_imputed = imputer.fit_transform(X)
-    assert_allclose(X_imputed[:, 1], 0)
-    X_imputed = imputer.transform(X)
-    assert_allclose(X_imputed[:, 1], 0)
+    x_imputed = imputer.fit_transform(X)
+    assert_allclose(x_imputed[:, 1], 0)
+    x_imputed = imputer.transform(X)
+    assert_allclose(x_imputed[:, 1], 0)
 
 
 @pytest.mark.parametrize("keep_empty_features", [True, False])
@@ -1619,16 +1619,16 @@ def test_iterative_imputer_min_max_value_remove_empty():
     min_value = [-np.inf, -np.inf, -np.inf, 4]
     max_value = [np.inf, np.inf, np.inf, 5]
 
-    X_imputed = IterativeImputer(
+    x_imputed = IterativeImputer(
         min_value=min_value,
         max_value=max_value,
         keep_empty_features=False,
     ).fit_transform(X)
 
-    X_without_missing_column = np.delete(X, 2, axis=1)
-    assert X_imputed.shape == X_without_missing_column.shape
-    assert np.min(X_imputed[np.isnan(X_without_missing_column)]) == pytest.approx(4)
-    assert np.max(X_imputed[np.isnan(X_without_missing_column)]) == pytest.approx(5)
+    x_without_missing_column = np.delete(X, 2, axis=1)
+    assert x_imputed.shape == x_without_missing_column.shape
+    assert np.min(x_imputed[np.isnan(x_without_missing_column)]) == pytest.approx(4)
+    assert np.max(x_imputed[np.isnan(x_without_missing_column)]) == pytest.approx(5)
 
     # Intentionally make column 3 as a missing column, then the bound of the imputed
     # value of column 2 should be (3.5, 6)
@@ -1643,16 +1643,16 @@ def test_iterative_imputer_min_max_value_remove_empty():
     min_value = [-np.inf, -np.inf, 3.5, -np.inf]
     max_value = [np.inf, np.inf, 6, np.inf]
 
-    X_imputed = IterativeImputer(
+    x_imputed = IterativeImputer(
         min_value=min_value,
         max_value=max_value,
         keep_empty_features=False,
     ).fit_transform(X)
 
-    X_without_missing_column = X[:, :3]
-    assert X_imputed.shape == X_without_missing_column.shape
-    assert np.min(X_imputed[np.isnan(X_without_missing_column)]) == pytest.approx(3.5)
-    assert np.max(X_imputed[np.isnan(X_without_missing_column)]) == pytest.approx(6)
+    x_without_missing_column = X[:, :3]
+    assert x_imputed.shape == x_without_missing_column.shape
+    assert np.min(x_imputed[np.isnan(x_without_missing_column)]) == pytest.approx(3.5)
+    assert np.max(x_imputed[np.isnan(x_without_missing_column)]) == pytest.approx(6)
 
 
 @pytest.mark.parametrize("keep_empty_features", [True, False])
