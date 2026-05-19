@@ -316,7 +316,7 @@ def cross_validate(
 
     X, y = indexable(X, y)
     params = {} if params is None else params
-    cv = check_cv(cv, y, classifier=is_classifier(estimator))
+    cv = check_cv(cv, y, classifier=is_classifier(estimator), random_state=0)
 
     scorers = check_scoring(
         estimator, scoring=scoring, raise_exc=(error_score == "raise")
@@ -438,7 +438,7 @@ def _insert_error_scores(results, error_score):
             successful_score = result["test_scores"]
 
     if isinstance(successful_score, dict):
-        formatted_error = {name: error_score for name in successful_score}
+        formatted_error = dict.fromkeys(successful_score, error_score)
         for i in failed_indices:
             results[i]["test_scores"] = formatted_error.copy()
             if "train_scores" in results[i]:
@@ -775,11 +775,11 @@ def _fit_and_score(
             Traceback str if the fit failed, None if the fit succeeded.
     """
     xp, _ = get_namespace(X)
-    X_device = device(X)
+    x_device = device(X)
 
     # Make sure that we can fancy index X even if train and test are provided
     # as NumPy arrays by NumPy only cross-validation splitters.
-    train, test = xp.asarray(train, device=X_device), xp.asarray(test, device=X_device)
+    train, test = xp.asarray(train, device=x_device), xp.asarray(test, device=x_device)
 
     if not isinstance(error_score, numbers.Number) and error_score != "raise":
         raise ValueError(
@@ -839,7 +839,7 @@ def _fit_and_score(
             raise
         elif isinstance(error_score, numbers.Number):
             if isinstance(scorer, _MultimetricScorer):
-                test_scores = {name: error_score for name in scorer._scorers}
+                test_scores = dict.fromkeys(scorer._scorers, error_score)
                 if return_train_score:
                     train_scores = test_scores.copy()
             else:
@@ -1177,7 +1177,7 @@ def cross_val_predict(
         routed_params.splitter = Bunch(split={"groups": groups})
         routed_params.estimator = Bunch(fit=params)
 
-    cv = check_cv(cv, y, classifier=is_classifier(estimator))
+    cv = check_cv(cv, y, classifier=is_classifier(estimator), random_state=0)
     splits = list(cv.split(X, y, **routed_params.splitter.split))
 
     test_indices = np.concatenate([test for _, test in splits])
@@ -1317,7 +1317,7 @@ def _fit_and_predict(estimator, X, y, train, test, fit_params, method):
             ]
         else:
             # A 2D y array should be a binary label indicator matrix
-            xp, _ = get_namespace(X, y)
+            _, _ = get_namespace(X, y)
             n_classes = (
                 len(set(move_to(y, xp=np, device="cpu"))) if y.ndim == 1 else y.shape[1]
             )
@@ -1607,7 +1607,7 @@ def permutation_test_score(
 
     X, y, groups = indexable(X, y, groups)
 
-    cv = check_cv(cv, y, classifier=is_classifier(estimator))
+    cv = check_cv(cv, y, classifier=is_classifier(estimator), random_state=random_state)
     scorer = check_scoring(estimator, scoring=scoring)
     random_state = check_random_state(random_state)
 
@@ -1667,7 +1667,7 @@ def permutation_test_score(
         delayed(_permutation_test_score)(
             clone(estimator),
             X,
-            _shuffle(y, groups, random_state),
+            _shuffle(y, groups, random_state=random_state),
             cv,
             scorer,
             split_params=routed_params.splitter.split,
@@ -1943,7 +1943,7 @@ def learning_curve(
 
     X, y, groups = indexable(X, y, groups)
 
-    cv = check_cv(cv, y, classifier=is_classifier(estimator))
+    cv = check_cv(cv, y, classifier=is_classifier(estimator), random_state=random_state)
 
     scorer = check_scoring(estimator, scoring=scoring)
 
@@ -2166,13 +2166,13 @@ def _incremental_fit_estimator(
     for n_train_samples, partial_train in partitions:
         train_subset = train[:n_train_samples]
         X_train, y_train = _safe_split(estimator, X, y, train_subset)
-        X_partial_train, y_partial_train = _safe_split(estimator, X, y, partial_train)
+        x_partial_train, y_partial_train = _safe_split(estimator, X, y, partial_train)
         X_test, y_test = _safe_split(estimator, X, y, test, train_subset)
         start_fit = time.time()
         if y_partial_train is None:
-            partial_fit_func(X_partial_train)
+            partial_fit_func(x_partial_train)
         else:
-            partial_fit_func(X_partial_train, y_partial_train)
+            partial_fit_func(x_partial_train, y_partial_train)
         fit_time = time.time() - start_fit
         fit_times.append(fit_time)
 
