@@ -475,7 +475,7 @@ class BaseMultilayerPerceptron(BaseEstimator, ABC):
         )
 
         X, y = self._validate_input(X, y, incremental, reset=first_pass)
-        n_samples, n_features = X.shape
+        _, n_features = X.shape
         if sample_weight is not None:
             sample_weight = _check_sample_weight(sample_weight, X)
 
@@ -648,7 +648,7 @@ class BaseMultilayerPerceptron(BaseEstimator, ABC):
             should_stratify = is_classifier(self) and self.n_outputs_ == 1
             stratify = y if should_stratify else None
             if sample_weight is None:
-                X_train, X_val, y_train, y_val = train_test_split(
+                x_train, x_val, y_train, y_val = train_test_split(
                     X,
                     y,
                     random_state=self._random_state,
@@ -659,8 +659,8 @@ class BaseMultilayerPerceptron(BaseEstimator, ABC):
             else:
                 # TODO: incorporate sample_weight in sampling here.
                 (
-                    X_train,
-                    X_val,
+                    x_train,
+                    x_val,
                     y_train,
                     y_val,
                     sample_weight_train,
@@ -673,7 +673,7 @@ class BaseMultilayerPerceptron(BaseEstimator, ABC):
                     test_size=self.validation_fraction,
                     stratify=stratify,
                 )
-            if X_val.shape[0] < 2:
+            if x_val.shape[0] < 2:
                 raise ValueError(
                     "The validation set is too small. Increase 'validation_fraction' "
                     "or the size of your dataset."
@@ -682,10 +682,10 @@ class BaseMultilayerPerceptron(BaseEstimator, ABC):
             if is_classifier(self):
                 y_val = self._label_binarizer.inverse_transform(y_val)
         else:
-            X_train, y_train, sample_weight_train = X, y, sample_weight
-            X_val = y_val = sample_weight_val = None
+            x_train, y_train, sample_weight_train = X, y, sample_weight
+            x_val = y_val = sample_weight_val = None
 
-        n_samples = X_train.shape[0]
+        n_samples = x_train.shape[0]
         sample_idx = np.arange(n_samples, dtype=int)
 
         if self.batch_size == "auto":
@@ -700,7 +700,7 @@ class BaseMultilayerPerceptron(BaseEstimator, ABC):
 
         try:
             self.n_iter_ = 0
-            for it in range(self.max_iter):
+            for _ in range(self.max_iter):
                 if self.shuffle:
                     # Only shuffle the sample indices instead of X and y to
                     # reduce the memory footprint. These indices will be used
@@ -711,19 +711,19 @@ class BaseMultilayerPerceptron(BaseEstimator, ABC):
                 for batch_slice in gen_batches(n_samples, batch_size):
                     if self.shuffle:
                         batch_idx = sample_idx[batch_slice]
-                        X_batch = _safe_indexing(X_train, batch_idx)
+                        x_batch = _safe_indexing(x_train, batch_idx)
                     else:
                         batch_idx = batch_slice
-                        X_batch = X_train[batch_idx]
+                        x_batch = x_train[batch_idx]
                     y_batch = y_train[batch_idx]
                     if sample_weight is None:
                         sample_weight_batch = None
                     else:
                         sample_weight_batch = sample_weight_train[batch_idx]
 
-                    activations[0] = X_batch
+                    activations[0] = x_batch
                     batch_loss, coef_grads, intercept_grads = self._backprop(
-                        X_batch,
+                        x_batch,
                         y_batch,
                         sample_weight_batch,
                         activations,
@@ -740,7 +740,7 @@ class BaseMultilayerPerceptron(BaseEstimator, ABC):
                     self._optimizer.update_params(params, grads)
 
                 self.n_iter_ += 1
-                self.loss_ = accumulated_loss / X_train.shape[0]
+                self.loss_ = accumulated_loss / x_train.shape[0]
 
                 self.t_ += n_samples
                 self.loss_curve_.append(self.loss_)
@@ -750,7 +750,7 @@ class BaseMultilayerPerceptron(BaseEstimator, ABC):
                 # update no_improvement_count based on training loss or
                 # validation score according to early_stopping
                 self._update_no_improvement_count(
-                    early_stopping, X_val, y_val, sample_weight_val
+                    early_stopping, x_val, y_val, sample_weight_val
                 )
 
                 # for learning rate that needs to be updated at iteration end

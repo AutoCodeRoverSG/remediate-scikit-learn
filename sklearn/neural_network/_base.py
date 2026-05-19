@@ -87,7 +87,7 @@ ACTIVATIONS = {
 }
 
 
-def inplace_identity_derivative(Z, delta):
+def inplace_identity_derivative(z, delta):
     """Apply the derivative of the identity function: do nothing.
 
     Parameters
@@ -102,7 +102,7 @@ def inplace_identity_derivative(Z, delta):
     # Nothing to do
 
 
-def inplace_logistic_derivative(Z, delta):
+def inplace_logistic_derivative(z, delta):
     """Apply the derivative of the logistic sigmoid function.
 
     It exploits the fact that the derivative is a simple function of the output
@@ -117,11 +117,12 @@ def inplace_logistic_derivative(Z, delta):
     delta : {array-like}, shape (n_samples, n_features)
          The backpropagated error signal to be modified inplace.
     """
-    delta *= Z
-    delta *= 1 - Z
+    delta *= z
+    delta *= 1 - z
+    return delta
 
 
-def inplace_tanh_derivative(Z, delta):
+def inplace_tanh_derivative(z, delta):
     """Apply the derivative of the hyperbolic tanh function.
 
     It exploits the fact that the derivative is a simple function of the output
@@ -136,10 +137,10 @@ def inplace_tanh_derivative(Z, delta):
     delta : {array-like}, shape (n_samples, n_features)
          The backpropagated error signal to be modified inplace.
     """
-    delta *= 1 - Z**2
+    np.multiply(delta, 1 - z**2, out=delta)
 
 
-def inplace_relu_derivative(Z, delta):
+def inplace_relu_derivative(z, delta):
     """Apply the derivative of the relu function.
 
     It exploits the fact that the derivative is a simple function of the output
@@ -154,7 +155,7 @@ def inplace_relu_derivative(Z, delta):
     delta : {array-like}, shape (n_samples, n_features)
          The backpropagated error signal to be modified inplace.
     """
-    delta[Z == 0] = 0
+    delta[z == 0] = 0
 
 
 DERIVATIVES = {
