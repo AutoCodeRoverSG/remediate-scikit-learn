@@ -324,7 +324,7 @@ def test_fit_transform_csr_matrix(method, init, csr_container):
     rng = check_random_state(0)
     X = rng.randn(50, 3)
     X[(rng.randint(0, 50, 25), rng.randint(0, 3, 25))] = 0.0
-    X_csr = csr_container(X)
+    x_csr = csr_container(X)
     tsne = TSNE(
         n_components=2,
         init=init,
@@ -334,8 +334,8 @@ def test_fit_transform_csr_matrix(method, init, csr_container):
         method=method,
         max_iter=750,
     )
-    X_embedded = tsne.fit_transform(X_csr)
-    assert_allclose(trustworthiness(X_csr, X_embedded, n_neighbors=1), 1.0, rtol=1.1e-1)
+    x_embedded = tsne.fit_transform(x_csr)
+    assert_allclose(trustworthiness(x_csr, x_embedded, n_neighbors=1), 1.0, rtol=1.1e-1)
 
 
 def test_preserve_trustworthiness_approximately_with_precomputed_distances():
@@ -355,8 +355,8 @@ def test_preserve_trustworthiness_approximately_with_precomputed_distances():
             max_iter=500,
             init="random",
         )
-        X_embedded = tsne.fit_transform(D)
-        t = trustworthiness(D, X_embedded, n_neighbors=1, metric="precomputed")
+        x_embedded = tsne.fit_transform(D)
+        t = trustworthiness(D, x_embedded, n_neighbors=1, metric="precomputed")
         assert t > 0.95
 
 
@@ -379,13 +379,13 @@ def test_trustworthiness_not_euclidean_metric():
     ],
 )
 @pytest.mark.parametrize(
-    "D, message_regex",
+    "d, message_regex",
     [
         ([[0.0], [1.0]], ".* square distance matrix"),
         ([[0.0, -1.0], [1.0, 0.0]], ".* positive.*"),
     ],
 )
-def test_bad_precomputed_distances(method, D, retype, message_regex):
+def test_bad_precomputed_distances(method, d, retype, message_regex):
     tsne = TSNE(
         metric="precomputed",
         method=method,
@@ -394,7 +394,7 @@ def test_bad_precomputed_distances(method, D, retype, message_regex):
         perplexity=1,
     )
     with pytest.raises(ValueError, match=message_regex):
-        tsne.fit_transform(retype(D))
+        tsne.fit_transform(retype(d))
 
 
 @pytest.mark.parametrize("csr_container", CSR_CONTAINERS)
@@ -431,18 +431,18 @@ def test_sparse_precomputed_distance(sparse_container):
     random_state = check_random_state(0)
     X = random_state.randn(100, 2)
 
-    D_sparse = kneighbors_graph(X, n_neighbors=100, mode="distance", include_self=True)
+    d_sparse = kneighbors_graph(X, n_neighbors=100, mode="distance", include_self=True)
     D = pairwise_distances(X)
-    assert sp.issparse(D_sparse)
-    assert_almost_equal(D_sparse.toarray(), D)
+    assert sp.issparse(d_sparse)
+    assert_almost_equal(d_sparse.toarray(), D)
 
     tsne = TSNE(
         metric="precomputed", random_state=0, init="random", learning_rate="auto"
     )
-    Xt_dense = tsne.fit_transform(D)
+    xt_dense = tsne.fit_transform(D)
 
-    Xt_sparse = tsne.fit_transform(sparse_container(D_sparse))
-    assert_almost_equal(Xt_dense, Xt_sparse)
+    xt_sparse = tsne.fit_transform(sparse_container(d_sparse))
+    assert_almost_equal(xt_dense, xt_sparse)
 
 
 def test_non_positive_computed_distances():
@@ -460,8 +460,8 @@ def test_non_positive_computed_distances():
 def test_init_ndarray():
     # Initialize TSNE with ndarray and test fit
     tsne = TSNE(init=np.zeros((100, 2)), learning_rate="auto")
-    X_embedded = tsne.fit_transform(np.ones((100, 5)))
-    assert_array_equal(np.zeros((100, 2)), X_embedded)
+    x_embedded = tsne.fit_transform(np.ones((100, 5)))
+    assert_array_equal(np.zeros((100, 2)), x_embedded)
 
 
 def test_init_ndarray_precomputed():
@@ -509,7 +509,7 @@ def test_early_exaggeration_used():
             early_exaggeration=1.0,
             max_iter=250,
         )
-        X_embedded1 = tsne.fit_transform(X)
+        x_embedded1 = tsne.fit_transform(X)
         tsne = TSNE(
             n_components=n_components,
             perplexity=1,
@@ -520,9 +520,9 @@ def test_early_exaggeration_used():
             early_exaggeration=10.0,
             max_iter=250,
         )
-        X_embedded2 = tsne.fit_transform(X)
+        x_embedded2 = tsne.fit_transform(X)
 
-        assert not np.allclose(X_embedded1, X_embedded2)
+        assert not np.allclose(x_embedded1, x_embedded2)
 
 
 def test_max_iter_used():
