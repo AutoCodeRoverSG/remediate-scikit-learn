@@ -1374,7 +1374,7 @@ def test_enet_cv_sample_weight_correctness(
 
     if sparse_container is not None:
         x_with_weights = sparse_container(x_with_weights)
-    params = dict(tol=1e-6)
+    params = {"tol": 1e-6}
 
     # Assign random integer weights only to the first cross-validation group.
     # The samples in the other cross-validation groups are left with unit
@@ -1427,14 +1427,14 @@ def test_enet_cv_sample_weight_correctness(
 
 
 @pytest.mark.parametrize(
-    ["estimatorCV", "estimator"],
+    ["estimator_cv", "estimator"],
     [(ElasticNetCV, ElasticNet), (MultiTaskElasticNetCV, MultiTaskElasticNet)],
 )
 @pytest.mark.parametrize("sample_weight", [False, True])
-def test_enet_cv_grid_search(estimatorCV, estimator, sample_weight):
+def test_enet_cv_grid_search(estimator_cv, estimator, sample_weight):
     """Test that ElasticNetCV gives same result as GridSearchCV."""
     n_samples, n_features = 200, 10
-    if issubclass(estimatorCV, MultiTaskElasticNetCV):
+    if issubclass(estimator_cv, MultiTaskElasticNetCV):
         n_targets = 3
     else:
         n_targets = 1
@@ -1456,7 +1456,7 @@ def test_enet_cv_grid_search(estimatorCV, estimator, sample_weight):
 
     alphas = np.logspace(np.log10(1e-5), np.log10(1), num=10)
     l1_ratios = [0.1, 0.5, 0.9]
-    reg = estimatorCV(cv=cv, alphas=alphas, l1_ratio=l1_ratios)
+    reg = estimator_cv(cv=cv, alphas=alphas, l1_ratio=l1_ratios)
     reg.fit(X, y, sample_weight=sample_weight)
 
     param = {"alpha": alphas, "l1_ratio": l1_ratios}
@@ -1494,12 +1494,12 @@ def test_enet_cv_sample_weight_consistency(
 
     X = rng.rand(n_samples, n_features)
     y = X.sum(axis=1) + rng.rand(n_samples)
-    params = dict(
-        fit_intercept=fit_intercept,
-        precompute=precompute,
-        tol=1e-6,
-        cv=3,
-    )
+    params = {
+        "fit_intercept": fit_intercept,
+        "precompute": precompute,
+        "tol": 1e-6,
+        "cv": 3,
+    }
     if l1_ratio > 0:
         params["l1_ratio"] = l1_ratio
     if issubclass(estimator, (MultiTaskElasticNetCV, MultiTaskLassoCV)):
@@ -1538,23 +1538,23 @@ def test_enet_cv_sample_weight_consistency(
 
 
 @pytest.mark.parametrize(
-    ["estimatorCV", "estimator"],
+    ["estimator_cv", "estimator"],
     [
         (ElasticNetCV, ElasticNet),
         (MultiTaskElasticNetCV, MultiTaskElasticNet),
     ],
 )
-@pytest.mark.parametrize("X_is_sparse", [False, sparse.csc_array, sparse.csc_matrix])
+@pytest.mark.parametrize("x_is_sparse", [False, sparse.csc_array, sparse.csc_matrix])
 @pytest.mark.parametrize("fit_intercept", [False, True])
 @pytest.mark.parametrize("positive", [False, True])
 @pytest.mark.parametrize("sample_weight", [np.array([1, 10, 1, 10]), None])
 def test_enet_alpha_max(
-    estimatorCV, estimator, X_is_sparse, fit_intercept, positive, sample_weight
+    estimator_cv, estimator, x_is_sparse, fit_intercept, positive, sample_weight
 ):
     X = np.array([[3.0, -1.0], [2.0, -5.0], [5.0, -3.0], [1.0, -4.0]])
     beta = np.array([1, -2])
     y = X @ beta
-    params = dict(fit_intercept=fit_intercept, positive=positive)
+    params = {"fit_intercept": fit_intercept, "positive": positive}
     if issubclass(estimator, MultiTaskElasticNet):
         n_tasks = 3
         y = np.tile(y[:, None], reps=(1, n_tasks))
@@ -1562,10 +1562,10 @@ def test_enet_alpha_max(
         if positive:
             return
 
-    if X_is_sparse:
-        X = X_is_sparse(X)
+    if x_is_sparse:
+        X = x_is_sparse(X)
     # Test alpha_max makes coefs zero.
-    reg = estimatorCV(alphas=1, cv=2, eps=1, **params)
+    reg = estimator_cv(alphas=1, cv=2, eps=1, **params)
     reg.fit(X, y, sample_weight=sample_weight)
     assert_allclose(reg.coef_, 0, atol=1e-5)
     alpha_max = reg.alpha_
@@ -1578,7 +1578,7 @@ def test_enet_alpha_max(
         # Make sure that the positive constraint changes alpha_max,
         # i.e. test the meaningfulness of the test data.
         not_positive_alpha_max = (
-            estimatorCV(alphas=1, cv=2, eps=1, **{**params, "positive": not positive})
+            estimator_cv(alphas=1, cv=2, eps=1, **{**params, "positive": not positive})
             .fit(X, y, sample_weight=sample_weight)
             .alpha_
         )
@@ -1643,10 +1643,10 @@ def test_enet_ridge_consistency(ridge_alpha, precompute, n_targets, global_rando
     sw = rng.uniform(low=0.01, high=10, size=X.shape[0])
 
     if n_targets == 1:
-        sw_arg = dict(sample_weight=sw)
+        sw_arg = {"sample_weight": sw}
     else:
         # MultiTaskElasticNet does not support sample weights (yet).
-        sw_arg = dict()
+        sw_arg = {}
 
     ridge = Ridge(alpha=ridge_alpha, solver="svd").fit(X, y, **sw_arg)
 
@@ -1718,7 +1718,7 @@ def test_sample_weight_invariance(estimator):
         random_state=rng,
     )
     sw = rng.uniform(low=0.01, high=2, size=X.shape[0])
-    params = dict(tol=1e-12)
+    params = {"tol": 1e-12}
 
     # Check that setting some weights to 0 is equivalent to trimming the
     # samples:
