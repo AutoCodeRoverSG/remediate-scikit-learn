@@ -58,6 +58,8 @@ __all__ = [
     "validation_curve",
 ]
 
+_DEFAULT_PRE_DISPATCH = "2*n_jobs"
+
 
 # TODO(SLEP6): To be removed when set_config(enable_metadata_routing=False) is not
 # possible.
@@ -106,7 +108,7 @@ def cross_validate(
     n_jobs=None,
     verbose=0,
     params=None,
-    pre_dispatch="2*n_jobs",
+    pre_dispatch=_DEFAULT_PRE_DISPATCH,
     return_options=None,
     error_score=np.nan,
 ):
@@ -535,7 +537,7 @@ def cross_val_score(
     n_jobs=None,
     verbose=0,
     params=None,
-    pre_dispatch="2*n_jobs",
+    pre_dispatch=_DEFAULT_PRE_DISPATCH,
     error_score=np.nan,
 ):
     """Evaluate a score by cross-validation.
@@ -1032,7 +1034,7 @@ def cross_val_predict(
     n_jobs=None,
     verbose=0,
     params=None,
-    pre_dispatch="2*n_jobs",
+    pre_dispatch=_DEFAULT_PRE_DISPATCH,
     method="predict",
 ):
     """Generate cross-validated estimates for each input data point.
@@ -1751,12 +1753,8 @@ def _shuffle(y, groups, random_state):
         "scoring": [StrOptions(set(get_scorer_names())), callable, None],
         "exploit_incremental_learning": ["boolean"],
         "n_jobs": [Integral, None],
-        "pre_dispatch": [Integral, str],
-        "verbose": ["verbose"],
         "shuffle": ["boolean"],
         "random_state": ["random_state"],
-        "error_score": [StrOptions({"raise"}), Real],
-        "return_times": ["boolean"],
         "params": [dict, None],
     },
     prefer_skip_nested_validation=False,  # estimator is not validated yet
@@ -1772,13 +1770,10 @@ def learning_curve(
     scoring=None,
     exploit_incremental_learning=False,
     n_jobs=None,
-    pre_dispatch="all",
-    verbose=0,
     shuffle=False,
     random_state=None,
-    error_score=np.nan,
-    return_times=False,
     params=None,
+    **options,
 ):
     """Learning curve.
 
@@ -1961,6 +1956,16 @@ def learning_curve(
     The average train accuracy is 1.00
     The average test accuracy is 0.93
     """
+    pre_dispatch = options.pop("pre_dispatch", "all")
+    verbose = options.pop("verbose", 0)
+    error_score = options.pop("error_score", np.nan)
+    return_times = options.pop("return_times", False)
+    if options:
+        raise TypeError(
+            f"learning_curve got unexpected keyword argument(s): "
+            f"{list(options.keys())}"
+        )
+
     if exploit_incremental_learning and not hasattr(estimator, "partial_fit"):
         raise ValueError(
             "An estimator must support the partial_fit interface "
