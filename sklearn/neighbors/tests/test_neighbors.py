@@ -57,7 +57,7 @@ from sklearn.utils.fixes import (
 )
 from sklearn.utils.validation import check_random_state
 
-rng = np.random.RandomState(0)
+rng = np.random.default_rng(0)
 # load and shuffle iris dataset
 iris = datasets.load_iris()
 perm = rng.permutation(iris.target.size)
@@ -115,7 +115,7 @@ def _generate_test_params_for(metric: str, n_features: int):
     """Return list of DistanceMetric kwargs for tests."""
 
     # Distinguishing on cases not to compute unneeded datastructures.
-    rng = np.random.RandomState(1)
+    rng = np.random.default_rng(1)
 
     if metric == "minkowski":
         return [
@@ -123,14 +123,14 @@ def _generate_test_params_for(metric: str, n_features: int):
             {"p": 2},
             {"p": 3},
             {"p": np.inf},
-            {"p": 3, "w": rng.rand(n_features)},
+            {"p": 3, "w": rng.random(n_features)},
         ]
 
     if metric == "seuclidean":
-        return [{"V": rng.rand(n_features)}]
+        return [{"V": rng.random(n_features)}]
 
     if metric == "mahalanobis":
-        A = rng.rand(n_features, n_features)
+        A = rng.random((n_features, n_features))
         # Make the matrix symmetric positive definite
         VI = A + A.T + 3 * np.eye(n_features)
         return [{"VI": VI}]
@@ -183,13 +183,13 @@ def test_unsupervised_kneighbors(
     metric = _parse_metric(metric, global_dtype)
 
     # Redefining the rng locally to use the same generated X
-    local_rng = np.random.RandomState(0)
-    X = local_rng.rand(n_samples, n_features).astype(global_dtype, copy=False)
+    local_rng = np.random.default_rng(0)
+    X = local_rng.random((n_samples, n_features)).astype(global_dtype, copy=False)
 
     query = (
         X
         if query_is_train
-        else local_rng.rand(n_query_pts, n_features).astype(global_dtype, copy=False)
+        else local_rng.random((n_query_pts, n_features)).astype(global_dtype, copy=False)
     )
 
     results_nodist = []
@@ -289,11 +289,11 @@ def test_neigh_predictions_algorithm_agnosticity(
             )
 
     # Redefining the rng locally to use the same generated X
-    local_rng = np.random.RandomState(0)
-    X = local_rng.rand(n_samples, n_features).astype(global_dtype, copy=False)
-    y = local_rng.randint(3, size=n_samples)
+    local_rng = np.random.default_rng(0)
+    X = local_rng.random((n_samples, n_features)).astype(global_dtype, copy=False)
+    y = local_rng.integers(3, size=n_samples)
 
-    query = local_rng.rand(n_query_pts, n_features).astype(global_dtype, copy=False)
+    query = local_rng.random((n_query_pts, n_features)).astype(global_dtype, copy=False)
 
     predict_results = []
 
@@ -340,8 +340,8 @@ def test_neigh_predictions_algorithm_agnosticity(
 def test_unsupervised_inputs(global_dtype, kneighbors_mixin_subclass):
     # Test unsupervised inputs for neighbors estimators
 
-    X = rng.random_sample((10, 3)).astype(global_dtype, copy=False)
-    y = rng.randint(3, size=10)
+    X = rng.random((10, 3)).astype(global_dtype, copy=False)
+    y = rng.integers(3, size=10)
     nbrs_fid = neighbors.NearestNeighbors(n_neighbors=1)
     nbrs_fid.fit(X)
 
@@ -371,9 +371,9 @@ def test_not_fitted_error_gets_raised():
 def check_precomputed(make_train_test, estimators):
     """Tests unsupervised NearestNeighbors with a distance matrix."""
     # Note: smaller samples may result in spurious test success
-    rng = np.random.RandomState(42)
-    X = rng.random_sample((10, 4))
-    Y = rng.random_sample((3, 4))
+    rng = np.random.default_rng(42)
+    X = rng.random((10, 4))
+    Y = rng.random((3, 4))
     DXX, DYX = make_train_test(X, Y)
     for method in [
         "kneighbors",
@@ -505,13 +505,13 @@ def test_is_sorted_by_data(csr_container):
 @pytest.mark.parametrize("csr_container", CSR_CONTAINERS)
 def test_sort_graph_by_row_values(function, csr_container):
     # Test that sort_graph_by_row_values returns a graph sorted by row values
-    X = csr_container(np.abs(np.random.RandomState(42).randn(10, 10)))
+    X = csr_container(np.abs(np.random.default_rng(42).standard_normal((10, 10))))
     assert not _is_sorted_by_data(X)
     x_sorted = function(X)
     assert _is_sorted_by_data(x_sorted)
 
     # test with a different number of nonzero entries for each sample
-    mask = np.random.RandomState(42).randint(2, size=(10, 10))
+    mask = np.random.default_rng(42).integers(2, size=(10, 10))
     X = X.toarray()
     X[mask == 1] = 0
     X = csr_container(X)
@@ -524,7 +524,7 @@ def test_sort_graph_by_row_values(function, csr_container):
 @pytest.mark.parametrize("csr_container", CSR_CONTAINERS)
 def test_sort_graph_by_row_values_copy(csr_container):
     # Test if the sorting is done inplace if X is CSR, so that Xt is X.
-    X_ = csr_container(np.abs(np.random.RandomState(42).randn(10, 10)))
+    X_ = csr_container(np.abs(np.random.default_rng(42).standard_normal((10, 10))))
     assert not _is_sorted_by_data(X_)
 
     # sort_graph_by_row_values is done inplace if copy=False
@@ -613,14 +613,14 @@ def test_precomputed_cross_validation():
     X = rng.rand(20, 2)
     D = pairwise_distances(X, metric="euclidean")
     y = rng.randint(3, size=20)
-    for Est in (
+    for est in (
         neighbors.KNeighborsClassifier,
         neighbors.RadiusNeighborsClassifier,
         neighbors.KNeighborsRegressor,
         neighbors.RadiusNeighborsRegressor,
     ):
-        metric_score = cross_val_score(Est(), X, y)
-        precomp_score = cross_val_score(Est(metric="precomputed"), D, y)
+        metric_score = cross_val_score(est(), X, y)
+        precomp_score = cross_val_score(est(metric="precomputed"), D, y)
         assert_array_equal(metric_score, precomp_score)
 
 
@@ -1087,7 +1087,7 @@ def test_radius_neighbors_sort_results(algorithm, metric):
     model.fit(X)
 
     # self.radius_neighbors
-    distances, indices = model.radius_neighbors(X=X, radius=np.inf, sort_results=True)
+    distances, _ = model.radius_neighbors(X=X, radius=np.inf, sort_results=True)
     for ii in range(n_samples):
         assert_array_equal(distances[ii], np.sort(distances[ii]))
 
@@ -1532,9 +1532,9 @@ def test_radius_neighbors_graph_sparse(n_neighbors, mode, csr_container, seed=36
 def test_neighbors_validate_parameters(Estimator, csr_container):
     """Additional parameter validation for *Neighbors* estimators not covered by common
     validation."""
-    X = rng.random_sample((10, 2))
+    X = rng.random((10, 2))
     Xsparse = csr_container(X)
-    X3 = rng.random_sample((10, 3))
+    X3 = rng.random((10, 3))
     y = np.ones(10)
 
     nbrs = Estimator(algorithm="ball_tree", metric="haversine")
@@ -1583,7 +1583,7 @@ def test_neighbors_minkowski_semimetric_algo_warn(Estimator, n_features, algorit
     Minkowski semi-metrics (i.e. when 0 < p < 1). That proper
     Warning is raised for `algorithm="auto"` and "brute".
     """
-    X = rng.random_sample((10, n_features))
+    X = rng.random((10, n_features))
     y = np.ones(10)
 
     model = Estimator(p=0.1, algorithm=algorithm)
@@ -1610,7 +1610,7 @@ def test_neighbors_minkowski_semimetric_algo_warn(Estimator, n_features, algorit
 @pytest.mark.parametrize("algorithm", ["kd_tree", "ball_tree"])
 def test_neighbors_minkowski_semimetric_algo_error(Estimator, n_features, algorithm):
     """Check that we raise a proper error if `algorithm!='brute'` and `p<1`."""
-    X = rng.random_sample((10, 2))
+    X = rng.random((10, 2))
     y = np.ones(10)
 
     model = Estimator(algorithm=algorithm, p=0.1)
@@ -1626,7 +1626,7 @@ def test_neighbors_minkowski_semimetric_algo_error(Estimator, n_features, algori
 # TODO: remove when NearestNeighbors methods uses parameter validation mechanism
 def test_nearest_neighbors_validate_params():
     """Validate parameter of NearestNeighbors."""
-    X = rng.random_sample((10, 2))
+    X = rng.random((10, 2))
 
     nbrs = neighbors.NearestNeighbors().fit(X)
     msg = (
@@ -1819,14 +1819,14 @@ def test_valid_brute_metric_for_auto_algorithm(
 ):
     metric = _parse_metric(metric, global_dtype)
 
-    X = rng.rand(n_samples, n_features).astype(global_dtype, copy=False)
+    X = rng.random((n_samples, n_features)).astype(global_dtype, copy=False)
     Xcsr = csr_container(X)
 
     metric_params_list = _generate_test_params_for(metric, n_features)
 
     if metric == "precomputed":
-        X_precomputed = rng.random_sample((10, 4))
-        Y_precomputed = rng.random_sample((3, 4))
+        X_precomputed = rng.random((10, 4))
+        Y_precomputed = rng.random((3, 4))
         DXX = metrics.pairwise_distances(X_precomputed, metric="euclidean")
         DYX = metrics.pairwise_distances(
             Y_precomputed, X_precomputed, metric="euclidean"
@@ -1859,8 +1859,8 @@ def test_valid_brute_metric_for_auto_algorithm(
 
 
 def test_metric_params_interface():
-    X = rng.rand(5, 5)
-    y = rng.randint(0, 2, 5)
+    X = rng.random((5, 5))
+    y = rng.integers(0, 2, 5)
     est = neighbors.KNeighborsClassifier(metric_params={"p": 3})
     with pytest.warns(SyntaxWarning):
         est.fit(X, y)
