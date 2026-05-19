@@ -89,9 +89,9 @@ NORMALIZED_METRICS = [
 ]
 
 
-rng = np.random.RandomState(0)
-y1 = rng.randint(3, size=30)
-y2 = rng.randint(3, size=30)
+rng = np.random.default_rng(0)
+y1 = rng.integers(3, size=30)
+y2 = rng.integers(3, size=30)
 
 
 def test_symmetric_non_symmetric_union():
@@ -149,7 +149,8 @@ def test_permute_labels(metric_name):
         assert_allclose(score_1, metric(y_pred, 1 - y_label))
     else:
         metric = UNSUPERVISED_METRICS[metric_name]
-        X = np.random.randint(10, size=(7, 10))
+        rng = np.random.default_rng(0)
+        X = rng.integers(10, size=(7, 10))
         score_1 = metric(X, y_pred)
         assert_allclose(score_1, metric(X, 1 - y_pred))
 
@@ -182,7 +183,7 @@ def test_format_invariance(metric_name):
             assert score_1 == metric(y_true_fmt, y_pred_fmt)
     else:
         metric = UNSUPERVISED_METRICS[metric_name]
-        X = np.random.randint(10, size=(8, 10))
+        X = np.random.default_rng(0).integers(10, size=(8, 10))
         score_1 = metric(X, y_true)
         assert score_1 == metric(X.astype(float), y_true)
         y_true_gen = generate_formats(y_true)
@@ -208,7 +209,7 @@ def test_inf_nan_input(metric_name, metric_func):
             ([0, 1], [np.nan, np.inf]),
         ]
     else:
-        X = np.random.randint(10, size=(2, 10))
+        X = np.random.default_rng(0).integers(10, size=(2, 10))
         invalids = [(X, [np.inf, np.inf]), (X, [np.nan, np.nan]), (X, [np.nan, np.inf])]
     with pytest.raises(ValueError, match=r"contains (NaN|infinity)"):
         for args in invalids:
@@ -222,10 +223,10 @@ def test_returned_value_consistency(name):
     It can only be a float. It should not be a numpy float64 or float32.
     """
 
-    rng = np.random.RandomState(0)
-    X = rng.randint(10, size=(20, 10))
-    labels_true = rng.randint(0, 3, size=(20,))
-    labels_pred = rng.randint(0, 3, size=(20,))
+    rng = np.random.default_rng(0)
+    X = rng.integers(10, size=(20, 10))
+    labels_true = rng.integers(0, 3, size=(20,))
+    labels_pred = rng.integers(0, 3, size=(20,))
 
     if name in SUPERVISED_METRICS:
         metric = SUPERVISED_METRICS[name]
@@ -242,7 +243,7 @@ def check_array_api_unsupervised_metric(
     metric, array_namespace, device_name, dtype_name
 ):
     y_pred = np.array([1, 0, 1, 0, 1, 1, 0])
-    X = np.random.randint(10, size=(7, 10))
+    X = np.random.default_rng(0).integers(10, size=(7, 10))
 
     check_array_api_metric(
         metric,
