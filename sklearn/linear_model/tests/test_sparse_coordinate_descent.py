@@ -87,7 +87,7 @@ def test_enet_toy_explicit_sparse_input(lil_container):
     # training samples
     X = lil_container((3, 1))
     X[0, 0] = -1
-    # X[1, 0] = 0
+    
     X[2, 0] = 1
     Y = [-1, 0, 1]  # just a straight line (the identity function)
 
@@ -129,19 +129,19 @@ def make_sparse_data(
     positive=False,
     n_targets=1,
 ):
-    random_state = np.random.RandomState(seed)
+    rng = np.random.default_rng(seed)
 
     # build an ill-posed linear regression problem with many noisy features and
     # comparatively few samples
 
     # generate a ground truth model
-    w = random_state.randn(n_features, n_targets)
+    w = rng.standard_normal((n_features, n_targets))
     w[n_informative:] = 0.0  # only the top features are impacting the model
     if positive:
         w = np.abs(w)
 
-    X = random_state.randn(n_samples, n_features)
-    rnd = random_state.uniform(size=(n_samples, n_features))
+    X = rng.standard_normal((n_samples, n_features))
+    rnd = rng.uniform(size=(n_samples, n_features))
     X[rnd > 0.5] = 0.0  # 50% of zeros in input signal
 
     # generate training ground truth labels
@@ -201,7 +201,7 @@ def test_sparse_enet_not_as_toy_dataset(csc_container, alpha, fit_intercept, pos
     assert_almost_equal(s_clf.intercept_, d_clf.intercept_, 5)
 
     # check that the coefs are sparse
-    assert np.sum(s_clf.coef_ != 0.0) < 2 * n_informative
+    assert np.count_nonzero(s_clf.coef_) < 2 * n_informative
 
 
 @pytest.mark.parametrize("csc_container", CSC_CONTAINERS)
@@ -228,7 +228,7 @@ def test_sparse_lasso_not_as_toy_dataset(csc_container):
     assert d_clf.score(X_test, y_test) > 0.85
 
     # check that the coefs are sparse
-    assert np.sum(s_clf.coef_ != 0.0) == n_informative
+    assert np.count_nonzero(s_clf.coef_) == n_informative
 
 
 @pytest.mark.parametrize("csc_container", CSC_CONTAINERS)
@@ -274,14 +274,14 @@ def test_path_parameters(csc_container):
     assert_almost_equal(clf.mse_path_, sparse_mse_path)
 
 
-@pytest.mark.parametrize("Model", [Lasso, ElasticNet, LassoCV, ElasticNetCV])
+@pytest.mark.parametrize("model", [Lasso, ElasticNet, LassoCV, ElasticNetCV])
 @pytest.mark.parametrize("fit_intercept", [False, True])
 @pytest.mark.parametrize("l1_ratio", [0.5, 0])
 @pytest.mark.parametrize("n_samples, n_features", [(24, 6), (6, 24)])
 @pytest.mark.parametrize("with_sample_weight", [True, False])
 @pytest.mark.parametrize("csc_container", CSC_CONTAINERS)
 def test_sparse_dense_equality(
-    Model,
+    model,
     fit_intercept,
     l1_ratio,
     n_samples,
@@ -299,18 +299,18 @@ def test_sparse_dense_equality(
         random_state=42,
     )
     if with_sample_weight:
-        sw = np.abs(np.random.RandomState(42).normal(scale=10, size=y.shape))
+        sw = np.abs(np.random.default_rng(42).normal(scale=10, size=y.shape))
     else:
         sw = None
-    Xs = csc_container(X)
+    x_sparse = csc_container(X)
     params = {"fit_intercept": fit_intercept, "tol": 1e-6}
-    if Model != ElasticNet:
+    if model != ElasticNet:
         if l1_ratio == 0:
             return
     else:
         params["l1_ratio"] = l1_ratio
-    reg_dense = Model(**params).fit(X, y, sample_weight=sw)
-    reg_sparse = Model(**params).fit(Xs, y, sample_weight=sw)
+    reg_dense = model(**params).fit(X, y, sample_weight=sw)
+    reg_sparse = model(**params).fit(x_sparse, y, sample_weight=sw)
     if fit_intercept:
         assert reg_sparse.intercept_ == pytest.approx(reg_dense.intercept_)
         # balance property
@@ -362,8 +362,8 @@ def test_same_multiple_output_sparse_dense(coo_container):
     predict_dense = l.predict(sample)
 
     l_sp = ElasticNet()
-    X_sp = coo_container(X)
-    l_sp.fit(X_sp, y)
+    x_sp = coo_container(X)
+    l_sp.fit(x_sp, y)
     sample_sparse = coo_container(sample)
     predict_sparse = l_sp.predict(sample_sparse)
 
@@ -389,16 +389,16 @@ def test_sparse_enet_coordinate_descent(csc_container):
         clf.fit(X, y)
 
 
-@pytest.mark.parametrize("copy_X", (True, False))
-def test_sparse_read_only_buffer(copy_X):
+@pytest.mark.parametrize("copy_x", (True, False))
+def test_sparse_read_only_buffer(copy_x):
     """Test that sparse coordinate descent works for read-only buffers"""
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
 
-    clf = ElasticNet(alpha=0.1, copy_X=copy_X, random_state=rng)
+    clf = ElasticNet(alpha=0.1, copy_X=copy_x, random_state=0)
     X = _sparse_random_array((100, 20), format="csc", rng=rng)
 
     # Make X.data read-only
     X.data = create_memmap_backed_data(X.data)
 
-    y = rng.rand(100)
+    y = rng.random(100)
     clf.fit(X, y)
