@@ -34,6 +34,7 @@ def test_spectral_clustering():
         SpectralClustering(
             n_neighbors=n_neighbors, affinity="precomputed", random_state=42
         ),
+        memory=None,
     )
     est_compact = SpectralClustering(
         n_neighbors=n_neighbors, affinity="nearest_neighbors", random_state=42
@@ -55,7 +56,7 @@ def test_spectral_embedding():
             [1.0, 0.0, 0.0, 5.0, 1.0],
         ]
     )
-    S, true_labels = make_blobs(
+    S, _ = make_blobs(
         n_samples=n_samples, centers=centers, cluster_std=1.0, random_state=42
     )
 
@@ -65,13 +66,14 @@ def test_spectral_embedding():
         SpectralEmbedding(
             n_neighbors=n_neighbors, affinity="precomputed", random_state=42
         ),
+        memory=None,
     )
     est_compact = SpectralEmbedding(
         n_neighbors=n_neighbors, affinity="nearest_neighbors", random_state=42
     )
-    St_compact = est_compact.fit_transform(S)
-    St_chain = est_chain.fit_transform(S)
-    assert_array_almost_equal(St_chain, St_compact)
+    st_compact = est_compact.fit_transform(S)
+    st_chain = est_chain.fit_transform(S)
+    assert_array_almost_equal(st_chain, st_compact)
 
 
 def test_dbscan():
