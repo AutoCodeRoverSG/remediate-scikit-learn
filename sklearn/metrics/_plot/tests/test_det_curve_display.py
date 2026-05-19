@@ -30,8 +30,8 @@ def test_det_curve_display(
         pos_label = "c"
 
     if with_sample_weight:
-        rng = np.random.RandomState(42)
-        sample_weight = rng.randint(1, 4, size=(X.shape[0]))
+        rng = np.random.default_rng(42)
+        sample_weight = rng.integers(1, 4, size=(X.shape[0]))
     else:
         sample_weight = None
 
@@ -72,7 +72,7 @@ def test_det_curve_display(
     import matplotlib as mpl
 
     assert isinstance(disp.line_, mpl.lines.Line2D)
-    assert disp.line_.get_alpha() == 0.8
+    assert disp.line_.get_alpha() == pytest.approx(0.8)
     assert isinstance(disp.ax_, mpl.axes.Axes)
     assert isinstance(disp.figure_, mpl.figure.Figure)
     assert disp.line_.get_label() == "LogisticRegression"

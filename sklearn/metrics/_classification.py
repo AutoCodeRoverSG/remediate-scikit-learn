@@ -62,6 +62,9 @@ from sklearn.utils.validation import (
 )
 
 
+_UNSUPPORTED_Y_TYPE_MESSAGE = "%s is not supported"
+
+
 def _check_zero_division(zero_division):
     if isinstance(zero_division, str) and zero_division == "warn":
         return np.float64(0.0)
@@ -552,7 +555,7 @@ def confusion_matrix(
 
     y_true, y_pred = attach_unique(y_true, y_pred)
     if y_type not in ("binary", "multiclass"):
-        raise ValueError("%s is not supported" % y_type)
+        raise ValueError(_UNSUPPORTED_Y_TYPE_MESSAGE % y_type)
 
     if labels is None:
         labels = unique_labels
@@ -743,7 +746,7 @@ def multilabel_confusion_matrix(
     )
 
     if y_type not in ("binary", "multiclass", "multilabel-indicator"):
-        raise ValueError("%s is not supported" % y_type)
+        raise ValueError(_UNSUPPORTED_Y_TYPE_MESSAGE % y_type)
 
     if labels is None:
         labels = present_labels
@@ -1316,7 +1319,7 @@ def matthews_corrcoef(y_true, y_pred, *, sample_weight=None):
         y_true, y_pred, sample_weight
     )
     if y_type not in {"binary", "multiclass"}:
-        raise ValueError("%s is not supported" % y_type)
+        raise ValueError(_UNSUPPORTED_Y_TYPE_MESSAGE % y_type)
 
     lb = LabelEncoder()
     lb.fit(np.hstack([y_true, y_pred]))
@@ -3140,10 +3143,11 @@ def classification_report(
         longest_last_line_heading = "weighted avg"
         name_width = max(len(cn) for cn in target_names)
         width = max(name_width, len(longest_last_line_heading), digits)
-        head_fmt = "{:>{width}s} " + " {:>9}" * len(headers)
+        name_fmt = "{:>{width}s} "
+        head_fmt = name_fmt + " {:>9}" * len(headers)
         report = head_fmt.format("", *headers, width=width)
         report += "\n\n"
-        row_fmt = "{:>{width}s} " + " {:>9.{digits}f}" * 3 + " {:>9}\n"
+        row_fmt = name_fmt + " {:>9.{digits}f}" * 3 + " {:>9}\n"
         for row in rows:
             report += row_fmt.format(*row, width=width, digits=digits)
         report += "\n"
@@ -3171,7 +3175,7 @@ def classification_report(
         else:
             if line_heading == "accuracy":
                 row_fmt_accuracy = (
-                    "{:>{width}s} "
+                    name_fmt
                     + " {:>9.{digits}}" * 2
                     + " {:>9.{digits}f}"
                     + " {:>9}\n"

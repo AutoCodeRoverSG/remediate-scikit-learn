@@ -139,7 +139,7 @@ class RocCurveDisplay(_BinaryClassifierCurveDisplayMixin):
         self.name = name
         self.pos_label = pos_label
 
-    def _validate_plot_params(self, *, ax, name):
+    def _validate_plot_params(self, *, ax=None, name=None):
         self.ax_, self.figure_, name = super()._validate_plot_params(ax=ax, name=name)
 
         fpr = _convert_to_list_leaving_none(self.fpr)

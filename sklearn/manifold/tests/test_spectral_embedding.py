@@ -446,8 +446,8 @@ def test_spectral_embedding_deterministic():
 def test_spectral_embedding_unnormalized():
     # Test that spectral_embedding is also processing unnormalized laplacian
     # correctly
-    random_state = np.random.RandomState(36)
-    data = random_state.randn(10, 30)
+    rng = np.random.default_rng(36)
+    data = rng.standard_normal((10, 30))
     sims = rbf_kernel(data)
     n_components = 8
     embedding_1 = spectral_embedding(
@@ -466,8 +466,8 @@ def test_spectral_embedding_unnormalized():
 def test_spectral_embedding_first_eigen_vector():
     # Test that the first eigenvector of spectral_embedding
     # is constant and that the second is not (for a connected graph)
-    random_state = np.random.RandomState(36)
-    data = random_state.randn(10, 30)
+    rng = np.random.default_rng(36)
+    data = rng.standard_normal((10, 30))
     sims = rbf_kernel(data)
     n_components = 2
 

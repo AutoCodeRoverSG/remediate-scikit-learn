@@ -217,9 +217,7 @@ class ConfusionMatrixDisplay:
         values_format=None,
         cmap="viridis",
         ax=None,
-        colorbar=True,
-        im_kw=None,
-        text_kw=None,
+        **kwargs,
     ):
         """Plot Confusion Matrix given an estimator and some data.
 
@@ -345,9 +343,7 @@ class ConfusionMatrixDisplay:
             ax=ax,
             xticks_rotation=xticks_rotation,
             values_format=values_format,
-            colorbar=colorbar,
-            im_kw=im_kw,
-            text_kw=text_kw,
+            **kwargs,
         )
 
     @classmethod
@@ -366,8 +362,7 @@ class ConfusionMatrixDisplay:
         cmap="viridis",
         ax=None,
         colorbar=True,
-        im_kw=None,
-        text_kw=None,
+        **kwargs,
     ):
         """Plot Confusion Matrix given true and predicted labels.
 
@@ -494,6 +489,6 @@ class ConfusionMatrixDisplay:
             xticks_rotation=xticks_rotation,
             values_format=values_format,
             colorbar=colorbar,
-            im_kw=im_kw,
-            text_kw=text_kw,
+            im_kw=kwargs.get("im_kw"),
+            text_kw=kwargs.get("text_kw"),
         )
