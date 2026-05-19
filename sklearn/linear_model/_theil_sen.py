@@ -57,7 +57,7 @@ def _modified_weiszfeld_step(X, x_old):
     diff_norm = np.sqrt(np.sum(diff**2, axis=1))
     mask = diff_norm >= _EPSILON
     # x_old equals one of our samples
-    is_x_old_in_X = int(mask.sum() < X.shape[0])
+    is_x_old_in_x = int(mask.sum() < X.shape[0])
 
     diff = diff[mask]
     diff_norm = diff_norm[mask][:, np.newaxis]
@@ -72,8 +72,8 @@ def _modified_weiszfeld_step(X, x_old):
         quotient_norm = 1.0
 
     return (
-        max(0.0, 1.0 - is_x_old_in_X / quotient_norm) * new_direction
-        + min(1.0, is_x_old_in_X / quotient_norm) * x_old
+        max(0.0, 1.0 - is_x_old_in_x / quotient_norm) * new_direction
+        + min(1.0, is_x_old_in_x / quotient_norm) * x_old
     )
 
 
@@ -191,15 +191,15 @@ def _lstsq(X, y, indices, fit_intercept):
     n_features = X.shape[1] + fit_intercept
     n_subsamples = indices.shape[1]
     weights = np.empty((indices.shape[0], n_features))
-    X_subpopulation = np.ones((n_subsamples, n_features))
+    x_subpopulation = np.ones((n_subsamples, n_features))
     # gelss need to pad y_subpopulation to be of the max dim of X_subpopulation
     y_subpopulation = np.zeros((max(n_subsamples, n_features)))
-    (lstsq,) = get_lapack_funcs(("gelss",), (X_subpopulation, y_subpopulation))
+    (lstsq,) = get_lapack_funcs(("gelss",), (x_subpopulation, y_subpopulation))
 
     for index, subset in enumerate(indices):
-        X_subpopulation[:, fit_intercept:] = X[subset, :]
+        x_subpopulation[:, fit_intercept:] = X[subset, :]
         y_subpopulation[:n_subsamples] = y[subset]
-        weights[index] = lstsq(X_subpopulation, y_subpopulation)[1][:n_features]
+        weights[index] = lstsq(x_subpopulation, y_subpopulation)[1][:n_features]
 
     return weights
 

@@ -10,7 +10,7 @@ import numpy as np
 from sklearn.exceptions import ConvergenceWarning
 from sklearn.linear_model._base import make_dataset
 from sklearn.linear_model._sag_fast import sag32, sag64
-from sklearn.utils import check_array
+from sklearn.utils import check_array, check_random_state
 from sklearn.utils.extmath import row_norms
 from sklearn.utils.validation import _check_sample_weight
 
@@ -95,7 +95,6 @@ def sag_solver(
     tol=0.001,
     verbose=0,
     random_state=None,
-    check_input=True,
     max_squared_sum=None,
     warm_start_mem=None,
     is_saga=False,
@@ -244,10 +243,9 @@ def sag_solver(
     if max_iter is None:
         max_iter = 1000
 
-    if check_input:
-        _dtype = [np.float64, np.float32]
-        X = check_array(X, dtype=_dtype, accept_sparse="csr", order="C")
-        y = check_array(y, dtype=_dtype, ensure_2d=False, order="C")
+    _dtype = [np.float64, np.float32]
+    X = check_array(X, dtype=_dtype, accept_sparse="csr", order="C")
+    y = check_array(y, dtype=_dtype, ensure_2d=False, order="C")
 
     n_samples, n_features = X.shape[0], X.shape[1]
     # As in SGD, the alpha is scaled by n_samples.
@@ -301,6 +299,7 @@ def sag_solver(
     else:
         num_seen_init = 0
 
+    random_state = check_random_state(random_state)
     dataset, intercept_decay = make_dataset(X, y, sample_weight, random_state)
 
     if max_squared_sum is None:
