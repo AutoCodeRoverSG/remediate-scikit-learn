@@ -755,7 +755,7 @@ def test_multinomial_cv_iris(use_legacy_attributes):
     # Test CV folds with missing class labels:
     # The iris target variable has 3 classes and is ordered such that a simple
     # CV split with 3 folds separates the classes.
-    cv_folds = list(KFold(n_splits=3).split(X, y))
+    cv_folds = list(KFold(n_splits=3, shuffle=False).split(X, y))
     # Check this assumption.
     classes = np.unique(y)
     assert len(classes) == 3
@@ -2207,7 +2207,7 @@ def test_penalty_none(global_random_seed, solver):
     lr_none = LogisticRegression(
         penalty=None, solver=solver, max_iter=300, random_state=global_random_seed
     )
-    lr_l2_C_inf = LogisticRegression(
+    lr_l2_c_inf = LogisticRegression(
         penalty="l2",
         C=np.inf,
         solver=solver,
@@ -2215,12 +2215,12 @@ def test_penalty_none(global_random_seed, solver):
         random_state=global_random_seed,
     )
     pred_none = lr_none.fit(X, y).predict(X)
-    pred_l2_C_inf = lr_l2_C_inf.fit(X, y).predict(X)
-    assert_array_equal(pred_none, pred_l2_C_inf)
+    pred_l2_c_inf = lr_l2_c_inf.fit(X, y).predict(X)
+    assert_array_equal(pred_none, pred_l2_c_inf)
 
 
 # TODO(1.10): remove whole test with the removal of penalty
-@pytest.mark.parametrize("solver", sorted(set(SOLVERS) - set(["liblinear"])))
+@pytest.mark.parametrize("solver", sorted(set(SOLVERS) - {"liblinear"}))
 def test_c_inf_no_warning(solver):
     """Test that C=np.inf (recommended approach) produces no warnings.
 
@@ -2289,9 +2289,9 @@ def test_logisticregression_liblinear_sample_weight(global_random_seed, params):
     clf_with_weight = clone(base_clf).fit(X2, y2, sample_weight=sample_weight)
 
     for method in ("predict", "predict_proba", "decision_function"):
-        X_clf_no_weight = getattr(clf_no_weight, method)(X)
-        X_clf_with_weight = getattr(clf_with_weight, method)(X)
-        assert_allclose(X_clf_no_weight, X_clf_with_weight)
+        pred_no_weight = getattr(clf_no_weight, method)(X)
+        pred_with_weight = getattr(clf_with_weight, method)(X)
+        assert_allclose(pred_no_weight, pred_with_weight)
 
 
 def test_scores_attribute_layout_elasticnet():
@@ -2305,10 +2305,10 @@ def test_scores_attribute_layout_elasticnet():
     cv = StratifiedKFold(n_splits=5, random_state=0, shuffle=True)
 
     l1_ratios = [0.1, 0.9]
-    Cs = [0.1, 1, 10]
+    c_values = [0.1, 1, 10]
 
     lrcv = LogisticRegressionCV(
-        Cs=Cs,
+        Cs=c_values,
         l1_ratios=l1_ratios,
         cv=cv,
         solver="saga",
@@ -2322,7 +2322,7 @@ def test_scores_attribute_layout_elasticnet():
 
     avg_scores_lrcv = lrcv.scores_[1].mean(axis=0)  # average over folds
 
-    for i, C in enumerate(Cs):
+    for i, C in enumerate(c_values):
         for j, l1_ratio in enumerate(l1_ratios):
             lr = LogisticRegression(
                 C=C,
@@ -2372,8 +2372,8 @@ def test_multinomial_identifiability_on_iris(solver, fit_intercept):
         fit_intercept=fit_intercept,
     )
     # Scaling X to ease convergence.
-    X_scaled = scale(iris.data)
-    clf.fit(X_scaled, target)
+    x_scaled = scale(iris.data)
+    clf.fit(x_scaled, target)
 
     # axis=0 is sum over classes
     assert_allclose(clf.coef_.sum(axis=0), 0, atol=1e-10)
@@ -2452,7 +2452,7 @@ def test_liblinear_not_stuck(global_random_seed):
     y = iris.target.copy()
     X = X[y != 2]
     y = y[y != 2]
-    X_prep = StandardScaler().fit_transform(X)
+    x_prep = StandardScaler().fit_transform(X)
 
     C = l1_min_c(X, y, loss="log") * 10 ** (10 / 29)
     clf = LogisticRegression(
@@ -2468,7 +2468,7 @@ def test_liblinear_not_stuck(global_random_seed):
     # test that the fit does not raise a ConvergenceWarning
     with warnings.catch_warnings():
         warnings.simplefilter("error", ConvergenceWarning)
-        clf.fit(X_prep, y)
+        clf.fit(x_prep, y)
 
 
 @config_context(enable_metadata_routing=True)
@@ -2480,7 +2480,7 @@ def test_lr_cv_scores_differ_when_sample_weight_is_requested(global_random_seed)
     """
     rng = np.random.RandomState(global_random_seed)
     X, y = make_classification(n_samples=2000, random_state=rng)
-    X_t, y_t = make_classification(n_samples=2000, random_state=rng)
+    x_test, y_test = make_classification(n_samples=2000, random_state=rng)
     sample_weight = np.ones(len(y))
     sample_weight[: len(y) // 2] = 2
     kwargs = {"sample_weight": sample_weight}
@@ -2504,8 +2504,8 @@ def test_lr_cv_scores_differ_when_sample_weight_is_requested(global_random_seed)
 
     assert not np.allclose(lr_cv1.scores_[1], lr_cv2.scores_[1])
 
-    score_1 = lr_cv1.score(X_t, y_t, **kwargs)
-    score_2 = lr_cv2.score(X_t, y_t, **kwargs)
+    score_1 = lr_cv1.score(x_test, y_test, **kwargs)
+    score_2 = lr_cv2.score(x_test, y_test, **kwargs)
 
     assert not np.allclose(score_1, score_2)
 
@@ -2517,7 +2517,7 @@ def test_lr_cv_scores_without_enabling_metadata_routing():
     """
     rng = np.random.RandomState(10)
     X, y = make_classification(n_samples=10, random_state=rng)
-    X_t, y_t = make_classification(n_samples=10, random_state=rng)
+    x_t, y_t = make_classification(n_samples=10, random_state=rng)
     sample_weight = np.ones(len(y))
     sample_weight[: len(y) // 2] = 2
     kwargs = {"sample_weight": sample_weight}
@@ -2529,7 +2529,7 @@ def test_lr_cv_scores_without_enabling_metadata_routing():
             use_legacy_attributes=False,
         )
         lr_cv1.fit(X, y, **kwargs)
-        score_1 = lr_cv1.score(X_t, y_t, **kwargs)
+        score_1 = lr_cv1.score(x_t, y_t, **kwargs)
 
     with config_context(enable_metadata_routing=True):
         scorer2 = get_scorer("accuracy")
@@ -2539,7 +2539,7 @@ def test_lr_cv_scores_without_enabling_metadata_routing():
             use_legacy_attributes=False,
         )
         lr_cv2.fit(X, y, **kwargs)
-        score_2 = lr_cv2.score(X_t, y_t, **kwargs)
+        score_2 = lr_cv2.score(x_t, y_t, **kwargs)
 
     assert_allclose(lr_cv1.scores_[1], lr_cv2.scores_[1])
     assert_allclose(score_1, score_2)
@@ -2849,7 +2849,7 @@ def test_logistic_regression_array_api_compliance(
 @pytest.mark.parametrize("penalty, l1_ratio", [("l1", 0.0), ("l2", 1.0)])
 def test_lr_penalty_l1ratio_incompatible(penalty, l1_ratio):
     """Check that incompatible penalty and l1_ratio raise a warning."""
-    X, y = make_classification(n_samples=20)
+    X, y = make_classification(n_samples=20, random_state=42)
     lr = LogisticRegression(
         solver="saga", penalty=penalty, l1_ratio=l1_ratio, random_state=42
     )
@@ -2862,7 +2862,7 @@ def test_lr_penalty_l1ratio_incompatible(penalty, l1_ratio):
 @pytest.mark.filterwarnings("ignore:.*default.*use_legacy_attributes.*:FutureWarning")
 def test_lr_scoring_warns():
     """Check that scoring raises a warning."""
-    X, y = make_classification(n_samples=20)
+    X, y = make_classification(n_samples=20, random_state=42)
     lr = LogisticRegressionCV(l1_ratios=[0], random_state=42)
     msg = "The default value of the parameter 'scoring' will change"
     with pytest.warns(FutureWarning, match=msg):
