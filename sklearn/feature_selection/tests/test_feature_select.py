@@ -585,12 +585,12 @@ def test_select_kbest_regression():
     univariate_filter = SelectKBest(f_regression, k=5)
     X_r = univariate_filter.fit(X, y).transform(X)
     assert_best_scores_kept(univariate_filter)
-    X_r2 = (
+    x_r2 = (
         GenericUnivariateSelect(f_regression, mode="k_best", param=5)
         .fit(X, y)
         .transform(X)
     )
-    assert_array_equal(X_r, X_r2)
+    assert_array_equal(X_r, x_r2)
     support = univariate_filter.get_support()
     gtruth = np.zeros(20)
     gtruth[:5] = 1
@@ -611,16 +611,16 @@ def test_select_heuristics_regression():
     )
 
     univariate_filter = SelectFpr(f_regression, alpha=0.01)
-    X_r = univariate_filter.fit(X, y).transform(X)
+    x_r = univariate_filter.fit(X, y).transform(X)
     gtruth = np.zeros(20)
     gtruth[:5] = 1
     for mode in ["fdr", "fpr", "fwe"]:
-        X_r2 = (
+        x_r2 = (
             GenericUnivariateSelect(f_regression, mode=mode, param=0.01)
             .fit(X, y)
             .transform(X)
         )
-        assert_array_equal(X_r, X_r2)
+        assert_array_equal(x_r, x_r2)
         support = univariate_filter.get_support()
         assert_array_equal(support[:5], np.ones((5,), dtype=bool))
         assert np.sum(support[5:] == 1) < 3
@@ -678,14 +678,14 @@ def test_select_fdr_regression(alpha, n_informative):
             # Warnings can be raised when no features are selected
             # (low alpha or very noisy data)
             univariate_filter = SelectFdr(f_regression, alpha=alpha)
-            X_r = univariate_filter.fit(X, y).transform(X)
-            X_r2 = (
+            x_r = univariate_filter.fit(X, y).transform(X)
+            x_r2 = (
                 GenericUnivariateSelect(f_regression, mode="fdr", param=alpha)
                 .fit(X, y)
                 .transform(X)
             )
 
-        assert_array_equal(X_r, X_r2)
+        assert_array_equal(x_r, x_r2)
         support = univariate_filter.get_support()
         num_false_positives = np.sum(support[n_informative:] == 1)
         num_true_positives = np.sum(support[:n_informative] == 1)
@@ -701,7 +701,7 @@ def test_select_fdr_regression(alpha, n_informative):
     # should be lower than alpha:
     # FDR = E(FP / (TP + FP)) <= alpha
     false_discovery_rate = np.mean(
-        [single_fdr(alpha, n_informative, random_state) for random_state in range(100)]
+        [single_fdr(alpha, n_informative, random_state=seed) for seed in range(100)]
     )
     assert alpha >= false_discovery_rate
 
@@ -720,13 +720,13 @@ def test_select_fwe_regression():
     )
 
     univariate_filter = SelectFwe(f_regression, alpha=0.01)
-    X_r = univariate_filter.fit(X, y).transform(X)
-    X_r2 = (
+    x_r = univariate_filter.fit(X, y).transform(X)
+    x_r2 = (
         GenericUnivariateSelect(f_regression, mode="fwe", param=0.01)
         .fit(X, y)
         .transform(X)
     )
-    assert_array_equal(X_r, X_r2)
+    assert_array_equal(x_r, x_r2)
     support = univariate_filter.get_support()
     gtruth = np.zeros(20)
     gtruth[:5] = 1
@@ -737,10 +737,10 @@ def test_select_fwe_regression():
 def test_selectkbest_tiebreaking():
     # Test whether SelectKBest actually selects k features in case of ties.
     # Prior to 0.11, SelectKBest would return more features than requested.
-    Xs = [[0, 1, 1], [0, 0, 1], [1, 0, 0], [1, 1, 0]]
+    xs = [[0, 1, 1], [0, 0, 1], [1, 0, 0], [1, 1, 0]]
     y = [1]
     dummy_score = lambda X, y: (X[0], X[0])
-    for X in Xs:
+    for X in xs:
         sel = SelectKBest(dummy_score, k=1)
         X1 = ignore_warnings(sel.fit_transform)([X], y)
         assert X1.shape[1] == 1
@@ -754,10 +754,10 @@ def test_selectkbest_tiebreaking():
 
 def test_selectpercentile_tiebreaking():
     # Test if SelectPercentile selects the right n_features in case of ties.
-    Xs = [[0, 1, 1], [0, 0, 1], [1, 0, 0], [1, 1, 0]]
+    xs = [[0, 1, 1], [0, 0, 1], [1, 0, 0], [1, 1, 0]]
     y = [1]
     dummy_score = lambda X, y: (X[0], X[0])
-    for X in Xs:
+    for X in xs:
         sel = SelectPercentile(dummy_score, percentile=34)
         X1 = ignore_warnings(sel.fit_transform)([X], y)
         assert X1.shape[1] == 1
