@@ -954,7 +954,9 @@ def test_vectorizer_pipeline_grid_selection():
         data, target, test_size=0.1, random_state=0
     )
 
-    pipeline = Pipeline([("vect", TfidfVectorizer()), ("svc", LinearSVC())])
+    pipeline = Pipeline(
+        [("vect", TfidfVectorizer()), ("svc", LinearSVC())], memory=None
+    )
 
     parameters = {
         "vect__ngram_range": [(1, 1), (1, 2)],
@@ -988,7 +990,9 @@ def test_vectorizer_pipeline_cross_validation():
     # label junk food as -1, the others as +1
     target = [-1] * len(JUNK_FOOD_DOCS) + [1] * len(NOTJUNK_FOOD_DOCS)
 
-    pipeline = Pipeline([("vect", TfidfVectorizer()), ("svc", LinearSVC())])
+    pipeline = Pipeline(
+        [("vect", TfidfVectorizer()), ("svc", LinearSVC())], memory=None
+    )
 
     cv_scores = cross_val_score(pipeline, data, target, cv=3)
     assert_array_equal(cv_scores, [1.0, 1.0, 1.0])
@@ -1003,19 +1007,19 @@ def test_vectorizer_unicode():
     )
 
     vect = CountVectorizer()
-    X_counted = vect.fit_transform([document])
-    assert X_counted.shape == (1, 12)
+    x_counted = vect.fit_transform([document])
+    assert x_counted.shape == (1, 12)
 
     vect = HashingVectorizer(norm=None, alternate_sign=False)
-    X_hashed = vect.transform([document])
-    assert X_hashed.shape == (1, 2**20)
+    x_hashed = vect.transform([document])
+    assert x_hashed.shape == (1, 2**20)
 
     # No collisions on such a small dataset
-    assert X_counted.nnz == X_hashed.nnz
+    assert x_counted.nnz == x_hashed.nnz
 
     # When norm is None and not alternate_sign, the tokens are counted up to
     # collisions
-    assert_array_equal(np.sort(X_counted.data), np.sort(X_hashed.data))
+    assert_array_equal(np.sort(x_counted.data), np.sort(x_hashed.data))
 
 
 def test_tfidf_vectorizer_with_fixed_vocabulary():
@@ -1093,7 +1097,7 @@ def test_countvectorizer_vocab_sets_when_pickling():
             "water",
         ]
     )
-    for x in range(0, 100):
+    for _ in range(0, 100):
         vocab_set = set(rng.choice(vocab_words, size=5, replace=False))
         cv = CountVectorizer(vocabulary=vocab_set)
         unpickled_cv = pickle.loads(pickle.dumps(cv))
@@ -1119,8 +1123,8 @@ def test_countvectorizer_vocab_dicts_when_pickling():
             "water",
         ]
     )
-    for x in range(0, 100):
-        vocab_dict = dict()
+    for _ in range(0, 100):
+        vocab_dict = {}
         words = rng.choice(vocab_words, size=5, replace=False)
         for y in range(0, 5):
             vocab_dict[words[y]] = y
@@ -1223,11 +1227,11 @@ def test_vectorizer_vocab_clone():
 
 
 @pytest.mark.parametrize(
-    "Vectorizer", (CountVectorizer, TfidfVectorizer, HashingVectorizer)
+    "vectorizer_class", (CountVectorizer, TfidfVectorizer, HashingVectorizer)
 )
-def test_vectorizer_string_object_as_input(Vectorizer):
+def test_vectorizer_string_object_as_input(vectorizer_class):
     message = "Iterable over raw text documents expected, string object received."
-    vec = Vectorizer()
+    vec = vectorizer_class()
 
     with pytest.raises(ValueError, match=message):
         vec.fit_transform("hello world!")
@@ -1240,11 +1244,11 @@ def test_vectorizer_string_object_as_input(Vectorizer):
         vec.transform("hello world!")
 
 
-@pytest.mark.parametrize("X_dtype", [np.float32, np.float64])
-def test_tfidf_transformer_type(X_dtype):
-    X = sparse.rand(10, 20000, dtype=X_dtype, random_state=42)
-    X_trans = TfidfTransformer().fit_transform(X)
-    assert X_trans.dtype == X.dtype
+@pytest.mark.parametrize("x_dtype", [np.float32, np.float64])
+def test_tfidf_transformer_type(x_dtype):
+    X = sparse.rand(10, 20000, dtype=x_dtype, random_state=42)
+    x_trans = TfidfTransformer().fit_transform(X)
+    assert x_trans.dtype == X.dtype
 
 
 @pytest.mark.parametrize(
