@@ -430,8 +430,8 @@ def orthogonal_mp(
             n_nonzero_coefs=n_nonzero_coefs,
             tol=tol,
             norms_squared=norms_squared,
-            copy_Gram=copy_x,
-            copy_Xy=False,
+            copy_gram=copy_x,
+            copy_xy=False,
             return_path=return_path,
         )
 
@@ -467,12 +467,12 @@ def orthogonal_mp(
 @validate_params(
     {
         "gram": ["array-like"],
-        "Xy": ["array-like"],
+        "xy": ["array-like"],
         "n_nonzero_coefs": [Interval(Integral, 0, None, closed="neither"), None],
         "tol": [Interval(Real, 0, None, closed="left"), None],
         "norms_squared": ["array-like", None],
-        "copy_Gram": ["boolean"],
-        "copy_Xy": ["boolean"],
+        "copy_gram": ["boolean"],
+        "copy_xy": ["boolean"],
         "return_path": ["boolean"],
         "return_n_iter": ["boolean"],
     },
@@ -480,13 +480,13 @@ def orthogonal_mp(
 )
 def orthogonal_mp_gram(
     gram,
-    Xy,
+    xy,
     *,
     n_nonzero_coefs=None,
     tol=None,
     norms_squared=None,
-    copy_Gram=True,
-    copy_Xy=True,
+    copy_gram=True,
+    copy_xy=True,
     return_path=False,
     return_n_iter=False,
 ):
@@ -577,18 +577,18 @@ def orthogonal_mp_gram(
     >>> X[:1,] @ coef
     array([-78.68])
     """
-    gram = check_array(gram, order="F", copy=copy_Gram)
-    Xy = np.asarray(Xy)
-    if Xy.ndim > 1 and Xy.shape[1] > 1:
+    gram = check_array(gram, order="F", copy=copy_gram)
+    xy = np.asarray(xy)
+    if xy.ndim > 1 and xy.shape[1] > 1:
         # or subsequent target will be affected
-        copy_Gram = True
-    if Xy.ndim == 1:
-        Xy = Xy[:, np.newaxis]
+        copy_gram = True
+    if xy.ndim == 1:
+        xy = xy[:, np.newaxis]
         if tol is not None:
             norms_squared = [norms_squared]
-    if copy_Xy or not Xy.flags.writeable:
+    if copy_xy or not xy.flags.writeable:
         # Make the copy once instead of many times in _gram_omp itself.
-        Xy = Xy.copy()
+        xy = xy.copy()
 
     if n_nonzero_coefs is None and tol is None:
         n_nonzero_coefs = int(0.1 * len(gram))
@@ -607,19 +607,19 @@ def orthogonal_mp_gram(
         )
 
     if return_path:
-        coef = np.zeros((len(gram), Xy.shape[1], len(gram)), dtype=gram.dtype)
+        coef = np.zeros((len(gram), xy.shape[1], len(gram)), dtype=gram.dtype)
     else:
-        coef = np.zeros((len(gram), Xy.shape[1]), dtype=gram.dtype)
+        coef = np.zeros((len(gram), xy.shape[1]), dtype=gram.dtype)
 
     n_iters = []
-    for k in range(Xy.shape[1]):
+    for k in range(xy.shape[1]):
         out = _gram_omp(
             gram,
-            Xy[:, k],
+            xy[:, k],
             n_nonzero_coefs,
             norms_squared[k] if tol is not None else None,
             tol,
-            copy_gram=copy_Gram,
+            copy_gram=copy_gram,
             copy_xy=False,
             return_path=return_path,
         )
@@ -633,7 +633,7 @@ def orthogonal_mp_gram(
             coef[idx, k] = x
         n_iters.append(n_iter)
 
-    if Xy.shape[1] == 1:
+    if xy.shape[1] == 1:
         n_iters = n_iters[0]
 
     if return_n_iter:
@@ -773,7 +773,7 @@ class OrthogonalMatchingPursuit(RegressorMixin, MultiOutputLinearModel):
         )
         n_features = X.shape[1]
 
-        X, y, X_offset, y_offset, X_scale, Gram, Xy = _pre_fit(
+        X, y, x_offset, y_offset, x_scale, gram, xy = _pre_fit(
             X,
             y,
             None,
@@ -795,7 +795,7 @@ class OrthogonalMatchingPursuit(RegressorMixin, MultiOutputLinearModel):
         else:
             self.n_nonzero_coefs_ = self.n_nonzero_coefs
 
-        if Gram is False:
+        if gram is False:
             coef_, self.n_iter_ = orthogonal_mp(
                 X,
                 y,
@@ -809,17 +809,17 @@ class OrthogonalMatchingPursuit(RegressorMixin, MultiOutputLinearModel):
             norms_sq = np.sum(y**2, axis=0) if self.tol is not None else None
 
             coef_, self.n_iter_ = orthogonal_mp_gram(
-                Gram,
-                Xy=Xy,
+                gram,
+                xy=xy,
                 n_nonzero_coefs=self.n_nonzero_coefs_,
                 tol=self.tol,
                 norms_squared=norms_sq,
-                copy_Gram=True,
-                copy_Xy=True,
+                copy_gram=True,
+                copy_xy=True,
                 return_n_iter=True,
             )
         self.coef_ = coef_.T
-        self._set_intercept(X_offset, y_offset, X_scale)
+        self._set_intercept(x_offset, y_offset, x_scale)
         return self
 
 
@@ -874,9 +874,9 @@ def _omp_path_residues(
         y_test = y_test.copy()
 
     if fit_intercept:
-        X_mean = X_train.mean(axis=0)
-        X_train -= X_mean
-        X_test -= X_mean
+        x_mean = X_train.mean(axis=0)
+        X_train -= x_mean
+        X_test -= x_mean
         y_mean = y_train.mean(axis=0)
         y_train = as_float_array(y_train, copy=False)
         y_train -= y_mean
