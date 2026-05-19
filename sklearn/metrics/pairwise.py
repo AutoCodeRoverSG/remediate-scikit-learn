@@ -58,14 +58,14 @@ def _return_float_dtype(X, Y):
         X = xp.asarray(X)
 
     if Y is None:
-        Y_dtype = X.dtype
+        y_dtype = X.dtype
     elif not issparse(Y) and not isinstance(Y, np.ndarray):
         Y = np.asarray(Y)
-        Y_dtype = Y.dtype
+        y_dtype = Y.dtype
     else:
-        Y_dtype = Y.dtype
+        y_dtype = Y.dtype
 
-    if X.dtype == Y_dtype == np.float32:
+    if X.dtype == y_dtype == np.float32:
         dtype = np.float32
     else:
         dtype = float
@@ -259,14 +259,14 @@ def check_paired_arrays(X, Y):
     {
         "X": ["array-like", "sparse matrix"],
         "Y": ["array-like", "sparse matrix", None],
-        "Y_norm_squared": ["array-like", None],
+        "y_norm_squared": ["array-like", None],
         "squared": ["boolean"],
-        "X_norm_squared": ["array-like", None],
+        "x_norm_squared": ["array-like", None],
     },
     prefer_skip_nested_validation=True,
 )
 def euclidean_distances(
-    X, Y=None, *, Y_norm_squared=None, squared=False, X_norm_squared=None
+    X, Y=None, *, y_norm_squared=None, squared=False, x_norm_squared=None
 ):
     """
     Compute the distance matrix between each pair from a feature array X and Y.
@@ -344,36 +344,38 @@ def euclidean_distances(
     xp, _ = get_namespace(X, Y)
     X, Y = check_pairwise_arrays(X, Y)
 
-    if X_norm_squared is not None:
-        X_norm_squared = check_array(X_norm_squared, ensure_2d=False)
-        original_shape = X_norm_squared.shape
-        if X_norm_squared.shape == (X.shape[0],):
-            X_norm_squared = xp.reshape(X_norm_squared, (-1, 1))
-        if X_norm_squared.shape == (1, X.shape[0]):
-            X_norm_squared = X_norm_squared.T
-        if X_norm_squared.shape != (X.shape[0], 1):
+    if x_norm_squared is not None:
+        x_norm_squared = check_array(x_norm_squared, ensure_2d=False)
+        original_shape = x_norm_squared.shape
+        if x_norm_squared.shape == (X.shape[0],):
+            x_norm_squared = xp.reshape(x_norm_squared, (-1, 1))
+        if x_norm_squared.shape == (1, X.shape[0]):
+            x_norm_squared = x_norm_squared.T
+        if x_norm_squared.shape != (X.shape[0], 1):
             raise ValueError(
                 f"Incompatible dimensions for X of shape {X.shape} and "
                 f"X_norm_squared of shape {original_shape}."
             )
 
-    if Y_norm_squared is not None:
-        Y_norm_squared = check_array(Y_norm_squared, ensure_2d=False)
-        original_shape = Y_norm_squared.shape
-        if Y_norm_squared.shape == (Y.shape[0],):
-            Y_norm_squared = xp.reshape(Y_norm_squared, (1, -1))
-        if Y_norm_squared.shape == (Y.shape[0], 1):
-            Y_norm_squared = Y_norm_squared.T
-        if Y_norm_squared.shape != (1, Y.shape[0]):
+    if y_norm_squared is not None:
+        y_norm_squared = check_array(y_norm_squared, ensure_2d=False)
+        original_shape = y_norm_squared.shape
+        if y_norm_squared.shape == (Y.shape[0],):
+            y_norm_squared = xp.reshape(y_norm_squared, (1, -1))
+        if y_norm_squared.shape == (Y.shape[0], 1):
+            y_norm_squared = y_norm_squared.T
+        if y_norm_squared.shape != (1, Y.shape[0]):
             raise ValueError(
                 f"Incompatible dimensions for Y of shape {Y.shape} and "
                 f"Y_norm_squared of shape {original_shape}."
             )
 
-    return _euclidean_distances(X, Y, X_norm_squared, Y_norm_squared, squared)
+    return _euclidean_distances(X, Y, x_norm_squared, y_norm_squared, squared)
 
 
-def _euclidean_distances(X, Y, X_norm_squared=None, Y_norm_squared=None, squared=False):
+def _euclidean_distances(
+    X, Y, x_norm_squared=None, y_norm_squared=None, squared=False
+):
     """Computational part of euclidean_distances
 
     Assumes inputs are already checked.
@@ -383,8 +385,8 @@ def _euclidean_distances(X, Y, X_norm_squared=None, Y_norm_squared=None, squared
     TODO: use a float64 accumulator in row_norms to avoid the latter.
     """
     xp, _, device_ = get_namespace_and_device(X, Y)
-    if X_norm_squared is not None and X_norm_squared.dtype != xp.float32:
-        XX = xp.reshape(X_norm_squared, (-1, 1))
+    if x_norm_squared is not None and x_norm_squared.dtype != xp.float32:
+        XX = xp.reshape(x_norm_squared, (-1, 1))
     elif X.dtype != xp.float32:
         XX = row_norms(X, squared=True)[:, None]
     else:
@@ -393,8 +395,8 @@ def _euclidean_distances(X, Y, X_norm_squared=None, Y_norm_squared=None, squared
     if Y is X:
         YY = None if XX is None else XX.T
     else:
-        if Y_norm_squared is not None and Y_norm_squared.dtype != xp.float32:
-            YY = xp.reshape(Y_norm_squared, (1, -1))
+        if y_norm_squared is not None and y_norm_squared.dtype != xp.float32:
+            YY = xp.reshape(y_norm_squared, (1, -1))
         elif Y.dtype != xp.float32:
             YY = row_norms(Y, squared=True)[None, :]
         else:
@@ -525,22 +527,22 @@ def nan_euclidean_distances(
         X, Y, accept_sparse=False, ensure_all_finite=ensure_all_finite, copy=copy
     )
     # Get missing mask for X
-    missing_X = _get_mask(X, missing_values)
+    missing_x = _get_mask(X, missing_values)
 
     # Get missing mask for Y
-    missing_Y = missing_X if Y is X else _get_mask(Y, missing_values)
+    missing_y = missing_x if Y is X else _get_mask(Y, missing_values)
 
     # set missing values to zero
-    X[missing_X] = 0
-    Y[missing_Y] = 0
+    X[missing_x] = 0
+    Y[missing_y] = 0
 
     distances = euclidean_distances(X, Y, squared=True)
 
     # Adjust distances for missing values
     XX = X * X
     YY = Y * Y
-    distances -= np.dot(XX, missing_Y.T)
-    distances -= np.dot(missing_X, YY.T)
+    distances -= np.dot(XX, missing_y.T)
+    distances -= np.dot(missing_x, YY.T)
 
     np.clip(distances, 0, None, out=distances)
 
@@ -549,9 +551,9 @@ def nan_euclidean_distances(
         # This may not be the case due to floating point rounding errors.
         np.fill_diagonal(distances, 0.0)
 
-    present_X = 1 - missing_X
-    present_Y = present_X if Y is X else ~missing_Y
-    present_count = np.dot(present_X, present_Y.T)
+    present_x = 1 - missing_x
+    present_y = present_x if Y is X else ~missing_y
+    present_count = np.dot(present_x, present_y.T)
     distances[present_count == 0] = np.nan
     # avoid divide by zero
     np.maximum(1, present_count, out=present_count)
@@ -564,7 +566,7 @@ def nan_euclidean_distances(
     return distances
 
 
-def _euclidean_distances_upcast(X, XX=None, Y=None, YY=None, batch_size=None):
+def _euclidean_distances_upcast(X, xx=None, Y=None, yy=None, batch_size=None):
     """Euclidean distances between X and Y.
 
     Assumes X and Y have float32 dtype.
@@ -609,10 +611,10 @@ def _euclidean_distances_upcast(X, XX=None, Y=None, YY=None, batch_size=None):
     xp_max_float = _max_precision_float_dtype(xp=xp, device=device_)
     for i, x_slice in enumerate(x_batches):
         X_chunk = xp.astype(X[x_slice, :], xp_max_float)
-        if XX is None:
-            XX_chunk = row_norms(X_chunk, squared=True)[:, None]
+        if xx is None:
+            xx_chunk = row_norms(X_chunk, squared=True)[:, None]
         else:
-            XX_chunk = XX[x_slice]
+            xx_chunk = xx[x_slice]
 
         y_batches = gen_batches(n_samples_Y, batch_size)
 
@@ -624,14 +626,14 @@ def _euclidean_distances_upcast(X, XX=None, Y=None, YY=None, batch_size=None):
 
             else:
                 Y_chunk = xp.astype(Y[y_slice, :], xp_max_float)
-                if YY is None:
-                    YY_chunk = row_norms(Y_chunk, squared=True)[None, :]
+                if yy is None:
+                    yy_chunk = row_norms(Y_chunk, squared=True)[None, :]
                 else:
-                    YY_chunk = YY[:, y_slice]
+                    yy_chunk = yy[:, y_slice]
 
                 d = -2 * safe_sparse_dot(X_chunk, Y_chunk.T, dense_output=True)
-                d += XX_chunk
-                d += YY_chunk
+                d += xx_chunk
+                d += yy_chunk
 
             distances[x_slice, y_slice] = xp.astype(d, xp.float32, copy=False)
 
@@ -1991,7 +1993,7 @@ def _parallel_pairwise(X, Y, func, n_jobs, **kwds):
             Y[s, ...],
             # Y_norm_squared for euclidean distance is a precomputed per-sample norm
             # passed through kwds; slice it to match the current Y chunk.
-            **{k: (v[s] if k == "Y_norm_squared" else v) for k, v in kwds.items()},
+            **{k: (v[s] if k == "y_norm_squared" else v) for k, v in kwds.items()},
         )
         for s in gen_even_slices(_num_samples(Y), effective_n_jobs(n_jobs))
     )

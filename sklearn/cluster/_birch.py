@@ -83,7 +83,7 @@ def _split_node(node, threshold, branching_factor):
             node.next_leaf_.prev_leaf_ = new_node2
 
     dist = euclidean_distances(
-        node.centroids_, Y_norm_squared=node.squared_norm_, squared=True
+        node.centroids_, y_norm_squared=node.squared_norm_, squared=True
     )
     n_clusters = dist.shape[0]
 
@@ -656,7 +656,7 @@ class Birch(
 
     def _predict(self, X):
         """Predict data using the ``centroids_`` of subclusters."""
-        kwargs = {"Y_norm_squared": self._subcluster_norms}
+        kwargs = {"y_norm_squared": self._subcluster_norms}
 
         with config_context(assume_finite=True):
             argmin = pairwise_distances_argmin(
