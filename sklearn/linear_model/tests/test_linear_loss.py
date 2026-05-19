@@ -122,7 +122,7 @@ def test_loss_grad_hess_are_the_same(
     X, y, coef = random_X_y_coef(
         linear_model_loss=loss, n_samples=10, n_features=5, seed=global_random_seed
     )
-    X_old, y_old, coef_old = X.copy(), y.copy(), coef.copy()
+    x_old, y_old, coef_old = X.copy(), y.copy(), coef.copy()
 
     if sample_weight == "range":
         sample_weight = np.linspace(1, y.shape[0], num=y.shape[0])
@@ -168,21 +168,21 @@ def test_loss_grad_hess_are_the_same(
     assert_allclose(h5, h4)
 
     # same for sparse X
-    Xs = csr_container(X)
+    x_sparse = csr_container(X)
     l1_sp = loss.loss(
-        coef, Xs, y, sample_weight=sample_weight, l2_reg_strength=l2_reg_strength
+        coef, x_sparse, y, sample_weight=sample_weight, l2_reg_strength=l2_reg_strength
     )
     g1_sp = loss.gradient(
-        coef, Xs, y, sample_weight=sample_weight, l2_reg_strength=l2_reg_strength
+        coef, x_sparse, y, sample_weight=sample_weight, l2_reg_strength=l2_reg_strength
     )
     l2_sp, g2_sp = loss.loss_gradient(
-        coef, Xs, y, sample_weight=sample_weight, l2_reg_strength=l2_reg_strength
+        coef, x_sparse, y, sample_weight=sample_weight, l2_reg_strength=l2_reg_strength
     )
     g3_sp, h3_sp = loss.gradient_hessian_product(
-        coef, Xs, y, sample_weight=sample_weight, l2_reg_strength=l2_reg_strength
+        coef, x_sparse, y, sample_weight=sample_weight, l2_reg_strength=l2_reg_strength
     )
     g4_sp, h4_sp, _ = loss.gradient_hessian(
-        coef, Xs, y, sample_weight=sample_weight, l2_reg_strength=l2_reg_strength
+        coef, x_sparse, y, sample_weight=sample_weight, l2_reg_strength=l2_reg_strength
     )
     assert_allclose(l1, l1_sp)
     assert_allclose(l1, l2_sp)
@@ -194,8 +194,8 @@ def test_loss_grad_hess_are_the_same(
     assert_allclose(h4, h4_sp)
 
     # X, y and coef should not have changed
-    assert_allclose(X, X_old)
-    assert_allclose(Xs.toarray(), X_old)
+    assert_allclose(X, x_old)
+    assert_allclose(x_sparse.toarray(), x_old)
     assert_allclose(y, y_old)
     assert_allclose(coef, coef_old)
 
@@ -203,9 +203,9 @@ def test_loss_grad_hess_are_the_same(
 @pytest.mark.parametrize("base_loss", LOSSES)
 @pytest.mark.parametrize("sample_weight", [None, "range"])
 @pytest.mark.parametrize("l2_reg_strength", [0, 1])
-@pytest.mark.parametrize("X_container", CSR_CONTAINERS + [None])
+@pytest.mark.parametrize("x_container", CSR_CONTAINERS + [None])
 def test_loss_gradients_hessp_intercept(
-    base_loss, sample_weight, l2_reg_strength, X_container, global_random_seed
+    base_loss, sample_weight, l2_reg_strength, x_container, global_random_seed
 ):
     """Test that loss and gradient handle intercept correctly."""
     loss = LinearModelLoss(base_loss=base_loss(), fit_intercept=False)
@@ -219,12 +219,12 @@ def test_loss_gradients_hessp_intercept(
     )
 
     X[:, -1] = 1  # make last column of 1 to mimic intercept term
-    X_inter = X[
+    x_inter = X[
         :, :-1
     ]  # exclude intercept column as it is added automatically by loss_inter
 
-    if X_container is not None:
-        X = X_container(X)
+    if x_container is not None:
+        X = x_container(X)
 
     if sample_weight == "range":
         sample_weight = np.linspace(1, y.shape[0], num=y.shape[0])
@@ -236,10 +236,10 @@ def test_loss_gradients_hessp_intercept(
         coef, X, y, sample_weight=sample_weight, l2_reg_strength=l2_reg_strength
     )
     l_inter, g_inter = loss_inter.loss_gradient(
-        coef, X_inter, y, sample_weight=sample_weight, l2_reg_strength=l2_reg_strength
+        coef, x_inter, y, sample_weight=sample_weight, l2_reg_strength=l2_reg_strength
     )
     _, hessp_inter = loss_inter.gradient_hessian_product(
-        coef, X_inter, y, sample_weight=sample_weight, l2_reg_strength=l2_reg_strength
+        coef, x_inter, y, sample_weight=sample_weight, l2_reg_strength=l2_reg_strength
     )
 
     # Note, that intercept gets no L2 penalty.
@@ -360,7 +360,7 @@ def test_multinomial_coef_shape(fit_intercept, global_random_seed):
     )
     s = np.random.RandomState(global_random_seed).randn(*coef.shape)
 
-    l, g = loss.loss_gradient(coef, X, y)
+    _, g = loss.loss_gradient(coef, X, y)
     g1 = loss.gradient(coef, X, y)
     g2, hessp = loss.gradient_hessian_product(coef, X, y)
     h = hessp(s)
@@ -375,7 +375,7 @@ def test_multinomial_coef_shape(fit_intercept, global_random_seed):
 
     coef_r = coef.ravel(order="F")
     s_r = s.ravel(order="F")
-    l_r, g_r = loss.loss_gradient(coef_r, X, y)
+    _, g_r = loss.loss_gradient(coef_r, X, y)
     g1_r = loss.gradient(coef_r, X, y)
     g2_r, hessp_r = loss.gradient_hessian_product(coef_r, X, y)
     h_r = hessp_r(s_r)
@@ -417,7 +417,7 @@ def test_multinomial_hessian_3_classes(sample_weight, global_random_seed):
     if sample_weight == "range":
         sample_weight = np.linspace(1, y.shape[0], num=y.shape[0])
 
-    grad, hess, _ = loss.gradient_hessian(
+    _, hess, _ = loss.gradient_hessian(
         coef,
         X,
         y,
@@ -427,8 +427,8 @@ def test_multinomial_hessian_3_classes(sample_weight, global_random_seed):
     # Hessian must be a symmetrix matrix.
     assert_allclose(hess, hess.T)
 
-    weights, intercept, raw_prediction = loss.weight_intercept_raw(coef, X)
-    grad_pointwise, proba = loss.base_loss.gradient_proba(
+    _, _, raw_prediction = loss.weight_intercept_raw(coef, X)
+    _, proba = loss.base_loss.gradient_proba(
         y_true=y,
         raw_prediction=raw_prediction,
         sample_weight=sample_weight,
