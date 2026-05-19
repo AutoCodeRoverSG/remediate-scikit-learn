@@ -1477,6 +1477,8 @@ def check_random_state(seed):
         return np.random.RandomState(seed)
     if isinstance(seed, np.random.RandomState):
         return seed
+    if isinstance(seed, np.random.Generator):
+        return seed
     raise ValueError(
         f"{seed!r} cannot be used to seed a numpy.random.RandomState instance"
     )

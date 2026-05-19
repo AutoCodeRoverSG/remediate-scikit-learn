@@ -46,6 +46,7 @@ from sklearn.utils._testing import (
     assert_array_equal,
     skip_if_array_api_compat_not_configured,
 )
+from sklearn.utils.validation import check_random_state
 from sklearn.utils.extmath import fast_logdet
 
 COVARIANCE_TYPE = ["full", "tied", "diag", "spherical"]
@@ -54,7 +55,7 @@ COVARIANCE_TYPE = ["full", "tied", "diag", "spherical"]
 def generate_data(
     n_samples, n_features, weights, means, precisions, covariance_type, dtype=np.float64
 ):
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
 
     X = []
     if covariance_type == "spherical":
@@ -100,16 +101,21 @@ class RandomData:
         scale=50,
         dtype=np.float64,
     ):
+        rng = check_random_state(rng)
         self.n_samples = n_samples
         self.n_components = n_components
         self.n_features = n_features
 
-        self.weights = rng.rand(n_components).astype(dtype)
+        if hasattr(rng, "rand"):
+            _rand = rng.rand
+        else:
+            _rand = lambda *args: rng.random(args if len(args) > 1 else args[0])
+        self.weights = _rand(n_components).astype(dtype)
         self.weights = self.weights.astype(dtype) / self.weights.sum()
-        self.means = rng.rand(n_components, n_features).astype(dtype) * scale
+        self.means = _rand(n_components, n_features).astype(dtype) * scale
         self.covariances = {
-            "spherical": 0.5 + rng.rand(n_components).astype(dtype),
-            "diag": (0.5 + rng.rand(n_components, n_features).astype(dtype)) ** 2,
+            "spherical": 0.5 + _rand(n_components).astype(dtype),
+            "diag": (0.5 + _rand(n_components, n_features).astype(dtype)) ** 2,
             "tied": make_spd_matrix(n_features, random_state=rng).astype(dtype),
             "full": np.array(
                 [
@@ -154,8 +160,8 @@ class RandomData:
 
 def test_gaussian_mixture_attributes():
     # test bad parameters
-    rng = np.random.RandomState(0)
-    X = rng.rand(10, 2)
+    rng = np.random.default_rng(0)
+    X = rng.random((10, 2))
 
     # test good parameters
     n_components, tol, n_init, max_iter, reg_covar = 2, 1e-4, 3, 30, 1e-1
@@ -180,7 +186,7 @@ def test_gaussian_mixture_attributes():
 
 
 def test_check_weights():
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
     rand_data = RandomData(rng)
 
     n_components = rand_data.n_components
@@ -189,7 +195,7 @@ def test_check_weights():
     g = GaussianMixture(n_components=n_components)
 
     # Check bad shape
-    weights_bad_shape = rng.rand(n_components, 1)
+    weights_bad_shape = rng.random((n_components, 1))
     g.weights_init = weights_bad_shape
     msg = re.escape(
         "The parameter 'weights' should have the shape of "
@@ -199,7 +205,7 @@ def test_check_weights():
         g.fit(X)
 
     # Check bad range
-    weights_bad_range = rng.rand(n_components) + 1
+    weights_bad_range = rng.random(n_components) + 1
     g.weights_init = weights_bad_range
     msg = re.escape(
         "The parameter 'weights' should be in the range [0, 1], but got"
@@ -210,7 +216,7 @@ def test_check_weights():
         g.fit(X)
 
     # Check bad normalization
-    weights_bad_norm = rng.rand(n_components)
+    weights_bad_norm = rng.random(n_components)
     weights_bad_norm = weights_bad_norm / (weights_bad_norm.sum() + 1)
     g.weights_init = weights_bad_norm
     msg = re.escape(
@@ -228,8 +234,8 @@ def test_check_weights():
 
 
 def test_check_means():
-    rng = np.random.RandomState(0)
-    rand_data = RandomData(rng)
+    rng = np.random.default_rng(0)
+    rand_data = RandomData(0)
 
     n_components, n_features = rand_data.n_components, rand_data.n_features
     X = rand_data.X["full"]
@@ -237,7 +243,7 @@ def test_check_means():
     g = GaussianMixture(n_components=n_components)
 
     # Check means bad shape
-    means_bad_shape = rng.rand(n_components + 1, n_features)
+    means_bad_shape = rng.random((n_components + 1, n_features))
     g.means_init = means_bad_shape
     msg = "The parameter 'means' should have the shape of "
     with pytest.raises(ValueError, match=msg):
@@ -317,12 +323,12 @@ def test_suffstat_sk_full():
     # special case 1, assuming data is "centered"
     X = rng.rand(n_samples, n_features)
     resp = rng.rand(n_samples, 1)
-    X_resp = np.sqrt(resp) * X
+    x_resp = np.sqrt(resp) * X
     nk = np.array([n_samples])
     xk = np.zeros((1, n_features))
     covars_pred = _estimate_gaussian_covariances_full(resp, X, nk, xk, 0)
     ecov = EmpiricalCovariance(assume_centered=True)
-    ecov.fit(X_resp)
+    ecov.fit(x_resp)
     assert_almost_equal(ecov.error_norm(covars_pred[0], norm="frobenius"), 0)
     assert_almost_equal(ecov.error_norm(covars_pred[0], norm="spectral"), 0)
 
@@ -490,7 +496,7 @@ def test_gaussian_mixture_log_probabilities():
     assert_array_almost_equal(log_prob, log_prob_naive)
 
     # tied
-    covars_tied = np.array([x for x in covars_diag]).mean(axis=0)
+    covars_tied = covars_diag.mean(axis=0)
     precs_tied = np.diag(np.sqrt(1.0 / covars_tied))
 
     log_prob_naive = _naive_lmvnpdf_diag(X, means, [covars_tied] * n_components)
@@ -564,10 +570,10 @@ def test_gaussian_mixture_predict_predict_proba():
             g.predict(X)
 
         g.fit(X)
-        Y_pred = g.predict(X)
-        Y_pred_proba = g.predict_proba(X).argmax(axis=1)
-        assert_array_equal(Y_pred, Y_pred_proba)
-        assert adjusted_rand_score(Y, Y_pred) > 0.95
+        y_pred = g.predict(X)
+        y_pred_proba = g.predict_proba(X).argmax(axis=1)
+        assert_array_equal(y_pred, y_pred_proba)
+        assert adjusted_rand_score(Y, y_pred) > 0.95
 
 
 @pytest.mark.filterwarnings("ignore:.*did not converge.*")
@@ -599,10 +605,10 @@ def test_gaussian_mixture_fit_predict(seed, max_iter, tol, global_dtype):
 
         # check if fit_predict(X) is equivalent to fit(X).predict(X)
         f = copy.deepcopy(g)
-        Y_pred1 = f.fit(X).predict(X)
-        Y_pred2 = g.fit_predict(X)
-        assert_array_equal(Y_pred1, Y_pred2)
-        assert adjusted_rand_score(Y, Y_pred2) > 0.95
+        y_pred1 = f.fit(X).predict(X)
+        y_pred2 = g.fit_predict(X)
+        assert_array_equal(y_pred1, y_pred2)
+        assert adjusted_rand_score(Y, y_pred2) > 0.95
         assert g.means_.dtype == global_dtype
         assert g.weights_.dtype == global_dtype
         assert g.precisions_.dtype == global_dtype
