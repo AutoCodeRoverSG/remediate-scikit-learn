@@ -104,16 +104,24 @@ class RandomData:
         self.n_components = n_components
         self.n_features = n_features
 
-        self.weights = rng.rand(n_components).astype(dtype)
+        if isinstance(rng, np.random.Generator):
+            _spd_rng = lambda: int(rng.integers(0, 2**31))
+        else:
+            _spd_rng = lambda: rng
+
+        self.weights = rng.random(n_components).astype(dtype)
         self.weights = self.weights.astype(dtype) / self.weights.sum()
-        self.means = rng.rand(n_components, n_features).astype(dtype) * scale
+        self.means = rng.random((n_components, n_features)).astype(dtype) * scale
         self.covariances = {
-            "spherical": 0.5 + rng.rand(n_components).astype(dtype),
-            "diag": (0.5 + rng.rand(n_components, n_features).astype(dtype)) ** 2,
-            "tied": make_spd_matrix(n_features, random_state=rng).astype(dtype),
+            "spherical": 0.5 + rng.random(n_components).astype(dtype),
+            "diag": (0.5 + rng.random((n_components, n_features)).astype(dtype)) ** 2,
+            "tied": make_spd_matrix(n_features, random_state=_spd_rng()).astype(dtype),
             "full": np.array(
                 [
-                    make_spd_matrix(n_features, random_state=rng).astype(dtype) * 0.5
+                    make_spd_matrix(n_features, random_state=_spd_rng()).astype(
+                        dtype
+                    )
+                    * 0.5
                     for _ in range(n_components)
                 ]
             ),
