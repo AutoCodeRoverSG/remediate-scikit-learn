@@ -48,17 +48,17 @@ def _get_metric_params_list(metric: str, n_features: int, seed: int = 1):
 
     if metric == "minkowski":
         minkowski_kwargs = [
-            dict(p=1.5),
-            dict(p=2),
-            dict(p=3),
-            dict(p=np.inf),
-            dict(p=3, w=rng.rand(n_features)),
+            {"p": 1.5},
+            {"p": 2},
+            {"p": 3},
+            {"p": np.inf},
+            {"p": 3, "w": rng.rand(n_features)},
         ]
 
         return minkowski_kwargs
 
     if metric == "seuclidean":
-        return [dict(V=rng.rand(n_features))]
+        return [{"V": rng.rand(n_features)}]
 
     # Case of: "euclidean", "manhattan", "chebyshev", "haversine" or any other metric.
     # In those cases, no kwargs is needed.
@@ -351,7 +351,7 @@ ASSERT_RESULT = {
 def test_assert_compatible_argkmin_results():
     atol = 1e-7
     rtol = 0.0
-    tols = dict(atol=atol, rtol=rtol)
+    tols = {"atol": atol, "rtol": rtol}
 
     eps = atol / 3
     _1m = 1.0 - eps
@@ -491,7 +491,7 @@ def test_assert_compatible_argkmin_results():
 def test_assert_compatible_radius_results(check_sorted):
     atol = 1e-7
     rtol = 0.0
-    tols = dict(atol=atol, rtol=rtol)
+    tols = {"atol": atol, "rtol": rtol}
 
     eps = atol / 3
     _1m = 1.0 - eps
@@ -655,15 +655,15 @@ def test_pairwise_distances_reduction_is_usable_for(csr_container):
     rng = np.random.RandomState(0)
     X = rng.rand(100, 10)
     Y = rng.rand(100, 10)
-    X_csr = csr_container(X)
-    Y_csr = csr_container(Y)
+    x_csr = csr_container(X)
+    y_csr = csr_container(Y)
     metric = "manhattan"
 
     # Must be usable for all possible pair of {dense, sparse} datasets
     assert BaseDistancesReductionDispatcher.is_usable_for(X, Y, metric)
-    assert BaseDistancesReductionDispatcher.is_usable_for(X_csr, Y_csr, metric)
-    assert BaseDistancesReductionDispatcher.is_usable_for(X_csr, Y, metric)
-    assert BaseDistancesReductionDispatcher.is_usable_for(X, Y_csr, metric)
+    assert BaseDistancesReductionDispatcher.is_usable_for(x_csr, y_csr, metric)
+    assert BaseDistancesReductionDispatcher.is_usable_for(x_csr, Y, metric)
+    assert BaseDistancesReductionDispatcher.is_usable_for(X, y_csr, metric)
 
     assert BaseDistancesReductionDispatcher.is_usable_for(
         X.astype(np.float64), Y.astype(np.float64), metric
@@ -690,19 +690,19 @@ def test_pairwise_distances_reduction_is_usable_for(csr_container):
         np.asfortranarray(X), Y, metric
     )
 
-    assert BaseDistancesReductionDispatcher.is_usable_for(X_csr, Y, metric="euclidean")
+    assert BaseDistancesReductionDispatcher.is_usable_for(x_csr, Y, metric="euclidean")
     assert BaseDistancesReductionDispatcher.is_usable_for(
-        X, Y_csr, metric="sqeuclidean"
+        X, y_csr, metric="sqeuclidean"
     )
 
     # FIXME: the current Cython implementation is too slow for a large number of
     # features. We temporarily disable it to fallback on SciPy's implementation.
     # See: https://github.com/scikit-learn/scikit-learn/issues/28191
     assert not BaseDistancesReductionDispatcher.is_usable_for(
-        X_csr, Y_csr, metric="sqeuclidean"
+        x_csr, y_csr, metric="sqeuclidean"
     )
     assert not BaseDistancesReductionDispatcher.is_usable_for(
-        X_csr, Y_csr, metric="euclidean"
+        x_csr, y_csr, metric="euclidean"
     )
 
     # CSR matrices without non-zeros elements aren't currently supported
