@@ -87,7 +87,8 @@ def get_estimator_and_data():
 
 X, y, Estimator = get_estimator_and_data()
 if args.missing_fraction:
-    mask = np.random.binomial(1, args.missing_fraction, size=X.shape).astype(bool)
+    rng = np.random.default_rng(0)
+    mask = rng.binomial(1, args.missing_fraction, size=X.shape).astype(bool)
     X[mask] = np.nan
 
 if args.random_sample_weights:
