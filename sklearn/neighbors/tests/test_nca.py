@@ -47,8 +47,8 @@ def test_simple_example():
         n_components=2, init="identity", random_state=42
     )
     nca.fit(X, y)
-    X_t = nca.transform(X)
-    assert_array_equal(pairwise_distances(X_t).argsort()[:, 1], np.array([2, 3, 0, 1]))
+    x_t = nca.transform(X)
+    assert_array_equal(pairwise_distances(x_t).argsort()[:, 1], np.array([2, 3, 0, 1]))
 
 
 def test_toy_example_collapse_points():
@@ -62,9 +62,9 @@ def test_toy_example_collapse_points():
     with an objective equal to 1 (loss=-1.).
 
     """
-    rng = np.random.RandomState(42)
+    rng = np.random.default_rng(42)
     input_dim = 5
-    two_points = rng.randn(2, input_dim)
+    two_points = rng.standard_normal((2, input_dim))
     X = np.vstack([two_points, two_points.mean(axis=0)[np.newaxis, :]])
     y = [0, 0, 1]
 
@@ -86,10 +86,10 @@ def test_toy_example_collapse_points():
 
     loss_storer = LossStorer(X, y)
     nca = NeighborhoodComponentsAnalysis(random_state=42, callback=loss_storer.callback)
-    X_t = nca.fit_transform(X, y)
-    print(X_t)
+    x_t = nca.fit_transform(X, y)
+    print(x_t)
     # test that points are collapsed into one point
-    assert_array_almost_equal(X_t - X_t[0], 0.0)
+    assert_array_almost_equal(x_t - x_t[0], 0.0)
     assert abs(loss_storer.loss + 1) < 1e-10
 
 
@@ -100,18 +100,18 @@ def test_finite_differences(global_random_seed):
     approximation.
     """
     # Initialize the transformation `M`, as well as `X` and `y` and `NCA`
-    rng = np.random.RandomState(global_random_seed)
+    rng = np.random.default_rng(global_random_seed)
     X, y = make_classification(random_state=global_random_seed)
-    M = rng.randn(rng.randint(1, X.shape[1] + 1), X.shape[1])
+    M = rng.standard_normal((rng.integers(1, X.shape[1] + 1), X.shape[1]))
     nca = NeighborhoodComponentsAnalysis()
     nca.n_iter_ = 0
     mask = y[:, np.newaxis] == y[np.newaxis, :]
 
-    def fun(M):
-        return nca._loss_grad_lbfgs(M, X, mask)[0]
+    def fun(m):
+        return nca._loss_grad_lbfgs(m, X, mask)[0]
 
-    def grad(M):
-        return nca._loss_grad_lbfgs(M, X, mask)[1]
+    def grad(m):
+        return nca._loss_grad_lbfgs(m, X, mask)[1]
 
     # compare the gradient to a finite difference approximation
     diff = check_grad(fun, grad, M.ravel())
@@ -123,9 +123,9 @@ def test_params_validation():
     X = np.arange(12).reshape(4, 3)
     y = [1, 1, 2, 2]
     NCA = NeighborhoodComponentsAnalysis
-    rng = np.random.RandomState(42)
+    rng = np.random.default_rng(42)
 
-    init = rng.rand(5, 3)
+    init = rng.random((5, 3))
     msg = (
         f"The output dimensionality ({init.shape[0]}) "
         "of the given linear transformation `init` cannot be "
@@ -165,13 +165,13 @@ def test_transformation_dimensions():
 
 
 def test_n_components():
-    rng = np.random.RandomState(42)
+    rng = np.random.default_rng(42)
     X = np.arange(12).reshape(4, 3)
     y = [1, 1, 2, 2]
 
-    init = rng.rand(X.shape[1] - 1, 3)
+    init = rng.random((X.shape[1] - 1, 3))
 
-    # n_components = X.shape[1] != transformation.shape[0]
+    
     n_components = X.shape[1]
     nca = NeighborhoodComponentsAnalysis(init=init, n_components=n_components)
     msg = (
@@ -311,7 +311,7 @@ def test_warm_start_validation():
     nca = NeighborhoodComponentsAnalysis(warm_start=True, max_iter=5)
     nca.fit(X, y)
 
-    X_less_features, y = make_classification(
+    x_less_features, y = make_classification(
         n_samples=30,
         n_features=4,
         n_classes=4,
@@ -320,12 +320,12 @@ def test_warm_start_validation():
         random_state=0,
     )
     msg = (
-        f"The new inputs dimensionality ({X_less_features.shape[1]}) "
+        f"The new inputs dimensionality ({x_less_features.shape[1]}) "
         "does not match the input dimensionality of the previously learned "
         f"transformation ({nca.components_.shape[1]})."
     )
     with pytest.raises(ValueError, match=re.escape(msg)):
-        nca.fit(X_less_features, y)
+        nca.fit(x_less_features, y)
 
 
 def test_warm_start_effectiveness():
