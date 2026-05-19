@@ -207,7 +207,7 @@ def test_no_optimizer(optimizer, kernel):
     """Test that kernel parameters are unmodified when optimizer is None."""
     gpr = GaussianProcessRegressor(kernel=kernel, optimizer=optimizer)
     gpr.fit(X, y)
-    assert bool((gpr.kernel_.theta == 0.0).all()) is (optimizer is None)
+    assert np.allclose(gpr.kernel_.theta, 0.0) is (optimizer is None)
 
 
 @pytest.mark.parametrize("kernel", kernels)
@@ -228,7 +228,7 @@ def test_anisotropic_kernel():
     # We learn a function which varies in one dimension ten-times slower
     # than in the other. The corresponding length-scales should differ by at
     # least a factor 5
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
     X = rng.uniform(-1, 1, (50, 2))
     y = X[:, 0] + 0.1 * X[:, 1]
 
@@ -241,8 +241,8 @@ def test_random_starts():
     # Test that an increasing number of random-starts of GP fitting only
     # increases the log marginal likelihood of the chosen theta.
     n_samples, n_features = 25, 2
-    rng = np.random.RandomState(0)
-    X = rng.randn(n_samples, n_features) * 2 - 1
+    rng = np.random.default_rng(0)
+    X = rng.standard_normal((n_samples, n_features)) * 2 - 1
     y = (
         np.sin(X).sum(axis=1)
         + np.sin(3 * X).sum(axis=1)
@@ -410,7 +410,7 @@ def test_custom_optimizer(kernel):
     # Test that GPR can use externally defined optimizers.
     # Define a dummy optimizer that simply tests 50 random hyperparameters
     def optimizer(obj_func, initial_theta, bounds):
-        rng = np.random.RandomState(0)
+        rng = np.random.default_rng(0)
         theta_opt, func_min = (
             initial_theta,
             obj_func(initial_theta, eval_gradient=False),
@@ -593,7 +593,7 @@ def test_constant_target(kernel):
 
     # Test multi-target data
     n_samples, n_targets = X.shape[0], 2
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
     y = np.concatenate(
         [
             rng.normal(size=(n_samples, 1)),  # non-constant target
@@ -712,7 +712,7 @@ def test_predict_shapes(normalize_y, n_targets):
     https://github.com/scikit-learn/scikit-learn/issues/18065
     https://github.com/scikit-learn/scikit-learn/issues/22174
     """
-    rng = np.random.RandomState(1234)
+    rng = np.random.default_rng(1234)
 
     n_features, n_samples_train, n_samples_test = 6, 9, 7
 
@@ -725,9 +725,9 @@ def test_predict_shapes(normalize_y, n_targets):
     if n_targets is not None and n_targets > 1:
         y_test_shape = y_test_shape + (n_targets,)
 
-    X_train = rng.randn(n_samples_train, n_features)
-    X_test = rng.randn(n_samples_test, n_features)
-    y_train = rng.randn(*y_train_shape)
+    X_train = rng.standard_normal((n_samples_train, n_features))
+    X_test = rng.standard_normal((n_samples_test, n_features))
+    y_train = rng.standard_normal(y_train_shape)
 
     model = GaussianProcessRegressor(normalize_y=normalize_y)
     model.fit(X_train, y_train)
@@ -750,7 +750,7 @@ def test_sample_y_shapes(normalize_y, n_targets):
     Non-regression test for:
     https://github.com/scikit-learn/scikit-learn/issues/22175
     """
-    rng = np.random.RandomState(1234)
+    rng = np.random.default_rng(1234)
 
     n_features, n_samples_train = 6, 9
     # Number of spatial locations to predict at
@@ -768,9 +768,9 @@ def test_sample_y_shapes(normalize_y, n_targets):
     else:
         y_test_shape = (n_samples_x_test, n_samples_y_test)
 
-    X_train = rng.randn(n_samples_train, n_features)
-    X_test = rng.randn(n_samples_x_test, n_features)
-    y_train = rng.randn(*y_train_shape)
+    X_train = rng.standard_normal((n_samples_train, n_features))
+    X_test = rng.standard_normal((n_samples_x_test, n_features))
+    y_train = rng.standard_normal(y_train_shape)
 
     model = GaussianProcessRegressor(normalize_y=normalize_y)
 
@@ -792,10 +792,10 @@ def test_sample_y_shapes(normalize_y, n_targets):
 @pytest.mark.parametrize("n_samples", [1, 5])
 def test_sample_y_shape_with_prior(n_targets, n_samples):
     """Check the output shape of `sample_y` is consistent before and after `fit`."""
-    rng = np.random.RandomState(1024)
+    rng = np.random.default_rng(1024)
 
-    X = rng.randn(10, 3)
-    y = rng.randn(10, n_targets if n_targets is not None else 1)
+    X = rng.standard_normal((10, 3))
+    y = rng.standard_normal((10, n_targets if n_targets is not None else 1))
 
     model = GaussianProcessRegressor(n_targets=n_targets)
     shape_before_fit = model.sample_y(X, n_samples=n_samples).shape
@@ -807,11 +807,11 @@ def test_sample_y_shape_with_prior(n_targets, n_samples):
 @pytest.mark.parametrize("n_targets", [None, 1, 2, 3])
 def test_predict_shape_with_prior(n_targets):
     """Check the output shape of `predict` with prior distribution."""
-    rng = np.random.RandomState(1024)
+    rng = np.random.default_rng(1024)
 
     n_sample = 10
-    X = rng.randn(n_sample, 3)
-    y = rng.randn(n_sample, n_targets if n_targets is not None else 1)
+    X = rng.standard_normal((n_sample, 3))
+    y = rng.standard_normal((n_sample, n_targets if n_targets is not None else 1))
 
     model = GaussianProcessRegressor(n_targets=n_targets)
     mean_prior, cov_prior = model.predict(X, return_cov=True)
@@ -860,10 +860,10 @@ def test_gpr_predict_input_not_modified():
     """
     gpr = GaussianProcessRegressor(kernel=CustomKernel()).fit(X, y)
 
-    X2_copy = np.copy(X2)
+    x2_copy = np.copy(X2)
     _, _ = gpr.predict(X2, return_std=True)
 
-    assert_allclose(X2, X2_copy)
+    assert_allclose(X2, x2_copy)
 
 
 @pytest.mark.parametrize("kernel", kernels)
