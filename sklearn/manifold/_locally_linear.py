@@ -174,7 +174,7 @@ def null_space(
             eigen_solver = "dense"
 
     if eigen_solver == "arpack":
-        v0 = _init_arpack_v0(mat.shape[0], random_state)
+        v0 = _init_arpack_v0(mat.shape[0], random_state=random_state)
         try:
             eigen_values, eigen_vectors = eigsh(
                 mat, k + k_skip, sigma=0.0, tol=tol, maxiter=max_iter, v0=v0
@@ -294,7 +294,7 @@ def _locally_linear_embedding(
             w = Q[:, n_components + 1 :]
             S = w.sum(0)
 
-            S[np.where(abs(S) < hessian_tol)] = 1
+            S[np.nonzero(abs(S) < hessian_tol)] = 1
             w /= S
 
             nbrs_x, nbrs_y = np.meshgrid(neighbors[i], neighbors[i])
@@ -369,13 +369,13 @@ def _locally_linear_embedding(
             s_i = s_range[i]
 
             # select bottom s_i eigenvectors and calculate alpha
-            Vi = V[i, :, n_neighbors - s_i :]
-            alpha_i = np.linalg.norm(Vi.sum(0)) / np.sqrt(s_i)
+            v_i = V[i, :, n_neighbors - s_i :]
+            alpha_i = np.linalg.norm(v_i.sum(0)) / np.sqrt(s_i)
 
             # compute Householder matrix which satisfies
             #  Hi*Vi.T*ones(n_neighbors) = alpha_i*ones(s)
             # using prescription from paper
-            h = np.full(s_i, alpha_i) - np.dot(Vi.T, np.ones(n_neighbors))
+            h = np.full(s_i, alpha_i) - np.dot(v_i.T, np.ones(n_neighbors))
 
             norm_h = np.linalg.norm(h)
             if norm_h < modified_tol:
@@ -388,7 +388,7 @@ def _locally_linear_embedding(
             # Then the weight matrix is
             #  >> Wi = np.dot(Vi,Hi) + (1-alpha_i) * w_reg[i,:,None]
             # We do this much more efficiently:
-            Wi = Vi - 2 * np.outer(np.dot(Vi, h), h) + (1 - alpha_i) * w_reg[i, :, None]
+            w_i = v_i - 2 * np.outer(np.dot(v_i, h), h) + (1 - alpha_i) * w_reg[i, :, None]
 
             # Update M as follows:
             # >> W_hat = np.zeros( (N,s_i) )
@@ -397,14 +397,14 @@ def _locally_linear_embedding(
             # >> M += np.dot(W_hat,W_hat.T)
             # We can do this much more efficiently:
             nbrs_x, nbrs_y = np.meshgrid(neighbors[i], neighbors[i])
-            M[nbrs_x, nbrs_y] += np.dot(Wi, Wi.T)
-            Wi_sum1 = Wi.sum(1)
+            M[nbrs_x, nbrs_y] += np.dot(w_i, w_i.T)
+            w_i_sum1 = w_i.sum(1)
             if SCIPY_VERSION_BELOW_1_15:
-                M[[i], neighbors[i]] -= Wi_sum1
-                M[neighbors[i], [i]] -= Wi_sum1
+                M[[i], neighbors[i]] -= w_i_sum1
+                M[neighbors[i], [i]] -= w_i_sum1
             else:
-                M[i, neighbors[i]] -= Wi_sum1
-                M[neighbors[i], i] -= Wi_sum1
+                M[i, neighbors[i]] -= w_i_sum1
+                M[neighbors[i], i] -= w_i_sum1
             M[i, i] += s_i
 
     elif method == "ltsa":
@@ -418,14 +418,14 @@ def _locally_linear_embedding(
         use_svd = n_neighbors > d_in
 
         for i in range(N):
-            Xi = X[neighbors[i]]
-            Xi -= Xi.mean(0)
+            x_i = X[neighbors[i]]
+            x_i -= x_i.mean(0)
 
             # compute n_components largest eigenvalues of Xi @ Xi^T
             if use_svd:
-                v = svd(Xi, full_matrices=True)[0]
+                v = svd(x_i, full_matrices=True)[0]
             else:
-                ci = np.dot(Xi, Xi.T)
+                ci = np.dot(x_i, x_i.T)
                 v = eigh(ci)[1][:, ::-1]
 
             gi = np.zeros((n_neighbors, n_components + 1))
@@ -881,7 +881,7 @@ class LocallyLinearEmbedding(
             X, n_neighbors=self.n_neighbors, return_distance=False
         )
         weights = barycenter_weights(X, self.nbrs_._fit_X, ind, reg=self.reg)
-        X_new = np.empty((X.shape[0], self.n_components))
+        x_new = np.empty((X.shape[0], self.n_components))
         for i in range(X.shape[0]):
-            X_new[i] = np.dot(self.embedding_[ind[i]].T, weights[i])
-        return X_new
+            x_new[i] = np.dot(self.embedding_[ind[i]].T, weights[i])
+        return x_new
