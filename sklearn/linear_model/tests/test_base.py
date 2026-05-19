@@ -507,24 +507,24 @@ def test_sparse_preprocess_data_offsets(global_random_seed, lil_container):
     y = rng.rand(n_samples)
     XA = X.toarray()
 
-    Xt, yt, X_mean, y_mean, X_scale, sqrt_sw = _preprocess_data(
+    x_trans, yt, x_mean, y_mean, x_scale, sqrt_sw = _preprocess_data(
         X, y, fit_intercept=False
     )
-    assert_array_almost_equal(X_mean, np.zeros(n_features))
+    assert_array_almost_equal(x_mean, np.zeros(n_features))
     assert_array_almost_equal(y_mean, 0)
-    assert_array_almost_equal(X_scale, np.ones(n_features))
+    assert_array_almost_equal(x_scale, np.ones(n_features))
     assert sqrt_sw is None
-    assert_array_almost_equal(Xt.toarray(), XA)
+    assert_array_almost_equal(x_trans.toarray(), XA)
     assert_array_almost_equal(yt, y)
 
-    Xt, yt, X_mean, y_mean, X_scale, sqrt_sw = _preprocess_data(
+    x_trans, yt, x_mean, y_mean, x_scale, sqrt_sw = _preprocess_data(
         X, y, fit_intercept=True
     )
-    assert_array_almost_equal(X_mean, np.mean(XA, axis=0))
+    assert_array_almost_equal(x_mean, np.mean(XA, axis=0))
     assert_array_almost_equal(y_mean, np.mean(y, axis=0))
-    assert_array_almost_equal(X_scale, np.ones(n_features))
+    assert_array_almost_equal(x_scale, np.ones(n_features))
     assert sqrt_sw is None
-    assert_array_almost_equal(Xt.toarray(), XA)
+    assert_array_almost_equal(x_trans.toarray(), XA)
     assert_array_almost_equal(yt, y - np.mean(y, axis=0))
 
 
@@ -550,7 +550,7 @@ def test_preprocess_copy_data_no_checks(sparse_container, to_copy, use_sample_we
     if sparse_container is not None:
         X = sparse_container(X)
 
-    X_, y_, _, _, _, _ = _preprocess_data(
+    X_, _, _, _, _, _ = _preprocess_data(
         X,
         y,
         sample_weight=sample_weight,
@@ -586,7 +586,7 @@ def test_dtype_preprocess_data(rescale_with_sw, fit_intercept, global_random_see
     y_64 = np.asarray(y, dtype=np.float64)
     sw_64 = np.asarray(sw, dtype=np.float64)
 
-    Xt_32, yt_32, X_mean_32, y_mean_32, X_scale_32, sqrt_sw_32 = _preprocess_data(
+    xt_32, yt_32, x_mean_32, y_mean_32, x_scale_32, sqrt_sw_32 = _preprocess_data(
         X_32,
         y_32,
         fit_intercept=fit_intercept,
@@ -594,7 +594,7 @@ def test_dtype_preprocess_data(rescale_with_sw, fit_intercept, global_random_see
         rescale_with_sw=rescale_with_sw,
     )
 
-    Xt_64, yt_64, X_mean_64, y_mean_64, X_scale_64, sqrt_sw_64 = _preprocess_data(
+    xt_64, yt_64, x_mean_64, y_mean_64, x_scale_64, sqrt_sw_64 = _preprocess_data(
         X_64,
         y_64,
         fit_intercept=fit_intercept,
@@ -602,7 +602,7 @@ def test_dtype_preprocess_data(rescale_with_sw, fit_intercept, global_random_see
         rescale_with_sw=rescale_with_sw,
     )
 
-    Xt_3264, yt_3264, X_mean_3264, y_mean_3264, X_scale_3264, sqrt_sw_3264 = (
+    xt_3264, yt_3264, x_mean_3264, y_mean_3264, x_scale_3264, sqrt_sw_3264 = (
         _preprocess_data(
             X_32,
             y_64,
@@ -612,7 +612,7 @@ def test_dtype_preprocess_data(rescale_with_sw, fit_intercept, global_random_see
         )
     )
 
-    Xt_6432, yt_6432, X_mean_6432, y_mean_6432, X_scale_6432, sqrt_sw_6432 = (
+    xt_6432, yt_6432, x_mean_6432, y_mean_6432, x_scale_6432, sqrt_sw_6432 = (
         _preprocess_data(
             X_64,
             y_32,
@@ -622,35 +622,35 @@ def test_dtype_preprocess_data(rescale_with_sw, fit_intercept, global_random_see
         )
     )
 
-    assert Xt_32.dtype == np.float32
+    assert xt_32.dtype == np.float32
     assert yt_32.dtype == np.float32
-    assert X_mean_32.dtype == np.float32
+    assert x_mean_32.dtype == np.float32
     assert y_mean_32.dtype == np.float32
-    assert X_scale_32.dtype == np.float32
+    assert x_scale_32.dtype == np.float32
     if rescale_with_sw:
         assert sqrt_sw_32.dtype == np.float32
 
-    assert Xt_64.dtype == np.float64
+    assert xt_64.dtype == np.float64
     assert yt_64.dtype == np.float64
-    assert X_mean_64.dtype == np.float64
+    assert x_mean_64.dtype == np.float64
     assert y_mean_64.dtype == np.float64
-    assert X_scale_64.dtype == np.float64
+    assert x_scale_64.dtype == np.float64
     if rescale_with_sw:
         assert sqrt_sw_64.dtype == np.float64
 
-    assert Xt_3264.dtype == np.float32
+    assert xt_3264.dtype == np.float32
     assert yt_3264.dtype == np.float32
-    assert X_mean_3264.dtype == np.float32
+    assert x_mean_3264.dtype == np.float32
     assert y_mean_3264.dtype == np.float32
-    assert X_scale_3264.dtype == np.float32
+    assert x_scale_3264.dtype == np.float32
     if rescale_with_sw:
         assert sqrt_sw_3264.dtype == np.float32
 
-    assert Xt_6432.dtype == np.float64
+    assert xt_6432.dtype == np.float64
     assert yt_6432.dtype == np.float64
-    assert X_mean_6432.dtype == np.float64
+    assert x_mean_6432.dtype == np.float64
     assert y_mean_6432.dtype == np.float64
-    assert X_scale_3264.dtype == np.float32
+    assert x_scale_3264.dtype == np.float32
     if rescale_with_sw:
         assert sqrt_sw_6432.dtype == np.float64
 
@@ -659,11 +659,11 @@ def test_dtype_preprocess_data(rescale_with_sw, fit_intercept, global_random_see
     assert X_64.dtype == np.float64
     assert y_64.dtype == np.float64
 
-    assert_allclose(Xt_32, Xt_64, rtol=1e-3, atol=1e-6)
+    assert_allclose(xt_32, xt_64, rtol=1e-3, atol=1e-6)
     assert_allclose(yt_32, yt_64, rtol=1e-3, atol=1e-6)
-    assert_allclose(X_mean_32, X_mean_64, rtol=1e-6)
+    assert_allclose(x_mean_32, x_mean_64, rtol=1e-6)
     assert_allclose(y_mean_32, y_mean_64, rtol=1e-6)
-    assert_allclose(X_scale_32, X_scale_64)
+    assert_allclose(x_scale_32, x_scale_64)
     if rescale_with_sw:
         assert_allclose(sqrt_sw_32, sqrt_sw_64, rtol=1e-6)
 
