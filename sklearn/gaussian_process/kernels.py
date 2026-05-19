@@ -195,7 +195,7 @@ class Kernel(metaclass=ABCMeta):
         params : dict
             Parameter names mapped to their values.
         """
-        params = dict()
+        params = {}
 
         # introspect the constructor arguments to find the model parameters
         # to represent
@@ -557,7 +557,7 @@ class CompoundKernel(Kernel):
         params : dict
             Parameter names mapped to their values.
         """
-        return dict(kernels=self.kernels)
+        return {"kernels": self.kernels}
 
     @property
     def theta(self):
@@ -633,12 +633,12 @@ class CompoundKernel(Kernel):
         """
         if eval_gradient:
             K = []
-            K_grad = []
+            k_grad = []
             for kernel in self.kernels:
-                K_single, K_grad_single = kernel(X, Y, eval_gradient)
-                K.append(K_single)
-                K_grad.append(K_grad_single[..., np.newaxis])
-            return np.dstack(K), np.concatenate(K_grad, 3)
+                k_single, k_grad_single = kernel(X, Y, eval_gradient)
+                K.append(k_single)
+                k_grad.append(k_grad_single[..., np.newaxis])
+            return np.dstack(K), np.concatenate(k_grad, 3)
         else:
             return np.dstack([kernel(X, Y, eval_gradient) for kernel in self.kernels])
 
@@ -702,7 +702,7 @@ class KernelOperator(Kernel):
         params : dict
             Parameter names mapped to their values.
         """
-        params = dict(k1=self.k1, k2=self.k2)
+        params = {"k1": self.k1, "k2": self.k2}
         if deep:
             deep_items = self.k1.get_params().items()
             params.update(("k1__" + k, val) for k, val in deep_items)
@@ -864,9 +864,9 @@ class Sum(KernelOperator):
             is True.
         """
         if eval_gradient:
-            K1, K1_gradient = self.k1(X, Y, eval_gradient=True)
-            K2, K2_gradient = self.k2(X, Y, eval_gradient=True)
-            return K1 + K2, np.dstack((K1_gradient, K2_gradient))
+            K1, k1_gradient = self.k1(X, Y, eval_gradient=True)
+            K2, k2_gradient = self.k2(X, Y, eval_gradient=True)
+            return K1 + K2, np.dstack((k1_gradient, k2_gradient))
         else:
             return self.k1(X, Y) + self.k2(X, Y)
 
@@ -962,10 +962,10 @@ class Product(KernelOperator):
             is True.
         """
         if eval_gradient:
-            K1, K1_gradient = self.k1(X, Y, eval_gradient=True)
-            K2, K2_gradient = self.k2(X, Y, eval_gradient=True)
+            K1, k1_gradient = self.k1(X, Y, eval_gradient=True)
+            K2, k2_gradient = self.k2(X, Y, eval_gradient=True)
             return K1 * K2, np.dstack(
-                (K1_gradient * K2[:, :, np.newaxis], K2_gradient * K1[:, :, np.newaxis])
+                (k1_gradient * K2[:, :, np.newaxis], k2_gradient * K1[:, :, np.newaxis])
             )
         else:
             return self.k1(X, Y) * self.k2(X, Y)
