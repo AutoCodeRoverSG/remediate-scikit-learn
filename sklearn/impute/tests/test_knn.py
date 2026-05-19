@@ -19,8 +19,8 @@ def test_knn_imputer_shape(weights, n_neighbors):
     X[0, 0] = np.nan
 
     imputer = KNNImputer(n_neighbors=n_neighbors, weights=weights)
-    X_imputed = imputer.fit_transform(X)
-    assert X_imputed.shape == (n_rows, n_cols)
+    x_imputed = imputer.fit_transform(X)
+    assert x_imputed.shape == (n_rows, n_cols)
 
 
 @pytest.mark.parametrize("na", [np.nan, -1])
@@ -53,7 +53,7 @@ def test_knn_imputer_default_with_invalid_input(na):
         ]
     )
 
-    X_fit = np.array(
+    x_fit = np.array(
         [
             [0, 1, 1, 2, na],
             [2, 1, 2, 2, 3],
@@ -63,7 +63,7 @@ def test_knn_imputer_default_with_invalid_input(na):
             [6, 6, 2, 5, 7],
         ]
     )
-    imputer = KNNImputer(missing_values=na).fit(X_fit)
+    imputer = KNNImputer(missing_values=na).fit(x_fit)
     with pytest.raises(ValueError, match="Input X contains (infinity|NaN)"):
         imputer.transform(X)
 
@@ -101,19 +101,19 @@ def test_knn_imputer_removes_all_na_features(na):
     )
     knn = KNNImputer(missing_values=na, n_neighbors=2).fit(X)
 
-    X_transform = knn.transform(X)
-    assert not np.isnan(X_transform).any()
-    assert X_transform.shape == (4, 5)
+    x_transform = knn.transform(X)
+    assert not np.isnan(x_transform).any()
+    assert x_transform.shape == (4, 5)
 
     X_test = np.arange(0, 12).reshape(2, 6)
-    X_transform = knn.transform(X_test)
-    assert_allclose(X_test[:, [0, 1, 3, 4, 5]], X_transform)
+    x_transform = knn.transform(X_test)
+    assert_allclose(X_test[:, [0, 1, 3, 4, 5]], x_transform)
 
 
 @pytest.mark.parametrize("na", [np.nan, -1])
 def test_knn_imputer_zero_nan_imputes_the_same(na):
     # Test with an imputable matrix and compare with different missing_values
-    X_zero = np.array(
+    x_zero = np.array(
         [
             [1, 0, 1, 1, 1.0],
             [2, 2, 2, 2, 2],
@@ -122,7 +122,7 @@ def test_knn_imputer_zero_nan_imputes_the_same(na):
         ]
     )
 
-    X_nan = np.array(
+    x_nan = np.array(
         [
             [1, na, 1, 1, 1.0],
             [2, 2, 2, 2, 2],
@@ -131,7 +131,7 @@ def test_knn_imputer_zero_nan_imputes_the_same(na):
         ]
     )
 
-    X_imputed = np.array(
+    x_imputed = np.array(
         [
             [1, 2.5, 1, 1, 1.0],
             [2, 2, 2, 2, 2],
@@ -144,9 +144,9 @@ def test_knn_imputer_zero_nan_imputes_the_same(na):
 
     imputer_nan = KNNImputer(missing_values=na, n_neighbors=2, weights="uniform")
 
-    assert_allclose(imputer_zero.fit_transform(X_zero), X_imputed)
+    assert_allclose(imputer_zero.fit_transform(x_zero), x_imputed)
     assert_allclose(
-        imputer_zero.fit_transform(X_zero), imputer_nan.fit_transform(X_nan)
+        imputer_zero.fit_transform(x_zero), imputer_nan.fit_transform(x_nan)
     )
 
 
@@ -165,7 +165,7 @@ def test_knn_imputer_verify(na):
         ]
     )
 
-    X_imputed = np.array(
+    x_imputed = np.array(
         [
             [1, 0, 0, 1],
             [2, 1, 2, 8],
@@ -178,7 +178,7 @@ def test_knn_imputer_verify(na):
     )
 
     imputer = KNNImputer(missing_values=na)
-    assert_allclose(imputer.fit_transform(X), X_imputed)
+    assert_allclose(imputer.fit_transform(X), x_imputed)
 
     # Test when there is not enough neighbors
     X = np.array(
@@ -195,22 +195,22 @@ def test_knn_imputer_verify(na):
     )
 
     # Not enough neighbors, use column mean from training
-    X_impute_value = (20 + 22) / 2
-    X_imputed = np.array(
+    x_impute_value = (20 + 22) / 2
+    x_imputed = np.array(
         [
-            [1, 0, 0, X_impute_value],
-            [2, 1, 2, X_impute_value],
-            [3, 2, 3, X_impute_value],
-            [4, 4, 5, X_impute_value],
-            [6, 7, 6, X_impute_value],
-            [8, 8, 8, X_impute_value],
+            [1, 0, 0, x_impute_value],
+            [2, 1, 2, x_impute_value],
+            [3, 2, 3, x_impute_value],
+            [4, 4, 5, x_impute_value],
+            [6, 7, 6, x_impute_value],
+            [8, 8, 8, x_impute_value],
             [20, 20, 20, 20],
             [22, 22, 22, 22],
         ]
     )
 
     imputer = KNNImputer(missing_values=na)
-    assert_allclose(imputer.fit_transform(X), X_imputed)
+    assert_allclose(imputer.fit_transform(X), x_imputed)
 
     # Test when data in fit() and transform() are different
     X = np.array([[0, 0], [na, 2], [4, 3], [5, 6], [7, 7], [9, 8], [11, 16]])
@@ -218,21 +218,21 @@ def test_knn_imputer_verify(na):
     X1 = np.array([[1, 0], [3, 2], [4, na]])
 
     X_2_1 = (0 + 3 + 6 + 7 + 8) / 5
-    X1_imputed = np.array([[1, 0], [3, 2], [4, X_2_1]])
+    x1_imputed = np.array([[1, 0], [3, 2], [4, X_2_1]])
 
     imputer = KNNImputer(missing_values=na)
-    assert_allclose(imputer.fit(X).transform(X1), X1_imputed)
+    assert_allclose(imputer.fit(X).transform(X1), x1_imputed)
 
 
 @pytest.mark.parametrize("na", [np.nan, -1])
 def test_knn_imputer_one_n_neighbors(na):
     X = np.array([[0, 0], [na, 2], [4, 3], [5, na], [7, 7], [na, 8], [14, 13]])
 
-    X_imputed = np.array([[0, 0], [4, 2], [4, 3], [5, 3], [7, 7], [7, 8], [14, 13]])
+    x_imputed = np.array([[0, 0], [4, 2], [4, 3], [5, 3], [7, 7], [7, 8], [14, 13]])
 
     imputer = KNNImputer(n_neighbors=1, missing_values=na)
 
-    assert_allclose(imputer.fit_transform(X), X_imputed)
+    assert_allclose(imputer.fit_transform(X), x_imputed)
 
 
 @pytest.mark.parametrize("na", [np.nan, -1])
