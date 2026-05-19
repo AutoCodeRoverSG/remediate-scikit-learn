@@ -118,7 +118,7 @@ def test_converged_to_local_maximum(kernel):
     # Test that we are in local maximum after hyperparameter-optimization.
     gpr = GaussianProcessRegressor(kernel=kernel).fit(X, y)
 
-    lml, lml_gradient = gpr.log_marginal_likelihood(gpr.kernel_.theta, True)
+    _, lml_gradient = gpr.log_marginal_likelihood(gpr.kernel_.theta, True)
 
     assert np.all(
         (np.abs(lml_gradient) < 1e-4)
@@ -218,8 +218,8 @@ def test_predict_cov_vs_std(kernel, target):
 
     # Test that predicted std.-dev. is consistent with cov's diagonal.
     gpr = GaussianProcessRegressor(kernel=kernel).fit(X, y)
-    y_mean, y_cov = gpr.predict(X2, return_cov=True)
-    y_mean, y_std = gpr.predict(X2, return_std=True)
+    _, y_cov = gpr.predict(X2, return_cov=True)
+    _, y_std = gpr.predict(X2, return_std=True)
     assert_almost_equal(np.sqrt(np.diag(y_cov)), y_std)
 
 
@@ -332,8 +332,8 @@ def test_large_variance_y():
     y_large = 10 * y
 
     # Standard GP with normalize_y=True
-    RBF_params = {"length_scale": 1.0}
-    kernel = RBF(**RBF_params)
+    rbf_params = {"length_scale": 1.0}
+    kernel = RBF(**rbf_params)
     gpr = GaussianProcessRegressor(kernel=kernel, normalize_y=True)
     gpr.fit(X, y_large)
     y_pred, y_pred_std = gpr.predict(X2, return_std=True)
@@ -528,13 +528,13 @@ def test_warning_bounds():
             "fit again may find a better value."
         )
 
-    X_tile = np.tile(X, 2)
+    x_tile = np.tile(X, 2)
     kernel_dims = RBF(length_scale=[1.0, 2.0], length_scale_bounds=[1e1, 1e2])
     gpr_dims = GaussianProcessRegressor(kernel=kernel_dims)
 
     with warnings.catch_warnings(record=True) as record:
         warnings.simplefilter("always")
-        gpr_dims.fit(X_tile, y)
+        gpr_dims.fit(x_tile, y)
 
         assert len(record) == 2
 
@@ -603,13 +603,13 @@ def test_constant_target(kernel):
     )
 
     gpr.fit(X, y)
-    Y_pred, Y_cov = gpr.predict(X, return_cov=True)
+    y_pred, y_cov = gpr.predict(X, return_cov=True)
 
-    assert_allclose(Y_pred[:, 1], 2)
-    assert_allclose(np.diag(Y_cov[..., 1]), 0.0, atol=1e-9)
+    assert_allclose(y_pred[:, 1], 2)
+    assert_allclose(np.diag(y_cov[..., 1]), 0.0, atol=1e-9)
 
-    assert Y_pred.shape == (n_samples, n_targets)
-    assert Y_cov.shape == (n_samples, n_samples, n_targets)
+    assert y_pred.shape == (n_samples, n_targets)
+    assert y_cov.shape == (n_samples, n_samples, n_targets)
 
 
 def test_gpr_consistency_std_cov_non_invertible_kernel():
@@ -652,13 +652,13 @@ def test_gpr_consistency_std_cov_non_invertible_kernel():
             [1.93649167, 1.93649167],
         ]
     )
-    pred1, std = gpr.predict(X_test, return_std=True)
-    pred2, cov = gpr.predict(X_test, return_cov=True)
+    _, std = gpr.predict(X_test, return_std=True)
+    _, cov = gpr.predict(X_test, return_cov=True)
     assert_allclose(std, np.sqrt(np.diagonal(cov)), rtol=1e-5)
 
 
 @pytest.mark.parametrize(
-    "params, TypeError, err_msg",
+    "params, error_type, err_msg",
     [
         (
             {"alpha": np.zeros(100)},
@@ -675,10 +675,10 @@ def test_gpr_consistency_std_cov_non_invertible_kernel():
         ),
     ],
 )
-def test_gpr_fit_error(params, TypeError, err_msg):
+def test_gpr_fit_error(params, error_type, err_msg):
     """Check that expected error are raised during fit."""
     gpr = GaussianProcessRegressor(**params)
-    with pytest.raises(TypeError, match=err_msg):
+    with pytest.raises(error_type, match=err_msg):
         gpr.fit(X, y)
 
 
@@ -754,7 +754,7 @@ def test_sample_y_shapes(normalize_y, n_targets):
 
     n_features, n_samples_train = 6, 9
     # Number of spatial locations to predict at
-    n_samples_X_test = 7
+    n_samples_x_test = 7
     # Number of sample predictions per test point
     n_samples_y_test = 5
 
@@ -764,12 +764,12 @@ def test_sample_y_shapes(normalize_y, n_targets):
 
     # By convention single-output data is squeezed upon prediction
     if n_targets is not None and n_targets > 1:
-        y_test_shape = (n_samples_X_test, n_targets, n_samples_y_test)
+        y_test_shape = (n_samples_x_test, n_targets, n_samples_y_test)
     else:
-        y_test_shape = (n_samples_X_test, n_samples_y_test)
+        y_test_shape = (n_samples_x_test, n_samples_y_test)
 
     X_train = rng.randn(n_samples_train, n_features)
-    X_test = rng.randn(n_samples_X_test, n_features)
+    X_test = rng.randn(n_samples_x_test, n_features)
     y_train = rng.randn(*y_train_shape)
 
     model = GaussianProcessRegressor(normalize_y=normalize_y)
