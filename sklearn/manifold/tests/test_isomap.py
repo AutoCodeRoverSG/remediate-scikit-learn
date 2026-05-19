@@ -25,8 +25,8 @@ def create_sample_data(dtype, n_pts=25, add_noise=False):
     X = np.array(list(product(range(n_per_side), repeat=2))).astype(dtype, copy=False)
     if add_noise:
         # add noise in a third dimension
-        rng = np.random.RandomState(0)
-        noise = 0.1 * rng.randn(n_pts, 1).astype(dtype, copy=False)
+        rng = np.random.default_rng(0)
+        noise = 0.1 * rng.standard_normal((n_pts, 1)).astype(dtype, copy=False)
         X = np.concatenate((X, noise), 1)
     return X
 
@@ -133,8 +133,8 @@ def test_transform(global_dtype, n_neighbors, radius):
     x_iso = iso.fit_transform(X)
 
     # Re-embed a noisy version of the points
-    rng = np.random.RandomState(0)
-    noise = noise_scale * rng.randn(*X.shape)
+    rng = np.random.default_rng(0)
+    noise = noise_scale * rng.standard_normal(X.shape)
     x_iso2 = iso.transform(X + noise)
 
     # Make sure the rms error on re-embedding is comparable to noise_scale
@@ -223,7 +223,7 @@ def test_isomap_clone_bug():
     model = manifold.Isomap()
     for n_neighbors in [10, 15, 20]:
         model.set_params(n_neighbors=n_neighbors)
-        model.fit(np.random.rand(50, 2))
+        model.fit(np.random.default_rng(0).random((50, 2)))
         assert model.nbrs_.n_neighbors == n_neighbors
 
 
@@ -254,17 +254,17 @@ def test_sparse_input(
     )
     iso_sparse = clone(iso_dense)
 
-    X_trans_dense = iso_dense.fit_transform(X.toarray())
-    X_trans_sparse = iso_sparse.fit_transform(X)
+    x_trans_dense = iso_dense.fit_transform(X.toarray())
+    x_trans_sparse = iso_sparse.fit_transform(X)
 
-    assert_allclose(X_trans_sparse, X_trans_dense, rtol=1e-4, atol=1e-4)
+    assert_allclose(x_trans_sparse, x_trans_dense, rtol=1e-4, atol=1e-4)
 
 
 def test_isomap_fit_precomputed_radius_graph(global_dtype):
     # Isomap.fit_transform must yield similar result when using
     # a precomputed distance matrix.
 
-    X, y = datasets.make_s_curve(200, random_state=0)
+    X, _ = datasets.make_s_curve(200, random_state=0)
     X = X.astype(global_dtype, copy=False)
     radius = 10
 
@@ -329,19 +329,19 @@ def test_multiple_connected_components_metric_precomputed(global_dtype):
     X = np.array([0, 1, 2, 5, 6, 7])[:, None].astype(global_dtype, copy=False)
 
     # works with a precomputed distance matrix (dense)
-    X_distances = pairwise_distances(X)
+    x_distances = pairwise_distances(X)
     with pytest.warns(UserWarning, match="number of connected components"):
-        manifold.Isomap(n_neighbors=1, metric="precomputed").fit(X_distances)
+        manifold.Isomap(n_neighbors=1, metric="precomputed").fit(x_distances)
 
     # does not work with a precomputed neighbors graph (sparse)
-    X_graph = neighbors.kneighbors_graph(X, n_neighbors=2, mode="distance")
+    x_graph = neighbors.kneighbors_graph(X, n_neighbors=2, mode="distance")
     with pytest.raises(RuntimeError, match="number of connected components"):
-        manifold.Isomap(n_neighbors=1, metric="precomputed").fit(X_graph)
+        manifold.Isomap(n_neighbors=1, metric="precomputed").fit(x_graph)
 
 
 def test_get_feature_names_out():
     """Check get_feature_names_out for Isomap."""
-    X, y = make_blobs(random_state=0, n_features=4)
+    X, _ = make_blobs(random_state=0, n_features=4)
     n_components = 2
 
     iso = manifold.Isomap(n_components=n_components)
