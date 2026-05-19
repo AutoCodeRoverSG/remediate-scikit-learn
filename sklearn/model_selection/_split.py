@@ -1378,7 +1378,7 @@ class LeaveOneGroupOut(GroupsConsumerMixin, BaseCrossValidator):
     GroupKFold: K-fold iterator variant with non-overlapping groups.
     """
 
-    def _iter_test_masks(self, X, y, groups):
+    def _iter_test_masks(self, X=None, y=None, groups=None):
         if groups is None:
             raise ValueError(_GROUPS_NOT_NONE_MSG)
         # We make a copy of groups to avoid side-effects during iteration
@@ -1504,7 +1504,7 @@ class LeavePGroupsOut(GroupsConsumerMixin, BaseCrossValidator):
     def __init__(self, n_groups):
         self.n_groups = n_groups
 
-    def _iter_test_masks(self, X, y, groups):
+    def _iter_test_masks(self, X=None, y=None, groups=None):
         if groups is None:
             raise ValueError(_GROUPS_NOT_NONE_MSG)
         groups = check_array(
@@ -1825,7 +1825,7 @@ class RepeatedStratifiedKFold(_UnsupportedGroupCVMixin, _RepeatedSplits):
             n_splits=n_splits,
         )
 
-    def split(self, X, y, groups=None):
+    def split(self, X, y=None, groups=None):
         """Generate indices to split data into training and test set.
 
         Parameters
@@ -2339,7 +2339,7 @@ class StratifiedShuffleSplit(BaseShuffleSplit):
         # Convert to numpy as not all operations are supported by the Array API.
         # `y` is probably never a very large array, which means that converting it
         # should be cheap
-        xp, _ = get_namespace(y)
+        _, _ = get_namespace(y)
         y = move_to(y, xp=np, device="cpu")
 
         if y.ndim == 2:
@@ -3005,7 +3005,7 @@ def _pprint(params, offset=0, printer=repr):
     # Do a multi-line justified repr:
     options = np.get_printoptions()
     np.set_printoptions(precision=5, threshold=64, edgeitems=2)
-    params_list = list()
+    params_list = []
     this_line_length = offset
     line_sep = ",\n" + (1 + offset // 2) * " "
     for i, (k, v) in enumerate(sorted(params.items())):
@@ -3052,7 +3052,7 @@ def _build_repr(self):
             ]
         )
     class_name = self.__class__.__name__
-    params = dict()
+    params = {}
     for key in args:
         with warnings.catch_warnings(record=True) as w:
             # We need deprecation warnings to always be on in order to
