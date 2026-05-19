@@ -143,7 +143,7 @@ def test_output_shape(
     assert np.asarray(axes).shape == expected_axes_shape
 
 
-def test_grid_from_X():
+def test_grid_from_x():
     # tests for _grid_from_X: sanity check for output, and for shapes.
 
     # Make sure that the grid is a cartesian product of the input (it will use
@@ -158,7 +158,7 @@ def test_grid_from_X():
 
     # test shapes of returned objects depending on the number of unique values
     # for a feature.
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
     grid_resolution = 15
 
     # n_unique_values > grid_resolution
@@ -244,7 +244,7 @@ def test_grid_from_X():
         100,
     ],
 )
-def test_grid_from_X_with_categorical(grid_resolution):
+def test_grid_from_x_with_categorical(grid_resolution):
     """Check that `_grid_from_X` always sample from categories and does not
     depend from the percentiles.
     """
@@ -1082,7 +1082,7 @@ def test_partial_dependence_equivalence_equal_sample_weight(estimator_cls, data)
     """Check that `sample_weight=None` is equivalent to having equal weights."""
 
     est = estimator_cls()
-    (X, y), n_targets = data
+    (X, y), _ = data
     est.fit(X, y)
 
     sample_weight, params = None, {"X": X, "features": [1, 2], "kind": "average"}
@@ -1100,7 +1100,7 @@ def test_partial_dependence_sample_weight_size_error():
     consistent with `X` and `y`.
     """
     est = LogisticRegression()
-    (X, y), n_targets = binary_classification_data
+    (X, y), _ = binary_classification_data
     sample_weight = np.ones_like(y)
     est.fit(X, y)
 
@@ -1117,7 +1117,7 @@ def test_partial_dependence_sample_weight_with_recursion():
     est = RandomForestRegressor(
         random_state=0, min_samples_leaf=1, max_features="sqrt"
     )
-    (X, y), n_targets = regression_data
+    (X, y), _ = regression_data
     sample_weight = np.ones_like(y)
     est.fit(X, y, sample_weight=sample_weight)
 
@@ -1138,6 +1138,7 @@ def test_mixed_type_categorical():
     clf = make_pipeline(
         OrdinalEncoder(encoded_missing_value=-1),
         LogisticRegression(),
+        memory=None,
     ).fit(X, y)
     with pytest.raises(ValueError, match="The column #0 contains mixed data types"):
         partial_dependence(clf, X, features=[0])
@@ -1146,7 +1147,7 @@ def test_mixed_type_categorical():
 def test_reject_array_with_integer_dtype():
     X = np.arange(8).reshape(4, 2)
     y = np.array([0, 1, 0, 1])
-    clf = DummyClassifier()
+    clf = DummyClassifier(random_state=0)
     clf.fit(X, y)
     with pytest.raises(
         ValueError, match=re.escape("The column 0 contains integer data.")
@@ -1175,7 +1176,7 @@ def test_reject_pandas_with_integer_dtype():
         }
     )
     y = np.array([0, 1, 0])
-    clf = DummyClassifier()
+    clf = DummyClassifier(random_state=0)
     clf.fit(X, y)
 
     with pytest.raises(
@@ -1195,7 +1196,7 @@ def test_reject_pandas_with_integer_dtype():
 def test_partial_dependence_empty_categorical_features():
     """Check that we raise the proper exception when `categorical_features`
     is an empty list"""
-    clf = make_pipeline(StandardScaler(), LogisticRegression())
+    clf = make_pipeline(StandardScaler(), LogisticRegression(), memory=None)
     clf.fit(iris.data, iris.target)
 
     with pytest.raises(
