@@ -650,7 +650,7 @@ def test_dtype_preprocess_data(rescale_with_sw, fit_intercept, global_random_see
     assert yt_6432.dtype == np.float64
     assert x_mean_6432.dtype == np.float64
     assert y_mean_6432.dtype == np.float64
-    assert x_scale_3264.dtype == np.float32
+    assert x_scale_6432.dtype == np.float64
     if rescale_with_sw:
         assert sqrt_sw_6432.dtype == np.float64
 
@@ -673,17 +673,17 @@ def test_preprocess_data_integer_array_api_on_float32_only_device():
 
     # TODO: replace this torch/MPS-specific coverage by array-api-strict once
     # https://github.com/data-apis/array-api-strict/pull/206 is released.
-    X_np = np.asarray([[1, 2], [3, 4], [5, 6]], dtype=np.int64)
+    x_np = np.asarray([[1, 2], [3, 4], [5, 6]], dtype=np.int64)
     y_np = np.asarray([1, 2, 4], dtype=np.int64)
-    X_xp = xp.asarray(X_np, device=device)
+    x_xp = xp.asarray(x_np, device=device)
     y_xp = xp.asarray(y_np, device=device)
 
     with config_context(array_api_dispatch=True):
-        X_out, y_out, *_ = _preprocess_data(
-            X_xp, y_xp, fit_intercept=True, check_input=True
+        x_out, y_out, *_ = _preprocess_data(
+            x_xp, y_xp, fit_intercept=True, check_input=True
         )
 
-    assert X_out.dtype == xp.float32
+    assert x_out.dtype == xp.float32
     assert y_out.dtype == xp.float32
 
 
@@ -702,7 +702,7 @@ def test_rescale_data(n_targets, sparse_container, global_random_seed):
         y = rng.rand(n_samples, n_targets)
 
     expected_sqrt_sw = np.sqrt(sample_weight)
-    expected_rescaled_X = X * expected_sqrt_sw[:, np.newaxis]
+    expected_rescaled_x = X * expected_sqrt_sw[:, np.newaxis]
 
     if n_targets is None:
         expected_rescaled_y = y * expected_sqrt_sw
@@ -716,17 +716,17 @@ def test_rescale_data(n_targets, sparse_container, global_random_seed):
         else:
             y = sparse_container(y)
 
-    rescaled_X, rescaled_y, sqrt_sw = _rescale_data(X, y, sample_weight)
+    rescaled_x, rescaled_y, sqrt_sw = _rescale_data(X, y, sample_weight)
 
     assert_allclose(sqrt_sw, expected_sqrt_sw)
 
     if sparse_container is not None:
-        rescaled_X = rescaled_X.toarray()
+        rescaled_x = rescaled_x.toarray()
         rescaled_y = rescaled_y.toarray()
         if n_targets is None:
             rescaled_y = rescaled_y.ravel()
 
-    assert_allclose(rescaled_X, expected_rescaled_X)
+    assert_allclose(rescaled_x, expected_rescaled_x)
     assert_allclose(rescaled_y, expected_rescaled_y)
 
 
