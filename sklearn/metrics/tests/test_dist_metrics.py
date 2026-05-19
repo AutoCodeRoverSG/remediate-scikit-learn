@@ -106,43 +106,43 @@ def test_cdist(metric_param_grid, X, Y, csr_container):
 
 @pytest.mark.parametrize("metric", BOOL_METRICS)
 @pytest.mark.parametrize(
-    "X_bool, Y_bool", [(X_bool, Y_bool), (X_bool_mmap, Y_bool_mmap)]
+    "x_bool, y_bool", [(X_bool, Y_bool), (X_bool_mmap, Y_bool_mmap)]
 )
 @pytest.mark.parametrize("csr_container", CSR_CONTAINERS)
-def test_cdist_bool_metric(metric, X_bool, Y_bool, csr_container):
+def test_cdist_bool_metric(metric, x_bool, y_bool, csr_container):
     if metric in DEPRECATED_METRICS:
         with ignore_warnings(category=DeprecationWarning):
             # Some metrics can be deprecated depending on the scipy version.
             # But if they are present, we still want to test whether
             # scikit-learn gives the same result, whether or not they are
             # deprecated.
-            D_scipy_cdist = cdist(X_bool, Y_bool, metric)
+            d_scipy_cdist = cdist(x_bool, y_bool, metric)
     else:
-        D_scipy_cdist = cdist(X_bool, Y_bool, metric)
+        d_scipy_cdist = cdist(x_bool, y_bool, metric)
 
     dm = DistanceMetric.get_metric(metric)
-    D_sklearn = dm.pairwise(X_bool, Y_bool)
-    assert_allclose(D_sklearn, D_scipy_cdist)
+    d_sklearn = dm.pairwise(x_bool, y_bool)
+    assert_allclose(d_sklearn, d_scipy_cdist)
 
     # DistanceMetric.pairwise must be consistent
     # on all combinations of format in {sparse, dense}².
-    X_bool_csr, Y_bool_csr = csr_container(X_bool), csr_container(Y_bool)
+    x_bool_csr, y_bool_csr = csr_container(x_bool), csr_container(y_bool)
 
-    D_sklearn = dm.pairwise(X_bool, Y_bool)
-    assert D_sklearn.flags.c_contiguous
-    assert_allclose(D_sklearn, D_scipy_cdist)
+    d_sklearn = dm.pairwise(x_bool, y_bool)
+    assert d_sklearn.flags.c_contiguous
+    assert_allclose(d_sklearn, d_scipy_cdist)
 
-    D_sklearn = dm.pairwise(X_bool_csr, Y_bool_csr)
-    assert D_sklearn.flags.c_contiguous
-    assert_allclose(D_sklearn, D_scipy_cdist)
+    d_sklearn = dm.pairwise(x_bool_csr, y_bool_csr)
+    assert d_sklearn.flags.c_contiguous
+    assert_allclose(d_sklearn, d_scipy_cdist)
 
-    D_sklearn = dm.pairwise(X_bool, Y_bool_csr)
-    assert D_sklearn.flags.c_contiguous
-    assert_allclose(D_sklearn, D_scipy_cdist)
+    d_sklearn = dm.pairwise(x_bool, y_bool_csr)
+    assert d_sklearn.flags.c_contiguous
+    assert_allclose(d_sklearn, d_scipy_cdist)
 
-    D_sklearn = dm.pairwise(X_bool_csr, Y_bool)
-    assert D_sklearn.flags.c_contiguous
-    assert_allclose(D_sklearn, D_scipy_cdist)
+    d_sklearn = dm.pairwise(x_bool_csr, y_bool)
+    assert d_sklearn.flags.c_contiguous
+    assert_allclose(d_sklearn, d_scipy_cdist)
 
 
 @pytest.mark.parametrize(
@@ -153,7 +153,7 @@ def test_cdist_bool_metric(metric, X_bool, Y_bool, csr_container):
 def test_pdist(metric_param_grid, X, csr_container):
     metric, param_grid = metric_param_grid
     keys = param_grid.keys()
-    X_csr = csr_container(X)
+    x_csr = csr_container(X)
     for vals in itertools.product(*param_grid.values()):
         kwargs = dict(zip(keys, vals))
         rtol_dict = {}
@@ -165,20 +165,20 @@ def test_pdist(metric_param_grid, X, csr_container):
             # with scipy
             rtol_dict = {"rtol": 1e-6}
 
-        D_scipy_pdist = cdist(X, X, metric, **kwargs)
+        d_scipy_pdist = cdist(X, X, metric, **kwargs)
 
         dm = DistanceMetric.get_metric(metric, X.dtype, **kwargs)
-        D_sklearn = dm.pairwise(X)
-        assert D_sklearn.flags.c_contiguous
-        assert_allclose(D_sklearn, D_scipy_pdist, **rtol_dict)
+        d_sklearn = dm.pairwise(X)
+        assert d_sklearn.flags.c_contiguous
+        assert_allclose(d_sklearn, d_scipy_pdist, **rtol_dict)
 
-        D_sklearn_csr = dm.pairwise(X_csr)
-        assert D_sklearn.flags.c_contiguous
-        assert_allclose(D_sklearn_csr, D_scipy_pdist, **rtol_dict)
+        d_sklearn_csr = dm.pairwise(x_csr)
+        assert d_sklearn.flags.c_contiguous
+        assert_allclose(d_sklearn_csr, d_scipy_pdist, **rtol_dict)
 
-        D_sklearn_csr = dm.pairwise(X_csr, X_csr)
-        assert D_sklearn.flags.c_contiguous
-        assert_allclose(D_sklearn_csr, D_scipy_pdist, **rtol_dict)
+        d_sklearn_csr = dm.pairwise(x_csr, x_csr)
+        assert d_sklearn.flags.c_contiguous
+        assert_allclose(d_sklearn_csr, d_scipy_pdist, **rtol_dict)
 
 
 @pytest.mark.parametrize(
