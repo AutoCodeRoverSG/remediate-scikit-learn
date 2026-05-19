@@ -33,7 +33,7 @@ premature = (
 )
 
 
-def _cholesky_omp(X, y, n_nonzero_coefs, tol=None, copy_X=True, return_path=False):
+def _cholesky_omp(X, y, n_nonzero_coefs, tol=None, copy_x=True, return_path=False):
     """Orthogonal Matching Pursuit step using the Cholesky decomposition.
 
     Parameters
@@ -76,7 +76,7 @@ def _cholesky_omp(X, y, n_nonzero_coefs, tol=None, copy_X=True, return_path=Fals
     n_active : int
         Number of active features at convergence.
     """
-    if copy_X:
+    if copy_x:
         X = X.copy("F")
     else:  # even if we are allowed to overwrite, still copy it if bad order
         X = np.asfortranarray(X)
@@ -117,11 +117,11 @@ def _cholesky_omp(X, y, n_nonzero_coefs, tol=None, copy_X=True, return_path=Fals
                 check_finite=False,
             )
             v = nrm2(L[n_active, :n_active]) ** 2
-            Lkk = linalg.norm(X[:, lam]) ** 2 - v
-            if Lkk <= min_float:  # selected atoms are dependent
+            l_kk = linalg.norm(X[:, lam]) ** 2 - v
+            if l_kk <= min_float:  # selected atoms are dependent
                 warnings.warn(premature, RuntimeWarning, stacklevel=2)
                 break
-            L[n_active, n_active] = sqrt(Lkk)
+            L[n_active, n_active] = sqrt(l_kk)
         else:
             L[0, 0] = linalg.norm(X[:, lam])
 
@@ -150,13 +150,13 @@ def _cholesky_omp(X, y, n_nonzero_coefs, tol=None, copy_X=True, return_path=Fals
 
 
 def _gram_omp(
-    Gram,
-    Xy,
+    gram,
+    xy,
     n_nonzero_coefs,
     tol_0=None,
     tol=None,
-    copy_Gram=True,
-    copy_Xy=True,
+    copy_gram=True,
+    copy_xy=True,
     return_path=False,
 ):
     """Orthogonal Matching Pursuit step on a precomputed Gram matrix.
@@ -210,25 +210,25 @@ def _gram_omp(
     n_active : int
         Number of active features at convergence.
     """
-    Gram = Gram.copy("F") if copy_Gram else np.asfortranarray(Gram)
+    gram = gram.copy("F") if copy_gram else np.asfortranarray(gram)
 
-    if copy_Xy or not Xy.flags.writeable:
-        Xy = Xy.copy()
+    if copy_xy or not xy.flags.writeable:
+        xy = xy.copy()
 
-    min_float = np.finfo(Gram.dtype).eps
-    nrm2, swap = linalg.get_blas_funcs(("nrm2", "swap"), (Gram,))
-    (potrs,) = get_lapack_funcs(("potrs",), (Gram,))
+    min_float = np.finfo(gram.dtype).eps
+    nrm2, swap = linalg.get_blas_funcs(("nrm2", "swap"), (gram,))
+    (potrs,) = get_lapack_funcs(("potrs",), (gram,))
 
-    indices = np.arange(len(Gram))  # keeping track of swapping
-    alpha = Xy
+    indices = np.arange(len(gram))  # keeping track of swapping
+    alpha = xy
     tol_curr = tol_0
     delta = 0
     gamma = np.empty(0)
     n_active = 0
 
-    max_features = len(Gram) if tol is not None else n_nonzero_coefs
+    max_features = len(gram) if tol is not None else n_nonzero_coefs
 
-    L = np.empty((max_features, max_features), dtype=Gram.dtype)
+    L = np.empty((max_features, max_features), dtype=gram.dtype)
 
     L[0, 0] = 1.0
     if return_path:
@@ -241,7 +241,7 @@ def _gram_omp(
             warnings.warn(premature, RuntimeWarning, stacklevel=3)
             break
         if n_active > 0:
-            L[n_active, :n_active] = Gram[lam, :n_active]
+            L[n_active, :n_active] = gram[lam, :n_active]
             linalg.solve_triangular(
                 L[:n_active, :n_active],
                 L[n_active, :n_active],
@@ -251,27 +251,27 @@ def _gram_omp(
                 check_finite=False,
             )
             v = nrm2(L[n_active, :n_active]) ** 2
-            Lkk = Gram[lam, lam] - v
-            if Lkk <= min_float:  # selected atoms are dependent
+            l_kk = gram[lam, lam] - v
+            if l_kk <= min_float:  # selected atoms are dependent
                 warnings.warn(premature, RuntimeWarning, stacklevel=3)
                 break
-            L[n_active, n_active] = sqrt(Lkk)
+            L[n_active, n_active] = sqrt(l_kk)
         else:
-            L[0, 0] = sqrt(Gram[lam, lam])
+            L[0, 0] = sqrt(gram[lam, lam])
 
-        Gram[n_active], Gram[lam] = swap(Gram[n_active], Gram[lam])
-        Gram.T[n_active], Gram.T[lam] = swap(Gram.T[n_active], Gram.T[lam])
+        gram[n_active], gram[lam] = swap(gram[n_active], gram[lam])
+        gram.T[n_active], gram.T[lam] = swap(gram.T[n_active], gram.T[lam])
         indices[n_active], indices[lam] = indices[lam], indices[n_active]
-        Xy[n_active], Xy[lam] = Xy[lam], Xy[n_active]
+        xy[n_active], xy[lam] = xy[lam], xy[n_active]
         n_active += 1
         # solves LL'x = X'y as a composition of two triangular systems
         gamma, _ = potrs(
-            L[:n_active, :n_active], Xy[:n_active], lower=True, overwrite_b=False
+            L[:n_active, :n_active], xy[:n_active], lower=True, overwrite_b=False
         )
         if return_path:
             coefs[:n_active, n_active - 1] = gamma
-        beta = np.dot(Gram[:, :n_active], gamma)
-        alpha = Xy - beta
+        beta = np.dot(gram[:, :n_active], gamma)
+        alpha = xy - beta
         if tol is not None:
             tol_curr += delta
             delta = np.inner(gamma, beta[:n_active])
@@ -294,7 +294,7 @@ def _gram_omp(
         "n_nonzero_coefs": [Interval(Integral, 1, None, closed="left"), None],
         "tol": [Interval(Real, 0, None, closed="left"), None],
         "precompute": ["boolean", StrOptions({"auto"})],
-        "copy_X": ["boolean"],
+        "copy_x": ["boolean"],
         "return_path": ["boolean"],
         "return_n_iter": ["boolean"],
     },
@@ -307,7 +307,7 @@ def orthogonal_mp(
     n_nonzero_coefs=None,
     tol=None,
     precompute=False,
-    copy_X=True,
+    copy_x=True,
     return_path=False,
     return_n_iter=False,
 ):
@@ -344,7 +344,7 @@ def orthogonal_mp(
         Whether to perform precomputations. Improves performance when n_targets
         or n_samples is very large.
 
-    copy_X : bool, default=True
+    copy_x : bool, default=True
         Whether the design matrix X must be copied by the algorithm. A false
         value is only helpful if X is already Fortran-ordered, otherwise a
         copy is made anyway.
@@ -399,13 +399,13 @@ def orthogonal_mp(
     >>> X[:1,] @ coef
     array([-78.68])
     """
-    X = check_array(X, order="F", copy=copy_X)
-    copy_X = False
+    X = check_array(X, order="F", copy=copy_x)
+    copy_x = False
     if y.ndim == 1:
         y = y.reshape(-1, 1)
     y = check_array(y)
     if y.shape[1] > 1:  # subsequent targets will be affected
-        copy_X = True
+        copy_x = True
     if n_nonzero_coefs is None and tol is None:
         # default for n_nonzero_coefs is 0.1 * n_features
         # but at least one.
@@ -419,18 +419,18 @@ def orthogonal_mp(
     if precompute:
         G = np.dot(X.T, X)
         G = np.asfortranarray(G)
-        Xy = np.dot(X.T, y)
+        xy = np.dot(X.T, y)
         if tol is not None:
             norms_squared = np.sum((y**2), axis=0)
         else:
             norms_squared = None
         return orthogonal_mp_gram(
             G,
-            Xy,
+            xy,
             n_nonzero_coefs=n_nonzero_coefs,
             tol=tol,
             norms_squared=norms_squared,
-            copy_Gram=copy_X,
+            copy_Gram=copy_x,
             copy_Xy=False,
             return_path=return_path,
         )
@@ -443,7 +443,7 @@ def orthogonal_mp(
 
     for k in range(y.shape[1]):
         out = _cholesky_omp(
-            X, y[:, k], n_nonzero_coefs, tol, copy_X=copy_X, return_path=return_path
+            X, y[:, k], n_nonzero_coefs, tol, copy_x=copy_x, return_path=return_path
         )
         if return_path:
             _, idx, coefs, n_iter = out
@@ -466,7 +466,7 @@ def orthogonal_mp(
 
 @validate_params(
     {
-        "Gram": ["array-like"],
+        "gram": ["array-like"],
         "Xy": ["array-like"],
         "n_nonzero_coefs": [Interval(Integral, 0, None, closed="neither"), None],
         "tol": [Interval(Real, 0, None, closed="left"), None],
@@ -479,7 +479,7 @@ def orthogonal_mp(
     prefer_skip_nested_validation=True,
 )
 def orthogonal_mp_gram(
-    Gram,
+    gram,
     Xy,
     *,
     n_nonzero_coefs=None,
@@ -577,7 +577,7 @@ def orthogonal_mp_gram(
     >>> X[:1,] @ coef
     array([-78.68])
     """
-    Gram = check_array(Gram, order="F", copy=copy_Gram)
+    gram = check_array(gram, order="F", copy=copy_Gram)
     Xy = np.asarray(Xy)
     if Xy.ndim > 1 and Xy.shape[1] > 1:
         # or subsequent target will be affected
@@ -591,7 +591,7 @@ def orthogonal_mp_gram(
         Xy = Xy.copy()
 
     if n_nonzero_coefs is None and tol is None:
-        n_nonzero_coefs = int(0.1 * len(Gram))
+        n_nonzero_coefs = int(0.1 * len(gram))
     if tol is not None and norms_squared is None:
         raise ValueError(
             "Gram OMP needs the precomputed norms in order "
@@ -601,26 +601,26 @@ def orthogonal_mp_gram(
         raise ValueError("Epsilon cannot be negative")
     if tol is None and n_nonzero_coefs <= 0:
         raise ValueError("The number of atoms must be positive")
-    if tol is None and n_nonzero_coefs > len(Gram):
+    if tol is None and n_nonzero_coefs > len(gram):
         raise ValueError(
             "The number of atoms cannot be more than the number of features"
         )
 
     if return_path:
-        coef = np.zeros((len(Gram), Xy.shape[1], len(Gram)), dtype=Gram.dtype)
+        coef = np.zeros((len(gram), Xy.shape[1], len(gram)), dtype=gram.dtype)
     else:
-        coef = np.zeros((len(Gram), Xy.shape[1]), dtype=Gram.dtype)
+        coef = np.zeros((len(gram), Xy.shape[1]), dtype=gram.dtype)
 
     n_iters = []
     for k in range(Xy.shape[1]):
         out = _gram_omp(
-            Gram,
+            gram,
             Xy[:, k],
             n_nonzero_coefs,
             norms_squared[k] if tol is not None else None,
             tol,
-            copy_Gram=copy_Gram,
-            copy_Xy=False,
+            copy_gram=copy_Gram,
+            copy_xy=False,
             return_path=return_path,
         )
         if return_path:
@@ -802,7 +802,7 @@ class OrthogonalMatchingPursuit(RegressorMixin, MultiOutputLinearModel):
                 n_nonzero_coefs=self.n_nonzero_coefs_,
                 tol=self.tol,
                 precompute=False,
-                copy_X=True,
+                copy_x=True,
                 return_n_iter=True,
             )
         else:
@@ -889,7 +889,7 @@ def _omp_path_residues(
         n_nonzero_coefs=max_iter,
         tol=None,
         precompute=False,
-        copy_X=False,
+        copy_x=False,
         return_path=True,
     )
     if coefs.ndim == 1:
