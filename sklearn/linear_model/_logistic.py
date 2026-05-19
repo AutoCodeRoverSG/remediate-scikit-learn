@@ -2099,18 +2099,18 @@ class LogisticRegressionCV(LogisticRegression, LinearClassifierMixin, BaseEstima
             coefs_paths = np.reshape(
                 coefs_paths, (len(folds), len(l1_ratios_), len(self.Cs_), -1)
             )
-            # coefs_paths.shape = (n_folds, n_l1_ratios, n_Cs, n_features)
+            
             coefs_paths = np.swapaxes(coefs_paths, 1, 2)[None, ...]
         else:
             coefs_paths = np.reshape(
                 coefs_paths, (len(folds), len(l1_ratios_), len(self.Cs_), n_classes, -1)
             )
-            # coefs_paths.shape = (n_folds, n_l1_ratios, n_Cs, n_classes, n_features)
+            
             coefs_paths = np.moveaxis(coefs_paths, (0, 1, 3), (1, 3, 0))
-        # n_iter_.shape = (n_folds, n_l1_ratios, n_Cs)
+        
         n_iter_ = np.reshape(n_iter_, (len(folds), len(l1_ratios_), len(self.Cs_)))
         self.n_iter_ = np.swapaxes(n_iter_, 1, 2)[None, ...]
-        # scores.shape = (n_folds, n_l1_ratios, n_Cs)
+        
         scores = np.reshape(scores, (len(folds), len(l1_ratios_), len(self.Cs_)))
         scores = np.swapaxes(scores, 1, 2)[None, ...]
         # repeat same scores across all classes
@@ -2118,8 +2118,8 @@ class LogisticRegressionCV(LogisticRegression, LinearClassifierMixin, BaseEstima
         self.scores_ = dict(zip(classes_only_pos_if_binary, scores))
         self.coefs_paths_ = dict(zip(classes_only_pos_if_binary, coefs_paths))
 
-        self.C_ = list()
-        self.l1_ratio_ = list()
+        self.C_ = []
+        self.l1_ratio_ = []
         self.coef_ = np.empty((n_classes, n_features))
         self.intercept_ = np.zeros(n_classes)
 
@@ -2188,8 +2188,8 @@ class LogisticRegressionCV(LogisticRegression, LinearClassifierMixin, BaseEstima
                 )
 
             best_indices = np.asarray(best_indices)
-            best_indices_C = best_indices[:, 0]
-            self.C_.append(np.mean(self.Cs_[best_indices_C]))
+            best_indices_c = best_indices[:, 0]
+            self.C_.append(np.mean(self.Cs_[best_indices_c]))
 
             if penalty == "elasticnet":
                 best_indices_l1 = best_indices[:, 1]
