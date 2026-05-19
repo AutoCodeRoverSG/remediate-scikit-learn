@@ -296,7 +296,7 @@ CONTINUOUS_CLASSIFICATION_METRICS = {
     "d2_log_loss_score": d2_log_loss_score,
 }
 
-ALL_METRICS = dict()
+ALL_METRICS = {}
 ALL_METRICS.update(CONTINUOUS_CLASSIFICATION_METRICS)
 ALL_METRICS.update(CLASSIFICATION_METRICS)
 ALL_METRICS.update(REGRESSION_METRICS)
@@ -534,7 +534,6 @@ SYMMETRIC_METRICS = {
     "root_mean_squared_log_error",
     # P = R = F = accuracy in multiclass case
     "micro_f0.5_score",
-    "micro_f1_score",
     "micro_f2_score",
     "micro_precision_score",
     "micro_recall_score",
@@ -1610,9 +1609,9 @@ def test_averaging_multilabel_all_ones(name):
 
 
 def check_sample_weight_invariance(name, metric, y1, y2, sample_weight=None):
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
     if sample_weight is None:
-        sample_weight = rng.randint(1, 10, size=len(y1))
+        sample_weight = rng.integers(1, 10, size=len(y1))
 
     # top_k_accuracy_score always lead to a perfect score for k > 1 in the
     # binary case
@@ -1985,10 +1984,10 @@ def test_continuous_metric_permutation_invariance(name):
 def test_metrics_consistent_type_error(y1, metric_name):
     # check that an understable message is raised when the type between y_true
     # and y_pred mismatch
-    rng = np.random.RandomState(42)
+    rng = np.random.default_rng(42)
     n_samples = 5
 
-    y2 = rng.randint(0, 2, size=n_samples)
+    y2 = rng.integers(0, 2, size=n_samples)
 
     err_msg = r"Mix of label input types \(string and number\)"
     with pytest.raises(ValueError, match=err_msg):
@@ -2013,14 +2012,14 @@ def test_metrics_consistent_type_error(y1, metric_name):
 def test_metrics_pos_label_error_str(metric, y_pred_threshold, dtype_y_str):
     # check that the error message if `pos_label` is not specified and the
     # targets is made of strings.
-    rng = np.random.RandomState(42)
+    rng = np.random.default_rng(42)
     y1 = np.array(["spam"] * 3 + ["eggs"] * 2, dtype=dtype_y_str)
-    y2 = rng.randint(0, 2, size=y1.size)
+    y2 = rng.integers(0, 2, size=y1.size)
 
     if not y_pred_threshold:
         y2 = np.array(["spam", "eggs"], dtype=dtype_y_str)[y2]
 
-    err_msg_pos_label_None = (
+    err_msg_pos_label_none = (
         "y_true takes value in {'eggs', 'spam'} and pos_label is not "
         "specified: either make y_true take value in {0, 1} or {-1, 1} or "
         "pass pos_label explicit"
@@ -2031,7 +2030,7 @@ def test_metrics_pos_label_error_str(metric, y_pred_threshold, dtype_y_str):
 
     pos_label_default = signature(metric).parameters["pos_label"].default
 
-    err_msg = err_msg_pos_label_1 if pos_label_default == 1 else err_msg_pos_label_None
+    err_msg = err_msg_pos_label_1 if pos_label_default == 1 else err_msg_pos_label_none
     with pytest.raises(ValueError, match=err_msg):
         metric(y1, y2)
 
@@ -2086,7 +2085,7 @@ def check_array_api_metric(
         # e.g. precision_recall_curve:
         if (
             isinstance(metric_np, tuple)
-            and len(set([metric_val.shape for metric_val in metric_np])) > 1
+            and len({metric_val.shape for metric_val in metric_np}) > 1
         ):
             _check_each_metric_matches(metric_xp, metric_np)
 
@@ -2445,8 +2444,8 @@ def check_array_api_regression_metric_multioutput(
 
 
 def check_array_api_metric_pairwise(metric, array_namespace, device_name, dtype_name):
-    X_np = np.array([[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]], dtype=dtype_name)
-    Y_np = np.array([[0.2, 0.3, 0.4], [0.5, 0.6, 0.7]], dtype=dtype_name)
+    x_np = np.array([[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]], dtype=dtype_name)
+    y_np = np.array([[0.2, 0.3, 0.4], [0.5, 0.6, 0.7]], dtype=dtype_name)
 
     metric_kwargs = {}
     if "dense_output" in signature(metric).parameters:
@@ -2456,8 +2455,8 @@ def check_array_api_metric_pairwise(metric, array_namespace, device_name, dtype_
             array_namespace,
             device_name,
             dtype_name,
-            a_np=X_np,
-            b_np=Y_np,
+            a_np=x_np,
+            b_np=y_np,
             **metric_kwargs,
         )
         metric_kwargs["dense_output"] = True
@@ -2467,8 +2466,8 @@ def check_array_api_metric_pairwise(metric, array_namespace, device_name, dtype_
         array_namespace,
         device_name,
         dtype_name,
-        a_np=X_np,
-        b_np=Y_np,
+        a_np=x_np,
+        b_np=y_np,
         **metric_kwargs,
     )
 
