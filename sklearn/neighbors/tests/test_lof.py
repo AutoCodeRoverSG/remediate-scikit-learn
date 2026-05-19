@@ -56,10 +56,10 @@ def test_lof_performance(global_dtype):
     X_train = X[:100]
 
     # Generate some abnormal novel observations
-    X_outliers = rng.uniform(low=-4, high=4, size=(20, 2)).astype(
+    x_outliers = rng.uniform(low=-4, high=4, size=(20, 2)).astype(
         global_dtype, copy=False
     )
-    X_test = np.r_[X[100:], X_outliers]
+    X_test = np.r_[X[100:], x_outliers]
     y_test = np.array([0] * 20 + [1] * 20)
 
     # fit the model for novelty detection
@@ -95,27 +95,27 @@ def test_lof_values(global_dtype):
 def test_lof_precomputed(global_dtype, random_state=42):
     """Tests LOF with a distance matrix."""
     # Note: smaller samples may result in spurious test success
-    rng = np.random.RandomState(random_state)
-    X = rng.random_sample((10, 4)).astype(global_dtype, copy=False)
-    Y = rng.random_sample((3, 4)).astype(global_dtype, copy=False)
+    rng = np.random.default_rng(random_state)
+    X = rng.random((10, 4)).astype(global_dtype, copy=False)
+    Y = rng.random((3, 4)).astype(global_dtype, copy=False)
     DXX = metrics.pairwise_distances(X, metric="euclidean")
     DYX = metrics.pairwise_distances(Y, X, metric="euclidean")
     # As a feature matrix (n_samples by n_features)
-    lof_X = neighbors.LocalOutlierFactor(n_neighbors=3, novelty=True)
-    lof_X.fit(X)
-    pred_X_X = lof_X._predict()
-    pred_X_Y = lof_X.predict(Y)
+    lof_x = neighbors.LocalOutlierFactor(n_neighbors=3, novelty=True)
+    lof_x.fit(X)
+    pred_x_x = lof_x._predict()
+    pred_x_y = lof_x.predict(Y)
 
     # As a dense distance matrix (n_samples by n_samples)
-    lof_D = neighbors.LocalOutlierFactor(
+    lof_d = neighbors.LocalOutlierFactor(
         n_neighbors=3, algorithm="brute", metric="precomputed", novelty=True
     )
-    lof_D.fit(DXX)
-    pred_D_X = lof_D._predict()
-    pred_D_Y = lof_D.predict(DYX)
+    lof_d.fit(DXX)
+    pred_d_x = lof_d._predict()
+    pred_d_y = lof_d.predict(DYX)
 
-    assert_allclose(pred_X_X, pred_D_X)
-    assert_allclose(pred_X_Y, pred_D_Y)
+    assert_allclose(pred_x_x, pred_d_x)
+    assert_allclose(pred_x_y, pred_d_y)
 
 
 def test_n_neighbors_attribute():
@@ -276,7 +276,7 @@ def test_lof_error_n_neighbors_too_large():
         "n_samples_fit = 1, n_samples = 1"
     )
     with pytest.raises(ValueError, match=msg):
-        lof = neighbors.LocalOutlierFactor(n_neighbors=1).fit(X[:1])
+        neighbors.LocalOutlierFactor(n_neighbors=1).fit(X[:1])
 
     lof = neighbors.LocalOutlierFactor(n_neighbors=2).fit(X[:2])
     assert lof.n_samples_fit_ == 2
