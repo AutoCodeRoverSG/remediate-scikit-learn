@@ -333,9 +333,9 @@ class Isomap(ClassNamePrefixFeaturesOutMixin, TransformerMixin, BaseEstimator):
         ``K(D) = -0.5 * (I - 1/n_samples) * D^2 * (I - 1/n_samples)``
         """
         G = -0.5 * self.dist_matrix_**2
-        G_center = KernelCenterer().fit_transform(G)
+        g_center = KernelCenterer().fit_transform(G)
         evals = self.kernel_pca_.eigenvalues_
-        return np.sqrt(np.sum(G_center**2) - np.sum(evals**2)) / G.shape[0]
+        return np.sqrt(np.sum(g_center**2) - np.sum(evals**2)) / G.shape[0]
 
     @_fit_context(
         # Isomap.metric is not validated yet

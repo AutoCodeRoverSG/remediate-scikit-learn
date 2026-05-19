@@ -403,7 +403,7 @@ def test_precision_recall_display_name(pyplot, constructor_name, default_label):
         display = PrecisionRecallDisplay.from_predictions(
             y, y_score, pos_label=pos_label
         )
-    else:  # constructor_name = "from_cv_results"
+    else:  
         display = PrecisionRecallDisplay.from_cv_results(cv_results, X, y)
 
     if constructor_name == "from_cv_results":
