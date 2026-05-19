@@ -562,8 +562,8 @@ def test_grid_search_sparse_scoring(csr_container):
     def f1_loss(y_true_, y_pred_):
         return -f1_score(y_true_, y_pred_)
 
-    F1Loss = make_scorer(f1_loss, greater_is_better=False)
-    cv = GridSearchCV(clf, {"C": [0.1, 1.0]}, scoring=F1Loss)
+    f1_loss_scorer = make_scorer(f1_loss, greater_is_better=False)
+    cv = GridSearchCV(clf, {"C": [0.1, 1.0]}, scoring=f1_loss_scorer)
     cv.fit(X_[:180], y_[:180])
     y_pred3 = cv.predict(X_[180:])
     C3 = cv.best_estimator_.C
@@ -578,38 +578,38 @@ def test_grid_search_precomputed_kernel():
     X_, y_ = make_classification(n_samples=200, n_features=100, random_state=0)
 
     # compute the training kernel matrix corresponding to the linear kernel
-    K_train = np.dot(X_[:180], X_[:180].T)
+    k_train = np.dot(X_[:180], X_[:180].T)
     y_train = y_[:180]
 
     clf = SVC(kernel="precomputed")
     cv = GridSearchCV(clf, {"C": [0.1, 1.0]})
-    cv.fit(K_train, y_train)
+    cv.fit(k_train, y_train)
 
     assert cv.best_score_ >= 0
 
     # compute the test kernel matrix
-    K_test = np.dot(X_[180:], X_[:180].T)
+    k_test = np.dot(X_[180:], X_[:180].T)
     y_test = y_[180:]
 
-    y_pred = cv.predict(K_test)
+    y_pred = cv.predict(k_test)
 
     assert np.mean(y_pred == y_test) >= 0
 
     # test error is raised when the precomputed kernel is not array-like
     # or sparse
     with pytest.raises(ValueError):
-        cv.fit(K_train.tolist(), y_train)
+        cv.fit(k_train.tolist(), y_train)
 
 
 def test_grid_search_precomputed_kernel_error_nonsquare():
     # Test that grid search returns an error with a non-square precomputed
     # training kernel matrix
-    K_train = np.zeros((10, 20))
+    k_train = np.zeros((10, 20))
     y_train = np.ones((10,))
     clf = SVC(kernel="precomputed")
     cv = GridSearchCV(clf, {"C": [0.1, 1.0]})
     with pytest.raises(ValueError):
-        cv.fit(K_train, y_train)
+        cv.fit(k_train, y_train)
 
 
 class BrokenClassifier(BaseEstimator):
@@ -766,7 +766,7 @@ def test_refit_callable_multi_metric():
 
 def test_gridsearch_nd():
     # Pass X as list in GridSearchCV
-    X_4d = np.arange(10 * 5 * 3 * 2).reshape(10, 5, 3, 2)
+    x_4d = np.arange(10 * 5 * 3 * 2).reshape(10, 5, 3, 2)
     y_3d = np.arange(10 * 7 * 11).reshape(10, 7, 11)
 
     def check_X(x):
@@ -779,9 +779,10 @@ def test_gridsearch_nd():
         check_X=check_X,
         check_y=check_y,
         methods_to_check=["fit"],
+        random_state=42,
     )
     grid_search = GridSearchCV(clf, {"foo_param": [1, 2, 3]})
-    grid_search.fit(X_4d, y_3d).score(X, y)
+    grid_search.fit(x_4d, y_3d).score(X, y)
     assert hasattr(grid_search, "cv_results_")
 
 
@@ -793,6 +794,7 @@ def test_X_as_list():
     clf = CheckingClassifier(
         check_X=lambda x: isinstance(x, list),
         methods_to_check=["fit"],
+        random_state=42,
     )
     cv = KFold(n_splits=3)
     grid_search = GridSearchCV(clf, {"foo_param": [1, 2, 3]}, cv=cv)
@@ -808,6 +810,7 @@ def test_y_as_list():
     clf = CheckingClassifier(
         check_y=lambda x: isinstance(x, list),
         methods_to_check=["fit"],
+        random_state=42,
     )
     cv = KFold(n_splits=3)
     grid_search = GridSearchCV(clf, {"foo_param": [1, 2, 3]}, cv=cv)
@@ -828,15 +831,15 @@ def test_pandas_input():
     X = np.arange(100).reshape(10, 10)
     y = np.array([0] * 5 + [1] * 5)
 
-    for InputFeatureType, TargetType in types:
+    for input_feature_type, target_type in types:
         # X dataframe, y series
-        X_df, y_ser = InputFeatureType(X), TargetType(y)
+        X_df, y_ser = input_feature_type(X), target_type(y)
 
-        def check_df(x):
-            return isinstance(x, InputFeatureType)
+        def check_df(x, input_feature_type=input_feature_type):
+            return isinstance(x, input_feature_type)
 
-        def check_series(x):
-            return isinstance(x, TargetType)
+        def check_series(x, target_type=target_type):
+            return isinstance(x, target_type)
 
         clf = CheckingClassifier(check_X=check_df, check_y=check_series)
 
