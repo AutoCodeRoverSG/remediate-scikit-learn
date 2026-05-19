@@ -22,9 +22,9 @@ PRIOR_TYPE = ["dirichlet_process", "dirichlet_distribution"]
 
 
 def test_log_dirichlet_norm():
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
 
-    weight_concentration = rng.rand(2)
+    weight_concentration = rng.random(2)
     expected_norm = gammaln(np.sum(weight_concentration)) - np.sum(
         gammaln(weight_concentration)
     )
@@ -34,10 +34,10 @@ def test_log_dirichlet_norm():
 
 
 def test_log_wishart_norm():
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
 
     n_components, n_features = 5, 2
-    degrees_of_freedom = np.abs(rng.rand(n_components)) + 1.0
+    degrees_of_freedom = np.abs(rng.random(n_components)) + 1.0
     log_det_precisions_chol = n_features * np.log(range(2, 2 + n_components))
 
     expected_norm = np.empty(5)
@@ -62,59 +62,59 @@ def test_log_wishart_norm():
 
 
 def test_bayesian_mixture_weights_prior_initialisation():
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
     n_samples, n_components, n_features = 10, 5, 2
-    X = rng.rand(n_samples, n_features)
+    X = rng.random((n_samples, n_features))
 
     # Check correct init for a given value of weight_concentration_prior
-    weight_concentration_prior = rng.rand()
+    weight_concentration_prior = rng.random()
     bgmm = BayesianGaussianMixture(
-        weight_concentration_prior=weight_concentration_prior, random_state=rng
+        weight_concentration_prior=weight_concentration_prior, random_state=0
     ).fit(X)
     assert_almost_equal(weight_concentration_prior, bgmm.weight_concentration_prior_)
 
     # Check correct init for the default value of weight_concentration_prior
-    bgmm = BayesianGaussianMixture(n_components=n_components, random_state=rng).fit(X)
+    bgmm = BayesianGaussianMixture(n_components=n_components, random_state=0).fit(X)
     assert_almost_equal(1.0 / n_components, bgmm.weight_concentration_prior_)
 
 
 def test_bayesian_mixture_mean_prior_initialisation():
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
     n_samples, n_components, n_features = 10, 3, 2
-    X = rng.rand(n_samples, n_features)
+    X = rng.random((n_samples, n_features))
 
     # Check correct init for a given value of mean_precision_prior
-    mean_precision_prior = rng.rand()
+    mean_precision_prior = rng.random()
     bgmm = BayesianGaussianMixture(
-        mean_precision_prior=mean_precision_prior, random_state=rng
+        mean_precision_prior=mean_precision_prior, random_state=0
     ).fit(X)
     assert_almost_equal(mean_precision_prior, bgmm.mean_precision_prior_)
 
     # Check correct init for the default value of mean_precision_prior
-    bgmm = BayesianGaussianMixture(random_state=rng).fit(X)
+    bgmm = BayesianGaussianMixture(random_state=0).fit(X)
     assert_almost_equal(1.0, bgmm.mean_precision_prior_)
 
     # Check correct init for a given value of mean_prior
-    mean_prior = rng.rand(n_features)
+    mean_prior = rng.random(n_features)
     bgmm = BayesianGaussianMixture(
-        n_components=n_components, mean_prior=mean_prior, random_state=rng
+        n_components=n_components, mean_prior=mean_prior, random_state=0
     ).fit(X)
     assert_almost_equal(mean_prior, bgmm.mean_prior_)
 
     # Check correct init for the default value of bemean_priorta
-    bgmm = BayesianGaussianMixture(n_components=n_components, random_state=rng).fit(X)
+    bgmm = BayesianGaussianMixture(n_components=n_components, random_state=0).fit(X)
     assert_almost_equal(X.mean(axis=0), bgmm.mean_prior_)
 
 
 def test_bayesian_mixture_precisions_prior_initialisation():
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
     n_samples, n_features = 10, 2
-    X = rng.rand(n_samples, n_features)
+    X = rng.random((n_samples, n_features))
 
     # Check raise message for a bad value of degrees_of_freedom_prior
     bad_degrees_of_freedom_prior_ = n_features - 1.0
     bgmm = BayesianGaussianMixture(
-        degrees_of_freedom_prior=bad_degrees_of_freedom_prior_, random_state=rng
+        degrees_of_freedom_prior=bad_degrees_of_freedom_prior_, random_state=0
     )
     msg = (
         "The parameter 'degrees_of_freedom_prior' should be greater than"
@@ -124,16 +124,16 @@ def test_bayesian_mixture_precisions_prior_initialisation():
         bgmm.fit(X)
 
     # Check correct init for a given value of degrees_of_freedom_prior
-    degrees_of_freedom_prior = rng.rand() + n_features - 1.0
+    degrees_of_freedom_prior = rng.random() + n_features - 1.0
     bgmm = BayesianGaussianMixture(
-        degrees_of_freedom_prior=degrees_of_freedom_prior, random_state=rng
+        degrees_of_freedom_prior=degrees_of_freedom_prior, random_state=0
     ).fit(X)
     assert_almost_equal(degrees_of_freedom_prior, bgmm.degrees_of_freedom_prior_)
 
     # Check correct init for the default value of degrees_of_freedom_prior
     degrees_of_freedom_prior_default = n_features
     bgmm = BayesianGaussianMixture(
-        degrees_of_freedom_prior=degrees_of_freedom_prior_default, random_state=rng
+        degrees_of_freedom_prior=degrees_of_freedom_prior_default, random_state=0
     ).fit(X)
     assert_almost_equal(
         degrees_of_freedom_prior_default, bgmm.degrees_of_freedom_prior_
@@ -144,10 +144,10 @@ def test_bayesian_mixture_precisions_prior_initialisation():
         "full": np.cov(X.T, bias=1) + 10,
         "tied": np.cov(X.T, bias=1) + 5,
         "diag": np.diag(np.atleast_2d(np.cov(X.T, bias=1))) + 3,
-        "spherical": rng.rand(),
+        "spherical": rng.random(),
     }
 
-    bgmm = BayesianGaussianMixture(random_state=rng)
+    bgmm = BayesianGaussianMixture(random_state=0)
     for cov_type in ["full", "tied", "diag", "spherical"]:
         bgmm.covariance_type = cov_type
         bgmm.covariance_prior = covariance_prior[cov_type]
@@ -170,12 +170,12 @@ def test_bayesian_mixture_precisions_prior_initialisation():
 
 
 def test_bayesian_mixture_check_is_fitted():
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
     n_samples, n_features = 10, 2
 
     # Check raise message
-    bgmm = BayesianGaussianMixture(random_state=rng)
-    X = rng.rand(n_samples, n_features)
+    bgmm = BayesianGaussianMixture(random_state=0)
+    X = rng.random((n_samples, n_features))
 
     msg = "This BayesianGaussianMixture instance is not fitted yet."
     with pytest.raises(ValueError, match=msg):
@@ -419,9 +419,9 @@ def test_bayesian_mixture_fit_predict(seed, max_iter, tol):
         bgmm2 = copy.deepcopy(bgmm1)
         X = rand_data.X[covar_type]
 
-        Y_pred1 = bgmm1.fit(X).predict(X)
-        Y_pred2 = bgmm2.fit_predict(X)
-        assert_array_equal(Y_pred1, Y_pred2)
+        y_pred1 = bgmm1.fit(X).predict(X)
+        y_pred2 = bgmm2.fit_predict(X)
+        assert_array_equal(y_pred1, y_pred2)
 
 
 def test_bayesian_mixture_fit_predict_n_init():
@@ -458,7 +458,7 @@ def test_bayesian_mixture_predict_predict_proba():
                 bgmm.predict(X)
 
             bgmm.fit(X)
-            Y_pred = bgmm.predict(X)
-            Y_pred_proba = bgmm.predict_proba(X).argmax(axis=1)
-            assert_array_equal(Y_pred, Y_pred_proba)
-            assert adjusted_rand_score(Y, Y_pred) >= 0.95
+            y_pred = bgmm.predict(X)
+            y_pred_proba = bgmm.predict_proba(X).argmax(axis=1)
+            assert_array_equal(y_pred, y_pred_proba)
+            assert adjusted_rand_score(Y, y_pred) >= 0.95
