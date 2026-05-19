@@ -631,17 +631,17 @@ def _ridge_regression(
     check_input=True,
     fit_intercept=False,
 ):
-    xp, is_array_api_compliant, device_ = get_namespace_and_device(
+    xp, _, device_ = get_namespace_and_device(
         X, y, sample_weight, x_scale, x_offset
     )
     is_numpy_namespace = _is_numpy_namespace(xp)
-    X_is_sparse = sparse.issparse(X)
+    x_is_sparse = sparse.issparse(X)
 
     has_sw = sample_weight is not None
 
-    solver = resolve_solver(solver, positive, return_intercept, X_is_sparse, xp)
+    solver = resolve_solver(solver, positive, return_intercept, x_is_sparse, xp)
 
-    if is_numpy_namespace and not X_is_sparse:
+    if is_numpy_namespace and not x_is_sparse:
         X = np.asarray(X)
 
     if not is_numpy_namespace and solver != "svd":
@@ -672,7 +672,7 @@ def _ridge_regression(
 
     if check_input:
         _dtype = [xp.float64, xp.float32]
-        _accept_sparse = _get_valid_accept_sparse(X_is_sparse, solver)
+        _accept_sparse = _get_valid_accept_sparse(x_is_sparse, solver)
         X = check_array(X, accept_sparse=_accept_sparse, dtype=_dtype, order="C")
         y = check_array(y, dtype=X.dtype, ensure_2d=False, order=None)
     check_consistent_length(X, y)
@@ -823,7 +823,7 @@ def _ridge_regression(
         )
 
     if solver == "svd":
-        if X_is_sparse:
+        if x_is_sparse:
             raise TypeError("SVD solver does not support sparse inputs currently")
         coef = _solve_svd(X, y, alpha, xp)
 
@@ -912,7 +912,7 @@ class _BaseRidge(LinearModel, metaclass=ABCMeta):
         alpha=1.0,
         *,
         fit_intercept=True,
-        copy_X=True,
+        copy_X=True,  # NOSONAR
         max_iter=None,
         tol=1e-4,
         solver="auto",
@@ -929,7 +929,7 @@ class _BaseRidge(LinearModel, metaclass=ABCMeta):
         self.random_state = random_state
 
     def fit(self, X, y, sample_weight=None):
-        xp, is_array_api_compliant = get_namespace(X, y, sample_weight)
+        _, _ = get_namespace(X, y, sample_weight)
 
         if self.solver == "lbfgs" and not self.positive:
             raise ValueError(
@@ -973,7 +973,7 @@ class _BaseRidge(LinearModel, metaclass=ABCMeta):
             sample_weight = _check_sample_weight(sample_weight, X, dtype=X.dtype)
 
         # when X is sparse we only remove offset from y
-        X, y, X_offset, y_offset, X_scale, _ = _preprocess_data(
+        X, y, x_offset, y_offset, x_scale, _ = _preprocess_data(
             X,
             y,
             fit_intercept=self.fit_intercept,
@@ -1004,7 +1004,7 @@ class _BaseRidge(LinearModel, metaclass=ABCMeta):
         else:
             if sparse.issparse(X) and self.fit_intercept:
                 # required to fit intercept with sparse_cg and lbfgs solver
-                params = {"x_offset": X_offset, "x_scale": X_scale}
+                params = {"x_offset": x_offset, "x_scale": x_scale}
             else:
                 # for dense matrices or when intercept is set to 0
                 params = {}
@@ -1026,7 +1026,7 @@ class _BaseRidge(LinearModel, metaclass=ABCMeta):
                 fit_intercept=self.fit_intercept,
                 **params,
             )
-            self._set_intercept(X_offset, y_offset, X_scale)
+            self._set_intercept(x_offset, y_offset, x_scale)
 
         return self
 
@@ -1219,7 +1219,7 @@ class Ridge(MultiOutputMixin, RegressorMixin, _BaseRidge):
         alpha=1.0,
         *,
         fit_intercept=True,
-        copy_X=True,
+        copy_X=True,  # NOSONAR
         max_iter=None,
         tol=1e-4,
         solver="auto",
@@ -1582,7 +1582,7 @@ class RidgeClassifier(_RidgeClassifierMixin, _BaseRidge):
         alpha=1.0,
         *,
         fit_intercept=True,
-        copy_X=True,
+        copy_X=True,  # NOSONAR
         max_iter=None,
         tol=1e-4,
         class_weight=None,
