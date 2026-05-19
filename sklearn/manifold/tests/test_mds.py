@@ -210,13 +210,13 @@ def test_returned_stress(normalized_stress):
     Z = mds_est.embedding_
     stress = mds_est.stress_
 
-    D_mds = euclidean_distances(Z)
-    stress_Z = ((D_mds.ravel() - D.ravel()) ** 2).sum() / 2
+    d_mds = euclidean_distances(Z)
+    stress_z = ((d_mds.ravel() - D.ravel()) ** 2).sum() / 2
 
     if normalized_stress:
-        stress_Z = np.sqrt(stress_Z / ((D_mds.ravel() ** 2).sum() / 2))
+        stress_z = np.sqrt(stress_z / ((d_mds.ravel() ** 2).sum() / 2))
 
-    assert_allclose(stress, stress_Z)
+    assert_allclose(stress, stress_z)
 
 
 # TODO(1.10): remove warning filter
@@ -274,13 +274,13 @@ def test_classical_mds_init_to_mds():
     X, _ = load_iris(return_X_y=True)
 
     cmds = ClassicalMDS()
-    Z_classical = cmds.fit_transform(X)
+    z_classical = cmds.fit_transform(X)
 
     mds1 = mds.MDS(init="classical_mds")
     Z1 = mds1.fit_transform(X)
 
     mds2 = mds.MDS(init="random")
-    Z2 = mds1.fit_transform(X, init=Z_classical)
+    Z2 = mds1.fit_transform(X, init=z_classical)
 
     assert_allclose(Z1, Z2)
 
@@ -288,7 +288,7 @@ def test_classical_mds_init_to_mds():
 @pytest.mark.parametrize("init", ["random", "classical_mds"])
 @pytest.mark.parametrize("n_components", [1, 2, 5, 10])
 def test_correct_n_components(init, n_components):
-    X, _ = make_blobs(n_features=10)
+    X, _ = make_blobs(n_features=10, random_state=0)
 
     model = mds.MDS(init=init, n_components=n_components, n_init=1)
     Z = model.fit_transform(X)
