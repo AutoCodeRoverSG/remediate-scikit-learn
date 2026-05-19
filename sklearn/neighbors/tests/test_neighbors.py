@@ -106,7 +106,7 @@ def _parse_metric(metric: str, dtype=None):
     metric, yet DistanceMetric requires it for construction.
 
     """
-    if metric[:3] == "DM_":
+    if metric.startswith("DM_"):
         return DistanceMetric.get_metric(metric[3:], dtype=dtype)
     return metric
 
@@ -119,21 +119,21 @@ def _generate_test_params_for(metric: str, n_features: int):
 
     if metric == "minkowski":
         return [
-            dict(p=1.5),
-            dict(p=2),
-            dict(p=3),
-            dict(p=np.inf),
-            dict(p=3, w=rng.rand(n_features)),
+            {"p": 1.5},
+            {"p": 2},
+            {"p": 3},
+            {"p": np.inf},
+            {"p": 3, "w": rng.rand(n_features)},
         ]
 
     if metric == "seuclidean":
-        return [dict(V=rng.rand(n_features))]
+        return [{"V": rng.rand(n_features)}]
 
     if metric == "mahalanobis":
         A = rng.rand(n_features, n_features)
         # Make the matrix symmetric positive definite
         VI = A + A.T + 3 * np.eye(n_features)
-        return [dict(VI=VI)]
+        return [{"VI": VI}]
 
     # Case of: "euclidean", "manhattan", "chebyshev", "haversine" or any other metric.
     # In those cases, no kwargs are needed.
@@ -254,7 +254,7 @@ def test_unsupervised_kneighbors(
 @pytest.mark.parametrize("metric", COMMON_VALID_METRICS + DISTANCE_METRIC_OBJS)
 @pytest.mark.parametrize("n_neighbors, radius", [(1, 100), (50, 500), (100, 1000)])
 @pytest.mark.parametrize(
-    "NeighborsMixinSubclass",
+    "neighbors_mixin_subclass",
     [
         neighbors.KNeighborsClassifier,
         neighbors.KNeighborsRegressor,
@@ -270,19 +270,19 @@ def test_neigh_predictions_algorithm_agnosticity(
     metric,
     n_neighbors,
     radius,
-    NeighborsMixinSubclass,
+    neighbors_mixin_subclass,
 ):
     # The different algorithms must return identical predictions results
     # on their common metrics.
 
     metric = _parse_metric(metric, global_dtype)
     if isinstance(metric, DistanceMetric):
-        if "Classifier" in NeighborsMixinSubclass.__name__:
+        if "Classifier" in neighbors_mixin_subclass.__name__:
             pytest.skip(
                 "Metrics of type `DistanceMetric` are not yet supported for"
                 " classifiers."
             )
-        if "Radius" in NeighborsMixinSubclass.__name__:
+        if "Radius" in neighbors_mixin_subclass.__name__:
             pytest.skip(
                 "Metrics of type `DistanceMetric` are not yet supported for"
                 " radius-neighbor estimators."
@@ -298,7 +298,7 @@ def test_neigh_predictions_algorithm_agnosticity(
     predict_results = []
 
     parameter = (
-        n_neighbors if issubclass(NeighborsMixinSubclass, KNeighborsMixin) else radius
+        n_neighbors if issubclass(neighbors_mixin_subclass, KNeighborsMixin) else radius
     )
 
     for algorithm in ALGORITHMS:
@@ -308,7 +308,7 @@ def test_neigh_predictions_algorithm_agnosticity(
                     "Neither KDTree nor BallTree support 32-bit distance metric"
                     " objects."
                 )
-        neigh = NeighborsMixinSubclass(parameter, algorithm=algorithm, metric=metric)
+        neigh = neighbors_mixin_subclass(parameter, algorithm=algorithm, metric=metric)
         neigh.fit(X, y)
 
         predict_results.append(neigh.predict(query))
@@ -330,14 +330,14 @@ def test_neigh_predictions_algorithm_agnosticity(
 
 
 @pytest.mark.parametrize(
-    "KNeighborsMixinSubclass",
+    "kneighbors_mixin_subclass",
     [
         neighbors.KNeighborsClassifier,
         neighbors.KNeighborsRegressor,
         neighbors.NearestNeighbors,
     ],
 )
-def test_unsupervised_inputs(global_dtype, KNeighborsMixinSubclass):
+def test_unsupervised_inputs(global_dtype, kneighbors_mixin_subclass):
     # Test unsupervised inputs for neighbors estimators
 
     X = rng.random_sample((10, 3)).astype(global_dtype, copy=False)
@@ -347,7 +347,7 @@ def test_unsupervised_inputs(global_dtype, KNeighborsMixinSubclass):
 
     dist1, ind1 = nbrs_fid.kneighbors(X)
 
-    nbrs = KNeighborsMixinSubclass(n_neighbors=1)
+    nbrs = kneighbors_mixin_subclass(n_neighbors=1)
 
     for data in (nbrs_fid, neighbors.BallTree(X), neighbors.KDTree(X)):
         nbrs.fit(data, y)
