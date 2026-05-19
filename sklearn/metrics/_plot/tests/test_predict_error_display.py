@@ -160,10 +160,10 @@ def test_prediction_error_custom_artist(
     else:
         assert display.line_.get_linestyle() == "--"
         assert display.line_.get_color() == "black"
-        assert display.line_.get_alpha() == 0.7
+        assert display.line_.get_alpha() == pytest.approx(0.7)
 
     if scatter_kwargs is not None:
         assert_allclose(display.scatter_.get_facecolor(), [[0.0, 0.0, 1.0, 0.9]])
         assert_allclose(display.scatter_.get_edgecolor(), [[0.0, 0.0, 1.0, 0.9]])
     else:
-        assert display.scatter_.get_alpha() == 0.8
+        assert display.scatter_.get_alpha() == pytest.approx(0.8)

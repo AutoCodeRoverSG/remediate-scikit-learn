@@ -146,7 +146,7 @@ def silhouette_score(
     return float(np.mean(silhouette_samples(X, labels, metric=metric, **kwds)))
 
 
-def _silhouette_reduce(D_chunk, start, labels, label_freqs):
+def _silhouette_reduce(d_chunk, start, labels, label_freqs):
     """Accumulate silhouette statistics for vertical chunk of X.
 
     Parameters
@@ -161,28 +161,28 @@ def _silhouette_reduce(D_chunk, start, labels, label_freqs):
     label_freqs : array-like
         Distribution of cluster labels in ``labels``.
     """
-    n_chunk_samples = D_chunk.shape[0]
+    n_chunk_samples = d_chunk.shape[0]
     # accumulate distances from each sample to each cluster
     cluster_distances = np.zeros(
-        (n_chunk_samples, len(label_freqs)), dtype=D_chunk.dtype
+        (n_chunk_samples, len(label_freqs)), dtype=d_chunk.dtype
     )
 
-    if issparse(D_chunk):
-        if D_chunk.format != "csr":
+    if issparse(d_chunk):
+        if d_chunk.format != "csr":
             raise TypeError(
                 "Expected CSR matrix. Please pass sparse matrix in CSR format."
             )
         for i in range(n_chunk_samples):
-            indptr = D_chunk.indptr
-            indices = D_chunk.indices[indptr[i] : indptr[i + 1]]
-            sample_weights = D_chunk.data[indptr[i] : indptr[i + 1]]
+            indptr = d_chunk.indptr
+            indices = d_chunk.indices[indptr[i] : indptr[i + 1]]
+            sample_weights = d_chunk.data[indptr[i] : indptr[i + 1]]
             sample_labels = np.take(labels, indices)
             cluster_distances[i] += np.bincount(
                 sample_labels, weights=sample_weights, minlength=len(label_freqs)
             )
     else:
         for i in range(n_chunk_samples):
-            sample_weights = D_chunk[i]
+            sample_weights = d_chunk[i]
             sample_labels = labels
             cluster_distances[i] += np.bincount(
                 sample_labels, weights=sample_weights, minlength=len(label_freqs)
@@ -398,7 +398,7 @@ def calinski_harabasz_score(X, labels):
 
     return float(
         1.0
-        if intra_disp == 0.0
+        if intra_disp <= 0.0
         else extra_disp * (n_samples - n_labels) / (intra_disp * (n_labels - 1.0))
     )
 
