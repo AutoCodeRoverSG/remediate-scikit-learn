@@ -1218,7 +1218,7 @@ def test_sparse_input_convergence_warning(estimator, csr_container):
         (False, False),
     ],
 )
-def test_lassoCV_does_not_set_precompute(monkeypatch, precompute, inner_precompute):
+def test_lasso_cv_does_not_set_precompute(monkeypatch, precompute, inner_precompute):
     X, y, _, _ = build_dataset()
     calls = 0
 
@@ -1237,7 +1237,7 @@ def test_lassoCV_does_not_set_precompute(monkeypatch, precompute, inner_precompu
 
 def test_multi_task_lasso_cv_dtype():
     n_samples, n_features = 10, 3
-    rng = np.random.RandomState(42)
+    rng = np.random.default_rng(42)
     X = rng.binomial(1, 0.5, size=(n_samples, n_features))
     X = X.astype(int)  # make it explicit that X is int
     y = X[:, [0, 0]].copy()
@@ -1258,10 +1258,10 @@ def test_enet_sample_weight_consistency(
     Note that this test is stricter than the common test
     check_sample_weight_equivalence alone and also tests sparse X.
     """
-    rng = np.random.RandomState(global_random_seed)
+    rng = np.random.default_rng(global_random_seed)
     n_samples, n_features = 10, 5
-    X = rng.rand(n_samples, n_features)
-    y = rng.rand(n_samples)
+    X = rng.random((n_samples, n_features))
+    y = rng.random(n_samples)
 
     params = {
         "alpha": alpha,
@@ -1362,12 +1362,12 @@ def test_enet_cv_sample_weight_correctness(
     a specific CV group. Data points belonging to other CV groups stay
     unit-weighted / "unrepeated".
     """
-    rng = np.random.RandomState(global_random_seed)
+    rng = np.random.default_rng(global_random_seed)
     n_splits, n_samples_per_cv, n_features = 3, 10, 5
-    x_with_weights = rng.rand(n_splits * n_samples_per_cv, n_features)
-    beta = 10 * rng.rand(n_features)
+    x_with_weights = rng.random((n_splits * n_samples_per_cv, n_features))
+    beta = 10 * rng.random(n_features)
     beta[0:2] = 0
-    y_with_weights = x_with_weights @ beta + rng.rand(n_splits * n_samples_per_cv)
+    y_with_weights = x_with_weights @ beta + rng.random(n_splits * n_samples_per_cv)
     if issubclass(estimator, MultiTaskElasticNetCV):
         n_tasks = 3
         y_with_weights = np.tile(y_with_weights[:, None], reps=(1, n_tasks))
@@ -1381,7 +1381,7 @@ def test_enet_cv_sample_weight_correctness(
     # weights.
 
     sw = np.ones(y_with_weights.shape[0])
-    sw[:n_samples_per_cv] = rng.randint(0, 5, size=n_samples_per_cv)
+    sw[:n_samples_per_cv] = rng.integers(0, 5, size=n_samples_per_cv)
     groups_with_weights = np.concatenate(
         [
             np.full(n_samples_per_cv, 0),
@@ -1489,11 +1489,11 @@ def test_enet_cv_sample_weight_consistency(
     estimator, l1_ratio, fit_intercept, precompute, sparse_container
 ):
     """Test that the impact of sample_weight is consistent."""
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
     n_samples, n_features = 10, 5
 
-    X = rng.rand(n_samples, n_features)
-    y = X.sum(axis=1) + rng.rand(n_samples)
+    X = rng.random((n_samples, n_features))
+    y = X.sum(axis=1) + rng.random(n_samples)
     params = {
         "fit_intercept": fit_intercept,
         "precompute": precompute,
@@ -1607,11 +1607,11 @@ def test_linear_models_cv_fit_with_loky(estimator):
 def test_enet_sample_weight_does_not_overwrite_sample_weight(check_input):
     """Check that ElasticNet does not overwrite sample_weights."""
 
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
     n_samples, n_features = 10, 5
 
-    X = rng.rand(n_samples, n_features)
-    y = rng.rand(n_samples)
+    X = rng.random((n_samples, n_features))
+    y = rng.random(n_samples)
 
     sample_weight_1_25 = 1.25 * np.ones_like(y)
     sample_weight = sample_weight_1_25.copy()
@@ -1630,7 +1630,7 @@ def test_enet_ridge_consistency(ridge_alpha, precompute, n_targets, global_rando
     # Check that ElasticNet(l1_ratio=0) converges to the same solution as Ridge
     # provided that the value of alpha is adapted.
 
-    rng = np.random.RandomState(global_random_seed)
+    rng = np.random.default_rng(global_random_seed)
     n_samples = 300
     X, y = make_regression(
         n_samples=n_samples,
@@ -1638,7 +1638,7 @@ def test_enet_ridge_consistency(ridge_alpha, precompute, n_targets, global_rando
         n_targets=n_targets,
         effective_rank=10,
         n_informative=50,
-        random_state=rng,
+        random_state=global_random_seed,
     )
     sw = rng.uniform(low=0.01, high=10, size=X.shape[0])
 
@@ -1673,14 +1673,14 @@ def test_enet_ridge_consistency(ridge_alpha, precompute, n_targets, global_rando
 @pytest.mark.parametrize("effective_rank", [None, 10])
 def test_enet_ols_consistency(precompute, effective_rank, global_random_seed):
     """Test that ElasticNet(alpha=0) converges to the same solution as OLS."""
-    rng = np.random.RandomState(global_random_seed)
+    rng = np.random.default_rng(global_random_seed)
     n_samples = 300
     X, y = make_regression(
         n_samples=n_samples,
         n_features=100,
         effective_rank=effective_rank,
         n_informative=50,
-        random_state=rng,
+        random_state=global_random_seed,
     )
     sw = rng.uniform(low=0.01, high=10, size=X.shape[0])
 
@@ -1709,13 +1709,13 @@ def test_enet_ols_consistency(precompute, effective_rank, global_random_seed):
     ],
 )
 def test_sample_weight_invariance(estimator):
-    rng = np.random.RandomState(42)
+    rng = np.random.default_rng(42)
     X, y = make_regression(
         n_samples=100,
         n_features=300,
         effective_rank=10,
         n_informative=50,
-        random_state=rng,
+        random_state=42,
     )
     sw = rng.uniform(low=0.01, high=2, size=X.shape[0])
     params = {"tol": 1e-12}
