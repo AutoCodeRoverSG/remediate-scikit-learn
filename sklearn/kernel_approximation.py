@@ -199,42 +199,42 @@ class PolynomialCountSketch(
         check_is_fitted(self)
         X = validate_data(self, X, accept_sparse="csc", reset=False)
 
-        X_gamma = np.sqrt(self.gamma) * X
+        x_gamma = np.sqrt(self.gamma) * X
 
-        if sp.issparse(X_gamma) and self.coef0 != 0:
-            X_gamma = sp.hstack(
-                [X_gamma, np.sqrt(self.coef0) * np.ones((X_gamma.shape[0], 1))],
+        if sp.issparse(x_gamma) and self.coef0 != 0:
+            x_gamma = sp.hstack(
+                [x_gamma, np.sqrt(self.coef0) * np.ones((x_gamma.shape[0], 1))],
                 format="csc",
             )
 
-        elif not sp.issparse(X_gamma) and self.coef0 != 0:
-            X_gamma = np.hstack(
-                [X_gamma, np.sqrt(self.coef0) * np.ones((X_gamma.shape[0], 1))]
+        elif not sp.issparse(x_gamma) and self.coef0 != 0:
+            x_gamma = np.hstack(
+                [x_gamma, np.sqrt(self.coef0) * np.ones((x_gamma.shape[0], 1))]
             )
 
-        if X_gamma.shape[1] != self.indexHash_.shape[1]:
+        if x_gamma.shape[1] != self.indexHash_.shape[1]:
             raise ValueError(
                 "Number of features of test samples does not"
                 " match that of training samples."
             )
 
-        count_sketches = np.zeros((X_gamma.shape[0], self.degree, self.n_components))
+        count_sketches = np.zeros((x_gamma.shape[0], self.degree, self.n_components))
 
-        if sp.issparse(X_gamma):
-            for j in range(X_gamma.shape[1]):
+        if sp.issparse(x_gamma):
+            for j in range(x_gamma.shape[1]):
                 for d in range(self.degree):
-                    iHashIndex = self.indexHash_[d, j]
-                    iHashBit = self.bitHash_[d, j]
-                    count_sketches[:, d, iHashIndex] += (
-                        (iHashBit * X_gamma[:, [j]]).toarray().ravel()
+                    i_hash_index = self.indexHash_[d, j]
+                    i_hash_bit = self.bitHash_[d, j]
+                    count_sketches[:, d, i_hash_index] += (
+                        (i_hash_bit * x_gamma[:, [j]]).toarray().ravel()
                     )
 
         else:
-            for j in range(X_gamma.shape[1]):
+            for j in range(x_gamma.shape[1]):
                 for d in range(self.degree):
-                    iHashIndex = self.indexHash_[d, j]
-                    iHashBit = self.bitHash_[d, j]
-                    count_sketches[:, d, iHashIndex] += iHashBit * X_gamma[:, j]
+                    i_hash_index = self.indexHash_[d, j]
+                    i_hash_bit = self.bitHash_[d, j]
+                    count_sketches[:, d, i_hash_index] += i_hash_bit * x_gamma[:, j]
 
         # For each same, compute a count sketch of phi(x) using the polynomial
         # multiplication (via FFT) of p count sketches of x.
@@ -374,8 +374,8 @@ class RBFSampler(ClassNamePrefixFeaturesOutMixin, TransformerMixin, BaseEstimato
         sparse = sp.issparse(X)
         if self.gamma == "scale":
             # var = E[X^2] - E[X]^2 if sparse
-            X_var = (X.multiply(X)).mean() - (X.mean()) ** 2 if sparse else X.var()
-            self._gamma = 1.0 / (n_features * X_var) if X_var != 0 else 1.0
+            x_var = (X.multiply(X)).mean() - (X.mean()) ** 2 if sparse else X.var()
+            self._gamma = 1.0 / (n_features * x_var) if x_var != 0 else 1.0
         else:
             self._gamma = self.gamma
         self.random_weights_ = (2.0 * self._gamma) ** 0.5 * random_state.normal(
@@ -781,29 +781,29 @@ class AdditiveChi2Sampler(TransformerMixin, BaseEstimator):
 
     @staticmethod
     def _transform_dense(X, sample_steps, sample_interval):
-        non_zero = X != 0.0
-        X_nz = X[non_zero]
+        non_zero = X != 0
+        x_nz = X[non_zero]
 
-        X_step = np.zeros_like(X)
-        X_step[non_zero] = np.sqrt(X_nz * sample_interval)
+        x_step = np.zeros_like(X)
+        x_step[non_zero] = np.sqrt(x_nz * sample_interval)
 
-        X_new = [X_step]
+        x_new = [x_step]
 
-        log_step_nz = sample_interval * np.log(X_nz)
-        step_nz = 2 * X_nz * sample_interval
+        log_step_nz = sample_interval * np.log(x_nz)
+        step_nz = 2 * x_nz * sample_interval
 
         for j in range(1, sample_steps):
             factor_nz = np.sqrt(step_nz / np.cosh(np.pi * j * sample_interval))
 
-            X_step = np.zeros_like(X)
-            X_step[non_zero] = factor_nz * np.cos(j * log_step_nz)
-            X_new.append(X_step)
+            x_step = np.zeros_like(X)
+            x_step[non_zero] = factor_nz * np.cos(j * log_step_nz)
+            x_new.append(x_step)
 
-            X_step = np.zeros_like(X)
-            X_step[non_zero] = factor_nz * np.sin(j * log_step_nz)
-            X_new.append(X_step)
+            x_step = np.zeros_like(X)
+            x_step[non_zero] = factor_nz * np.sin(j * log_step_nz)
+            x_new.append(x_step)
 
-        return np.hstack(X_new)
+        return np.hstack(x_new)
 
     @staticmethod
     def _transform_sparse(X, sample_steps, sample_interval):
@@ -811,12 +811,12 @@ class AdditiveChi2Sampler(TransformerMixin, BaseEstimator):
         indptr = X.indptr.copy()
 
         data_step = np.sqrt(X.data * sample_interval)
-        X_step = _align_api_if_sparse(
+        x_step = _align_api_if_sparse(
             sp.csr_array(
                 (data_step, indices, indptr), shape=X.shape, dtype=X.dtype, copy=False
             )
         )
-        X_new = [X_step]
+        x_new = [x_step]
 
         log_step_nz = sample_interval * np.log(X.data)
         step_nz = 2 * X.data * sample_interval
@@ -825,7 +825,7 @@ class AdditiveChi2Sampler(TransformerMixin, BaseEstimator):
             factor_nz = np.sqrt(step_nz / np.cosh(np.pi * j * sample_interval))
 
             data_step = factor_nz * np.cos(j * log_step_nz)
-            X_step = _align_api_if_sparse(
+            x_step = _align_api_if_sparse(
                 sp.csr_array(
                     (data_step, indices, indptr),
                     shape=X.shape,
@@ -833,10 +833,10 @@ class AdditiveChi2Sampler(TransformerMixin, BaseEstimator):
                     copy=False,
                 )
             )
-            X_new.append(X_step)
+            x_new.append(x_step)
 
             data_step = factor_nz * np.sin(j * log_step_nz)
-            X_step = _align_api_if_sparse(
+            x_step = _align_api_if_sparse(
                 sp.csr_array(
                     (data_step, indices, indptr),
                     shape=X.shape,
@@ -844,9 +844,9 @@ class AdditiveChi2Sampler(TransformerMixin, BaseEstimator):
                     copy=False,
                 )
             )
-            X_new.append(X_step)
+            x_new.append(x_step)
 
-        return sp.hstack(X_new)
+        return sp.hstack(x_new)
 
     def __sklearn_tags__(self):
         tags = super().__sklearn_tags__()
