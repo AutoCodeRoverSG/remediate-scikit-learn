@@ -394,6 +394,7 @@ class NeighborhoodComponentsAnalysis(
         if self.warm_start and hasattr(self, "components_"):
             transformation = self.components_
         elif isinstance(init, np.ndarray):
+            # transformation is already set to init (a user-provided ndarray)
             pass
         else:
             n_samples, n_features = X.shape
@@ -491,10 +492,10 @@ class NeighborhoodComponentsAnalysis(
         t_funcall = time.time()
 
         transformation = transformation.reshape(-1, X.shape[1])
-        X_embedded = np.dot(X, transformation.T)  # (n_samples, n_components)
+        x_embedded = np.dot(X, transformation.T)  # (n_samples, n_components)
 
         # Compute softmax distances
-        p_ij = pairwise_distances(X_embedded, squared=True)
+        p_ij = pairwise_distances(x_embedded, squared=True)
         np.fill_diagonal(p_ij, np.inf)
         p_ij = softmax(-p_ij)  # (n_samples, n_samples)
 
@@ -507,7 +508,7 @@ class NeighborhoodComponentsAnalysis(
         weighted_p_ij = masked_p_ij - p_ij * p
         weighted_p_ij_sym = weighted_p_ij + weighted_p_ij.T
         np.fill_diagonal(weighted_p_ij_sym, -weighted_p_ij.sum(axis=0))
-        gradient = 2 * X_embedded.T.dot(weighted_p_ij_sym).dot(X)
+        gradient = 2 * x_embedded.T.dot(weighted_p_ij_sym).dot(X)
         # time complexity of the gradient: O(n_components x n_samples x (
         # n_samples + n_features))
 
