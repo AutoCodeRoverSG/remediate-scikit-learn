@@ -219,7 +219,7 @@ def test_correct_labelsize():
     dataset = datasets.load_iris()
     X = dataset.data
 
-    # n_labels = n_samples
+    
     y = np.arange(X.shape[0])
     err_msg = (
         r"Number of labels is %d\. Valid values are 2 "
@@ -228,7 +228,7 @@ def test_correct_labelsize():
     with pytest.raises(ValueError, match=err_msg):
         silhouette_score(X, y)
 
-    # n_labels = 1
+    
     y = np.zeros(X.shape[0])
     err_msg = (
         r"Number of labels is %d\. Valid values are 2 "
@@ -327,16 +327,16 @@ def test_silhouette_reduce(sparse_container):
 
 def assert_raises_on_only_one_label(func):
     """Assert message when there is only one label"""
-    rng = np.random.RandomState(seed=0)
+    rng = np.random.default_rng(seed=0)
     with pytest.raises(ValueError, match="Number of labels is"):
-        func(rng.rand(10, 2), np.zeros(10))
+        func(rng.random((10, 2)), np.zeros(10))
 
 
 def assert_raises_on_all_points_same_cluster(func):
     """Assert message when all point are in different clusters"""
-    rng = np.random.RandomState(seed=0)
+    rng = np.random.default_rng(seed=0)
     with pytest.raises(ValueError, match="Number of labels is"):
-        func(rng.rand(10, 2), np.arange(10))
+        func(rng.random((10, 2)), np.arange(10))
 
 
 def test_calinski_harabasz_score():
