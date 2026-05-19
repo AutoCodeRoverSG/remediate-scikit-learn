@@ -29,7 +29,7 @@ from sklearn.linear_model._ridge import (
     _solve_cholesky_kernel,
     _solve_lbfgs,
     _solve_svd,
-    _X_CenterStackOp,
+    _XCenterStackOp,
 )
 from sklearn.metrics import get_scorer, make_scorer, mean_squared_error
 from sklearn.model_selection import (
@@ -641,7 +641,7 @@ def test_X_CenterStackOp(n_col, csr_container):
     sqrt_sw = rng.randn(len(X))
     Y = rng.randn(11, *n_col)
     A = rng.randn(9, *n_col)
-    operator = _X_CenterStackOp(csr_container(X), X_m, sqrt_sw)
+    operator = _XCenterStackOp(csr_container(X), X_m, sqrt_sw)
     reference_operator = np.hstack([X - sqrt_sw[:, None] * X_m, sqrt_sw[:, None]])
     assert_allclose(reference_operator.dot(A), operator.dot(A))
     assert_allclose(reference_operator.T.dot(Y), operator.T.dot(Y))
