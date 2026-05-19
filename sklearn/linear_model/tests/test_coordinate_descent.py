@@ -1011,8 +1011,8 @@ def test_enet_copy_X_False_check_input_False():
 
 def test_overridden_gram_matrix():
     X, y, _, _ = build_dataset(n_samples=20, n_features=10)
-    Gram = X.T.dot(X)
-    clf = ElasticNet(selection="cyclic", tol=1e-8, precompute=Gram)
+    gram = X.T.dot(X)
+    clf = ElasticNet(selection="cyclic", tol=1e-8, precompute=gram)
     warning_message = (
         "Gram matrix was provided but X was centered"
         " to fit intercept: recomputing Gram matrix."
@@ -1036,7 +1036,7 @@ def test_lasso_non_float_y(model):
 
 def test_enet_float_precision():
     # Generate dataset
-    X, y, X_test, y_test = build_dataset(n_samples=20, n_features=10)
+    X, y, _, _ = build_dataset(n_samples=20, n_features=10)
     # Here we have a small number of iterations, and thus the
     # ElasticNet might not converge. This is to speed up tests
 
@@ -1061,11 +1061,11 @@ def test_enet_float_precision():
             assert clf.coef_.dtype == dtype
 
             # test precompute Gram array
-            Gram = X.T.dot(X)
+            gram = X.T.dot(X)
             clf_precompute = ElasticNet(
                 alpha=0.5,
                 max_iter=100,
-                precompute=Gram,
+                precompute=gram,
                 fit_intercept=fit_intercept,
             )
             ignore_warnings(clf_precompute.fit)(X, y)
@@ -1139,7 +1139,7 @@ def test_coef_shape_not_zero():
 
 
 def test_warm_start_multitask_lasso():
-    X, y, X_test, y_test = build_dataset()
+    X, y, _, _ = build_dataset()
     Y = np.c_[y, y]
     clf = MultiTaskLasso(alpha=0.1, max_iter=5, warm_start=True)
     ignore_warnings(clf.fit)(X, Y)
@@ -1153,8 +1153,8 @@ def test_warm_start_multitask_lasso():
 @pytest.mark.parametrize(
     "est, kwargs",
     [
-        (Lasso, dict(precompute=True)),
-        (Lasso, dict(precompute=False)),
+        (Lasso, {"precompute": True}),
+        (Lasso, {"precompute": False}),
     ],
 )
 def test_enet_coordinate_descent_raises_convergence(est, kwargs):
@@ -1263,12 +1263,12 @@ def test_enet_sample_weight_consistency(
     X = rng.rand(n_samples, n_features)
     y = rng.rand(n_samples)
 
-    params = dict(
-        alpha=alpha,
-        fit_intercept=fit_intercept,
-        tol=1e-6,
-        l1_ratio=0.5,
-    )
+    params = {
+        "alpha": alpha,
+        "fit_intercept": fit_intercept,
+        "tol": 1e-6,
+        "l1_ratio": 0.5,
+    }
 
     if issubclass(estimator, MultiTaskElasticNet):
         n_tasks = 3
@@ -1364,16 +1364,16 @@ def test_enet_cv_sample_weight_correctness(
     """
     rng = np.random.RandomState(global_random_seed)
     n_splits, n_samples_per_cv, n_features = 3, 10, 5
-    X_with_weights = rng.rand(n_splits * n_samples_per_cv, n_features)
+    x_with_weights = rng.rand(n_splits * n_samples_per_cv, n_features)
     beta = 10 * rng.rand(n_features)
     beta[0:2] = 0
-    y_with_weights = X_with_weights @ beta + rng.rand(n_splits * n_samples_per_cv)
+    y_with_weights = x_with_weights @ beta + rng.rand(n_splits * n_samples_per_cv)
     if issubclass(estimator, MultiTaskElasticNetCV):
         n_tasks = 3
         y_with_weights = np.tile(y_with_weights[:, None], reps=(1, n_tasks))
 
     if sparse_container is not None:
-        X_with_weights = sparse_container(X_with_weights)
+        x_with_weights = sparse_container(x_with_weights)
     params = dict(tol=1e-6)
 
     # Assign random integer weights only to the first cross-validation group.
@@ -1390,31 +1390,31 @@ def test_enet_cv_sample_weight_correctness(
         ]
     )
     splits_with_weights = list(
-        LeaveOneGroupOut().split(X_with_weights, groups=groups_with_weights)
+        LeaveOneGroupOut().split(x_with_weights, groups=groups_with_weights)
     )
     reg_with_weights = estimator(
         cv=splits_with_weights, fit_intercept=fit_intercept, **params
     )
 
-    reg_with_weights.fit(X_with_weights, y_with_weights, sample_weight=sw)
+    reg_with_weights.fit(x_with_weights, y_with_weights, sample_weight=sw)
     assert np.sum(reg_with_weights.coef_ != 0) > 1
 
     if sparse_container is not None:
-        X_with_weights = X_with_weights.toarray()
-    X_with_repetitions = np.repeat(X_with_weights, sw.astype(int), axis=0)
+        x_with_weights = x_with_weights.toarray()
+    x_with_repetitions = np.repeat(x_with_weights, sw.astype(int), axis=0)
     if sparse_container is not None:
-        X_with_repetitions = sparse_container(X_with_repetitions)
+        x_with_repetitions = sparse_container(x_with_repetitions)
 
     y_with_repetitions = np.repeat(y_with_weights, sw.astype(int), axis=0)
     groups_with_repetitions = np.repeat(groups_with_weights, sw.astype(int), axis=0)
 
     splits_with_repetitions = list(
-        LeaveOneGroupOut().split(X_with_repetitions, groups=groups_with_repetitions)
+        LeaveOneGroupOut().split(x_with_repetitions, groups=groups_with_repetitions)
     )
     reg_with_repetitions = estimator(
         cv=splits_with_repetitions, fit_intercept=fit_intercept, **params
     )
-    reg_with_repetitions.fit(X_with_repetitions, y_with_repetitions)
+    reg_with_repetitions.fit(x_with_repetitions, y_with_repetitions)
 
     # Check that the alpha selection process is the same:
     assert_allclose(reg_with_weights.mse_path_, reg_with_repetitions.mse_path_)
