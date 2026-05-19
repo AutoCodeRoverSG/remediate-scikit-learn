@@ -1158,8 +1158,8 @@ def test_kneighbors_classifier_sparse(
         knn.fit(sparsemat(X), y)
         epsilon = 1e-5 * (2 * rng.rand(1, n_features) - 1)
         for sparsev in SPARSE_TYPES + (np.asarray,):
-            X_eps = sparsev(X[:n_test_pts] + epsilon)
-            y_pred = knn.predict(X_eps)
+            x_eps = sparsev(X[:n_test_pts] + epsilon)
+            y_pred = knn.predict(x_eps)
             assert_array_equal(y_pred, y[:n_test_pts])
 
 
@@ -1310,13 +1310,13 @@ def test_radius_neighbors_regressor(
             radius=radius, weights=weights, algorithm="auto"
         )
         neigh.fit(X, y)
-        X_test_nan = np.full((1, n_features), -1.0)
+        x_test_nan = np.full((1, n_features), -1.0)
         empty_warning_msg = (
             "One or more samples have no neighbors "
             "within specified radius; predicting NaN."
         )
         with pytest.warns(UserWarning, match=re.escape(empty_warning_msg)):
-            pred = neigh.predict(X_test_nan)
+            pred = neigh.predict(x_test_nan)
         assert np.all(np.isnan(pred))
 
 
@@ -1393,13 +1393,13 @@ def test_kneighbors_regressor_sparse(
             X2 = sparsev(X)
             assert np.mean(knn.predict(X2).round() == y) > 0.95
 
-            X2_pre = sparsev(pairwise_distances(X, metric="euclidean"))
+            x2_pre = sparsev(pairwise_distances(X, metric="euclidean"))
             if sparsev in DOK_CONTAINERS + BSR_CONTAINERS:
                 msg = "not supported due to its handling of explicit zeros"
                 with pytest.raises(TypeError, match=msg):
-                    knn_pre.predict(X2_pre)
+                    knn_pre.predict(x2_pre)
             else:
-                assert np.mean(knn_pre.predict(X2_pre).round() == y) > 0.95
+                assert np.mean(knn_pre.predict(x2_pre).round() == y) > 0.95
 
 
 def test_neighbors_iris():
@@ -1482,11 +1482,11 @@ def test_kneighbors_graph_sparse(n_neighbors, mode, csr_container, seed=36):
     # for sparse input.
     rng = np.random.RandomState(seed)
     X = rng.randn(10, 10)
-    Xcsr = csr_container(X)
+    x_csr = csr_container(X)
 
     assert_allclose(
         neighbors.kneighbors_graph(X, n_neighbors, mode=mode).toarray(),
-        neighbors.kneighbors_graph(Xcsr, n_neighbors, mode=mode).toarray(),
+        neighbors.kneighbors_graph(x_csr, n_neighbors, mode=mode).toarray(),
     )
 
 
@@ -1511,16 +1511,16 @@ def test_radius_neighbors_graph_sparse(n_neighbors, mode, csr_container, seed=36
     # for sparse input.
     rng = np.random.RandomState(seed)
     X = rng.randn(10, 10)
-    Xcsr = csr_container(X)
+    x_csr = csr_container(X)
 
     assert_allclose(
         neighbors.radius_neighbors_graph(X, n_neighbors, mode=mode).toarray(),
-        neighbors.radius_neighbors_graph(Xcsr, n_neighbors, mode=mode).toarray(),
+        neighbors.radius_neighbors_graph(x_csr, n_neighbors, mode=mode).toarray(),
     )
 
 
 @pytest.mark.parametrize(
-    "Estimator",
+    "estimator",
     [
         neighbors.KNeighborsClassifier,
         neighbors.RadiusNeighborsClassifier,
@@ -1529,29 +1529,29 @@ def test_radius_neighbors_graph_sparse(n_neighbors, mode, csr_container, seed=36
     ],
 )
 @pytest.mark.parametrize("csr_container", CSR_CONTAINERS)
-def test_neighbors_validate_parameters(Estimator, csr_container):
+def test_neighbors_validate_parameters(estimator, csr_container):
     """Additional parameter validation for *Neighbors* estimators not covered by common
     validation."""
     X = rng.random((10, 2))
-    Xsparse = csr_container(X)
+    x_sparse = csr_container(X)
     X3 = rng.random((10, 3))
     y = np.ones(10)
 
-    nbrs = Estimator(algorithm="ball_tree", metric="haversine")
+    nbrs = estimator(algorithm="ball_tree", metric="haversine")
     msg = "instance is not fitted yet"
     with pytest.raises(ValueError, match=msg):
         nbrs.predict(X)
     msg = "Metric 'haversine' not valid for sparse input."
     with pytest.raises(ValueError, match=msg):
-        ignore_warnings(nbrs.fit(Xsparse, y))
+        ignore_warnings(nbrs.fit(x_sparse, y))
 
-    nbrs = Estimator(metric="haversine", algorithm="brute")
+    nbrs = estimator(metric="haversine", algorithm="brute")
     nbrs.fit(X3, y)
     msg = "Haversine distance only valid in 2 dimensions"
     with pytest.raises(ValueError, match=msg):
         nbrs.predict(X3)
 
-    nbrs = Estimator()
+    nbrs = estimator()
     msg = re.escape("Found array with 0 sample(s)")
     with pytest.raises(ValueError, match=msg):
         nbrs.fit(np.ones((0, 2)), np.ones(0))
@@ -1567,7 +1567,7 @@ def test_neighbors_validate_parameters(Estimator, csr_container):
 
 
 @pytest.mark.parametrize(
-    "Estimator",
+    "estimator",
     [
         neighbors.KNeighborsClassifier,
         neighbors.RadiusNeighborsClassifier,
@@ -1577,7 +1577,7 @@ def test_neighbors_validate_parameters(Estimator, csr_container):
 )
 @pytest.mark.parametrize("n_features", [2, 100])
 @pytest.mark.parametrize("algorithm", ["auto", "brute"])
-def test_neighbors_minkowski_semimetric_algo_warn(Estimator, n_features, algorithm):
+def test_neighbors_minkowski_semimetric_algo_warn(estimator, n_features, algorithm):
     """
     Validation of all classes extending NeighborsBase with
     Minkowski semi-metrics (i.e. when 0 < p < 1). That proper
@@ -1586,7 +1586,7 @@ def test_neighbors_minkowski_semimetric_algo_warn(Estimator, n_features, algorit
     X = rng.random((10, n_features))
     y = np.ones(10)
 
-    model = Estimator(p=0.1, algorithm=algorithm)
+    model = estimator(p=0.1, algorithm=algorithm)
     msg = (
         "Mind that for 0 < p < 1, Minkowski metrics are not distance"
         " metrics. Continuing the execution with `algorithm='brute'`."
@@ -1598,7 +1598,7 @@ def test_neighbors_minkowski_semimetric_algo_warn(Estimator, n_features, algorit
 
 
 @pytest.mark.parametrize(
-    "Estimator",
+    "estimator",
     [
         neighbors.KNeighborsClassifier,
         neighbors.RadiusNeighborsClassifier,
@@ -1608,12 +1608,12 @@ def test_neighbors_minkowski_semimetric_algo_warn(Estimator, n_features, algorit
 )
 @pytest.mark.parametrize("n_features", [2, 100])
 @pytest.mark.parametrize("algorithm", ["kd_tree", "ball_tree"])
-def test_neighbors_minkowski_semimetric_algo_error(Estimator, n_features, algorithm):
+def test_neighbors_minkowski_semimetric_algo_error(estimator, n_features, algorithm):
     """Check that we raise a proper error if `algorithm!='brute'` and `p<1`."""
     X = rng.random((10, 2))
     y = np.ones(10)
 
-    model = Estimator(algorithm=algorithm, p=0.1)
+    model = estimator(algorithm=algorithm, p=0.1)
     msg = (
         f'algorithm="{algorithm}" does not support 0 < p < 1 for '
         "the Minkowski metric. To resolve this problem either "
@@ -1645,7 +1645,7 @@ def test_nearest_neighbors_validate_params():
         set(neighbors.VALID_METRICS["ball_tree"]).intersection(
             neighbors.VALID_METRICS["brute"]
         )
-        - set(["pyfunc", *BOOL_METRICS])
+        - {"pyfunc", *BOOL_METRICS}
     )
     + DISTANCE_METRIC_OBJS,
 )
