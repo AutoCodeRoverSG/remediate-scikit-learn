@@ -128,9 +128,9 @@ def test_to_ascii():
     assert strip_accents_ascii(a) == expected
 
 
-@pytest.mark.parametrize("Vectorizer", (CountVectorizer, HashingVectorizer))
-def test_word_analyzer_unigrams(Vectorizer):
-    wa = Vectorizer(strip_accents="ascii").build_analyzer()
+@pytest.mark.parametrize("vectorizer", (CountVectorizer, HashingVectorizer))
+def test_word_analyzer_unigrams(vectorizer):
+    wa = vectorizer(strip_accents="ascii").build_analyzer()
     text = "J'ai mangé du kangourou  ce midi, c'était pas très bon."
     expected = [
         "ai",
@@ -150,13 +150,13 @@ def test_word_analyzer_unigrams(Vectorizer):
     expected = ["this", "is", "test", "really", "met", "harry", "yesterday"]
     assert wa(text) == expected
 
-    wa = Vectorizer(input="file").build_analyzer()
+    wa = vectorizer(input="file").build_analyzer()
     text = StringIO("This is a test with a file-like object!")
     expected = ["this", "is", "test", "with", "file", "like", "object"]
     assert wa(text) == expected
 
     # with custom preprocessor
-    wa = Vectorizer(preprocessor=uppercase).build_analyzer()
+    wa = vectorizer(preprocessor=uppercase).build_analyzer()
     text = "J'ai mangé du kangourou  ce midi,  c'était pas très bon."
     expected = [
         "AI",
@@ -173,7 +173,7 @@ def test_word_analyzer_unigrams(Vectorizer):
     assert wa(text) == expected
 
     # with custom tokenizer
-    wa = Vectorizer(tokenizer=split_tokenize, strip_accents="ascii").build_analyzer()
+    wa = vectorizer(tokenizer=split_tokenize, strip_accents="ascii").build_analyzer()
     text = "J'ai mangé du kangourou  ce midi, c'était pas très bon."
     expected = [
         "j'ai",
@@ -335,7 +335,8 @@ def test_countvectorizer_custom_vocabulary_pipeline():
         [
             ("count", CountVectorizer(vocabulary=what_we_like)),
             ("tfidf", TfidfTransformer()),
-        ]
+        ],
+        memory=None,
     )
     X = pipe.fit_transform(ALL_FOOD_DOCS)
     assert set(pipe.named_steps["count"].vocabulary_) == set(what_we_like)
@@ -692,7 +693,7 @@ def test_feature_names():
 
     # test for vocabulary learned from data
     X = cv.fit_transform(ALL_FOOD_DOCS)
-    n_samples, n_features = X.shape
+    _, n_features = X.shape
     assert len(cv.vocabulary_) == n_features
 
     feature_names = cv.get_feature_names_out()
@@ -753,12 +754,12 @@ def test_feature_names():
         assert idx == cv.vocabulary_.get(name)
 
 
-@pytest.mark.parametrize("Vectorizer", (CountVectorizer, TfidfVectorizer))
-def test_vectorizer_max_features(Vectorizer):
+@pytest.mark.parametrize("vectorizer_class", (CountVectorizer, TfidfVectorizer))
+def test_vectorizer_max_features(vectorizer_class):
     expected_vocabulary = {"burger", "beer", "salad", "pizza"}
 
     # test bounded number of extracted features
-    vectorizer = Vectorizer(max_df=0.6, max_features=4)
+    vectorizer = vectorizer_class(max_df=0.6, max_features=4)
     vectorizer.fit(ALL_FOOD_DOCS)
     assert set(vectorizer.vocabulary_) == expected_vocabulary
 
@@ -768,25 +769,25 @@ def test_count_vectorizer_max_features():
 
     cv_1 = CountVectorizer(max_features=1)
     cv_3 = CountVectorizer(max_features=3)
-    cv_None = CountVectorizer(max_features=None)
+    cv_none = CountVectorizer(max_features=None)
 
     counts_1 = cv_1.fit_transform(JUNK_FOOD_DOCS).sum(axis=0)
     counts_3 = cv_3.fit_transform(JUNK_FOOD_DOCS).sum(axis=0)
-    counts_None = cv_None.fit_transform(JUNK_FOOD_DOCS).sum(axis=0)
+    counts_none = cv_none.fit_transform(JUNK_FOOD_DOCS).sum(axis=0)
 
     features_1 = cv_1.get_feature_names_out()
     features_3 = cv_3.get_feature_names_out()
-    features_None = cv_None.get_feature_names_out()
+    features_none = cv_none.get_feature_names_out()
 
     # The most common feature is "the", with frequency 7.
     assert 7 == counts_1.max()
     assert 7 == counts_3.max()
-    assert 7 == counts_None.max()
+    assert 7 == counts_none.max()
 
     # The most common feature should be the same
     assert "the" == features_1[np.argmax(counts_1)]
     assert "the" == features_3[np.argmax(counts_3)]
-    assert "the" == features_None[np.argmax(counts_None)]
+    assert "the" == features_none[np.argmax(counts_none)]
 
 
 def test_vectorizer_max_df():
@@ -841,8 +842,8 @@ def test_count_binary_occurrences():
 
     # check the ability to change the dtype
     vect = CountVectorizer(analyzer="char", max_df=1.0, binary=True, dtype=np.float32)
-    X_sparse = vect.fit_transform(test_data)
-    assert X_sparse.dtype == np.float32
+    x_sparse = vect.fit_transform(test_data)
+    assert x_sparse.dtype == np.float32
 
 
 def test_hashed_binary_occurrences():
@@ -871,11 +872,11 @@ def test_hashed_binary_occurrences():
     assert X.dtype == np.float64
 
 
-@pytest.mark.parametrize("Vectorizer", (CountVectorizer, TfidfVectorizer))
-def test_vectorizer_inverse_transform(Vectorizer):
+@pytest.mark.parametrize("vectorizer_cls", (CountVectorizer, TfidfVectorizer))
+def test_vectorizer_inverse_transform(vectorizer_cls):
     # raw documents
     data = ALL_FOOD_DOCS
-    vectorizer = Vectorizer()
+    vectorizer = vectorizer_cls()
     transformed_data = vectorizer.fit_transform(data)
     inversed_data = vectorizer.inverse_transform(transformed_data)
     assert isinstance(inversed_data, list)
@@ -915,7 +916,9 @@ def test_count_vectorizer_pipeline_grid_selection():
         data, target, test_size=0.2, random_state=0
     )
 
-    pipeline = Pipeline([("vect", CountVectorizer()), ("svc", LinearSVC())])
+    pipeline = Pipeline(
+        [("vect", CountVectorizer()), ("svc", LinearSVC())], memory=None
+    )
 
     parameters = {
         "vect__ngram_range": [(1, 1), (1, 2)],
