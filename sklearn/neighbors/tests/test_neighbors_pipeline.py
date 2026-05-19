@@ -56,7 +56,7 @@ def test_spectral_embedding():
             [1.0, 0.0, 0.0, 5.0, 1.0],
         ]
     )
-    S, _ = make_blobs(
+    samples, _ = make_blobs(
         n_samples=n_samples, centers=centers, cluster_std=1.0, random_state=42
     )
 
@@ -71,8 +71,8 @@ def test_spectral_embedding():
     est_compact = SpectralEmbedding(
         n_neighbors=n_neighbors, affinity="nearest_neighbors", random_state=42
     )
-    st_compact = est_compact.fit_transform(S)
-    st_chain = est_chain.fit_transform(S)
+    st_compact = est_compact.fit_transform(samples)
+    st_chain = est_chain.fit_transform(samples)
     assert_array_almost_equal(st_chain, st_compact)
 
 
@@ -86,6 +86,7 @@ def test_dbscan():
     est_chain = make_pipeline(
         RadiusNeighborsTransformer(radius=radius, mode="distance"),
         DBSCAN(metric="precomputed", eps=radius),
+        memory=None,
     )
     est_compact = DBSCAN(eps=radius)
 
@@ -109,16 +110,17 @@ def test_isomap():
             n_neighbors=n_neighbors, algorithm=algorithm, mode="distance"
         ),
         Isomap(n_neighbors=n_neighbors, metric="precomputed"),
+        memory=None,
     )
     est_compact = Isomap(n_neighbors=n_neighbors, neighbors_algorithm=algorithm)
 
-    Xt_chain = est_chain.fit_transform(X)
-    Xt_compact = est_compact.fit_transform(X)
-    assert_array_almost_equal(Xt_chain, Xt_compact)
+    xt_chain = est_chain.fit_transform(X)
+    xt_compact = est_compact.fit_transform(X)
+    assert_array_almost_equal(xt_chain, xt_compact)
 
-    Xt_chain = est_chain.transform(X2)
-    Xt_compact = est_compact.transform(X2)
-    assert_array_almost_equal(Xt_chain, Xt_compact)
+    xt_chain = est_chain.transform(X2)
+    xt_compact = est_compact.transform(X2)
+    assert_array_almost_equal(xt_chain, xt_compact)
 
 
 def test_tsne():
@@ -144,6 +146,7 @@ def test_tsne():
                 random_state=42,
                 max_iter=max_iter,
             ),
+            memory=None,
         )
         est_compact = TSNE(
             init="random",
@@ -154,9 +157,9 @@ def test_tsne():
             random_state=42,
         )
 
-        Xt_chain = est_chain.fit_transform(X)
-        Xt_compact = est_compact.fit_transform(X)
-        assert_array_almost_equal(Xt_chain, Xt_compact)
+        xt_chain = est_chain.fit_transform(X)
+        xt_compact = est_compact.fit_transform(X)
+        assert_array_almost_equal(xt_chain, xt_compact)
 
 
 def test_lof_novelty_false():
@@ -175,6 +178,7 @@ def test_lof_novelty_false():
             novelty=False,
             contamination="auto",
         ),
+        memory=None,
     )
     est_compact = LocalOutlierFactor(
         n_neighbors=n_neighbors, novelty=False, contamination="auto"
@@ -202,6 +206,7 @@ def test_lof_novelty_true():
             novelty=True,
             contamination="auto",
         ),
+        memory=None,
     )
     est_compact = LocalOutlierFactor(
         n_neighbors=n_neighbors, novelty=True, contamination="auto"
