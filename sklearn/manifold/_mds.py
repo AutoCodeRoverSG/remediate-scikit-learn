@@ -371,7 +371,7 @@ def smacof(
 
     if hasattr(init, "__array__"):
         init = np.asarray(init).copy()
-        if not n_init == 1:
+        if n_init != 1:
             warnings.warn(
                 "Explicit initial positions passed: "
                 "performing only one init of the MDS instead of %d" % n_init
@@ -381,7 +381,7 @@ def smacof(
     best_pos, best_stress = None, None
 
     if effective_n_jobs(n_jobs) == 1:
-        for it in range(n_init):
+        for _ in range(n_init):
             pos, stress, n_iter_ = _smacof_single(
                 dissimilarities,
                 metric=metric,
@@ -419,10 +419,10 @@ def smacof(
         best_pos = positions[best]
         best_iter = n_iters[best]
 
+    result = (best_pos, best_stress)
     if return_n_iter:
-        return best_pos, best_stress, best_iter
-    else:
-        return best_pos, best_stress
+        result = result + (best_iter,)
+    return result
 
 
 # TODO(1.10): change default `init` to "classical_mds", see PR #32229

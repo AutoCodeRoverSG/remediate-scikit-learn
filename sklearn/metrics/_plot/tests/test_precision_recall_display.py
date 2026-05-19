@@ -58,8 +58,8 @@ def test_precision_recall_display_plotting(
     classifier.fit(X, y)
 
     if with_sample_weight:
-        rng = np.random.RandomState(42)
-        sample_weight = rng.randint(1, 4, size=(X.shape[0]))
+        rng = np.random.default_rng(42)
+        sample_weight = rng.integers(1, 4, size=(X.shape[0]))
     else:
         sample_weight = None
 
@@ -134,8 +134,8 @@ def test_precision_recall_display_from_cv_results_plotting(
     )
 
     if with_sample_weight:
-        rng = np.random.RandomState(42)
-        sample_weight = rng.randint(1, 4, size=(X.shape[0]))
+        rng = np.random.default_rng(42)
+        sample_weight = rng.integers(1, 4, size=(X.shape[0]))
     else:
         sample_weight = None
 

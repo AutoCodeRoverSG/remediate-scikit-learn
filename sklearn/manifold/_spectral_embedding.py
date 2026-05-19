@@ -56,7 +56,7 @@ def _graph_connected_component(graph, node_id):
         np.logical_or(connected_nodes, nodes_to_explore, out=connected_nodes)
         if last_num_component >= connected_nodes.sum():
             break
-        indices = np.where(nodes_to_explore)[0]
+        indices = np.nonzero(nodes_to_explore)[0]
         nodes_to_explore.fill(False)
         for i in indices:
             if sparse.issparse(graph):
@@ -303,6 +303,8 @@ def _spectral_embedding(
     drop_first=True,
 ):
     adjacency = check_symmetric(adjacency)
+
+    random_state = check_random_state(random_state)
 
     if eigen_solver == "amg":
         try:
@@ -665,7 +667,7 @@ class SpectralEmbedding(BaseEstimator):
         ]
         return tags
 
-    def _get_affinity_matrix(self, X, Y=None):
+    def _get_affinity_matrix(self, X):
         """Calculate the affinity matrix from data
         Parameters
         ----------
