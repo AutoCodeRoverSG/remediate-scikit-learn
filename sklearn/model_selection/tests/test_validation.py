@@ -425,18 +425,18 @@ def test_cross_validate(use_sparse: bool, csr_container):
     cv = KFold()
 
     # Regression
-    X_reg, y_reg = make_regression(n_samples=30, random_state=0)
+    x_reg, y_reg = make_regression(n_samples=30, random_state=0)
     reg = Ridge(random_state=0)
 
     # Classification
-    X_clf, y_clf = make_classification(n_samples=30, random_state=0)
+    x_clf, y_clf = make_classification(n_samples=30, random_state=0)
     clf = SVC(kernel="linear", random_state=0)
 
     if use_sparse:
-        X_reg = csr_container(X_reg)
-        X_clf = csr_container(X_clf)
+        x_reg = csr_container(x_reg)
+        x_clf = csr_container(x_clf)
 
-    for X, y, est in ((X_reg, y_reg, reg), (X_clf, y_clf, clf)):
+    for X, y, est in ((x_reg, y_reg, reg), (x_clf, y_clf, clf)):
         # It's okay to evaluate regression metrics on classification too
         mse_scorer = check_scoring(est, scoring="neg_mean_squared_error")
         r2_scorer = check_scoring(est, scoring="r2")
@@ -644,14 +644,16 @@ def test_cross_val_score_pandas():
         types.append((Series, DataFrame))
     except ImportError:
         pass
-    for TargetType, InputFeatureType in types:
+    for target_type, input_feature_type in types:
         # X dataframe, y series
         # 3 fold cross val is used so we need at least 3 samples per class
-        X_df, y_ser = InputFeatureType(X), TargetType(y2)
-        check_df = lambda x: isinstance(x, InputFeatureType)
-        check_series = lambda x: isinstance(x, TargetType)
-        clf = CheckingClassifier(check_X=check_df, check_y=check_series)
-        cross_val_score(clf, X_df, y_ser, cv=3)
+        x_df, y_ser = input_feature_type(X), target_type(y2)
+        check_df = lambda x, t=input_feature_type: isinstance(x, t)
+        check_series = lambda x, t=target_type: isinstance(x, t)
+        clf = CheckingClassifier(
+            check_X=check_df, check_y=check_series, random_state=0
+        )
+        cross_val_score(clf, x_df, y_ser, cv=3)
 
 
 def test_cross_val_score_mask():
@@ -706,10 +708,10 @@ def test_cross_val_score_fit_params(coo_container):
     n_samples = X.shape[0]
     n_classes = len(np.unique(y))
 
-    W_sparse = coo_container(
+    w_sparse = coo_container(
         (np.array([1]), (np.array([1]), np.array([0]))), shape=(15, 1)
     )
-    P_sparse = coo_container(np.eye(5))
+    p_sparse = coo_container(np.eye(5))
 
     DUMMY_INT = 42
     DUMMY_STR = "42"
@@ -726,8 +728,8 @@ def test_cross_val_score_fit_params(coo_container):
     fit_params = {
         "sample_weight": np.ones(n_samples),
         "class_prior": np.full(n_classes, 1.0 / n_classes),
-        "sparse_sample_weight": W_sparse,
-        "sparse_param": P_sparse,
+        "sparse_sample_weight": w_sparse,
+        "sparse_param": p_sparse,
         "dummy_int": DUMMY_INT,
         "dummy_str": DUMMY_STR,
         "dummy_obj": DUMMY_OBJ,
@@ -799,7 +801,7 @@ def test_cross_val_score_with_score_func_regression():
 def test_permutation_score(coo_container):
     iris = load_iris()
     X = iris.data
-    X_sparse = coo_container(X)
+    x_sparse = coo_container(X)
     y = iris.target
     svm = SVC(kernel="linear")
     cv = StratifiedKFold(2)
@@ -828,7 +830,7 @@ def test_permutation_score(coo_container):
     cv_sparse = StratifiedKFold(2)
     score_group, _, pvalue_group = permutation_test_score(
         svm_sparse,
-        X_sparse,
+        x_sparse,
         y,
         n_permutations=30,
         cv=cv_sparse,
@@ -854,7 +856,7 @@ def test_permutation_score(coo_container):
     # set random y
     y = np.mod(np.arange(len(y)), 3)
 
-    score, scores, pvalue = permutation_test_score(
+    score, _, pvalue = permutation_test_score(
         svm, X, y, n_permutations=30, cv=cv, scoring="accuracy"
     )
 
