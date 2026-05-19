@@ -134,10 +134,10 @@ def ols_ridge_dataset(global_random_seed, request):
         n_samples=n_samples, n_features=n_features, effective_rank=k, random_state=rng
     )
     X[:, -1] = 1  # last columns acts as intercept
-    U, s, Vt = linalg.svd(X)
+    U, s, vt = linalg.svd(X)
     assert np.all(s > 1e-3)  # to be sure
     U1, U2 = U[:, :k], U[:, k:]
-    Vt1, _ = Vt[:k, :], Vt[k:, :]
+    vt1, _ = vt[:k, :], vt[k:, :]
 
     if request.param == "long":
         # Add a term that vanishes in the product X'y
@@ -147,7 +147,7 @@ def ols_ridge_dataset(global_random_seed, request):
     else:
         y = rng.uniform(low=-10, high=10, size=n_samples)
         # w = X'(XX')^-1 y = V s^-1 U' y
-        coef_ols = Vt1.T @ np.diag(1 / s) @ U1.T @ y
+        coef_ols = vt1.T @ np.diag(1 / s) @ U1.T @ y
 
     # Add penalty alpha * ||coef||_2^2 for alpha=1 and solve via normal equations.
     # Note that the problem is well conditioned such that we get accurate results.
@@ -158,8 +158,8 @@ def ols_ridge_dataset(global_random_seed, request):
 
     # To be sure
     R_OLS = y - X @ coef_ols
-    R_Ridge = y - X @ coef_ridge
-    assert np.linalg.norm(R_OLS) < np.linalg.norm(R_Ridge)
+    r_ridge = y - X @ coef_ridge
+    assert np.linalg.norm(R_OLS) < np.linalg.norm(r_ridge)
 
     return X, y, coef_ols, coef_ridge
 
@@ -173,18 +173,18 @@ def test_ridge_regression(solver, fit_intercept, ols_ridge_dataset, global_rando
     """
     X, y, _, coef = ols_ridge_dataset
     alpha = 1.0  # because ols_ridge_dataset uses this.
-    params = dict(
-        alpha=alpha,
-        fit_intercept=True,
-        solver=solver,
-        tol=1e-15 if solver in ("sag", "saga") else 1e-10,
-        random_state=global_random_seed,
-    )
+    params = {
+        "alpha": alpha,
+        "fit_intercept": True,
+        "solver": solver,
+        "tol": 1e-15 if solver in ("sag", "saga") else 1e-10,
+        "random_state": global_random_seed,
+    }
 
     # Calculate residuals and R2.
     res_null = y - np.mean(y)
-    res_Ridge = y - X @ coef
-    R2_Ridge = 1 - np.sum(res_Ridge**2) / np.sum(res_null**2)
+    res_ridge = y - X @ coef
+    r2_ridge = 1 - np.sum(res_ridge**2) / np.sum(res_null**2)
 
     model = Ridge(**params)
     X = X[:, :-1]  # remove intercept
@@ -199,13 +199,13 @@ def test_ridge_regression(solver, fit_intercept, ols_ridge_dataset, global_rando
 
     assert model.intercept_ == pytest.approx(intercept)
     assert_allclose(model.coef_, coef)
-    assert model.score(X, y) == pytest.approx(R2_Ridge)
+    assert model.score(X, y) == pytest.approx(r2_ridge)
 
     # Same with sample_weight.
     model = Ridge(**params).fit(X, y, sample_weight=np.ones(X.shape[0]))
     assert model.intercept_ == pytest.approx(intercept)
     assert_allclose(model.coef_, coef)
-    assert model.score(X, y) == pytest.approx(R2_Ridge)
+    assert model.score(X, y) == pytest.approx(r2_ridge)
 
     assert model.solver_ == solver
 
@@ -307,13 +307,13 @@ def test_ridge_regression_unpenalized(
     X, y, coef, _ = ols_ridge_dataset
     n_samples, n_features = X.shape
     alpha = 0  # OLS
-    params = dict(
-        alpha=alpha,
-        fit_intercept=fit_intercept,
-        solver=solver,
-        tol=1e-15 if solver in ("sag", "saga") else 1e-10,
-        random_state=global_random_seed,
-    )
+    params = {
+        "alpha": alpha,
+        "fit_intercept": fit_intercept,
+        "solver": solver,
+        "tol": 1e-15 if solver in ("sag", "saga") else 1e-10,
+        "random_state": global_random_seed,
+    }
 
     model = Ridge(**params)
     # Note that cholesky might give a warning: "Singular matrix in solving dual
@@ -481,7 +481,7 @@ def test_ridge_regression_sample_weights(
         elif not fit_intercept and solver not in SPARSE_SOLVERS_WITHOUT_INTERCEPT:
             pytest.skip()
     X, y, _, coef = ols_ridge_dataset
-    n_samples, n_features = X.shape
+    n_samples = X.shape[0]
     sw = rng.uniform(low=0, high=1, size=n_samples)
 
     model = Ridge(
@@ -637,12 +637,12 @@ def test_ridge_individual_penalties():
 def test_X_CenterStackOp(n_col, csr_container):
     rng = np.random.RandomState(0)
     X = rng.randn(11, 8)
-    X_m = rng.randn(8)
+    x_m = rng.randn(8)
     sqrt_sw = rng.randn(len(X))
     Y = rng.randn(11, *n_col)
     A = rng.randn(9, *n_col)
-    operator = _XCenterStackOp(csr_container(X), X_m, sqrt_sw)
-    reference_operator = np.hstack([X - sqrt_sw[:, None] * X_m, sqrt_sw[:, None]])
+    operator = _XCenterStackOp(csr_container(X), x_m, sqrt_sw)
+    reference_operator = np.hstack([X - sqrt_sw[:, None] * x_m, sqrt_sw[:, None]])
     assert_allclose(reference_operator.dot(A), operator.dot(A))
     assert_allclose(reference_operator.T.dot(Y), operator.T.dot(Y))
 
@@ -658,12 +658,12 @@ def test_compute_gram(shape, uniform_weights, csr_container):
     else:
         sw = rng.chisquare(1, shape[0])
     sqrt_sw = np.sqrt(sw)
-    X_mean = np.average(X, axis=0, weights=sw)
-    X_centered = (X - X_mean) * sqrt_sw[:, None]
-    true_gram = X_centered.dot(X_centered.T)
-    X_sparse = csr_container(X * sqrt_sw[:, None])
+    x_mean = np.average(X, axis=0, weights=sw)
+    x_centered = (X - x_mean) * sqrt_sw[:, None]
+    true_gram = x_centered.dot(x_centered.T)
+    x_sparse = csr_container(X * sqrt_sw[:, None])
     gcv = _RidgeGCV(fit_intercept=True)
-    computed_gram = gcv._compute_gram(X_sparse, X_mean, sqrt_sw)
+    computed_gram = gcv._compute_gram(x_sparse, x_mean, sqrt_sw)
     assert_allclose(true_gram, computed_gram)
 
 
@@ -1127,7 +1127,7 @@ def test_ridge_gcv_sample_weights(
 @pytest.mark.parametrize("gcv_mode", ["auto", "svd", "eigen"])
 def test_check_gcv_mode_choice(sparse_container, X_shape, gcv_mode):
     n, p = X_shape
-    X, _ = make_regression(n_samples=n, n_features=p)
+    X, _ = make_regression(n_samples=n, n_features=p, random_state=0)
     sparse_X = sparse_container is not None
     if sparse_X:
         X = sparse_container(X)
@@ -1211,7 +1211,7 @@ def _test_ridge_cv(sparse_container):
     assert len(ridge_cv.coef_.shape) == 1
     assert type(ridge_cv.intercept_) is np.float64
 
-    cv = KFold(5)
+    cv = KFold(5, shuffle=True, random_state=0)
     ridge_cv.set_params(cv=cv)
     ridge_cv.fit(X, y_diabetes)
     ridge_cv.predict(X)
@@ -1354,7 +1354,7 @@ def _test_ridge_classifiers(sparse_container):
         y_pred = reg.predict(X)
         assert np.mean(y_iris == y_pred) > 0.79
 
-    cv = KFold(5)
+    cv = KFold(5, shuffle=True, random_state=0)
     reg = RidgeClassifierCV(cv=cv)
     reg.fit(X, y_iris)
     y_pred = reg.predict(X)
@@ -1362,7 +1362,7 @@ def _test_ridge_classifiers(sparse_container):
 
 
 @pytest.mark.parametrize("scoring", [None, "accuracy", _accuracy_callable])
-@pytest.mark.parametrize("cv", [None, KFold(5)])
+@pytest.mark.parametrize("cv", [None, KFold(5, shuffle=True, random_state=0)])
 @pytest.mark.parametrize("sparse_container", [None] + CSR_CONTAINERS)
 def test_ridge_classifier_with_scoring(sparse_container, scoring, cv):
     # non-regression test for #14672
@@ -1375,7 +1375,7 @@ def test_ridge_classifier_with_scoring(sparse_container, scoring, cv):
     clf.fit(X, y_iris).predict(X)
 
 
-@pytest.mark.parametrize("cv", [None, KFold(5)])
+@pytest.mark.parametrize("cv", [None, KFold(5, shuffle=True, random_state=0)])
 @pytest.mark.parametrize("sparse_container", [None] + CSR_CONTAINERS)
 def test_ridge_regression_custom_scoring(sparse_container, cv):
     # check that custom scoring is working as expected
@@ -1788,7 +1788,7 @@ def test_ridgecv_sample_weight():
         X = rng.randn(n_samples, n_features)
         sample_weight = 1.0 + rng.rand(n_samples)
 
-        cv = KFold(5)
+        cv = KFold(5, shuffle=True, random_state=0)
         ridgecv = RidgeCV(alphas=alphas, cv=cv)
         ridgecv.fit(X, y, sample_weight=sample_weight)
 
