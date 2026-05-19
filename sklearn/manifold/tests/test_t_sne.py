@@ -689,8 +689,8 @@ def test_reduction_to_one_component():
     random_state = check_random_state(0)
     tsne = TSNE(n_components=1, perplexity=4)
     X = random_state.randn(5, 2)
-    X_embedded = tsne.fit(X).embedding_
-    assert np.all(np.isfinite(X_embedded))
+    x_embedded = tsne.fit(X).embedding_
+    assert np.all(np.isfinite(x_embedded))
 
 
 @pytest.mark.parametrize("method", ["barnes_hut", "exact"])
@@ -710,8 +710,8 @@ def test_64bit(method, dt):
         max_iter=300,
         init="random",
     )
-    X_embedded = tsne.fit_transform(X)
-    effective_type = X_embedded.dtype
+    x_embedded = tsne.fit_transform(X)
+    effective_type = x_embedded.dtype
 
     # tsne cython code is only single precision, so the output will
     # always be single precision, irrespectively of the input dtype
@@ -754,7 +754,7 @@ def test_barnes_hut_angle():
         distances = pairwise_distances(data)
         params = random_state.randn(n_samples, n_components)
         P = _joint_probabilities(distances, perplexity, verbose=0)
-        kl_exact, grad_exact = _kl_divergence(
+        kl_exact, _ = _kl_divergence(
             params, P, degrees_of_freedom, n_samples, n_components
         )
 
@@ -764,10 +764,10 @@ def test_barnes_hut_angle():
             .fit(data)
             .kneighbors_graph(n_neighbors=n_neighbors, mode="distance")
         )
-        P_bh = _joint_probabilities_nn(distances_csr, perplexity, verbose=0)
-        kl_bh, grad_bh = _kl_divergence_bh(
+        p_bh = _joint_probabilities_nn(distances_csr, perplexity, verbose=0)
+        kl_bh, _ = _kl_divergence_bh(
             params,
-            P_bh,
+            p_bh,
             degrees_of_freedom,
             n_samples,
             n_components,
@@ -777,8 +777,8 @@ def test_barnes_hut_angle():
         )
 
         P = squareform(P)
-        P_bh = P_bh.toarray()
-        assert_array_almost_equal(P_bh, P, decimal=5)
+        p_bh = p_bh.toarray()
+        assert_array_almost_equal(p_bh, P, decimal=5)
         assert_almost_equal(kl_exact, kl_bh, decimal=3)
 
 
@@ -928,7 +928,7 @@ def test_bh_match_exact():
     random_state = check_random_state(0)
     n_features = 10
     X = random_state.randn(30, n_features).astype(np.float32)
-    X_embeddeds = {}
+    x_embeddeds = {}
     max_iter = {}
     for method in ["exact", "barnes_hut"]:
         tsne = TSNE(
@@ -943,11 +943,11 @@ def test_bh_match_exact():
         )
         # Kill the early_exaggeration
         tsne._EXPLORATION_MAX_ITER = 0
-        X_embeddeds[method] = tsne.fit_transform(X)
+        x_embeddeds[method] = tsne.fit_transform(X)
         max_iter[method] = tsne.n_iter_
 
     assert max_iter["exact"] == max_iter["barnes_hut"]
-    assert_allclose(X_embeddeds["exact"], X_embeddeds["barnes_hut"], rtol=1e-4)
+    assert_allclose(x_embeddeds["exact"], x_embeddeds["barnes_hut"], rtol=1e-4)
 
 
 def test_gradient_bh_multithread_match_sequential():
@@ -972,10 +972,10 @@ def test_gradient_bh_multithread_match_sequential():
         .fit(data)
         .kneighbors_graph(n_neighbors=n_neighbors, mode="distance")
     )
-    P_bh = _joint_probabilities_nn(distances_csr, perplexity, verbose=0)
+    p_bh = _joint_probabilities_nn(distances_csr, perplexity, verbose=0)
     kl_sequential, grad_sequential = _kl_divergence_bh(
         params,
-        P_bh,
+        p_bh,
         degrees_of_freedom,
         n_samples,
         n_components,
@@ -987,7 +987,7 @@ def test_gradient_bh_multithread_match_sequential():
     for num_threads in [2, 4]:
         kl_multithread, grad_multithread = _kl_divergence_bh(
             params,
-            P_bh,
+            p_bh,
             degrees_of_freedom,
             n_samples,
             n_components,
@@ -998,7 +998,7 @@ def test_gradient_bh_multithread_match_sequential():
         )
 
         assert_allclose(kl_multithread, kl_sequential, rtol=1e-6)
-        assert_allclose(grad_multithread, grad_multithread)
+        assert_allclose(grad_multithread, grad_sequential)
 
 
 @pytest.mark.parametrize(
@@ -1030,7 +1030,7 @@ def test_tsne_with_different_distance_metrics(metric, dist_func, method):
     n_components_original = 3
     n_components_embedding = 2
     X = random_state.randn(50, n_components_original).astype(np.float32)
-    X_transformed_tsne = TSNE(
+    x_transformed_tsne = TSNE(
         metric=metric,
         method=method,
         n_components=n_components_embedding,
@@ -1039,7 +1039,7 @@ def test_tsne_with_different_distance_metrics(metric, dist_func, method):
         init="random",
         learning_rate="auto",
     ).fit_transform(X)
-    X_transformed_tsne_precomputed = TSNE(
+    x_transformed_tsne_precomputed = TSNE(
         metric="precomputed",
         method=method,
         n_components=n_components_embedding,
@@ -1048,7 +1048,7 @@ def test_tsne_with_different_distance_metrics(metric, dist_func, method):
         init="random",
         learning_rate="auto",
     ).fit_transform(dist_func(X))
-    assert_array_equal(X_transformed_tsne, X_transformed_tsne_precomputed)
+    assert_array_equal(x_transformed_tsne, x_transformed_tsne_precomputed)
 
 
 @pytest.mark.parametrize("method", ["exact", "barnes_hut"])
