@@ -241,7 +241,7 @@ def test_min_max_resources(
     n_samples = 1000
     X, y = make_classification(n_samples=n_samples, random_state=0)
     param_grid = {"a": [1, 2], "b": [1, 2, 3]}
-    base_estimator = FastClassifier()
+    base_estimator = FastClassifier(random_state=0)
 
     sh = est(
         base_estimator,
@@ -264,7 +264,7 @@ def test_min_max_resources(
         assert sh.n_possible_iterations_ == sh.n_iterations_ == len(sh.n_resources_)
 
 
-@pytest.mark.parametrize("Est", (HalvingRandomSearchCV, HalvingGridSearchCV))
+@pytest.mark.parametrize("est", (HalvingRandomSearchCV, HalvingGridSearchCV))
 @pytest.mark.parametrize(
     "max_resources, n_iterations, n_possible_iterations",
     [
@@ -280,17 +280,17 @@ def test_min_max_resources(
         # possible
     ],
 )
-def test_n_iterations(Est, max_resources, n_iterations, n_possible_iterations):
+def test_n_iterations(est, max_resources, n_iterations, n_possible_iterations):
     # test the number of actual iterations that were run depending on
     # max_resources
 
     n_samples = 1024
     X, y = make_classification(n_samples=n_samples, random_state=1)
     param_grid = {"a": [1, 2], "b": list(range(10))}
-    base_estimator = FastClassifier()
+    base_estimator = FastClassifier(random_state=0)
     factor = 2
 
-    sh = Est(
+    sh = est(
         base_estimator,
         param_grid,
         cv=2,
@@ -298,7 +298,7 @@ def test_n_iterations(Est, max_resources, n_iterations, n_possible_iterations):
         max_resources=max_resources,
         min_resources=4,
     )
-    if Est is HalvingRandomSearchCV:
+    if est is HalvingRandomSearchCV:
         sh.set_params(n_candidates=20)  # same as for HalvingGridSearchCV
     sh.fit(X, y)
     assert sh.n_required_iterations_ == 5
@@ -306,17 +306,17 @@ def test_n_iterations(Est, max_resources, n_iterations, n_possible_iterations):
     assert sh.n_possible_iterations_ == n_possible_iterations
 
 
-@pytest.mark.parametrize("Est", (HalvingRandomSearchCV, HalvingGridSearchCV))
-def test_resource_parameter(Est):
+@pytest.mark.parametrize("est", (HalvingRandomSearchCV, HalvingGridSearchCV))
+def test_resource_parameter(est):
     # Test the resource parameter
 
     n_samples = 1000
     X, y = make_classification(n_samples=n_samples, random_state=0)
     param_grid = {"a": [1, 2], "b": list(range(10))}
-    base_estimator = FastClassifier()
-    sh = Est(base_estimator, param_grid, cv=2, resource="c", max_resources=10, factor=3)
+    base_estimator = FastClassifier(random_state=0)
+    sh = est(base_estimator, param_grid, cv=2, resource="c", max_resources=10, factor=3)
     sh.fit(X, y)
-    assert set(sh.n_resources_) == set([1, 3, 9])
+    assert set(sh.n_resources_) == {1, 3, 9}
     for r_i, params, param_c in zip(
         sh.cv_results_["n_resources"],
         sh.cv_results_["params"],
@@ -363,7 +363,7 @@ def test_random_search(max_resources, n_candidates, expected_n_candidates):
     n_samples = 1024
     X, y = make_classification(n_samples=n_samples, random_state=0)
     param_grid = {"a": norm, "b": norm}
-    base_estimator = FastClassifier()
+    base_estimator = FastClassifier(random_state=0)
     sh = HalvingRandomSearchCV(
         base_estimator,
         param_grid,
@@ -400,13 +400,13 @@ def test_random_search_discrete_distributions(
 
     n_samples = 1024
     X, y = make_classification(n_samples=n_samples, random_state=0)
-    base_estimator = FastClassifier()
+    base_estimator = FastClassifier(random_state=0)
     sh = HalvingRandomSearchCV(base_estimator, param_distributions, n_candidates=10)
     sh.fit(X, y)
     assert sh.n_candidates_[0] == expected_n_candidates
 
 
-@pytest.mark.parametrize("Est", (HalvingGridSearchCV, HalvingRandomSearchCV))
+@pytest.mark.parametrize("est", (HalvingGridSearchCV, HalvingRandomSearchCV))
 @pytest.mark.parametrize(
     "params, expected_error_message",
     [
@@ -430,12 +430,12 @@ def test_random_search_discrete_distributions(
         ({"cv": ShuffleSplit()}, "must yield consistent folds"),
     ],
 )
-def test_input_errors(Est, params, expected_error_message):
-    base_estimator = FastClassifier()
+def test_input_errors(est, params, expected_error_message):
+    base_estimator = FastClassifier(random_state=0)
     param_grid = {"a": [1]}
     X, y = make_classification(100)
 
-    sh = Est(base_estimator, param_grid, **params)
+    sh = est(base_estimator, param_grid, **params)
 
     with pytest.raises(ValueError, match=expected_error_message):
         sh.fit(X, y)
