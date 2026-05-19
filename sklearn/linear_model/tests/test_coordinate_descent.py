@@ -571,10 +571,10 @@ def test_uniform_targets():
     models_single_task = (enet, lasso)
     models_multi_task = (m_enet, m_lasso)
 
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
 
-    X_train = rng.random_sample(size=(10, 3))
-    X_test = rng.random_sample(size=(10, 3))
+    X_train = rng.random(size=(10, 3))
+    X_test = rng.random(size=(10, 3))
 
     y1 = np.empty(10)
     y2 = np.empty((10, 2))
@@ -636,7 +636,7 @@ def test_multi_task_lasso_vs_skglm():
 def test_multi_task_lasso_and_enet():
     X, y, _, _ = build_dataset()
     Y = np.c_[y, y]
-    # Y_test = np.c_[y_test, y_test]
+    
     clf = MultiTaskLasso(alpha=1, tol=1e-8).fit(X, Y)
     assert 0 < clf.dual_gap_ < 1e-5
     assert_array_almost_equal(clf.coef_[0], clf.coef_[1])
@@ -698,9 +698,9 @@ def test_enet_multitarget():
 
 
 def test_multioutput_enetcv_error():
-    rng = np.random.RandomState(0)
-    X = rng.randn(10, 2)
-    y = rng.randn(10, 2)
+    rng = np.random.default_rng(0)
+    X = rng.standard_normal((10, 2))
+    y = rng.standard_normal((10, 2))
     clf = ElasticNetCV()
     with pytest.raises(ValueError):
         clf.fit(X, y)
@@ -718,7 +718,7 @@ def test_multitask_enet_and_lasso_cv():
         alphas=10, eps=1e-3, max_iter=200, l1_ratio=[0.3, 0.5], tol=1e-3, cv=3
     )
     clf.fit(X, y)
-    assert 0.5 == clf.l1_ratio_
+    assert clf.l1_ratio_ == pytest.approx(0.5)
     assert (3, X.shape[1]) == clf.coef_.shape
     assert (3,) == clf.intercept_.shape
     assert (2, 10, 3) == clf.mse_path_.shape
@@ -781,7 +781,7 @@ def test_elasticnet_precompute_incorrect_gram():
     # error.
     X, y, _, _ = build_dataset()
 
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
 
     x_centered = X - np.average(X, axis=0)
     garbage = rng.standard_normal(X.shape)
@@ -798,7 +798,7 @@ def test_elasticnet_precompute_gram_weighted_samples():
     # internal computation using sample weights.
     X, y, _, _ = build_dataset()
 
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
     sample_weight = rng.lognormal(size=y.shape)
 
     w_norm = sample_weight * (y.shape / np.sum(sample_weight))
@@ -822,9 +822,9 @@ def test_elasticnet_precompute_gram():
     # Here: (X_c.T, X_c)[2, 3] is not equal to np.dot(X_c[:, 2], X_c[:, 3])
     # but within tolerance for np.float32
 
-    rng = np.random.RandomState(58)
+    rng = np.random.default_rng(58)
     X = rng.binomial(1, 0.25, (1000, 4)).astype(np.float32)
-    y = rng.rand(1000).astype(np.float32)
+    y = rng.random(1000).astype(np.float32)
 
     x_centered = X - np.average(X, axis=0)
     gram = np.dot(x_centered.T, x_centered)
@@ -986,7 +986,7 @@ def test_check_input_false():
 
 
 @pytest.mark.parametrize("check_input", [True, False])
-def test_enet_copy_X_True(check_input):
+def test_enet_copy_x_true(check_input):
     X, y, _, _ = build_dataset()
     X = X.copy(order="F")
 
@@ -997,7 +997,7 @@ def test_enet_copy_X_True(check_input):
     assert_array_equal(original_x, X)
 
 
-def test_enet_copy_X_False_check_input_False():
+def test_enet_copy_x_false_check_input_false():
     X, y, _, _ = build_dataset()
     X = X.copy(order="F")
 
@@ -1180,7 +1180,7 @@ def test_enet_coordinate_descent_raises_convergence(est, kwargs):
 
 
 def test_convergence_warnings():
-    random_state = np.random.RandomState(0)
+    random_state = np.random.default_rng(0)
     X = random_state.standard_normal((1000, 500))
     y = random_state.standard_normal((1000, 3))
 
