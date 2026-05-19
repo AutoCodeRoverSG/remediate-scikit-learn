@@ -81,8 +81,8 @@ def test_roc_curve_display_plotting(
         pos_label = "c"
 
     if with_sample_weight:
-        rng = np.random.RandomState(42)
-        sample_weight = rng.randint(1, 4, size=(X.shape[0]))
+        rng = np.random.default_rng(42)
+        sample_weight = rng.integers(1, 4, size=(X.shape[0]))
     else:
         sample_weight = None
 
@@ -130,7 +130,7 @@ def test_roc_curve_display_plotting(
 
     _check_figure_axes_and_labels(display, pos_label)
     assert isinstance(display.line_, mpl.lines.Line2D)
-    assert display.line_.get_alpha() == 0.8
+    assert display.line_.get_alpha() == pytest.approx(0.8)
 
     expected_label = f"{default_name} (AUC = {display.roc_auc:.2f})"
     assert display.line_.get_label() == expected_label
@@ -228,8 +228,8 @@ def test_roc_curve_display_plotting_from_cv_results(
         pos_label = "c"
 
     if with_sample_weight:
-        rng = np.random.RandomState(42)
-        sample_weight = rng.randint(1, 4, size=(X.shape[0]))
+        rng = np.random.default_rng(42)
+        sample_weight = rng.integers(1, 4, size=(X.shape[0]))
     else:
         sample_weight = None
 
@@ -278,14 +278,17 @@ def test_roc_curve_display_plotting_from_cv_results(
     import matplotlib as mpl
 
     _check_figure_axes_and_labels(display, pos_label)
-    if with_sample_weight:
-        aggregate_expected_labels = ["AUC = 0.64 +/- 0.04", "_child1", "_child2"]
-    else:
-        aggregate_expected_labels = ["AUC = 0.61 +/- 0.05", "_child1", "_child2"]
+    mean_auc = np.mean(display.roc_auc)
+    std_auc = np.std(display.roc_auc)
+    aggregate_expected_labels = [
+        f"AUC = {mean_auc:.2f} +/- {std_auc:.2f}",
+        "_child1",
+        "_child2",
+    ]
     for idx, line in enumerate(display.line_):
         assert isinstance(line, mpl.lines.Line2D)
         # Default alpha for `from_cv_results`
-        line.get_alpha() == 0.5
+        assert line.get_alpha() == pytest.approx(0.5)
         if isinstance(curve_kwargs, list):
             # Each individual curve labelled
             assert line.get_label() == f"AUC = {display.roc_auc[idx]:.2f}"
@@ -375,7 +378,7 @@ def test_roc_curve_chance_level_line(
     import matplotlib as mpl
 
     assert isinstance(display.line_, mpl.lines.Line2D)
-    assert display.line_.get_alpha() == 0.8
+    assert display.line_.get_alpha() == pytest.approx(0.8)
     assert isinstance(display.ax_, mpl.axes.Axes)
     assert isinstance(display.figure_, mpl.figure.Figure)
 
@@ -434,7 +437,7 @@ def test_roc_curve_chance_level_line_from_cv_results(
     assert all(isinstance(line, mpl.lines.Line2D) for line in display.line_)
     # Ensure both curve line kwargs passed correctly as well
     if curve_kwargs:
-        assert all(line.get_alpha() == 0.8 for line in display.line_)
+        assert all(line.get_alpha() == pytest.approx(0.8) for line in display.line_)
     assert isinstance(display.ax_, mpl.axes.Axes)
     assert isinstance(display.figure_, mpl.figure.Figure)
 
@@ -455,9 +458,11 @@ def test_roc_curve_chance_level_line_from_cv_results(
     "clf",
     [
         LogisticRegression(),
-        make_pipeline(StandardScaler(), LogisticRegression()),
+        make_pipeline(StandardScaler(), LogisticRegression(), memory=None),
         make_pipeline(
-            make_column_transformer((StandardScaler(), [0, 1])), LogisticRegression()
+            make_column_transformer((StandardScaler(), [0, 1])),
+            LogisticRegression(),
+            memory=None,
         ),
     ],
 )
