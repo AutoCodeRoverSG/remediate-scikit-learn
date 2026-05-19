@@ -550,7 +550,8 @@ def test_imputation_pipeline_grid_search():
         [
             ("imputer", SimpleImputer(missing_values=missing_values)),
             ("tree", tree.DecisionTreeRegressor(random_state=0)),
-        ]
+        ],
+        memory=None,
     )
 
     parameters = {"imputer__strategy": ["mean", "median", "most_frequent"]}
@@ -562,42 +563,42 @@ def test_imputation_pipeline_grid_search():
 
 def test_imputation_copy():
     # Test imputation with copy
-    X_orig = _sparse_random_matrix(5, 5, density=0.75, random_state=0)
+    x_orig = _sparse_random_matrix(5, 5, density=0.75, random_state=0)
 
     # copy=True, dense => copy
-    X = X_orig.copy().toarray()
+    X = x_orig.copy().toarray()
     imputer = SimpleImputer(missing_values=0, strategy="mean", copy=True)
-    Xt = imputer.fit(X).transform(X)
-    Xt[0, 0] = -1
-    assert not np.all(X == Xt)
+    x_t = imputer.fit(X).transform(X)
+    x_t[0, 0] = -1
+    assert not np.all(X == x_t)
 
     # copy=True, sparse csr => copy
-    X = X_orig.copy()
+    X = x_orig.copy()
     imputer = SimpleImputer(missing_values=X.data[0], strategy="mean", copy=True)
-    Xt = imputer.fit(X).transform(X)
-    Xt.data[0] = -1
-    assert not np.all(X.data == Xt.data)
+    x_t = imputer.fit(X).transform(X)
+    x_t.data[0] = -1
+    assert not np.all(X.data == x_t.data)
 
     # copy=False, dense => no copy
-    X = X_orig.copy().toarray()
+    X = x_orig.copy().toarray()
     imputer = SimpleImputer(missing_values=0, strategy="mean", copy=False)
-    Xt = imputer.fit(X).transform(X)
-    Xt[0, 0] = -1
-    assert_array_almost_equal(X, Xt)
+    x_t = imputer.fit(X).transform(X)
+    x_t[0, 0] = -1
+    assert_array_almost_equal(X, x_t)
 
     # copy=False, sparse csc => no copy
-    X = X_orig.copy().tocsc()
+    X = x_orig.copy().tocsc()
     imputer = SimpleImputer(missing_values=X.data[0], strategy="mean", copy=False)
-    Xt = imputer.fit(X).transform(X)
-    Xt.data[0] = -1
-    assert_array_almost_equal(X.data, Xt.data)
+    x_t = imputer.fit(X).transform(X)
+    x_t.data[0] = -1
+    assert_array_almost_equal(X.data, x_t.data)
 
     # copy=False, sparse csr => copy
-    X = X_orig.copy()
+    X = x_orig.copy()
     imputer = SimpleImputer(missing_values=X.data[0], strategy="mean", copy=False)
-    Xt = imputer.fit(X).transform(X)
-    Xt.data[0] = -1
-    assert not np.all(X.data == Xt.data)
+    x_t = imputer.fit(X).transform(X)
+    x_t.data[0] = -1
+    assert not np.all(X.data == x_t.data)
 
     # Note: If X is sparse and if missing_values=0, then a (dense) copy of X is
     # made, even if copy=False.
@@ -613,9 +614,9 @@ def test_iterative_imputer_zero_iters():
     X[missing_flag] = np.nan
 
     imputer = IterativeImputer(max_iter=0)
-    X_imputed = imputer.fit_transform(X)
+    x_imputed = imputer.fit_transform(X)
     # with max_iter=0, only initial imputation is performed
-    assert_allclose(X_imputed, imputer.initial_imputer_.transform(X))
+    assert_allclose(x_imputed, imputer.initial_imputer_.transform(X))
 
     # repeat but force n_iter_ to 0
     imputer = IterativeImputer(max_iter=5).fit(X)
@@ -646,8 +647,8 @@ def test_iterative_imputer_all_missing():
     d = 3
     X = np.zeros((n, d))
     imputer = IterativeImputer(missing_values=0, max_iter=1)
-    X_imputed = imputer.fit_transform(X)
-    assert_allclose(X_imputed, imputer.initial_imputer_.transform(X))
+    x_imputed = imputer.fit_transform(X)
+    assert_allclose(x_imputed, imputer.initial_imputer_.transform(X))
 
 
 @pytest.mark.parametrize(
@@ -728,10 +729,10 @@ def test_iterative_imputer_clip():
         missing_values=0, max_iter=1, min_value=0.1, max_value=0.2, random_state=rng
     )
 
-    Xt = imputer.fit_transform(X)
-    assert_allclose(np.min(Xt[X == 0]), 0.1)
-    assert_allclose(np.max(Xt[X == 0]), 0.2)
-    assert_allclose(Xt[X != 0], X[X != 0])
+    x_t = imputer.fit_transform(X)
+    assert_allclose(np.min(x_t[X == 0]), 0.1)
+    assert_allclose(np.max(x_t[X == 0]), 0.2)
+    assert_allclose(x_t[X != 0], X[X != 0])
 
 
 def test_iterative_imputer_clip_truncnorm():
@@ -752,10 +753,10 @@ def test_iterative_imputer_clip_truncnorm():
         imputation_order="random",
         random_state=rng,
     )
-    Xt = imputer.fit_transform(X)
-    assert_allclose(np.min(Xt[X == 0]), 0.1)
-    assert_allclose(np.max(Xt[X == 0]), 0.2)
-    assert_allclose(Xt[X != 0], X[X != 0])
+    x_imputed = imputer.fit_transform(X)
+    assert_allclose(np.min(x_imputed[X == 0]), 0.1)
+    assert_allclose(np.max(x_imputed[X == 0]), 0.2)
+    assert_allclose(x_imputed[X != 0], X[X != 0])
 
 
 def test_iterative_imputer_truncated_normal_posterior():
@@ -827,11 +828,11 @@ def test_iterative_imputer_transform_stochasticity():
     )
     imputer.fit(X)
 
-    X_fitted_1 = imputer.transform(X)
-    X_fitted_2 = imputer.transform(X)
+    x_fitted_1 = imputer.transform(X)
+    x_fitted_2 = imputer.transform(X)
 
     # sufficient to assert that the means are not the same
-    assert np.mean(X_fitted_1) != pytest.approx(np.mean(X_fitted_2))
+    assert np.mean(x_fitted_1) != pytest.approx(np.mean(x_fitted_2))
 
     # when sample_posterior=False, and n_nearest_features=None
     # and imputation_order is not random
@@ -856,12 +857,12 @@ def test_iterative_imputer_transform_stochasticity():
     imputer1.fit(X)
     imputer2.fit(X)
 
-    X_fitted_1a = imputer1.transform(X)
-    X_fitted_1b = imputer1.transform(X)
-    X_fitted_2 = imputer2.transform(X)
+    x_fitted_1a = imputer1.transform(X)
+    x_fitted_1b = imputer1.transform(X)
+    x_fitted_2 = imputer2.transform(X)
 
-    assert_allclose(X_fitted_1a, X_fitted_1b)
-    assert_allclose(X_fitted_1a, X_fitted_2)
+    assert_allclose(x_fitted_1a, x_fitted_1b)
+    assert_allclose(x_fitted_1a, x_fitted_2)
 
 
 def test_iterative_imputer_no_missing():
