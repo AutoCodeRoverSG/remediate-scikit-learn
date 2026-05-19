@@ -129,11 +129,12 @@ def test_kde_score(n_samples=100, n_features=3):
 
 
 def test_kde_sample_weights_error():
+    rng = np.random.default_rng(0)
     kde = KernelDensity()
     with pytest.raises(ValueError):
-        kde.fit(np.random.random((200, 10)), sample_weight=np.random.random((200, 10)))
+        kde.fit(rng.random((200, 10)), sample_weight=rng.random((200, 10)))
     with pytest.raises(ValueError):
-        kde.fit(np.random.random((200, 10)), sample_weight=-np.random.random(200))
+        kde.fit(rng.random((200, 10)), sample_weight=-rng.random(200))
 
 
 def test_kde_pipeline_gridsearch():
