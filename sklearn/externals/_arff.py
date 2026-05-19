@@ -168,6 +168,7 @@ _RE_QUOTE_CHARS = re.compile(r'["\'\\\ %,\000-\031]', re.UNICODE)
 _RE_ESCAPE_CHARS = re.compile(r'(?=["\'\\%])|[\000-\031]')
 _RE_SPARSE_LINE = re.compile(r'^\s*\{.*\}\s*$', re.UNICODE)
 _RE_NONTRIVIAL_DATA = re.compile('["\'{}\\s]', re.UNICODE)
+_FLOAT_ERROR_SUBSTRING = 'float: '
 
 ArffDenseDataType = Iterator[List]
 ArffSparseDataType = Tuple[List, ...]
@@ -481,7 +482,7 @@ class DenseGeneratorData:
                       for conversor, value
                       in zip(conversors, values)]
         except ValueError as exc:
-            if 'float: ' in str(exc):
+            if _FLOAT_ERROR_SUBSTRING in str(exc):
                 raise BadNumericalValue()
         return values
 
@@ -541,7 +542,7 @@ class COOData:
                 values = [value if value is None else conversors[key](value)
                           for key, value in zip(row_cols, values)]
             except ValueError as exc:
-                if 'float: ' in str(exc):
+                if _FLOAT_ERROR_SUBSTRING in str(exc):
                     raise BadNumericalValue()
                 raise
             except IndexError:
@@ -601,7 +602,7 @@ class LODGeneratorData:
                 yield {key: None if value is None else conversors[key](value)
                        for key, value in values.items()}
             except ValueError as exc:
-                if 'float: ' in str(exc):
+                if _FLOAT_ERROR_SUBSTRING in str(exc):
                     raise BadNumericalValue()
                 raise
             except IndexError:

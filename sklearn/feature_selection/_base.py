@@ -102,7 +102,7 @@ class SelectorMixin(TransformerMixin, metaclass=ABCMeta):
         # Preserve X when X is a dataframe and the output is configured to
         # be pandas.
         output_config_dense = _get_output_config("transform", estimator=self)["dense"]
-        preserve_X = output_config_dense != "default" and is_pandas_df(X)
+        preserve_x = output_config_dense != "default" and is_pandas_df(X)
 
         # note: we use get_tags instead of __sklearn_tags__ because this is a
         # public Mixin.
@@ -112,7 +112,7 @@ class SelectorMixin(TransformerMixin, metaclass=ABCMeta):
             dtype=None,
             accept_sparse="csr",
             ensure_all_finite=not get_tags(self).input_tags.allow_nan,
-            skip_check_array=preserve_X,
+            skip_check_array=preserve_x,
             reset=False,
         )
         return self._transform(X)
@@ -155,12 +155,12 @@ class SelectorMixin(TransformerMixin, metaclass=ABCMeta):
             it = self.inverse_transform(np.diff(X.indptr).reshape(1, -1))
             col_nonzeros = it.ravel()
             indptr = np.concatenate([[0], np.cumsum(col_nonzeros)])
-            Xt = csc_array(
+            x_transformed = csc_array(
                 (X.data, X.indices, indptr),
                 shape=(X.shape[0], len(indptr) - 1),
                 dtype=X.dtype,
             )
-            return _align_api_if_sparse(Xt)
+            return _align_api_if_sparse(x_transformed)
 
         support = self.get_support()
         X = check_array(X, dtype=None)
@@ -169,9 +169,9 @@ class SelectorMixin(TransformerMixin, metaclass=ABCMeta):
 
         if X.ndim == 1:
             X = X[None, :]
-        Xt = np.zeros((X.shape[0], support.size), dtype=X.dtype)
-        Xt[:, support] = X
-        return Xt
+        x_transformed = np.zeros((X.shape[0], support.size), dtype=X.dtype)
+        x_transformed[:, support] = X
+        return x_transformed
 
     def get_feature_names_out(self, input_features=None):
         """Mask feature names according to selected features.

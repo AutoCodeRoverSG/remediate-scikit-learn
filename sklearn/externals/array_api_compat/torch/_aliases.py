@@ -743,7 +743,7 @@ def unique_inverse(x: Array) -> UniqueInverseResult:
     return UniqueInverseResult(values, inverse)
 
 def unique_values(x: Array) -> Array:
-    return torch.unique(x)
+    return torch.unique(x, dim=None)
 
 def matmul(x1: Array, x2: Array, /, **kwargs: object) -> Array:
     # torch.matmul doesn't type promote (but differently from _fix_promotion)
