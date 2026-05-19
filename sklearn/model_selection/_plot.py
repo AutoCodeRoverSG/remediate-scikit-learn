@@ -290,18 +290,7 @@ class LearningCurveDisplay(_BaseCurveDisplay):
         X,
         y,
         *,
-        groups=None,
-        train_sizes=np.linspace(0.1, 1.0, 5),
-        cv=None,
         scoring=None,
-        exploit_incremental_learning=False,
-        n_jobs=None,
-        pre_dispatch="all",
-        verbose=0,
-        shuffle=False,
-        random_state=None,
-        error_score=np.nan,
-        fit_params=None,
         ax=None,
         negate_score=False,
         score_name=None,
@@ -310,6 +299,7 @@ class LearningCurveDisplay(_BaseCurveDisplay):
         line_kw=None,
         fill_between_kw=None,
         errorbar_kw=None,
+        **learning_curve_kw,
     ):
         """Create a learning curve display from an estimator.
 
@@ -472,23 +462,17 @@ class LearningCurveDisplay(_BaseCurveDisplay):
 
         score_name = _validate_score_name(score_name, scoring, negate_score)
 
+        # Extract fit_params from learning_curve_kw to pass as 'params'
+        fit_params = learning_curve_kw.pop("fit_params", None)
+
         train_sizes, train_scores, test_scores = learning_curve(
             estimator,
             X,
             y,
-            groups=groups,
-            train_sizes=train_sizes,
-            cv=cv,
             scoring=scoring,
-            exploit_incremental_learning=exploit_incremental_learning,
-            n_jobs=n_jobs,
-            pre_dispatch=pre_dispatch,
-            verbose=verbose,
-            shuffle=shuffle,
-            random_state=random_state,
-            error_score=error_score,
             return_times=False,
             params=fit_params,
+            **learning_curve_kw,
         )
 
         viz = cls(
@@ -693,15 +677,7 @@ class ValidationCurveDisplay(_BaseCurveDisplay):
         pre_dispatch="all",
         verbose=0,
         error_score=np.nan,
-        fit_params=None,
-        ax=None,
-        negate_score=False,
-        score_name=None,
-        score_type="both",
-        std_display_style="fill_between",
-        line_kw=None,
-        fill_between_kw=None,
-        errorbar_kw=None,
+        **kwargs,
     ):
         """Create a validation curve display from an estimator.
 
@@ -848,6 +824,16 @@ class ValidationCurveDisplay(_BaseCurveDisplay):
         >>> plt.show()
         """
         check_matplotlib_support(f"{cls.__name__}.from_estimator")
+
+        fit_params = kwargs.pop("fit_params", None)
+        ax = kwargs.pop("ax", None)
+        negate_score = kwargs.pop("negate_score", False)
+        score_name = kwargs.pop("score_name", None)
+        score_type = kwargs.pop("score_type", "both")
+        std_display_style = kwargs.pop("std_display_style", "fill_between")
+        line_kw = kwargs.pop("line_kw", None)
+        fill_between_kw = kwargs.pop("fill_between_kw", None)
+        errorbar_kw = kwargs.pop("errorbar_kw", None)
 
         score_name = _validate_score_name(score_name, scoring, negate_score)
 
