@@ -17,7 +17,7 @@ from sklearn.utils.fixes import CSR_CONTAINERS
 
 
 def make_regression_with_outliers(n_samples=50, n_features=20):
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
     # Generate data with outliers by replacing 10% of the samples with noise.
     X, y = make_regression(
         n_samples=n_samples, n_features=n_features, random_state=0, noise=0.05
@@ -25,7 +25,7 @@ def make_regression_with_outliers(n_samples=50, n_features=20):
 
     # Replace 10% of the sample with noise.
     num_noise = int(0.1 * n_samples)
-    random_samples = rng.randint(0, n_samples, num_noise)
+    random_samples = rng.integers(0, n_samples, num_noise)
     X[random_samples, :] = 2.0 * rng.normal(0, 1, (num_noise, X.shape[1]))
     return X, y
 
@@ -50,9 +50,9 @@ def test_huber_max_iter():
 
 def test_huber_gradient():
     # Test that the gradient calculated by _huber_loss_and_gradient is correct
-    rng = np.random.RandomState(1)
+    rng = np.random.default_rng(1)
     X, y = make_regression_with_outliers()
-    sample_weight = rng.randint(1, 3, (y.shape[0]))
+    sample_weight = rng.integers(1, 3, (y.shape[0]))
 
     def loss_func(x, *args):
         return _huber_loss_and_gradient(x, *args)[0]
@@ -64,7 +64,7 @@ def test_huber_gradient():
     for _ in range(5):
         # Check for both fit_intercept and otherwise.
         for n_features in [X.shape[1] + 1, X.shape[1] + 2]:
-            w = rng.randn(n_features)
+            w = rng.standard_normal(n_features)
             w[-1] = np.abs(w[-1])
             grad_same = optimize.check_grad(
                 loss_func, grad_func, w, X, y, 0.01, 0.1, sample_weight
@@ -107,9 +107,9 @@ def test_huber_sample_weights(csr_container):
     assert_array_almost_equal(huber.intercept_ / scale, huber_intercept / scale)
 
     # Test sparse implementation with sample weights.
-    X_csr = csr_container(X)
+    x_csr = csr_container(X)
     huber_sparse = HuberRegressor()
-    huber_sparse.fit(X_csr, y, sample_weight=sample_weight)
+    huber_sparse.fit(x_csr, y, sample_weight=sample_weight)
     assert_array_almost_equal(huber_sparse.coef_ / scale, huber_coef / scale)
 
 
@@ -119,9 +119,9 @@ def test_huber_sparse(csr_container):
     huber = HuberRegressor(alpha=0.1)
     huber.fit(X, y)
 
-    X_csr = csr_container(X)
+    x_csr = csr_container(X)
     huber_sparse = HuberRegressor(alpha=0.1)
-    huber_sparse.fit(X_csr, y)
+    huber_sparse.fit(x_csr, y)
     assert_array_almost_equal(huber_sparse.coef_, huber.coef_)
     assert_array_equal(huber.outliers_, huber_sparse.outliers_)
 
@@ -152,9 +152,9 @@ def test_huber_and_sgd_same_results():
     # so that the scale parameter is optimized to 1.0
     huber = HuberRegressor(fit_intercept=False, alpha=0.0, epsilon=1.35)
     huber.fit(X, y)
-    X_scale = X / huber.scale_
+    x_scale = X / huber.scale_
     y_scale = y / huber.scale_
-    huber.fit(X_scale, y_scale)
+    huber.fit(x_scale, y_scale)
     assert_almost_equal(huber.scale_, 1.0, 3)
 
     sgdreg = SGDRegressor(
@@ -167,7 +167,7 @@ def test_huber_and_sgd_same_results():
         epsilon=1.35,
         tol=None,
     )
-    sgdreg.fit(X_scale, y_scale)
+    sgdreg.fit(x_scale, y_scale)
     assert_array_almost_equal(huber.coef_, sgdreg.coef_, 1)
 
 
@@ -212,5 +212,5 @@ def test_huber_better_r2_score():
 def test_huber_bool():
     # Test that it does not crash with bool data
     X, y = make_regression(n_samples=200, n_features=2, noise=4.0, random_state=0)
-    X_bool = X > 0
-    HuberRegressor().fit(X_bool, y)
+    x_bool = X > 0
+    HuberRegressor().fit(x_bool, y)
