@@ -49,17 +49,16 @@ SOLVE_TRIANGULAR_ARGS = {"check_finite": False}
     {
         "X": [np.ndarray, None],
         "y": [np.ndarray, None],
-        "Xy": [np.ndarray, None],
-        "Gram": [StrOptions({"auto"}), "boolean", np.ndarray, None],
+        "xy": [np.ndarray, None],
+        "gram": [StrOptions({"auto"}), "boolean", np.ndarray, None],
         "max_iter": [Interval(Integral, 0, None, closed="left")],
         "alpha_min": [Interval(Real, 0, None, closed="left")],
         "method": [StrOptions({"lar", "lasso"})],
-        "copy_X": ["boolean"],
+        "copy_x": ["boolean"],
         "eps": [Interval(Real, 0, None, closed="neither"), None],
-        "copy_Gram": ["boolean"],
+        "copy_gram": ["boolean"],
         "verbose": ["verbose"],
         "return_path": ["boolean"],
-        "return_n_iter": ["boolean"],
         "positive": ["boolean"],
     },
     prefer_skip_nested_validation=True,
@@ -67,18 +66,17 @@ SOLVE_TRIANGULAR_ARGS = {"check_finite": False}
 def lars_path(
     X,
     y,
-    Xy=None,
+    xy=None,
     *,
-    Gram=None,
+    gram=None,
     max_iter=500,
     alpha_min=0,
     method="lar",
-    copy_X=True,
+    copy_x=True,
     eps=np.finfo(float).eps,
-    copy_Gram=True,
+    copy_gram=True,
     verbose=0,
     return_path=True,
-    return_n_iter=False,
     positive=False,
 ):
     """Compute Least Angle Regression or Lasso path using the LARS algorithm.
@@ -212,7 +210,7 @@ def lars_path(
            [ 0.     , 46.96, 97.99],
            [ 0.     ,  0.     , 45.70]])
     """
-    if X is None and Gram is not None:
+    if X is None and gram is not None:
         raise ValueError(
             "X cannot be None if Gram is not None"
             "Use lars_path_gram to avoid passing X and y."
@@ -220,19 +218,21 @@ def lars_path(
     return _lars_path_solver(
         X=X,
         y=y,
-        Xy=Xy,
-        Gram=Gram,
+        Xy=xy,
+        Gram=gram,
         n_samples=None,
         max_iter=max_iter,
         alpha_min=alpha_min,
         method=method,
-        copy_X=copy_X,
         eps=eps,
-        copy_Gram=copy_Gram,
         verbose=verbose,
-        return_path=return_path,
-        return_n_iter=return_n_iter,
         positive=positive,
+        options={
+            "copy_X": copy_x,
+            "copy_Gram": copy_gram,
+            "return_path": return_path,
+            "return_n_iter": True,
+        },
     )
 
 
@@ -255,16 +255,16 @@ def lars_path(
     prefer_skip_nested_validation=True,
 )
 def lars_path_gram(
-    Xy,
-    Gram,
+    Xy,  # NOSONAR
+    Gram,  # NOSONAR
     *,
     n_samples,
     max_iter=500,
     alpha_min=0,
     method="lar",
-    copy_X=True,
+    copy_X=True,  # NOSONAR
     eps=np.finfo(float).eps,
-    copy_Gram=True,
+    copy_Gram=True,  # NOSONAR
     verbose=0,
     return_path=True,
     return_n_iter=False,
@@ -402,13 +402,15 @@ def lars_path_gram(
         max_iter=max_iter,
         alpha_min=alpha_min,
         method=method,
-        copy_X=copy_X,
         eps=eps,
-        copy_Gram=copy_Gram,
         verbose=verbose,
-        return_path=return_path,
-        return_n_iter=return_n_iter,
         positive=positive,
+        options={
+            "copy_X": copy_X,
+            "copy_Gram": copy_Gram,
+            "return_path": return_path,
+            "return_n_iter": return_n_iter,
+        },
     )
 
 
@@ -421,13 +423,10 @@ def _lars_path_solver(
     max_iter=500,
     alpha_min=0,
     method="lar",
-    copy_X=True,
     eps=np.finfo(float).eps,
-    copy_Gram=True,
     verbose=0,
-    return_path=True,
-    return_n_iter=False,
     positive=False,
+    options=None,
 ):
     """Compute Least Angle Regression or Lasso path using LARS algorithm [1]
 
@@ -544,6 +543,13 @@ def _lars_path_solver(
            <https://en.wikipedia.org/wiki/Lasso_(statistics)>`_
 
     """
+    if options is None:
+        options = {}
+    copy_X = options.get("copy_X", True)
+    copy_Gram = options.get("copy_Gram", True)
+    return_path = options.get("return_path", True)
+    return_n_iter = options.get("return_n_iter", False)
+
     if method == "lar" and positive:
         raise ValueError("Positive constraint not supported for 'lar' coding method.")
 
@@ -1107,17 +1113,16 @@ class Lars(RegressorMixin, MultiOutputLinearModel):
                 alphas, active, coef_path, n_iter_ = lars_path(
                     X,
                     y[:, k],
-                    Gram=Gram,
-                    Xy=this_Xy,
-                    copy_X=self.copy_X,
-                    copy_Gram=True,
+                    gram=Gram,
+                    xy=this_Xy,
+                    copy_x=self.copy_X,
+                    copy_gram=True,
                     alpha_min=alpha,
                     method=self.method,
                     verbose=max(0, self.verbose - 1),
                     max_iter=max_iter,
                     eps=self.eps,
                     return_path=True,
-                    return_n_iter=True,
                     positive=self.positive,
                 )
                 self.alphas_.append(alphas)
