@@ -77,16 +77,16 @@ def check_clusterings(labels_true, labels_pred):
     return labels_true, labels_pred
 
 
-def _generalized_average(U, V, average_method):
+def _generalized_average(a, b, average_method):
     """Return a particular mean of two numbers."""
     if average_method == "min":
-        return min(U, V)
+        return min(a, b)
     elif average_method == "geometric":
-        return np.sqrt(U * V)
+        return np.sqrt(a * b)
     elif average_method == "arithmetic":
-        return np.mean([U, V])
+        return np.mean([a, b])
     elif average_method == "max":
-        return max(U, V)
+        return max(a, b)
     else:
         raise ValueError(
             "'average_method' must be 'min', 'geometric', 'arithmetic', or 'max'"
@@ -541,16 +541,16 @@ def homogeneity_completeness_v_measure(labels_true, labels_pred, *, beta=1.0):
     if len(labels_true) == 0:
         return 1.0, 1.0, 1.0
 
-    entropy_C = _entropy(labels_true)
-    entropy_K = _entropy(labels_pred)
+    entropy_c = _entropy(labels_true)
+    entropy_k = _entropy(labels_pred)
 
     contingency = contingency_matrix(labels_true, labels_pred, sparse=True)
     MI = mutual_info_score(None, None, contingency=contingency)
 
-    homogeneity = MI / (entropy_C) if entropy_C else 1.0
-    completeness = MI / (entropy_K) if entropy_K else 1.0
+    homogeneity = MI / (entropy_c) if entropy_c else 1.0
+    completeness = MI / (entropy_k) if entropy_k else 1.0
 
-    if homogeneity + completeness == 0.0:
+    if homogeneity + completeness <= 0.0:
         v_measure_score = 0.0
     else:
         v_measure_score = (
@@ -1265,7 +1265,7 @@ def fowlkes_mallows_score(labels_true, labels_pred):
     tk = np.dot(c.data, c.data) - n_samples
     pk = np.sum(np.asarray(c.sum(axis=0)).ravel() ** 2) - n_samples
     qk = np.sum(np.asarray(c.sum(axis=1)).ravel() ** 2) - n_samples
-    return float(np.sqrt(tk / pk) * np.sqrt(tk / qk)) if tk != 0.0 else 0.0
+    return float(np.sqrt(tk / pk) * np.sqrt(tk / qk)) if tk != 0 else 0.0
 
 
 def _entropy(labels):

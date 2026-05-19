@@ -340,7 +340,7 @@ def test_im_kw_adjust_vmin_vmax(pyplot):
 
     confusion_matrix = np.array([[0.48, 0.04], [0.08, 0.4]])
     disp = ConfusionMatrixDisplay(confusion_matrix)
-    disp.plot(im_kw=dict(vmin=0.0, vmax=0.8))
+    disp.plot(im_kw={"vmin": 0.0, "vmax": 0.8})
 
     clim = disp.im_.get_clim()
     assert clim[0] == pytest.approx(0.0)
@@ -358,13 +358,13 @@ def test_confusion_matrix_text_kw(pyplot):
         classifier, X, y, text_kw={"fontsize": font_size}
     )
     for text in disp.text_.reshape(-1):
-        assert text.get_fontsize() == font_size
+        assert text.get_fontsize() == pytest.approx(font_size)
 
     # plot adjusts plot to new font size
     new_font_size = 20.0
     disp.plot(text_kw={"fontsize": new_font_size})
     for text in disp.text_.reshape(-1):
-        assert text.get_fontsize() == new_font_size
+        assert text.get_fontsize() == pytest.approx(new_font_size)
 
     # from_predictions passes the font size
     y_pred = classifier.predict(X)
@@ -372,4 +372,4 @@ def test_confusion_matrix_text_kw(pyplot):
         y, y_pred, text_kw={"fontsize": font_size}
     )
     for text in disp.text_.reshape(-1):
-        assert text.get_fontsize() == font_size
+        assert text.get_fontsize() == pytest.approx(font_size)
