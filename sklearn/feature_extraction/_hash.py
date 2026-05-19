@@ -106,7 +106,7 @@ class FeatureHasher(TransformerMixin, BaseEstimator):
     """
 
     # raw_X should have been called X
-    __metadata_request__transform = {"raw_X": metadata_routing.UNUSED}
+    _FeatureHasher__metadata_request__transform = {"raw_x": metadata_routing.UNUSED}
 
     _parameter_constraints: dict = {
         "n_features": [Interval(Integral, 1, np.iinfo(np.int32).max, closed="both")],
@@ -150,7 +150,7 @@ class FeatureHasher(TransformerMixin, BaseEstimator):
         """
         return self
 
-    def transform(self, raw_X):
+    def transform(self, raw_x):
         """Transform a sequence of instances to a scipy.sparse matrix.
 
         Parameters
@@ -167,21 +167,21 @@ class FeatureHasher(TransformerMixin, BaseEstimator):
         X : sparse matrix of shape (n_samples, n_features)
             Feature matrix, for use with estimators or further transformers.
         """
-        raw_X = iter(raw_X)
+        raw_x = iter(raw_x)
         if self.input_type == "dict":
-            raw_X = (_iteritems(d) for d in raw_X)
+            raw_x = (_iteritems(d) for d in raw_x)
         elif self.input_type == "string":
-            first_raw_X = next(raw_X)
-            if isinstance(first_raw_X, str):
+            first_raw_x = next(raw_x)
+            if isinstance(first_raw_x, str):
                 raise ValueError(
                     "Samples can not be a single string. The input must be an iterable"
                     " over iterables of strings."
                 )
-            raw_X_ = chain([first_raw_X], raw_X)
-            raw_X = (((f, 1) for f in x) for x in raw_X_)
+            raw_x_ = chain([first_raw_x], raw_x)
+            raw_x = (((f, 1) for f in x) for x in raw_x_)
 
         indices, indptr, values = _hashing_transform(
-            raw_X, self.n_features, self.dtype, self.alternate_sign, seed=0
+            raw_x, self.n_features, self.dtype, self.alternate_sign, seed=0
         )
         n_samples = indptr.shape[0] - 1
 

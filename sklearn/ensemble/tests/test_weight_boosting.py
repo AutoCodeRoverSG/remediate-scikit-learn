@@ -438,6 +438,7 @@ def test_sample_weight_adaboost_regressor():
 
     class DummyEstimator(BaseEstimator):
         def fit(self, X, y):
+            # Intentionally empty: this is a dummy estimator used for testing
             pass
 
         def predict(self, X):
@@ -460,7 +461,7 @@ def test_multidimensional_x():
     yr = rng.standard_normal(51)
 
     boost = AdaBoostClassifier(
-        DummyClassifier(strategy="most_frequent"), random_state=0
+        DummyClassifier(strategy="most_frequent", random_state=0), random_state=0
     )
     boost.fit(X, yc)
     boost.predict(X)
@@ -483,9 +484,9 @@ def test_adaboostclassifier_without_sample_weight():
 def test_adaboostregressor_sample_weight():
     # check that giving weight will have an influence on the error computed
     # for a weak learner
-    rng = np.random.RandomState(42)
+    rng = np.random.default_rng(42)
     X = np.linspace(0, 100, num=1000)
-    y = (0.8 * X + 0.2) + (rng.rand(X.shape[0]) * 0.0001)
+    y = (0.8 * X + 0.2) + (rng.random(X.shape[0]) * 0.0001)
     X = X.reshape(-1, 1)
 
     # add an arbitrary outlier
@@ -556,7 +557,7 @@ def test_adaboost_numerically_stable_feature_importance_with_small_weights():
     Non-regression test for:
     https://github.com/scikit-learn/scikit-learn/issues/20320
     """
-    rng = np.random.RandomState(42)
+    rng = np.random.default_rng(42)
     X = rng.normal(size=(1000, 10))
     y = rng.choice([0, 1], size=1000)
     sample_weight = np.ones_like(y) * 1e-263
