@@ -148,17 +148,17 @@ def test_hasher_alternate_sign():
 def test_hash_collisions():
     X = [list("Thequickbrownfoxjumped")]
 
-    Xt = FeatureHasher(
+    x_trans = FeatureHasher(
         alternate_sign=True, n_features=1, input_type="string"
     ).fit_transform(X)
     # check that some of the hashed tokens are added
     # with an opposite sign and cancel out
-    assert abs(Xt.data[0]) < len(X[0])
+    assert abs(x_trans.data[0]) < len(X[0])
 
-    Xt = FeatureHasher(
+    x_trans = FeatureHasher(
         alternate_sign=False, n_features=1, input_type="string"
     ).fit_transform(X)
-    assert Xt.data[0] == len(X[0])
+    assert x_trans.data[0] == len(X[0])
 
 
 def test_feature_hasher_requires_fit_tag():
