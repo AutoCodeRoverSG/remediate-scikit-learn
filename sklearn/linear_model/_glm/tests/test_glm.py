@@ -354,13 +354,13 @@ def test_glm_regression_unpenalized(solver, fit_intercept, glm_dataset):
     model, X, y, coef, _, _, _ = glm_dataset
     n_samples, n_features = X.shape
     alpha = 0  # unpenalized
-    params = dict(
-        alpha=alpha,
-        fit_intercept=fit_intercept,
-        solver=solver,
-        tol=1e-12,
-        max_iter=1000,
-    )
+    params = {
+        "alpha": alpha,
+        "fit_intercept": fit_intercept,
+        "solver": solver,
+        "tol": 1e-12,
+        "max_iter": 1000,
+    }
 
     model = clone(model).set_params(**params)
     if fit_intercept:
@@ -425,7 +425,7 @@ def test_glm_regression_unpenalized(solver, fit_intercept, glm_dataset):
 
 @pytest.mark.parametrize("solver", SOLVERS)
 @pytest.mark.parametrize("fit_intercept", [True, False])
-def test_glm_regression_unpenalized_hstacked_X(solver, fit_intercept, glm_dataset):
+def test_glm_regression_unpenalized_hstacked_x(solver, fit_intercept, glm_dataset):
     """Test that unpenalized GLM converges for all solvers to correct solution.
 
     We work with a simple constructed data set with known solution.
@@ -437,13 +437,13 @@ def test_glm_regression_unpenalized_hstacked_X(solver, fit_intercept, glm_datase
     model, X, y, coef, _, _, _ = glm_dataset
     n_samples, n_features = X.shape
     alpha = 0  # unpenalized
-    params = dict(
-        alpha=alpha,
-        fit_intercept=fit_intercept,
-        solver=solver,
-        tol=1e-12,
-        max_iter=1000,
-    )
+    params = {
+        "alpha": alpha,
+        "fit_intercept": fit_intercept,
+        "solver": solver,
+        "tol": 1e-12,
+        "max_iter": 1000,
+    }
 
     model = clone(model).set_params(**params)
     if fit_intercept:
@@ -510,7 +510,7 @@ def test_glm_regression_unpenalized_hstacked_X(solver, fit_intercept, glm_datase
 
 @pytest.mark.parametrize("solver", SOLVERS)
 @pytest.mark.parametrize("fit_intercept", [True, False])
-def test_glm_regression_unpenalized_vstacked_X(solver, fit_intercept, glm_dataset):
+def test_glm_regression_unpenalized_vstacked_x(solver, fit_intercept, glm_dataset):
     """Test that unpenalized GLM converges for all solvers to correct solution.
 
     We work with a simple constructed data set with known solution.
@@ -523,13 +523,13 @@ def test_glm_regression_unpenalized_vstacked_X(solver, fit_intercept, glm_datase
     model, X, y, coef, _, _, _ = glm_dataset
     n_samples, n_features = X.shape
     alpha = 0  # unpenalized
-    params = dict(
-        alpha=alpha,
-        fit_intercept=fit_intercept,
-        solver=solver,
-        tol=1e-12,
-        max_iter=1000,
-    )
+    params = {
+        "alpha": alpha,
+        "fit_intercept": fit_intercept,
+        "solver": solver,
+        "tol": 1e-12,
+        "max_iter": 1000,
+    }
 
     model = clone(model).set_params(**params)
     if fit_intercept:
@@ -569,7 +569,7 @@ def test_glm_regression_unpenalized_vstacked_X(solver, fit_intercept, glm_datase
         if solver == "newton-cholesky":
             # XXX: This solver shows random behaviour. Sometimes it finds solutions
             # with norm_model <= norm_solution! So we check conditionally.
-            if not (norm_model > (1 + 1e-12) * norm_solution):
+            if norm_model <= (1 + 1e-12) * norm_solution:
                 assert model.intercept_ == pytest.approx(intercept)
                 assert_allclose(model.coef_, coef, rtol=1e-4)
         elif solver == "lbfgs" and fit_intercept:
@@ -655,18 +655,18 @@ def test_glm_identity_regression(fit_intercept):
 @pytest.mark.parametrize("fit_intercept", [False, True])
 @pytest.mark.parametrize("alpha", [0.0, 1.0])
 @pytest.mark.parametrize(
-    "GLMEstimator", [_GeneralizedLinearRegressor, PoissonRegressor, GammaRegressor]
+    "glm_estimator", [_GeneralizedLinearRegressor, PoissonRegressor, GammaRegressor]
 )
-def test_glm_sample_weight_consistency(fit_intercept, alpha, GLMEstimator):
+def test_glm_sample_weight_consistency(fit_intercept, alpha, glm_estimator):
     """Test that the impact of sample_weight is consistent"""
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
     n_samples, n_features = 10, 5
 
-    X = rng.rand(n_samples, n_features)
-    y = rng.rand(n_samples)
+    X = rng.random((n_samples, n_features))
+    y = rng.random(n_samples)
     glm_params = dict(alpha=alpha, fit_intercept=fit_intercept)
 
-    glm = GLMEstimator(**glm_params).fit(X, y)
+    glm = glm_estimator(**glm_params).fit(X, y)
     coef = glm.coef_.copy()
 
     # sample_weight=np.ones(..) should be equivalent to sample_weight=None
@@ -695,9 +695,9 @@ def test_glm_sample_weight_consistency(fit_intercept, alpha, GLMEstimator):
     sample_weight_1 = np.ones(len(y))
     sample_weight_1[: n_samples // 2] = 2
 
-    glm1 = GLMEstimator(**glm_params).fit(X, y, sample_weight=sample_weight_1)
+    glm1 = glm_estimator(**glm_params).fit(X, y, sample_weight=sample_weight_1)
 
-    glm2 = GLMEstimator(**glm_params).fit(X2, y2, sample_weight=None)
+    glm2 = glm_estimator(**glm_params).fit(X2, y2, sample_weight=None)
     assert_allclose(glm1.coef_, glm2.coef_)
 
 
