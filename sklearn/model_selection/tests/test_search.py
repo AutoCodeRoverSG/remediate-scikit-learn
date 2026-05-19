@@ -1217,7 +1217,7 @@ def test_random_search_cv_results_multimetric():
     n_splits = 3
     n_search_iter = 30
 
-    params = dict(C=np.logspace(-4, 1, 3))
+    params = {"C": np.logspace(-4, 1, 3)}
     for refit in (True, False):
         random_searches = []
         for scoring in (("accuracy", "recall"), "accuracy", "recall"):
@@ -1351,7 +1351,7 @@ def test_unsupported_sample_weight_scorer():
         search_cv.fit(X, y, sample_weight=sw)
     # multi-metric evaluation
     search_cv.set_params(
-        scoring=dict(fake=fake_scorer, accuracy="accuracy"), refit=False
+        scoring={"fake": fake_scorer, "accuracy": "accuracy"}, refit=False
     )
     # only fake scorer does not support sample_weight
     with pytest.warns(
@@ -1387,23 +1387,23 @@ def test_search_cv_sample_weight_equivalence(estimator):
     # the splits are the same in the repeated/weighted datasets
     groups = np.tile(np.arange(n_groups), n_samples_per_group)
 
-    X_weighted = X
+    x_weighted = X
     y_weighted = y
     groups_weighted = groups
-    splits_weighted = list(LeaveOneGroupOut().split(X_weighted, groups=groups_weighted))
+    splits_weighted = list(LeaveOneGroupOut().split(x_weighted, groups=groups_weighted))
     estimator_weighted.set_params(cv=splits_weighted)
     # repeat samples according to weights
-    X_repeated = X_weighted.repeat(repeats=sw, axis=0)
+    x_repeated = x_weighted.repeat(repeats=sw, axis=0)
     y_repeated = y_weighted.repeat(repeats=sw)
     groups_repeated = groups_weighted.repeat(repeats=sw)
-    splits_repeated = list(LeaveOneGroupOut().split(X_repeated, groups=groups_repeated))
+    splits_repeated = list(LeaveOneGroupOut().split(x_repeated, groups=groups_repeated))
     estimator_repeated.set_params(cv=splits_repeated)
 
     y_weighted = _enforce_estimator_tags_y(estimator_weighted, y_weighted)
     y_repeated = _enforce_estimator_tags_y(estimator_repeated, y_repeated)
 
-    estimator_repeated.fit(X_repeated, y=y_repeated, sample_weight=None)
-    estimator_weighted.fit(X_weighted, y=y_weighted, sample_weight=sw)
+    estimator_repeated.fit(x_repeated, y=y_repeated, sample_weight=None)
+    estimator_weighted.fit(x_weighted, y=y_weighted, sample_weight=sw)
 
     # check that scores stored in cv_results_
     # are equal for the weighted/repeated datasets
@@ -1578,9 +1578,9 @@ def test_grid_search_correct_score_results():
     n_splits = 3
     clf = LinearSVC(random_state=0)
     X, y = make_blobs(random_state=0, centers=2)
-    Cs = [0.1, 1, 10]
+    c_values = [0.1, 1, 10]
     for score in ["f1", "roc_auc"]:
-        grid_search = GridSearchCV(clf, {"C": Cs}, scoring=score, cv=n_splits)
+        grid_search = GridSearchCV(clf, {"C": c_values}, scoring=score, cv=n_splits)
         cv_results = grid_search.fit(X, y).cv_results_
 
         # Test scorer names
@@ -1592,7 +1592,7 @@ def test_grid_search_correct_score_results():
 
         cv = StratifiedKFold(n_splits=n_splits)
         n_splits = grid_search.n_splits_
-        for candidate_i, C in enumerate(Cs):
+        for candidate_i, C in enumerate(c_values):
             clf.set_params(C=C)
             cv_scores = np.array(
                 [
@@ -1692,7 +1692,8 @@ def test_grid_search_allows_nans():
         [
             ("imputer", SimpleImputer(strategy="mean", missing_values=np.nan)),
             ("classifier", MockClassifier()),
-        ]
+        ],
+        memory=None,
     )
     GridSearchCV(p, {"classifier__foo_param": [1, 2, 3]}, cv=2).fit(X, y)
 
@@ -2021,8 +2022,8 @@ def test_transform_inverse_transform_round_trip():
     grid_search = GridSearchCV(clf, {"foo_param": [1, 2, 3]}, cv=2, verbose=3)
 
     grid_search.fit(X, y)
-    X_round_trip = grid_search.inverse_transform(grid_search.transform(X))
-    assert_array_equal(X, X_round_trip)
+    x_round_trip = grid_search.inverse_transform(grid_search.transform(X))
+    assert_array_equal(X, x_round_trip)
 
 
 def test_custom_run_search():
@@ -2067,7 +2068,7 @@ def test_custom_run_search():
     for attr in dir(gscv):
         if (
             attr[0].islower()
-            and attr[-1:] == "_"
+            and attr.endswith("_")
             and attr
             not in {
                 "cv_results_",
@@ -2112,7 +2113,7 @@ def test_empty_cv_iterator_error():
     cv = KFold(n_splits=3).split(X)
 
     # pop all of it, this should cause the expected ValueError
-    [u for u in cv]
+    list(cv)
     # cv is empty now
 
     train_size = 100
@@ -2159,7 +2160,7 @@ def test_random_search_bad_cv():
 
 @pytest.mark.parametrize("return_train_score", [False, True])
 @pytest.mark.parametrize(
-    "SearchCV, specialized_params",
+    "search_cv, specialized_params",
     [
         (GridSearchCV, {"param_grid": {"max_depth": [2, 3, 5, 8]}}),
         (
@@ -2169,7 +2170,7 @@ def test_random_search_bad_cv():
     ],
 )
 def test_searchcv_raise_warning_with_non_finite_score(
-    SearchCV, specialized_params, return_train_score
+    search_cv, specialized_params, return_train_score
 ):
     # Non-regression test for:
     # https://github.com/scikit-learn/scikit-learn/issues/10529
@@ -2189,7 +2190,7 @@ def test_searchcv_raise_warning_with_non_finite_score(
                 return np.nan
             return 1
 
-    grid = SearchCV(
+    grid = search_cv(
         DecisionTreeClassifier(),
         scoring=FailingScorer(),
         cv=3,
