@@ -499,9 +499,9 @@ def test_fit_transform_not_associated_with_y_if_ordinal_categorical_is_not(
 ):
     cardinality = 30  # not too large, otherwise we need a very large n_samples
     n_samples = 3000
-    rng = np.random.RandomState(global_random_seed)
+    rng = np.random.default_rng(global_random_seed)
     y_train = rng.normal(size=n_samples)
-    X_train = rng.randint(0, cardinality, size=n_samples).reshape(-1, 1)
+    X_train = rng.integers(0, cardinality, size=n_samples).reshape(-1, 1)
 
     # Sort by y_train to attempt to cause a leak
     y_sorted_indices = y_train.argsort()

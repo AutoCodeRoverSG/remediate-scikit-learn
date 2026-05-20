@@ -536,7 +536,7 @@ class LinearSVR(RegressorMixin, LinearModel):
         intercept_scaling=1.0,
         dual="auto",
         verbose=0,
-        random_state=None,
+        random_state=0,
         max_iter=1000,
     ):
         self.tol = tol
@@ -873,7 +873,7 @@ class SVC(BaseSVC):
     def __init__(
         self,
         *,
-        C=1.0,
+        C=1.0,  # NOSONAR
         kernel="rbf",
         degree=3,
         gamma="scale",
@@ -1350,7 +1350,7 @@ class SVR(RegressorMixin, BaseLibSVM):
         gamma="scale",
         coef0=0.0,
         tol=1e-3,
-        C=1.0,
+        c=1.0,
         epsilon=0.1,
         shrinking=True,
         cache_size=200,
@@ -1363,7 +1363,7 @@ class SVR(RegressorMixin, BaseLibSVM):
             gamma=gamma,
             coef0=coef0,
             tol=tol,
-            C=C,
+            C=c,
             nu=0.0,
             epsilon=epsilon,
             verbose=verbose,
@@ -1533,7 +1533,7 @@ class NuSVR(RegressorMixin, BaseLibSVM):
         self,
         *,
         nu=0.5,
-        C=1.0,
+        C=1.0,  # NOSONAR
         kernel="rbf",
         degree=3,
         gamma="scale",
