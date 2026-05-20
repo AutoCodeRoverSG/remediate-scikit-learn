@@ -80,16 +80,16 @@ def _check_equality_regressor(statistic, y_learn, y_pred_learn, y_test, y_pred_t
 def test_feature_names_in_and_n_features_in_(global_random_seed, n_samples=10):
     pd = pytest.importorskip("pandas")
 
-    random_state = np.random.RandomState(seed=global_random_seed)
+    rng = np.random.default_rng(seed=global_random_seed)
 
     X = pd.DataFrame([[0]] * n_samples, columns=["feature_1"])
-    y = random_state.rand(n_samples)
+    y = rng.random(n_samples)
 
     est = DummyRegressor().fit(X, y)
     assert hasattr(est, "feature_names_in_")
     assert hasattr(est, "n_features_in_")
 
-    est = DummyClassifier().fit(X, y)
+    est = DummyClassifier(random_state=global_random_seed).fit(X, y)
     assert hasattr(est, "feature_names_in_")
     assert hasattr(est, "n_features_in_")
 
@@ -215,7 +215,7 @@ def test_uniform_strategy_multioutput(global_random_seed):
 def test_string_labels():
     X = [[0]] * 5
     y = ["paris", "paris", "tokyo", "amsterdam", "berlin"]
-    clf = DummyClassifier(strategy="most_frequent")
+    clf = DummyClassifier(strategy="most_frequent", random_state=0)
     clf.fit(X, y)
     assert_array_equal(clf.predict(X), ["paris"] * 5)
 
@@ -230,16 +230,16 @@ def test_string_labels():
         ),
     ],
 )
-def test_classifier_score_with_None(y, y_test):
-    clf = DummyClassifier(strategy="most_frequent")
+def test_classifier_score_with_none(y, y_test):
+    clf = DummyClassifier(strategy="most_frequent", random_state=0)
     clf.fit(None, y)
-    assert clf.score(None, y_test) == 0.5
+    assert clf.score(None, y_test) == pytest.approx(0.5)
 
 
 @pytest.mark.parametrize(
     "strategy", ["stratified", "most_frequent", "prior", "uniform", "constant"]
 )
-def test_classifier_prediction_independent_of_X(strategy, global_random_seed):
+def test_classifier_prediction_independent_of_x(strategy, global_random_seed):
     y = [0, 2, 1, 1]
     X1 = [[0]] * 4
     clf1 = DummyClassifier(
@@ -259,10 +259,10 @@ def test_classifier_prediction_independent_of_X(strategy, global_random_seed):
 
 
 def test_mean_strategy_regressor(global_random_seed):
-    random_state = np.random.RandomState(seed=global_random_seed)
+    random_state = np.random.default_rng(seed=global_random_seed)
 
     X = [[0]] * 4  # ignored
-    y = random_state.randn(4)
+    y = random_state.standard_normal(4)
 
     reg = DummyRegressor()
     reg.fit(X, y)
@@ -270,21 +270,21 @@ def test_mean_strategy_regressor(global_random_seed):
 
 
 def test_mean_strategy_multioutput_regressor(global_random_seed):
-    random_state = np.random.RandomState(seed=global_random_seed)
+    rng = np.random.default_rng(seed=global_random_seed)
 
-    X_learn = random_state.randn(10, 10)
-    y_learn = random_state.randn(10, 5)
+    x_learn = rng.standard_normal((10, 10))
+    y_learn = rng.standard_normal((10, 5))
 
     mean = np.mean(y_learn, axis=0).reshape((1, -1))
 
-    X_test = random_state.randn(20, 10)
-    y_test = random_state.randn(20, 5)
+    x_test = rng.standard_normal((20, 10))
+    y_test = rng.standard_normal((20, 5))
 
     # Correctness oracle
     est = DummyRegressor()
-    est.fit(X_learn, y_learn)
-    y_pred_learn = est.predict(X_learn)
-    y_pred_test = est.predict(X_test)
+    est.fit(x_learn, y_learn)
+    y_pred_learn = est.predict(x_learn)
+    y_pred_test = est.predict(x_test)
 
     _check_equality_regressor(mean, y_learn, y_pred_learn, y_test, y_pred_test)
     _check_behavior_2d(est)
