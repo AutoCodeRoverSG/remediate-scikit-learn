@@ -656,7 +656,7 @@ def _fit_classifier_calibrator_pair(
 
     estimator.fit(X_train, y_train, **fit_params_train)
 
-    predictions, _ = _get_response_values(
+    predictions, _, _ = _get_response_values(
         estimator,
         X_test,
         response_method=["decision_function", "predict_proba"],
@@ -794,7 +794,7 @@ class _CalibratedClassifier:
         proba : array, shape (n_samples, n_classes)
             The predicted probabilities. Can be exact zeros.
         """
-        predictions, _ = _get_response_values(
+        predictions, _, _ = _get_response_values(
             self.estimator,
             X,
             response_method=["decision_function", "predict_proba"],

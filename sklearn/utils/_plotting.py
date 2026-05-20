@@ -41,7 +41,7 @@ class _BinaryClassifierCurveDisplayMixin:
 
         name = estimator.__class__.__name__ if name is None else name
 
-        y_pred, pos_label = _get_response_values_binary(
+        y_pred, pos_label, _ = _get_response_values_binary(
             estimator,
             X,
             response_method=response_method,

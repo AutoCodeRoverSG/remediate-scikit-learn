@@ -120,7 +120,7 @@ class ParamsDict(ReprHTMLMixin, UserDict):
     _html_repr = _params_html_repr
 
     def __init__(
-        self, *, params=None, non_default=tuple(), estimator_class=None, doc_link=""
+        self, *, params=None, non_default=(), estimator_class=None, doc_link=""
     ):
         super().__init__(params or {})
         self.non_default = non_default
