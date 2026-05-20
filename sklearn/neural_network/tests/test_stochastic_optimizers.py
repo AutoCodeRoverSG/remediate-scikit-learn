@@ -18,11 +18,11 @@ def test_base_optimizer():
 
 def test_sgd_optimizer_no_momentum():
     params = [np.zeros(shape) for shape in shapes]
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
 
     for lr in [10**i for i in range(-3, 4)]:
         optimizer = SGDOptimizer(params, lr, momentum=0, nesterov=False)
-        grads = [rng.random_sample(shape) for shape in shapes]
+        grads = [rng.random(shape) for shape in shapes]
         expected = [param - lr * grad for param, grad in zip(params, grads)]
         optimizer.update_params(params, grads)
 
@@ -33,13 +33,13 @@ def test_sgd_optimizer_no_momentum():
 def test_sgd_optimizer_momentum():
     params = [np.zeros(shape) for shape in shapes]
     lr = 0.1
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
 
     for momentum in np.arange(0.5, 0.9, 0.1):
         optimizer = SGDOptimizer(params, lr, momentum=momentum, nesterov=False)
-        velocities = [rng.random_sample(shape) for shape in shapes]
+        velocities = [rng.random(shape) for shape in shapes]
         optimizer.velocities = velocities
-        grads = [rng.random_sample(shape) for shape in shapes]
+        grads = [rng.random(shape) for shape in shapes]
         updates = [
             momentum * velocity - lr * grad for velocity, grad in zip(velocities, grads)
         ]
@@ -55,20 +55,20 @@ def test_sgd_optimizer_trigger_stopping():
     lr = 2e-6
     optimizer = SGDOptimizer(params, lr, lr_schedule="adaptive")
     assert not optimizer.trigger_stopping("", False)
-    assert lr / 5 == optimizer.learning_rate
+    assert np.isclose(lr / 5, optimizer.learning_rate)
     assert optimizer.trigger_stopping("", False)
 
 
 def test_sgd_optimizer_nesterovs_momentum():
     params = [np.zeros(shape) for shape in shapes]
     lr = 0.1
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
 
     for momentum in np.arange(0.5, 0.9, 0.1):
         optimizer = SGDOptimizer(params, lr, momentum=momentum, nesterov=True)
-        velocities = [rng.random_sample(shape) for shape in shapes]
+        velocities = [rng.random(shape) for shape in shapes]
         optimizer.velocities = velocities
-        grads = [rng.random_sample(shape) for shape in shapes]
+        grads = [rng.random(shape) for shape in shapes]
         updates = [
             momentum * velocity - lr * grad for velocity, grad in zip(velocities, grads)
         ]

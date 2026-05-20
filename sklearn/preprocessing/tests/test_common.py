@@ -57,11 +57,12 @@ def test_missing_value_handling(
     est, func, support_sparse, strictly_positive, omit_kwargs
 ):
     # check that the preprocessing method let pass nan
-    rng = np.random.RandomState(42)
+    rng = np.random.default_rng(42)
     X = iris.data.copy()
     n_missing = 50
     X[
-        rng.randint(X.shape[0], size=n_missing), rng.randint(X.shape[1], size=n_missing)
+        rng.integers(X.shape[0], size=n_missing),
+        rng.integers(X.shape[1], size=n_missing),
     ] = np.nan
     if strictly_positive:
         X += np.nanmin(X) + 0.1
@@ -186,10 +187,10 @@ def test_missing_value_pandas_na_support(est, func):
     ).T
 
     # Creates dataframe with IntegerArrays with pd.NA
-    X_df = pd.DataFrame(X, dtype="Int16", columns=["a", "b", "c"])
-    X_df["c"] = X_df["c"].astype("int")
+    x_df = pd.DataFrame(X, dtype="Int16", columns=["a", "b", "c"])
+    x_df["c"] = x_df["c"].astype("int")
 
-    X_trans = est.fit_transform(X)
-    X_df_trans = est.fit_transform(X_df)
+    x_trans = est.fit_transform(X)
+    x_df_trans = est.fit_transform(x_df)
 
-    assert_allclose(X_trans, X_df_trans)
+    assert_allclose(x_trans, x_df_trans)
