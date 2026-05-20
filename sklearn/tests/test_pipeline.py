@@ -209,7 +209,7 @@ class DummyEstimatorParams(BaseEstimator):
 def test_pipeline_invalid_parameters():
     # Test the various init parameters of the pipeline in fit
     # method
-    pipeline = Pipeline([(1, 1)])
+    pipeline = Pipeline([(1, 1)], memory=None)
     with pytest.raises(TypeError):
         pipeline.fit([[1]], [1])
 
@@ -220,13 +220,13 @@ def test_pipeline_invalid_parameters():
         "or be the string 'passthrough'"
         ".*NoFit.*"
     )
-    pipeline = Pipeline([("clf", NoFit())])
+    pipeline = Pipeline([("clf", NoFit())], memory=None)
     with pytest.raises(TypeError, match=msg):
         pipeline.fit([[1]], [1])
 
     # Smoke test with only an estimator
     clf = NoTrans()
-    pipe = Pipeline([("svc", clf)])
+    pipe = Pipeline([("svc", clf)], memory=None)
     assert pipe.get_params(deep=True) == dict(
         svc__a=None, svc__b=None, svc=clf, **pipe.get_params(deep=False)
     )
@@ -241,7 +241,7 @@ def test_pipeline_invalid_parameters():
     # Test with two objects
     clf = SVC()
     filter1 = SelectKBest(f_classif)
-    pipe = Pipeline([("anova", filter1), ("svc", clf)])
+    pipe = Pipeline([("anova", filter1), ("svc", clf)], memory=None)
 
     # Check that estimators are not cloned on pipeline construction
     assert pipe.named_steps["anova"] is filter1
@@ -250,7 +250,7 @@ def test_pipeline_invalid_parameters():
     # Check that we can't fit with non-transformers on the way
     # Note that NoTrans implements fit, but not transform
     msg = "All intermediate steps should be transformers.*\\bNoTrans\\b.*"
-    pipeline = Pipeline([("t", NoTrans()), ("svc", clf)])
+    pipeline = Pipeline([("t", NoTrans()), ("svc", clf)], memory=None)
     with pytest.raises(TypeError, match=msg):
         pipeline.fit([[1]], [1])
 
@@ -293,11 +293,11 @@ def test_pipeline_invalid_parameters():
 @pytest.mark.parametrize(
     "meta_estimators, class_name",
     [
-        (Pipeline([("pca", PCA)]), "PCA"),
-        (Pipeline([("pca", PCA), ("ident", None)]), "PCA"),
-        (Pipeline([("passthrough", "passthrough"), ("pca", PCA)]), "PCA"),
-        (Pipeline([("passthrough", None), ("pca", PCA)]), "PCA"),
-        (Pipeline([("scale", StandardScaler), ("pca", PCA())]), "StandardScaler"),
+        (Pipeline([("pca", PCA)], memory=None), "PCA"),
+        (Pipeline([("pca", PCA), ("ident", None)], memory=None), "PCA"),
+        (Pipeline([("passthrough", "passthrough"), ("pca", PCA)], memory=None), "PCA"),
+        (Pipeline([("passthrough", None), ("pca", PCA)], memory=None), "PCA"),
+        (Pipeline([("scale", StandardScaler), ("pca", PCA())], memory=None), "StandardScaler"),
         (FeatureUnion([("pca", PCA), ("svd", TruncatedSVD())]), "PCA"),
         (FeatureUnion([("pca", PCA()), ("svd", TruncatedSVD)]), "TruncatedSVD"),
         (FeatureUnion([("drop", "drop"), ("svd", TruncatedSVD)]), "TruncatedSVD"),
