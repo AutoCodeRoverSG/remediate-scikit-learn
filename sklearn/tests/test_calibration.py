@@ -110,15 +110,15 @@ def test_calibration(data, method, csr_container, ensemble):
         cal_clf.fit(X, y)
 
     # Naive Bayes with calibration
-    for this_X_train, this_X_test in [
+    for this_x_train, this_x_test in [
         (X_train, X_test),
         (csr_container(X_train), csr_container(X_test)),
     ]:
         cal_clf = CalibratedClassifierCV(clf, method=method, cv=5, ensemble=ensemble)
         # Note that this fit overwrites the fit on the entire training
         # set
-        cal_clf.fit(this_X_train, y_train, sample_weight=sw_train)
-        prob_pos_cal_clf = cal_clf.predict_proba(this_X_test)[:, 1]
+        cal_clf.fit(this_x_train, y_train, sample_weight=sw_train)
+        prob_pos_cal_clf = cal_clf.predict_proba(this_x_test)[:, 1]
 
         # Check that brier score has improved after calibration
         assert brier_score_loss(y_test, prob_pos_clf) > brier_score_loss(
@@ -126,18 +126,18 @@ def test_calibration(data, method, csr_container, ensemble):
         )
 
         # Check invariance against relabeling [0, 1] -> [1, 2]
-        cal_clf.fit(this_X_train, y_train + 1, sample_weight=sw_train)
-        prob_pos_cal_clf_relabeled = cal_clf.predict_proba(this_X_test)[:, 1]
+        cal_clf.fit(this_x_train, y_train + 1, sample_weight=sw_train)
+        prob_pos_cal_clf_relabeled = cal_clf.predict_proba(this_x_test)[:, 1]
         assert_array_almost_equal(prob_pos_cal_clf, prob_pos_cal_clf_relabeled)
 
         # Check invariance against relabeling [0, 1] -> [-1, 1]
-        cal_clf.fit(this_X_train, 2 * y_train - 1, sample_weight=sw_train)
-        prob_pos_cal_clf_relabeled = cal_clf.predict_proba(this_X_test)[:, 1]
+        cal_clf.fit(this_x_train, 2 * y_train - 1, sample_weight=sw_train)
+        prob_pos_cal_clf_relabeled = cal_clf.predict_proba(this_x_test)[:, 1]
         assert_array_almost_equal(prob_pos_cal_clf, prob_pos_cal_clf_relabeled)
 
         # Check invariance against relabeling [0, 1] -> [1, 0]
-        cal_clf.fit(this_X_train, (y_train + 1) % 2, sample_weight=sw_train)
-        prob_pos_cal_clf_relabeled = cal_clf.predict_proba(this_X_test)[:, 1]
+        cal_clf.fit(this_x_train, (y_train + 1) % 2, sample_weight=sw_train)
+        prob_pos_cal_clf_relabeled = cal_clf.predict_proba(this_x_test)[:, 1]
         if method == "sigmoid":
             assert_array_almost_equal(prob_pos_cal_clf, 1 - prob_pos_cal_clf_relabeled)
         else:
@@ -220,9 +220,9 @@ def test_sample_weight(data, method, ensemble):
 def test_parallel_execution(data, method, ensemble):
     """Test parallel calibration"""
     X, y = data
-    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+    X_train, X_test, y_train, _ = train_test_split(X, y, random_state=42)
 
-    estimator = make_pipeline(StandardScaler(), LinearSVC(random_state=42))
+    estimator = make_pipeline(StandardScaler(), LinearSVC(random_state=42), memory=None)
 
     cal_clf_parallel = CalibratedClassifierCV(
         estimator, method=method, n_jobs=2, ensemble=ensemble
@@ -246,8 +246,8 @@ def test_parallel_execution(data, method, ensemble):
 @pytest.mark.parametrize("seed", range(2))
 def test_calibration_multiclass(method, ensemble, seed):
     def multiclass_brier(y_true, proba_pred, n_classes):
-        Y_onehot = np.eye(n_classes)[y_true]
-        return np.sum((Y_onehot - proba_pred) ** 2) / Y_onehot.shape[0]
+        y_onehot = np.eye(n_classes)[y_true]
+        return np.sum((y_onehot - proba_pred) ** 2) / y_onehot.shape[0]
 
     # Test calibration for multiclass with classifier that implements
     # only decision function.
@@ -318,7 +318,7 @@ def test_calibration_zero_probability():
     X, y = make_blobs(
         n_samples=50, n_features=10, random_state=7, centers=10, cluster_std=15.0
     )
-    clf = DummyClassifier().fit(X, y)
+    clf = DummyClassifier(random_state=42).fit(X, y)
     calibrator = ZeroCalibrator()
     cal_clf = _CalibratedClassifier(
         estimator=clf, calibrators=[calibrator], classes=clf.classes_
@@ -342,7 +342,7 @@ def test_calibration_frozen(csr_container, method):
 
     # split train and test
     X_train, y_train, sw_train = X[:n_samples], y[:n_samples], sample_weight[:n_samples]
-    X_calib, y_calib, sw_calib = (
+    x_calib, y_calib, sw_calib = (
         X[n_samples : 2 * n_samples],
         y[n_samples : 2 * n_samples],
         sample_weight[n_samples : 2 * n_samples],
@@ -355,17 +355,17 @@ def test_calibration_frozen(csr_container, method):
     prob_pos_clf = clf.predict_proba(X_test)[:, 1]
 
     # Naive Bayes with calibration
-    for this_X_calib, this_X_test in [
-        (X_calib, X_test),
-        (csr_container(X_calib), csr_container(X_test)),
+    for this_x_calib, this_x_test in [
+        (x_calib, X_test),
+        (csr_container(x_calib), csr_container(X_test)),
     ]:
         cal_clf_frozen = CalibratedClassifierCV(FrozenEstimator(clf), method=method)
 
         for sw in [sw_calib, None]:
-            cal_clf_frozen.fit(this_X_calib, y_calib, sample_weight=sw)
+            cal_clf_frozen.fit(this_x_calib, y_calib, sample_weight=sw)
 
-            y_prob_frozen = cal_clf_frozen.predict_proba(this_X_test)
-            y_pred_frozen = cal_clf_frozen.predict(this_X_test)
+            y_prob_frozen = cal_clf_frozen.predict_proba(this_x_test)
+            y_pred_frozen = cal_clf_frozen.predict(this_x_test)
             prob_pos_cal_clf_frozen = y_prob_frozen[:, 1]
             assert_array_equal(
                 y_pred_frozen, np.array([0, 1])[np.argmax(y_prob_frozen, axis=1)]
@@ -411,19 +411,19 @@ def test_calibration_ensemble_false(data, method, calibrator):
 
 def test_sigmoid_calibration():
     """Test calibration values with Platt sigmoid model"""
-    exF = np.array([5, -4, 1.0])
-    exY = np.array([1, -1, -1])
+    ex_f = np.array([5, -4, 1.0])
+    ex_y = np.array([1, -1, -1])
     # computed from my python port of the C++ code in LibSVM
     AB_lin_libsvm = np.array([-0.20261354391187855, 0.65236314980010512])
-    assert_array_almost_equal(AB_lin_libsvm, _sigmoid_calibration(exF, exY), 3)
-    lin_prob = 1.0 / (1.0 + np.exp(AB_lin_libsvm[0] * exF + AB_lin_libsvm[1]))
-    sk_prob = _SigmoidCalibration().fit(exF, exY).predict(exF)
+    assert_array_almost_equal(AB_lin_libsvm, _sigmoid_calibration(ex_f, ex_y), 3)
+    lin_prob = 1.0 / (1.0 + np.exp(AB_lin_libsvm[0] * ex_f + AB_lin_libsvm[1]))
+    sk_prob = _SigmoidCalibration().fit(ex_f, ex_y).predict(ex_f)
     assert_array_almost_equal(lin_prob, sk_prob, 6)
 
     # check that _SigmoidCalibration().fit only accepts 1d array or 2d column
     # arrays
     with pytest.raises(ValueError):
-        _SigmoidCalibration().fit(np.vstack((exF, exF)), exY)
+        _SigmoidCalibration().fit(np.vstack((ex_f, ex_f)), ex_y)
 
 
 @pytest.mark.parametrize(
