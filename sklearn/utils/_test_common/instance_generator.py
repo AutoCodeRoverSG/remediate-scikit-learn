@@ -340,66 +340,69 @@ INIT_PARAMS = {
             "random_state": 0,
         },
     ],
-    HDBSCAN: dict(min_samples=1),
+    HDBSCAN: {"min_samples": 1},
     # The default min_samples_leaf (20) isn't appropriate for small
     # datasets (only very shallow trees are built) that the checks use.
-    HistGradientBoostingClassifier: dict(max_iter=5, min_samples_leaf=5),
-    HistGradientBoostingRegressor: dict(max_iter=5, min_samples_leaf=5),
-    HuberRegressor: dict(max_iter=5),
-    IncrementalPCA: dict(batch_size=10),
-    IsolationForest: dict(n_estimators=5),
-    KMeans: dict(n_init=2, n_clusters=2, max_iter=5),
-    KNeighborsClassifier: [dict(n_neighbors=2), dict(metric="precomputed")],
-    KNeighborsRegressor: [dict(n_neighbors=2), dict(metric="precomputed")],
-    LabelPropagation: dict(max_iter=5),
-    LabelSpreading: dict(max_iter=5),
-    LarsCV: dict(max_iter=5, cv=3),
-    LassoCV: dict(max_iter=5, cv=3),
-    Lasso: dict(max_iter=5),
-    LassoLarsCV: dict(max_iter=5, cv=3),
-    LassoLars: dict(max_iter=5),
+    HistGradientBoostingClassifier: {"max_iter": 5, "min_samples_leaf": 5},
+    HistGradientBoostingRegressor: {"max_iter": 5, "min_samples_leaf": 5},
+    HuberRegressor: {"max_iter": 5},
+    IncrementalPCA: {"batch_size": 10},
+    IsolationForest: {"n_estimators": 5},
+    KMeans: {"n_init": 2, "n_clusters": 2, "max_iter": 5},
+    KNeighborsClassifier: [{"n_neighbors": 2}, {"metric": "precomputed"}],
+    KNeighborsRegressor: [{"n_neighbors": 2}, {"metric": "precomputed"}],
+    LabelPropagation: {"max_iter": 5},
+    LabelSpreading: {"max_iter": 5},
+    LarsCV: {"max_iter": 5, "cv": 3},
+    LassoCV: {"max_iter": 5, "cv": 3},
+    Lasso: {"max_iter": 5},
+    LassoLarsCV: {"max_iter": 5, "cv": 3},
+    LassoLars: {"max_iter": 5},
     # Noise variance estimation does not work when `n_samples < n_features`.
     # We need to provide the noise variance explicitly.
-    LassoLarsIC: dict(max_iter=5, noise_variance=1.0),
-    LatentDirichletAllocation: dict(max_iter=5, batch_size=10),
-    LinearSVC: dict(max_iter=20),
-    LinearSVR: dict(max_iter=20),
-    LocallyLinearEmbedding: dict(max_iter=5),
+    LassoLarsIC: {"max_iter": 5, "noise_variance": 1.0},
+    LatentDirichletAllocation: {"max_iter": 5, "batch_size": 10},
+    LinearSVC: {"max_iter": 20},
+    LinearSVR: {"max_iter": 20},
+    LocallyLinearEmbedding: {"max_iter": 5},
     # TODO(1.11): remove scoring because it is default now
-    LogisticRegressionCV: dict(
-        max_iter=5, cv=3, use_legacy_attributes=False, scoring="neg_log_loss"
-    ),
-    LogisticRegression: dict(max_iter=5),
-    MDS: dict(n_init=2, max_iter=5),
+    LogisticRegressionCV: {
+        "max_iter": 5,
+        "cv": 3,
+        "use_legacy_attributes": False,
+        "scoring": "neg_log_loss",
+    },
+    LogisticRegression: {"max_iter": 5},
+    MDS: {"n_init": 2, "max_iter": 5},
     # In the case of check_fit2d_1sample, bandwidth is set to None and
     # is thus estimated. De facto it is 0.0 as a single sample is provided
     # and this makes the test fails. Hence we give it a placeholder value.
-    MeanShift: dict(max_iter=5, bandwidth=1.0),
-    MiniBatchDictionaryLearning: dict(batch_size=10, max_iter=5),
-    MiniBatchKMeans: dict(n_init=2, n_clusters=2, max_iter=5, batch_size=10),
-    MiniBatchNMF: dict(batch_size=10, max_iter=20, fresh_restarts=True),
-    MiniBatchSparsePCA: dict(max_iter=5, batch_size=10),
-    MLPClassifier: dict(max_iter=100),
-    MLPRegressor: dict(max_iter=100),
-    MultiOutputClassifier: dict(estimator=LogisticRegression(C=1)),
-    MultiOutputRegressor: dict(estimator=Ridge()),
-    MultiTaskElasticNetCV: dict(max_iter=5, cv=3),
-    MultiTaskElasticNet: dict(max_iter=5),
-    MultiTaskLassoCV: dict(max_iter=5, cv=3),
-    MultiTaskLasso: dict(max_iter=5),
-    NeighborhoodComponentsAnalysis: dict(max_iter=5),
-    NMF: dict(max_iter=500),
-    NuSVC: dict(max_iter=-1),
-    NuSVR: dict(max_iter=-1),
-    OneClassSVM: dict(max_iter=-1),
-    OneHotEncoder: dict(handle_unknown="ignore"),
-    OneVsOneClassifier: dict(estimator=LogisticRegression(C=1)),
-    OneVsRestClassifier: dict(estimator=LogisticRegression(C=1)),
-    OrthogonalMatchingPursuitCV: dict(cv=3),
-    OutputCodeClassifier: dict(estimator=LogisticRegression(C=1)),
-    PassiveAggressiveClassifier: dict(max_iter=5),
-    PassiveAggressiveRegressor: dict(max_iter=5),
-    Perceptron: dict(max_iter=5),
+    MeanShift: {"max_iter": 5, "bandwidth": 1.0},
+    MiniBatchDictionaryLearning: {"batch_size": 10, "max_iter": 5},
+    MiniBatchKMeans: {"n_init": 2, "n_clusters": 2, "max_iter": 5, "batch_size": 10},
+    MiniBatchNMF: {"batch_size": 10, "max_iter": 20, "fresh_restarts": True},
+    MiniBatchSparsePCA: {"max_iter": 5, "batch_size": 10},
+    MLPClassifier: {"max_iter": 100},
+    MLPRegressor: {"max_iter": 100},
+    MultiOutputClassifier: {"estimator": LogisticRegression(C=1)},
+    MultiOutputRegressor: {"estimator": Ridge()},
+    MultiTaskElasticNetCV: {"max_iter": 5, "cv": 3},
+    MultiTaskElasticNet: {"max_iter": 5},
+    MultiTaskLassoCV: {"max_iter": 5, "cv": 3},
+    MultiTaskLasso: {"max_iter": 5},
+    NeighborhoodComponentsAnalysis: {"max_iter": 5},
+    NMF: {"max_iter": 500},
+    NuSVC: {"max_iter": -1},
+    NuSVR: {"max_iter": -1},
+    OneClassSVM: {"max_iter": -1},
+    OneHotEncoder: {"handle_unknown": "ignore"},
+    OneVsOneClassifier: {"estimator": LogisticRegression(C=1)},
+    OneVsRestClassifier: {"estimator": LogisticRegression(C=1)},
+    OrthogonalMatchingPursuitCV: {"cv": 3},
+    OutputCodeClassifier: {"estimator": LogisticRegression(C=1)},
+    PassiveAggressiveClassifier: {"max_iter": 5},
+    PassiveAggressiveRegressor: {"max_iter": 5},
+    Perceptron: {"max_iter": 5},
     Pipeline: [
         {"steps": [("scaler", StandardScaler()), ("final_estimator", Ridge())]},
         {
@@ -409,12 +412,12 @@ INIT_PARAMS = {
             ]
         },
     ],
-    PLSCanonical: dict(n_components=1, max_iter=5),
-    PLSRegression: dict(n_components=1, max_iter=5),
-    PLSSVD: dict(n_components=1),
-    PoissonRegressor: dict(max_iter=5),
-    RandomForestClassifier: dict(n_estimators=5),
-    RandomForestRegressor: dict(n_estimators=5),
+    PLSCanonical: {"n_components": 1, "max_iter": 5},
+    PLSRegression: {"n_components": 1, "max_iter": 5},
+    PLSSVD: {"n_components": 1},
+    PoissonRegressor: {"max_iter": 5},
+    RandomForestClassifier: {"n_estimators": 5},
+    RandomForestRegressor: {"n_estimators": 5},
     RandomizedSearchCV: [
         {
             "cv": 2,
@@ -450,79 +453,79 @@ INIT_PARAMS = {
             "random_state": 0,
         },
     ],
-    RandomTreesEmbedding: dict(n_estimators=5),
+    RandomTreesEmbedding: {"n_estimators": 5},
     # `RANSACRegressor` will raise an error with any model other
     # than `LinearRegression` if we don't fix the `min_samples` parameter.
     # For common tests, we can enforce using `LinearRegression` that
     # is the default estimator in `RANSACRegressor` instead of `Ridge`.
-    RANSACRegressor: dict(estimator=LinearRegression(), max_trials=10),
-    RegressorChain: dict(estimator=Ridge(), cv=3),
-    RFECV: dict(estimator=LogisticRegression(C=1), cv=3),
-    RFE: dict(estimator=LogisticRegression(C=1)),
+    RANSACRegressor: {"estimator": LinearRegression(), "max_trials": 10},
+    RegressorChain: {"estimator": Ridge(), "cv": 3},
+    RFECV: {"estimator": LogisticRegression(C=1), "cv": 3},
+    RFE: {"estimator": LogisticRegression(C=1)},
     # be tolerant of noisy datasets (not actually speed)
-    SelectFdr: dict(alpha=0.5),
+    SelectFdr: {"alpha": 0.5},
     # Increases coverage because SGDRegressor has partial_fit
-    SelectFromModel: dict(estimator=SGDRegressor(random_state=0)),
+    SelectFromModel: {"estimator": SGDRegressor(random_state=0)},
     # SelectKBest has a default of k=10
     # which is more feature than we have in most case.
-    SelectKBest: dict(k=1),
-    SelfTrainingClassifier: dict(estimator=LogisticRegression(C=1), max_iter=5),
-    SequentialFeatureSelector: dict(estimator=LogisticRegression(C=1), cv=3),
-    SGDClassifier: dict(max_iter=5),
-    SGDOneClassSVM: dict(max_iter=5),
-    SGDRegressor: dict(max_iter=5),
-    SparseCoder: dict(dictionary=rng.normal(size=(5, 3))),
-    SparsePCA: dict(max_iter=5),
+    SelectKBest: {"k": 1},
+    SelfTrainingClassifier: {"estimator": LogisticRegression(C=1), "max_iter": 5},
+    SequentialFeatureSelector: {"estimator": LogisticRegression(C=1), "cv": 3},
+    SGDClassifier: {"max_iter": 5},
+    SGDOneClassSVM: {"max_iter": 5},
+    SGDRegressor: {"max_iter": 5},
+    SparseCoder: {"dictionary": rng.normal(size=(5, 3))},
+    SparsePCA: {"max_iter": 5},
     # Due to the jl lemma and often very few samples, the number
     # of components of the random matrix projection will be probably
     # greater than the number of features.
     # So we impose a smaller number (avoid "auto" mode)
-    SparseRandomProjection: dict(n_components=2),
-    SpectralBiclustering: dict(n_init=2, n_best=1, n_clusters=2),
-    SpectralClustering: dict(n_init=2, n_clusters=2),
-    SpectralCoclustering: dict(n_init=2, n_clusters=2),
+    SparseRandomProjection: {"n_components": 2},
+    SpectralBiclustering: {"n_init": 2, "n_best": 1, "n_clusters": 2},
+    SpectralClustering: {"n_init": 2, "n_clusters": 2},
+    SpectralCoclustering: {"n_init": 2, "n_clusters": 2},
     # Default "auto" parameter can lead to different ordering of eigenvalues on
     # windows: #24105
-    SpectralEmbedding: dict(eigen_tol=1e-05),
+    SpectralEmbedding: {"eigen_tol": 1e-05},
     # SplineTransformer supports NaN only with handle_missing="zeros", so we
     # need this additional parameter set for the allow_nan_estimators Sphinx
     # directive to detect it.
-    SplineTransformer: [dict(), dict(handle_missing="zeros")],
-    StackingClassifier: dict(
-        estimators=[
+    SplineTransformer: [{}, {"handle_missing": "zeros"}],
+    StackingClassifier: {
+        "estimators": [
             ("est1", DecisionTreeClassifier(max_depth=3, random_state=0)),
             ("est2", DecisionTreeClassifier(max_depth=3, random_state=1)),
         ],
-        cv=3,
-    ),
-    StackingRegressor: dict(
-        estimators=[
+        "cv": 3,
+    },
+    StackingRegressor: {
+        "estimators": [
             ("est1", DecisionTreeRegressor(max_depth=3, random_state=0)),
             ("est2", DecisionTreeRegressor(max_depth=3, random_state=1)),
         ],
-        cv=3,
-    ),
-    SVC: [dict(max_iter=-1), dict(kernel="precomputed")],
-    SVR: [dict(max_iter=-1), dict(kernel="precomputed")],
-    TargetEncoder: dict(cv=3),
-    TheilSenRegressor: dict(max_iter=5, max_subpopulation=100),
+        "cv": 3,
+    },
+    SVC: [{"max_iter": -1}, {"kernel": "precomputed"}],
+    SVR: [{"max_iter": -1}, {"kernel": "precomputed"}],
+    TargetEncoder: {"cv": 3},
+    TheilSenRegressor: {"max_iter": 5, "max_subpopulation": 100},
     # TruncatedSVD doesn't run with n_components = n_features
-    TruncatedSVD: dict(n_iter=5, n_components=1),
-    TSNE: dict(perplexity=2),
-    TunedThresholdClassifierCV: dict(estimator=LogisticRegression(C=1), cv=3),
-    TweedieRegressor: dict(max_iter=5),
-    VotingClassifier: dict(
-        estimators=[
+    TruncatedSVD: {"n_iter": 5, "n_components": 1},
+    TSNE: {"perplexity": 2},
+    TunedThresholdClassifierCV: {"estimator": LogisticRegression(C=1), "cv": 3},
+    TweedieRegressor: {"max_iter": 5},
+    VotingClassifier: {
+        "estimators": [
             ("est1", DecisionTreeClassifier(max_depth=3, random_state=0)),
             ("est2", DecisionTreeClassifier(max_depth=3, random_state=1)),
         ]
-    ),
-    VotingRegressor: dict(
-        estimators=[
+    },
+    VotingRegressor: {
+        "estimators": [
             ("est1", DecisionTreeRegressor(max_depth=3, random_state=0)),
             ("est2", DecisionTreeRegressor(max_depth=3, random_state=1)),
         ]
-    ),
+    },
 }
 
 # This dictionary stores parameters for specific checks. It also enables running the
@@ -531,97 +534,107 @@ INIT_PARAMS = {
 # TODO(devtools): allow third-party developers to pass test specific params to checks
 PER_ESTIMATOR_CHECK_PARAMS: dict = {
     # TODO(devtools): check that function names here exist in checks for the estimator
-    AgglomerativeClustering: {"check_dict_unchanged": dict(n_clusters=1)},
-    BayesianGaussianMixture: {"check_dict_unchanged": dict(max_iter=5, n_init=2)},
-    BernoulliRBM: {"check_dict_unchanged": dict(n_components=1, n_iter=5)},
-    Birch: {"check_dict_unchanged": dict(n_clusters=1)},
-    BisectingKMeans: {"check_dict_unchanged": dict(max_iter=5, n_clusters=1, n_init=2)},
-    CCA: {"check_dict_unchanged": dict(max_iter=5, n_components=1)},
+    AgglomerativeClustering: {"check_dict_unchanged": {"n_clusters": 1}},
+    BayesianGaussianMixture: {"check_dict_unchanged": {"max_iter": 5, "n_init": 2}},
+    BernoulliRBM: {"check_dict_unchanged": {"n_components": 1, "n_iter": 5}},
+    Birch: {"check_dict_unchanged": {"n_clusters": 1}},
+    BisectingKMeans: {
+        "check_dict_unchanged": {"max_iter": 5, "n_clusters": 1, "n_init": 2}
+    },
+    CCA: {"check_dict_unchanged": {"max_iter": 5, "n_components": 1}},
     DecisionTreeRegressor: {
         "check_sample_weight_equivalence_on_dense_data": [
-            dict(criterion="squared_error"),
-            dict(criterion="absolute_error"),
-            dict(criterion="poisson"),
+            {"criterion": "squared_error"},
+            {"criterion": "absolute_error"},
+            {"criterion": "poisson"},
         ],
         "check_sample_weight_equivalence_on_sparse_data": [
-            dict(criterion="squared_error"),
-            dict(criterion="absolute_error"),
-            dict(criterion="poisson"),
+            {"criterion": "squared_error"},
+            {"criterion": "absolute_error"},
+            {"criterion": "poisson"},
         ],
     },
     DecisionTreeClassifier: {
         "check_sample_weight_equivalence_on_dense_data": [
-            dict(criterion="gini"),
-            dict(criterion="log_loss"),
-            dict(criterion="entropy"),
+            {"criterion": "gini"},
+            {"criterion": "log_loss"},
+            {"criterion": "entropy"},
         ],
         "check_sample_weight_equivalence_on_sparse_data": [
-            dict(criterion="gini"),
-            dict(criterion="log_loss"),
-            dict(criterion="entropy"),
+            {"criterion": "gini"},
+            {"criterion": "log_loss"},
+            {"criterion": "entropy"},
         ],
     },
     DictionaryLearning: {
-        "check_dict_unchanged": dict(
-            max_iter=20, n_components=1, transform_algorithm="lasso_lars"
-        )
+        "check_dict_unchanged": {
+            "max_iter": 20,
+            "n_components": 1,
+            "transform_algorithm": "lasso_lars",
+        }
     },
-    FactorAnalysis: {"check_dict_unchanged": dict(max_iter=5, n_components=1)},
-    FastICA: {"check_dict_unchanged": dict(max_iter=5, n_components=1)},
-    FeatureAgglomeration: {"check_dict_unchanged": dict(n_clusters=1)},
+    FactorAnalysis: {"check_dict_unchanged": {"max_iter": 5, "n_components": 1}},
+    FastICA: {"check_dict_unchanged": {"max_iter": 5, "n_components": 1}},
+    FeatureAgglomeration: {"check_dict_unchanged": {"n_clusters": 1}},
     FeatureUnion: {
         "check_estimator_sparse_tag": [
-            dict(transformer_list=[("trans1", StandardScaler())]),
-            dict(
-                transformer_list=[
+            {"transformer_list": [("trans1", StandardScaler())]},
+            {
+                "transformer_list": [
                     ("trans1", StandardScaler(with_mean=False)),
                     ("trans2", "drop"),
                     ("trans3", "passthrough"),
                 ]
-            ),
+            },
         ]
     },
     GammaRegressor: {
         "check_sample_weight_equivalence_on_dense_data": [
-            dict(solver="newton-cholesky"),
-            dict(solver="lbfgs"),
+            {"solver": "newton-cholesky"},
+            {"solver": "lbfgs"},
         ],
     },
     GaussianMixture: {
-        "check_dict_unchanged": dict(max_iter=5, n_init=2),
-        "check_array_api_input": dict(
-            max_iter=5, n_init=2, init_params="random_from_data"
-        ),
+        "check_dict_unchanged": {"max_iter": 5, "n_init": 2},
+        "check_array_api_input": {
+            "max_iter": 5,
+            "n_init": 2,
+            "init_params": "random_from_data",
+        },
     },
-    GaussianRandomProjection: {"check_dict_unchanged": dict(n_components=1)},
-    GraphicalLasso: {"check_array_api_input": dict(max_iter=5, alpha=1.0)},
-    IncrementalPCA: {"check_dict_unchanged": dict(batch_size=10, n_components=1)},
-    Isomap: {"check_dict_unchanged": dict(n_components=1)},
+    GaussianRandomProjection: {"check_dict_unchanged": {"n_components": 1}},
+    GraphicalLasso: {"check_array_api_input": {"max_iter": 5, "alpha": 1.0}},
+    IncrementalPCA: {"check_dict_unchanged": {"batch_size": 10, "n_components": 1}},
+    Isomap: {"check_dict_unchanged": {"n_components": 1}},
     KBinsDiscretizer: {
         "check_sample_weight_equivalence_on_dense_data": [
             # Using subsample != None leads to a stochastic fit that is not
             # handled by the check_sample_weight_equivalence_on_dense_data test.
-            dict(strategy="quantile", subsample=None, quantile_method="inverted_cdf"),
-            dict(
-                strategy="quantile",
-                subsample=None,
-                quantile_method="averaged_inverted_cdf",
-            ),
-            dict(strategy="uniform", subsample=None),
+            {
+                "strategy": "quantile",
+                "subsample": None,
+                "quantile_method": "inverted_cdf",
+            },
+            {
+                "strategy": "quantile",
+                "subsample": None,
+                "quantile_method": "averaged_inverted_cdf",
+            },
+            {"strategy": "uniform", "subsample": None},
             # The "kmeans" strategy leads to a stochastic fit that is not
             # handled by the check_sample_weight_equivalence test.
         ],
     },
     KernelPCA: {
-        "check_dict_unchanged": dict(n_components=1),
-        "check_array_api_input": dict(fit_inverse_transform=True),
+        "check_dict_unchanged": {"n_components": 1},
+        "check_array_api_input": {"fit_inverse_transform": True},
     },
-    KMeans: {"check_dict_unchanged": dict(max_iter=5, n_clusters=1, n_init=2)},
-    LassoLars: {"check_non_transformer_estimators_n_iter": dict(alpha=0.0)},
+    KMeans: {"check_dict_unchanged": {"max_iter": 5, "n_clusters": 1, "n_init": 2}},
+    LassoLars: {"check_non_transformer_estimators_n_iter": {"alpha": 0.0}},
     LatentDirichletAllocation: {
-        "check_dict_unchanged": dict(batch_size=10, max_iter=5, n_components=1)
+        "check_dict_unchanged": {"batch_size": 10, "max_iter": 5, "n_components": 1}
     },
-    LinearDiscriminantAnalysis: {"check_dict_unchanged": dict(n_components=1)},
+    LinearDiscriminantAnalysis: {"check_dict_unchanged": {"n_components": 1}},
     LinearSVC: {
         "check_sample_weight_equivalence": [
             # TODO: dual=True is a stochastic solver: we cannot rely on
@@ -629,178 +642,202 @@ PER_ESTIMATOR_CHECK_PARAMS: dict = {
             # sample_weight and we would need a statistical test instead, see
             # meta-issue #162298.
             # dict(max_iter=20, dual=True, tol=1e-12),
-            dict(dual=False, tol=1e-12),
-            dict(dual=False, tol=1e-12, class_weight="balanced"),
+            {"dual": False, "tol": 1e-12},
+            {"dual": False, "tol": 1e-12, "class_weight": "balanced"},
         ]
     },
     LinearRegression: {
-        "check_estimator_sparse_tag": [dict(positive=False), dict(positive=True)],
-        "check_sample_weight_equivalence_on_dense_data": [
-            dict(positive=False),
-            dict(positive=True),
+        "check_estimator_sparse_tag": [
+            {"positive": False},
+            {"positive": True},
         ],
-        "check_sample_weight_equivalence_on_sparse_data": [dict(tol=1e-12)],
+        "check_sample_weight_equivalence_on_dense_data": [
+            {"positive": False},
+            {"positive": True},
+        ],
+        "check_sample_weight_equivalence_on_sparse_data": [{"tol": 1e-12}],
     },
-    LocallyLinearEmbedding: {"check_dict_unchanged": dict(max_iter=5, n_components=1)},
+    LocallyLinearEmbedding: {
+        "check_dict_unchanged": {"max_iter": 5, "n_components": 1}
+    },
     LogisticRegression: {
         "check_sample_weight_equivalence_on_dense_data": [
-            dict(solver="lbfgs"),
-            dict(solver="liblinear"),
-            dict(solver="newton-cg"),
-            dict(solver="newton-cholesky"),
-            dict(solver="newton-cholesky", class_weight="balanced"),
+            {"solver": "lbfgs"},
+            {"solver": "liblinear"},
+            {"solver": "newton-cg"},
+            {"solver": "newton-cholesky"},
+            {"solver": "newton-cholesky", "class_weight": "balanced"},
         ]
     },
     LogisticRegressionCV: {
         "check_sample_weight_equivalence": [
-            dict(solver="lbfgs", use_legacy_attributes=False),
-            dict(solver="newton-cholesky", use_legacy_attributes=False),
-            dict(
-                solver="newton-cholesky",
-                class_weight="balanced",
-                use_legacy_attributes=False,
-            ),
+            {"solver": "lbfgs", "use_legacy_attributes": False},
+            {"solver": "newton-cholesky", "use_legacy_attributes": False},
+            {
+                "solver": "newton-cholesky",
+                "class_weight": "balanced",
+                "use_legacy_attributes": False,
+            },
         ],
         "check_sample_weight_equivalence_on_sparse_data": [
-            dict(solver="liblinear"),
+            {"solver": "liblinear"},
         ],
     },
-    MDS: {"check_dict_unchanged": dict(max_iter=5, n_components=1, n_init=2)},
+    MDS: {"check_dict_unchanged": {"max_iter": 5, "n_components": 1, "n_init": 2}},
     MLPClassifier: {
         "check_sample_weight_equivalence_on_dense_data": [
-            dict(solver="lbfgs"),
+            {"solver": "lbfgs"},
         ]
     },
     MLPRegressor: {
         "check_sample_weight_equivalence_on_dense_data": [
-            dict(solver="sgd", tol=1e-2, random_state=42),
+            {"solver": "sgd", "tol": 1e-2, "random_state": 42},
         ]
     },
     MiniBatchDictionaryLearning: {
-        "check_dict_unchanged": dict(batch_size=10, max_iter=5, n_components=1)
+        "check_dict_unchanged": {"batch_size": 10, "max_iter": 5, "n_components": 1}
     },
     MiniBatchKMeans: {
-        "check_dict_unchanged": dict(batch_size=10, max_iter=5, n_clusters=1, n_init=2)
+        "check_dict_unchanged": {
+            "batch_size": 10,
+            "max_iter": 5,
+            "n_clusters": 1,
+            "n_init": 2,
+        }
     },
     MiniBatchNMF: {
-        "check_dict_unchanged": dict(
-            batch_size=10, fresh_restarts=True, max_iter=20, n_components=1
-        )
+        "check_dict_unchanged": {
+            "batch_size": 10,
+            "fresh_restarts": True,
+            "max_iter": 20,
+            "n_components": 1,
+        }
     },
     MiniBatchSparsePCA: {
-        "check_dict_unchanged": dict(batch_size=10, max_iter=5, n_components=1)
+        "check_dict_unchanged": {"batch_size": 10, "max_iter": 5, "n_components": 1}
     },
-    NMF: {"check_dict_unchanged": dict(max_iter=500, n_components=1)},
+    NMF: {"check_dict_unchanged": {"max_iter": 500, "n_components": 1}},
     NeighborhoodComponentsAnalysis: {
-        "check_dict_unchanged": dict(max_iter=5, n_components=1)
+        "check_dict_unchanged": {"max_iter": 5, "n_components": 1}
     },
-    Nystroem: {"check_dict_unchanged": dict(n_components=1)},
-    PCA: {"check_dict_unchanged": dict(n_components=1)},
-    PLSCanonical: {"check_dict_unchanged": dict(max_iter=5, n_components=1)},
-    PLSRegression: {"check_dict_unchanged": dict(max_iter=5, n_components=1)},
-    PLSSVD: {"check_dict_unchanged": dict(n_components=1)},
+    Nystroem: {"check_dict_unchanged": {"n_components": 1}},
+    PCA: {"check_dict_unchanged": {"n_components": 1}},
+    PLSCanonical: {"check_dict_unchanged": {"max_iter": 5, "n_components": 1}},
+    PLSRegression: {"check_dict_unchanged": {"max_iter": 5, "n_components": 1}},
+    PLSSVD: {"check_dict_unchanged": {"n_components": 1}},
     PoissonRegressor: {
         "check_sample_weight_equivalence_on_dense_data": [
-            dict(solver="newton-cholesky"),
-            dict(solver="lbfgs"),
+            {"solver": "newton-cholesky"},
+            {"solver": "lbfgs"},
         ],
     },
-    PolynomialCountSketch: {"check_dict_unchanged": dict(n_components=1)},
+    PolynomialCountSketch: {"check_dict_unchanged": {"n_components": 1}},
     QuantileRegressor: {
         "check_sample_weight_equivalence_on_dense_data": [
-            dict(quantile=0.5),
-            dict(quantile=0.75),
-            dict(solver="highs-ds"),
-            dict(solver="highs-ipm"),
+            {"quantile": 0.5},
+            {"quantile": 0.75},
+            {"solver": "highs-ds"},
+            {"solver": "highs-ipm"},
         ],
     },
-    QuadraticDiscriminantAnalysis: {"check_array_api_input": dict(reg_param=1.0)},
-    RBFSampler: {"check_dict_unchanged": dict(n_components=1)},
+    QuadraticDiscriminantAnalysis: {"check_array_api_input": {"reg_param": 1.0}},
+    RBFSampler: {"check_dict_unchanged": {"n_components": 1}},
     Ridge: {
         "check_sample_weight_equivalence_on_dense_data": [
-            dict(solver="svd"),
-            dict(solver="cholesky"),
-            dict(solver="sparse_cg"),
-            dict(solver="lsqr"),
-            dict(solver="lbfgs", positive=True),
+            {"solver": "svd"},
+            {"solver": "cholesky"},
+            {"solver": "sparse_cg"},
+            {"solver": "lsqr"},
+            {"solver": "lbfgs", "positive": True},
         ],
         "check_sample_weight_equivalence_on_sparse_data": [
-            dict(solver="sparse_cg"),
-            dict(solver="lsqr"),
+            {"solver": "sparse_cg"},
+            {"solver": "lsqr"},
         ],
     },
     RidgeClassifier: {
         "check_sample_weight_equivalence_on_dense_data": [
-            dict(solver="svd"),
-            dict(solver="cholesky"),
-            dict(solver="sparse_cg"),
-            dict(solver="lsqr"),
+            {"solver": "svd"},
+            {"solver": "cholesky"},
+            {"solver": "sparse_cg"},
+            {"solver": "lsqr"},
         ],
         "check_sample_weight_equivalence_on_sparse_data": [
-            dict(solver="sparse_cg"),
-            dict(solver="lsqr"),
+            {"solver": "sparse_cg"},
+            {"solver": "lsqr"},
         ],
     },
-    SkewedChi2Sampler: {"check_dict_unchanged": dict(n_components=1)},
-    SimpleImputer: {"check_array_api_input": dict(add_indicator=True)},
+    SkewedChi2Sampler: {"check_dict_unchanged": {"n_components": 1}},
+    SimpleImputer: {"check_array_api_input": {"add_indicator": True}},
     SparseCoder: {
-        "check_array_api_input": dict(dictionary=rng.normal(size=(5, 10))),
-        "check_estimators_dtypes": dict(dictionary=rng.normal(size=(5, 5))),
-        "check_dtype_object": dict(dictionary=rng.normal(size=(5, 10))),
-        "check_transformers_unfitted_stateless": dict(
-            dictionary=rng.normal(size=(5, 5))
-        ),
-        "check_fit_idempotent": dict(dictionary=rng.normal(size=(5, 2))),
-        "check_transformer_preserve_dtypes": dict(
-            dictionary=rng.normal(size=(5, 3)).astype(np.float32)
-        ),
-        "check_set_output_transform": dict(dictionary=rng.normal(size=(5, 5))),
-        "check_global_output_transform_pandas": dict(
-            dictionary=rng.normal(size=(5, 5))
-        ),
-        "check_set_output_transform_pandas": dict(dictionary=rng.normal(size=(5, 5))),
-        "check_set_output_transform_polars": dict(dictionary=rng.normal(size=(5, 5))),
-        "check_global_set_output_transform_polars": dict(
-            dictionary=rng.normal(size=(5, 5))
-        ),
-        "check_dataframe_column_names_consistency": dict(
-            dictionary=rng.normal(size=(5, 8))
-        ),
-        "check_estimators_overwrite_params": dict(dictionary=rng.normal(size=(5, 2))),
-        "check_estimators_fit_returns_self": dict(dictionary=rng.normal(size=(5, 2))),
-        "check_readonly_memmap_input": dict(dictionary=rng.normal(size=(5, 2))),
-        "check_n_features_in_after_fitting": dict(dictionary=rng.normal(size=(5, 4))),
-        "check_fit_check_is_fitted": dict(dictionary=rng.normal(size=(5, 2))),
-        "check_n_features_in": dict(dictionary=rng.normal(size=(5, 2))),
-        "check_positive_only_tag_during_fit": dict(dictionary=rng.normal(size=(5, 4))),
-        "check_fit2d_1sample": dict(dictionary=rng.normal(size=(5, 10))),
-        "check_fit2d_1feature": dict(dictionary=rng.normal(size=(5, 1))),
+        "check_array_api_input": {"dictionary": rng.normal(size=(5, 10))},
+        "check_estimators_dtypes": {"dictionary": rng.normal(size=(5, 5))},
+        "check_dtype_object": {"dictionary": rng.normal(size=(5, 10))},
+        "check_transformers_unfitted_stateless": {
+            "dictionary": rng.normal(size=(5, 5))
+        },
+        "check_fit_idempotent": {"dictionary": rng.normal(size=(5, 2))},
+        "check_transformer_preserve_dtypes": {
+            "dictionary": rng.normal(size=(5, 3)).astype(np.float32)
+        },
+        "check_set_output_transform": {"dictionary": rng.normal(size=(5, 5))},
+        "check_global_output_transform_pandas": {
+            "dictionary": rng.normal(size=(5, 5))
+        },
+        "check_set_output_transform_pandas": {
+            "dictionary": rng.normal(size=(5, 5))
+        },
+        "check_set_output_transform_polars": {
+            "dictionary": rng.normal(size=(5, 5))
+        },
+        "check_global_set_output_transform_polars": {
+            "dictionary": rng.normal(size=(5, 5))
+        },
+        "check_dataframe_column_names_consistency": {
+            "dictionary": rng.normal(size=(5, 8))
+        },
+        "check_estimators_overwrite_params": {"dictionary": rng.normal(size=(5, 2))},
+        "check_estimators_fit_returns_self": {"dictionary": rng.normal(size=(5, 2))},
+        "check_readonly_memmap_input": {"dictionary": rng.normal(size=(5, 2))},
+        "check_n_features_in_after_fitting": {"dictionary": rng.normal(size=(5, 4))},
+        "check_fit_check_is_fitted": {"dictionary": rng.normal(size=(5, 2))},
+        "check_n_features_in": {"dictionary": rng.normal(size=(5, 2))},
+        "check_positive_only_tag_during_fit": {"dictionary": rng.normal(size=(5, 4))},
+        "check_fit2d_1sample": {"dictionary": rng.normal(size=(5, 10))},
+        "check_fit2d_1feature": {"dictionary": rng.normal(size=(5, 1))},
     },
-    SparsePCA: {"check_dict_unchanged": dict(max_iter=5, n_components=1)},
-    SparseRandomProjection: {"check_dict_unchanged": dict(n_components=1)},
+    SparsePCA: {"check_dict_unchanged": {"max_iter": 5, "n_components": 1}},
+    SparseRandomProjection: {"check_dict_unchanged": {"n_components": 1}},
     SpectralBiclustering: {
-        "check_dict_unchanged": dict(n_best=1, n_clusters=1, n_components=1, n_init=2)
+        "check_dict_unchanged": {
+            "n_best": 1,
+            "n_clusters": 1,
+            "n_components": 1,
+            "n_init": 2,
+        }
     },
     SpectralClustering: {
-        "check_dict_unchanged": dict(n_clusters=1, n_components=1, n_init=2)
+        "check_dict_unchanged": {"n_clusters": 1, "n_components": 1, "n_init": 2}
     },
-    SpectralCoclustering: {"check_dict_unchanged": dict(n_clusters=1, n_init=2)},
-    SpectralEmbedding: {"check_dict_unchanged": dict(eigen_tol=1e-05, n_components=1)},
+    SpectralCoclustering: {"check_dict_unchanged": {"n_clusters": 1, "n_init": 2}},
+    SpectralEmbedding: {
+        "check_dict_unchanged": {"eigen_tol": 1e-05, "n_components": 1}
+    },
     StandardScaler: {
         "check_sample_weight_equivalence_on_dense_data": [
-            dict(with_mean=True),
-            dict(with_mean=False),
+            {"with_mean": True},
+            {"with_mean": False},
         ],
         "check_sample_weight_equivalence_on_sparse_data": [
-            dict(with_mean=False),
+            {"with_mean": False},
         ],
     },
-    TSNE: {"check_dict_unchanged": dict(n_components=1, perplexity=2)},
-    TruncatedSVD: {"check_dict_unchanged": dict(n_components=1)},
+    TSNE: {"check_dict_unchanged": {"n_components": 1, "perplexity": 2}},
+    TruncatedSVD: {"check_dict_unchanged": {"n_components": 1}},
     TweedieRegressor: {
         "check_sample_weight_equivalence_on_dense_data": [
-            dict(solver="newton-cholesky"),
-            dict(solver="lbfgs"),
+            {"solver": "newton-cholesky"},
+            {"solver": "lbfgs"},
         ],
     },
 }
