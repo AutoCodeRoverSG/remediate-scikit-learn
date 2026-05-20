@@ -369,7 +369,7 @@ class Pipeline(_BaseComposition):
                 self.steps[ind], memory=self.memory, verbose=self.verbose
             )
         try:
-            name, est = self.steps[ind]
+            _, est = self.steps[ind]
         except TypeError:
             # Not an int, try get step by name
             return self.named_steps[ind]
@@ -489,8 +489,8 @@ class Pipeline(_BaseComposition):
                 method="transform", params=all_params.keys()
             )
         }
-        transformed_params = dict()  # this is to be returned
-        transformed_cache = dict()  # used to transform each param once
+        transformed_params = {}  # this is to be returned
+        transformed_cache = {}  # used to transform each param once
         # `step_params` is the output of `process_routing`, so it has a dict for each
         # method (e.g. fit, transform, predict), which are the args to be passed to
         # those methods. We need to transform the parameters which are in the
@@ -617,7 +617,7 @@ class Pipeline(_BaseComposition):
             )
 
         routed_params = self._check_method_params(method="fit", props=params)
-        Xt = self._fit(X, y, routed_params, raw_params=params)
+        xt = self._fit(X, y, routed_params, raw_params=params)
         with _print_elapsed_time("Pipeline", self._log_message(len(self.steps) - 1)):
             if self._final_estimator != "passthrough":
                 last_step_params = self._get_metadata_for_step(
@@ -625,7 +625,7 @@ class Pipeline(_BaseComposition):
                     step_params=routed_params[self.steps[-1][0]],
                     all_params=params,
                 )
-                self._final_estimator.fit(Xt, y, **last_step_params["fit"])
+                self._final_estimator.fit(xt, y, **last_step_params["fit"])
 
         return self
 
@@ -681,12 +681,12 @@ class Pipeline(_BaseComposition):
             Transformed samples.
         """
         routed_params = self._check_method_params(method="fit_transform", props=params)
-        Xt = self._fit(X, y, routed_params)
+        xt = self._fit(X, y, routed_params)
 
         last_step = self._final_estimator
         with _print_elapsed_time("Pipeline", self._log_message(len(self.steps) - 1)):
             if last_step == "passthrough":
-                return Xt
+                return xt
             last_step_params = self._get_metadata_for_step(
                 step_idx=len(self) - 1,
                 step_params=routed_params[self.steps[-1][0]],
@@ -694,11 +694,11 @@ class Pipeline(_BaseComposition):
             )
             if hasattr(last_step, "fit_transform"):
                 return last_step.fit_transform(
-                    Xt, y, **last_step_params["fit_transform"]
+                    xt, y, **last_step_params["fit_transform"]
                 )
             else:
-                return last_step.fit(Xt, y, **last_step_params["fit"]).transform(
-                    Xt, **last_step_params["transform"]
+                return last_step.fit(xt, y, **last_step_params["fit"]).transform(
+                    xt, **last_step_params["transform"]
                 )
 
     @available_if(_final_estimator_has("predict"))
@@ -745,18 +745,22 @@ class Pipeline(_BaseComposition):
             Result of calling `predict` on the final estimator.
         """
         check_is_fitted(self)
-        Xt = X
+        x_transformed = X
 
         if not _routing_enabled():
             for _, name, transform in self._iter(with_final=False):
-                Xt = transform.transform(Xt)
-            return self.steps[-1][1].predict(Xt, **params)
+                x_transformed = transform.transform(x_transformed)
+            return self.steps[-1][1].predict(x_transformed, **params)
 
         # metadata routing enabled
         routed_params = process_routing(self, "predict", **params)
         for _, name, transform in self._iter(with_final=False):
-            Xt = transform.transform(Xt, **routed_params[name].transform)
-        return self.steps[-1][1].predict(Xt, **routed_params[self.steps[-1][0]].predict)
+            x_transformed = transform.transform(
+                x_transformed, **routed_params[name].transform
+            )
+        return self.steps[-1][1].predict(
+            x_transformed, **routed_params[self.steps[-1][0]].predict
+        )
 
     @available_if(_final_estimator_has("fit_predict"))
     @_fit_context(
@@ -810,12 +814,12 @@ class Pipeline(_BaseComposition):
             Result of calling `fit_predict` on the final estimator.
         """
         routed_params = self._check_method_params(method="fit_predict", props=params)
-        Xt = self._fit(X, y, routed_params)
+        xt = self._fit(X, y, routed_params)
 
         params_last_step = routed_params[self.steps[-1][0]]
         with _print_elapsed_time("Pipeline", self._log_message(len(self.steps) - 1)):
             y_pred = self.steps[-1][1].fit_predict(
-                Xt, y, **params_last_step.get("fit_predict", {})
+                xt, y, **params_last_step.get("fit_predict", {})
             )
         return y_pred
 
@@ -858,19 +862,19 @@ class Pipeline(_BaseComposition):
             Result of calling `predict_proba` on the final estimator.
         """
         check_is_fitted(self)
-        Xt = X
+        xt = X
 
         if not _routing_enabled():
             for _, name, transform in self._iter(with_final=False):
-                Xt = transform.transform(Xt)
-            return self.steps[-1][1].predict_proba(Xt, **params)
+                xt = transform.transform(xt)
+            return self.steps[-1][1].predict_proba(xt, **params)
 
         # metadata routing enabled
         routed_params = process_routing(self, "predict_proba", **params)
         for _, name, transform in self._iter(with_final=False):
-            Xt = transform.transform(Xt, **routed_params[name].transform)
+            xt = transform.transform(xt, **routed_params[name].transform)
         return self.steps[-1][1].predict_proba(
-            Xt, **routed_params[self.steps[-1][0]].predict_proba
+            xt, **routed_params[self.steps[-1][0]].predict_proba
         )
 
     @available_if(_final_estimator_has("decision_function"))
@@ -910,13 +914,13 @@ class Pipeline(_BaseComposition):
         # enable_metadata_routing=True
         routed_params = process_routing(self, "decision_function", **params)
 
-        Xt = X
+        xt = X
         for _, name, transform in self._iter(with_final=False):
-            Xt = transform.transform(
-                Xt, **routed_params.get(name, {}).get("transform", {})
+            xt = transform.transform(
+                xt, **routed_params.get(name, {}).get("transform", {})
             )
         return self.steps[-1][1].decision_function(
-            Xt,
+            xt,
             **routed_params.get(self.steps[-1][0], {}).get("decision_function", {}),
         )
 
@@ -941,10 +945,10 @@ class Pipeline(_BaseComposition):
             Result of calling `score_samples` on the final estimator.
         """
         check_is_fitted(self)
-        Xt = X
+        xt = X
         for _, _, transformer in self._iter(with_final=False):
-            Xt = transformer.transform(Xt)
-        return self.steps[-1][1].score_samples(Xt)
+            xt = transformer.transform(xt)
+        return self.steps[-1][1].score_samples(xt)
 
     @available_if(_final_estimator_has("predict_log_proba"))
     def predict_log_proba(self, X, **params):
