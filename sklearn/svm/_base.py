@@ -3,6 +3,7 @@
 
 import warnings
 from abc import ABCMeta, abstractmethod
+from dataclasses import dataclass
 from numbers import Integral, Real
 
 import numpy as np
@@ -128,16 +129,13 @@ class BaseLibSVM(BaseEstimator, metaclass=ABCMeta):
         gamma,
         coef0,
         tol,
-        C,
         nu,
         epsilon,
         shrinking,
         probability,
         cache_size,
         class_weight,
-        verbose,
-        max_iter,
-        random_state,
+        **kwargs,
     ):
         if self._impl not in LIBSVM_IMPL:
             raise ValueError(
@@ -149,16 +147,16 @@ class BaseLibSVM(BaseEstimator, metaclass=ABCMeta):
         self.gamma = gamma
         self.coef0 = coef0
         self.tol = tol
-        self.C = C
+        self.C = kwargs.get("C", 0.0)
         self.nu = nu
         self.epsilon = epsilon
         self.shrinking = shrinking
         self.probability = probability
         self.cache_size = cache_size
         self.class_weight = class_weight
-        self.verbose = verbose
-        self.max_iter = max_iter
-        self.random_state = random_state
+        self.verbose = kwargs.get("verbose", False)
+        self.max_iter = kwargs.get("max_iter", -1)
+        self.random_state = kwargs.get("random_state", None)
 
     def __sklearn_tags__(self):
         tags = super().__sklearn_tags__()
@@ -278,8 +276,8 @@ class BaseLibSVM(BaseEstimator, metaclass=ABCMeta):
         elif isinstance(self.gamma, str):
             if self.gamma == "scale":
                 # var = E[X^2] - E[X]^2 if sparse
-                X_var = (X.multiply(X)).mean() - (X.mean()) ** 2 if sparse else X.var()
-                self._gamma = 1.0 / (X.shape[1] * X_var) if X_var != 0 else 1.0
+                x_var = (X.multiply(X)).mean() - (X.mean()) ** 2 if sparse else X.var()
+                self._gamma = 1.0 / (X.shape[1] * x_var) if x_var != 0 else 1.0
             elif self.gamma == "auto":
                 self._gamma = 1.0 / X.shape[1]
         elif isinstance(self.gamma, Real):
@@ -439,10 +437,10 @@ class BaseLibSVM(BaseEstimator, metaclass=ABCMeta):
             n_class = len(self.classes_) - 1
         else:  # regression
             n_class = 1
-        n_SV = self.support_vectors_.shape[0]
+        n_sv = self.support_vectors_.shape[0]
 
-        dual_coef_indices = np.tile(np.arange(n_SV), n_class)
-        if not n_SV:
+        dual_coef_indices = np.tile(np.arange(n_sv), n_class)
+        if not n_sv:
             self.dual_coef_ = _align_api_if_sparse(sp.csr_array([[]]))
         else:
             dual_coef_indptr = np.arange(
@@ -451,7 +449,7 @@ class BaseLibSVM(BaseEstimator, metaclass=ABCMeta):
             self.dual_coef_ = _align_api_if_sparse(
                 sp.csr_array(
                     (dual_coef_data, dual_coef_indices, dual_coef_indptr),
-                    (n_class, n_SV),
+                    (n_class, n_sv),
                 )
             )
 
@@ -670,13 +668,13 @@ class BaseLibSVM(BaseEstimator, metaclass=ABCMeta):
                 % type(self).__name__
             )
 
-        if self.kernel == "precomputed":
-            if X.shape[1] != self.shape_fit_[0]:
-                raise ValueError(
-                    "X.shape[1] = %d should be equal to %d, "
-                    "the number of samples at training time"
-                    % (X.shape[1], self.shape_fit_[0])
-                )
+        if self.kernel == "precomputed" and X.shape[1] != self.shape_fit_[0]:
+            raise ValueError(
+                "X.shape[1] = %d should be equal to %d, "
+                "the number of samples at training time"
+                % (X.shape[1], self.shape_fit_[0])
+            )
+
         # Fixes https://nvd.nist.gov/vuln/detail/CVE-2020-28975
         # Check that _n_support is consistent with support_vectors
         sv = self.support_vectors_
@@ -748,17 +746,14 @@ class BaseSVC(ClassifierMixin, BaseLibSVM, metaclass=ABCMeta):
         gamma,
         coef0,
         tol,
-        C,
         nu,
         shrinking,
         probability,
         cache_size,
         class_weight,
-        verbose,
-        max_iter,
         decision_function_shape,
-        random_state,
         break_ties,
+        **kwargs,
     ):
         self.decision_function_shape = decision_function_shape
         self.break_ties = break_ties
@@ -768,16 +763,16 @@ class BaseSVC(ClassifierMixin, BaseLibSVM, metaclass=ABCMeta):
             gamma=gamma,
             coef0=coef0,
             tol=tol,
-            C=C,
             nu=nu,
             epsilon=0.0,
             shrinking=shrinking,
             probability=probability,
             cache_size=cache_size,
             class_weight=class_weight,
-            verbose=verbose,
-            max_iter=max_iter,
-            random_state=random_state,
+            C=kwargs.get("C", 0.0),
+            verbose=kwargs.get("verbose", False),
+            max_iter=kwargs.get("max_iter", -1),
+            random_state=kwargs.get("random_state", None),
         )
 
     def _validate_targets(self, y):
@@ -1111,21 +1106,28 @@ def _get_liblinear_solver_type(multi_class, penalty, loss, dual):
     )
 
 
+@dataclass
+class LibLinearSolverConfig:
+    """Configuration for the liblinear solver parameters."""
+
+    penalty: str
+    dual: bool
+    multi_class: str = "ovr"
+    loss: str = "logistic_regression"
+
+
 def _fit_liblinear(
     X,
     y,
-    C,
+    c,
     fit_intercept,
     intercept_scaling,
     class_weight,
-    penalty,
-    dual,
+    solver_config,
     verbose,
     max_iter,
     tol,
     random_state=None,
-    multi_class="ovr",
-    loss="logistic_regression",
     epsilon=0.1,
     sample_weight=None,
 ):
@@ -1227,6 +1229,11 @@ def _fit_liblinear(
     n_iter_ : array of int
         Number of iterations run across for each class.
     """
+    penalty = solver_config.penalty
+    dual = solver_config.dual
+    multi_class = solver_config.multi_class
+    loss = solver_config.loss
+
     if loss not in ["epsilon_insensitive", "squared_epsilon_insensitive"]:
         enc = LabelEncoder()
         y_ind = enc.fit_transform(y)
@@ -1282,7 +1289,7 @@ def _fit_liblinear(
         solver_type,
         tol,
         bias,
-        C,
+        c,
         class_weight_,
         max_iter,
         rnd.randint(np.iinfo("i").max),
