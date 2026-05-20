@@ -9,18 +9,18 @@ from sklearn.utils import check_random_state
 
 def test_quadtree_boundary_computation():
     # Introduce a point into a quad tree with boundaries not easy to compute.
-    Xs = []
+    xs = []
 
     # check a random case
-    Xs.append(np.array([[-1, 1], [-4, -1]], dtype=np.float32))
+    xs.append(np.array([[-1, 1], [-4, -1]], dtype=np.float32))
     # check the case where only 0 are inserted
-    Xs.append(np.array([[0, 0], [0, 0]], dtype=np.float32))
+    xs.append(np.array([[0, 0], [0, 0]], dtype=np.float32))
     # check the case where only negative are inserted
-    Xs.append(np.array([[-1, -2], [-4, 0]], dtype=np.float32))
+    xs.append(np.array([[-1, -2], [-4, 0]], dtype=np.float32))
     # check the case where only small numbers are inserted
-    Xs.append(np.array([[-1e-6, 1e-6], [-4e-6, -1e-6]], dtype=np.float32))
+    xs.append(np.array([[-1e-6, 1e-6], [-4e-6, -1e-6]], dtype=np.float32))
 
-    for X in Xs:
+    for X in xs:
         tree = _QuadTree(n_dimensions=2, verbose=0)
         tree.build_tree(X)
         tree._check_coherence()
@@ -29,32 +29,32 @@ def test_quadtree_boundary_computation():
 def test_quadtree_similar_point():
     # Introduce a point into a quad tree where a similar point already exists.
     # Test will hang if it doesn't complete.
-    Xs = []
+    xs = []
 
     # check the case where points are actually different
-    Xs.append(np.array([[1, 2], [3, 4]], dtype=np.float32))
+    xs.append(np.array([[1, 2], [3, 4]], dtype=np.float32))
     # check the case where points are the same on X axis
-    Xs.append(np.array([[1.0, 2.0], [1.0, 3.0]], dtype=np.float32))
+    xs.append(np.array([[1.0, 2.0], [1.0, 3.0]], dtype=np.float32))
     # check the case where points are arbitrarily close on X axis
-    Xs.append(np.array([[1.00001, 2.0], [1.00002, 3.0]], dtype=np.float32))
+    xs.append(np.array([[1.00001, 2.0], [1.00002, 3.0]], dtype=np.float32))
     # check the case where points are the same on Y axis
-    Xs.append(np.array([[1.0, 2.0], [3.0, 2.0]], dtype=np.float32))
+    xs.append(np.array([[1.0, 2.0], [3.0, 2.0]], dtype=np.float32))
     # check the case where points are arbitrarily close on Y axis
-    Xs.append(np.array([[1.0, 2.00001], [3.0, 2.00002]], dtype=np.float32))
+    xs.append(np.array([[1.0, 2.00001], [3.0, 2.00002]], dtype=np.float32))
     # check the case where points are arbitrarily close on both axes
-    Xs.append(np.array([[1.00001, 2.00001], [1.00002, 2.00002]], dtype=np.float32))
+    xs.append(np.array([[1.00001, 2.00001], [1.00002, 2.00002]], dtype=np.float32))
 
     # check the case where points are arbitrarily close on both axes
     # close to machine epsilon - x axis
-    Xs.append(np.array([[1, 0.0003817754041], [2, 0.0003817753750]], dtype=np.float32))
+    xs.append(np.array([[1, 0.0003817754041], [2, 0.0003817753750]], dtype=np.float32))
 
     # check the case where points are arbitrarily close on both axes
     # close to machine epsilon - y axis
-    Xs.append(
+    xs.append(
         np.array([[0.0003817754041, 1.0], [0.0003817753750, 2.0]], dtype=np.float32)
     )
 
-    for X in Xs:
+    for X in xs:
         tree = _QuadTree(n_dimensions=2, verbose=0)
         tree.build_tree(X)
         tree._check_coherence()
@@ -85,14 +85,14 @@ def test_qt_insert_duplicate(n_dimensions):
 
     X = rng.random_sample((10, n_dimensions))
     # create some duplicates
-    Xd = np.r_[X, X[:5]]
+    xd = np.r_[X, X[:5]]
     epsilon = 1e-6
     # EPSILON=1e-6 is defined in sklearn/neighbors/_quad_tree.pyx but not
     # accessible from Python
     # add slight noise: duplicate detection should tolerate tiny numerical differences
-    Xd += epsilon * (rng.rand(*Xd.shape) - 0.5)
+    xd += epsilon * (rng.rand(*xd.shape) - 0.5)
     tree = _QuadTree(n_dimensions=n_dimensions, verbose=0)
-    tree.build_tree(Xd)
+    tree.build_tree(xd)
 
     cumulative_size = tree.cumulative_size
     leafs = tree.leafs
@@ -136,8 +136,6 @@ def test_summarize():
     # Summary should contain all 3 node with size 1 and distance to
     # each point in X[1:] for ``angle=0``
     idx, summary = qt._py_summarize(query_pt, X, 0.0)
-    barycenter = X[1:].mean(axis=0)
-    ds2c = ((X[0] - barycenter) ** 2).sum()
 
     assert idx == 3 * (offset)
     for i in range(3):
