@@ -990,19 +990,19 @@ class Pipeline(_BaseComposition):
             Result of calling `predict_log_proba` on the final estimator.
         """
         check_is_fitted(self)
-        Xt = X
+        xt = X
 
         if not _routing_enabled():
             for _, name, transform in self._iter(with_final=False):
-                Xt = transform.transform(Xt)
-            return self.steps[-1][1].predict_log_proba(Xt, **params)
+                xt = transform.transform(xt)
+            return self.steps[-1][1].predict_log_proba(xt, **params)
 
         # metadata routing enabled
         routed_params = process_routing(self, "predict_log_proba", **params)
         for _, name, transform in self._iter(with_final=False):
-            Xt = transform.transform(Xt, **routed_params[name].transform)
+            xt = transform.transform(xt, **routed_params[name].transform)
         return self.steps[-1][1].predict_log_proba(
-            Xt, **routed_params[self.steps[-1][0]].predict_log_proba
+            xt, **routed_params[self.steps[-1][0]].predict_log_proba
         )
 
     def _can_transform(self):

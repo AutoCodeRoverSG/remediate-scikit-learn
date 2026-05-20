@@ -2193,10 +2193,10 @@ def test_radius_neighbors_predict_proba():
 
 def test_pipeline_with_nearest_neighbors_transformer():
     # Test chaining KNeighborsTransformer and classifiers/regressors
-    rng = np.random.RandomState(0)
-    X = 2 * rng.rand(40, 5) - 1
-    X2 = 2 * rng.rand(40, 5) - 1
-    y = rng.rand(40, 1)
+    rng = np.random.default_rng(0)
+    X = 2 * rng.random((40, 5)) - 1
+    X2 = 2 * rng.random((40, 5)) - 1
+    y = rng.random((40, 1))
 
     n_neighbors = 12
     radius = 1.5
@@ -2240,12 +2240,12 @@ def test_pipeline_with_nearest_neighbors_transformer():
 @pytest.mark.parametrize(
     "X, metric, metric_params, expected_algo",
     [
-        (np.random.randint(10, size=(10, 10)), "precomputed", None, "brute"),
-        (np.random.randn(10, 20), "euclidean", None, "brute"),
-        (np.random.randn(8, 5), "euclidean", None, "brute"),
-        (np.random.randn(10, 5), "euclidean", None, "kd_tree"),
-        (np.random.randn(10, 5), "seuclidean", {"V": [2] * 5}, "ball_tree"),
-        (np.random.randn(10, 5), "correlation", None, "brute"),
+        (np.random.default_rng(0).integers(10, size=(10, 10)), "precomputed", None, "brute"),
+        (np.random.default_rng(0).standard_normal((10, 20)), "euclidean", None, "brute"),
+        (np.random.default_rng(0).standard_normal((8, 5)), "euclidean", None, "brute"),
+        (np.random.default_rng(0).standard_normal((10, 5)), "euclidean", None, "kd_tree"),
+        (np.random.default_rng(0).standard_normal((10, 5)), "seuclidean", {"V": [2] * 5}, "ball_tree"),
+        (np.random.default_rng(0).standard_normal((10, 5)), "correlation", None, "brute"),
     ],
 )
 def test_auto_algorithm(X, metric, metric_params, expected_algo):
@@ -2272,11 +2272,11 @@ def test_radius_neighbors_brute_backend(
     n_query_pts=5,
     radius=1.0,
 ):
-    rng = np.random.RandomState(global_random_seed)
+    rng = np.random.default_rng(global_random_seed)
     # Both backends for the 'brute' algorithm of radius_neighbors
     # must give identical results.
-    X_train = rng.rand(n_samples, n_features).astype(global_dtype, copy=False)
-    X_test = rng.rand(n_query_pts, n_features).astype(global_dtype, copy=False)
+    X_train = rng.random((n_samples, n_features)).astype(global_dtype, copy=False)
+    X_test = rng.random((n_query_pts, n_features)).astype(global_dtype, copy=False)
 
     # Haversine distance only accepts 2D data
     if metric == "haversine":
@@ -2406,7 +2406,7 @@ def test_nearest_neighbours_works_with_p_less_than_1():
     assert_allclose(y[0], [0, 1, 2])
 
 
-def test_KNeighborsClassifier_raise_on_all_zero_weights():
+def test_kneighbors_classifier_raise_on_all_zero_weights():
     """Check that `predict` and `predict_proba` raises on sample of all zeros weights.
 
     Related to Issue #25854.
