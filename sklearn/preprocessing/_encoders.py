@@ -89,12 +89,11 @@ class _BaseEncoder(TransformerMixin, BaseEstimator):
         )
         self.n_features_in_ = n_features
 
-        if self.categories != "auto":
-            if len(self.categories) != n_features:
-                raise ValueError(
-                    "Shape mismatch: if categories is an array,"
-                    " it has to be of shape (n_features,)."
-                )
+        if self.categories != "auto" and len(self.categories) != n_features:
+            raise ValueError(
+                "Shape mismatch: if categories is an array,"
+                " it has to be of shape (n_features,)."
+            )
 
         self.categories_ = []
         category_counts = []
@@ -1654,8 +1653,8 @@ class OrdinalEncoder(OneToOneFeatureMixin, _BaseEncoder):
 
             # replace values of X[:, i] that were nan with actual indices
             if i in self._missing_indices:
-                X_i_mask = _get_mask(labels, self.encoded_missing_value)
-                labels[X_i_mask] = self._missing_indices[i]
+                x_i_mask = _get_mask(labels, self.encoded_missing_value)
+                labels[x_i_mask] = self._missing_indices[i]
 
             rows_to_update = slice(None)
             categories = self.categories_[i]

@@ -417,7 +417,7 @@ class KBinsDiscretizer(TransformerMixin, BaseEstimator):
 
         bad_nbins_value = (n_bins < 2) | (n_bins != orig_bins)
 
-        violating_indices = np.where(bad_nbins_value)[0]
+        violating_indices = np.nonzero(bad_nbins_value)[0]
         if violating_indices.shape[0] > 0:
             indices = ", ".join(str(i) for i in violating_indices)
             raise ValueError(
@@ -448,25 +448,25 @@ class KBinsDiscretizer(TransformerMixin, BaseEstimator):
 
         # check input and attribute dtypes
         dtype = (np.float64, np.float32) if self.dtype is None else self.dtype
-        Xt = validate_data(self, X, copy=True, dtype=dtype, reset=False)
+        x_t = validate_data(self, X, copy=True, dtype=dtype, reset=False)
 
         bin_edges = self.bin_edges_
-        for jj in range(Xt.shape[1]):
-            Xt[:, jj] = np.searchsorted(bin_edges[jj][1:-1], Xt[:, jj], side="right")
+        for jj in range(x_t.shape[1]):
+            x_t[:, jj] = np.searchsorted(bin_edges[jj][1:-1], x_t[:, jj], side="right")
 
         if self.encode == "ordinal":
-            return Xt
+            return x_t
 
         dtype_init = None
         if "onehot" in self.encode:
             dtype_init = self._encoder.dtype
-            self._encoder.dtype = Xt.dtype
+            self._encoder.dtype = x_t.dtype
         try:
-            Xt_enc = self._encoder.transform(Xt)
+            x_t_enc = self._encoder.transform(x_t)
         finally:
             # revert the initial dtype to avoid modifying self.
             self._encoder.dtype = dtype_init
-        return Xt_enc
+        return x_t_enc
 
     def inverse_transform(self, X):
         """
@@ -491,21 +491,21 @@ class KBinsDiscretizer(TransformerMixin, BaseEstimator):
         if "onehot" in self.encode:
             X = self._encoder.inverse_transform(X)
 
-        Xinv = check_array(X, copy=True, dtype=(np.float64, np.float32))
+        x_inv = check_array(X, copy=True, dtype=(np.float64, np.float32))
         n_features = self.n_bins_.shape[0]
-        if Xinv.shape[1] != n_features:
+        if x_inv.shape[1] != n_features:
             raise ValueError(
                 "Incorrect number of features. Expecting {}, received {}.".format(
-                    n_features, Xinv.shape[1]
+                    n_features, x_inv.shape[1]
                 )
             )
 
         for jj in range(n_features):
             bin_edges = self.bin_edges_[jj]
             bin_centers = (bin_edges[1:] + bin_edges[:-1]) * 0.5
-            Xinv[:, jj] = bin_centers[(Xinv[:, jj]).astype(np.int64)]
+            x_inv[:, jj] = bin_centers[(x_inv[:, jj]).astype(np.int64)]
 
-        return Xinv
+        return x_inv
 
     def get_feature_names_out(self, input_features=None):
         """Get output feature names.

@@ -551,7 +551,7 @@ class TargetEncoder(OneToOneFeatureMixin, _BaseEncoder):
             )
         return encodings
 
-    def _fit_encoding_multiclass(self, X_ordinal, y, n_categories, target_mean):
+    def _fit_encoding_multiclass(self, x_ordinal, y, n_categories, target_mean):
         """Learn multiclass encodings.
 
         Learn encodings for each class (c) then reorder encodings such that
@@ -568,7 +568,7 @@ class TargetEncoder(OneToOneFeatureMixin, _BaseEncoder):
         for i in range(n_classes):
             y_class = y[:, i]
             encoding = self._fit_encoding_binary_or_continuous(
-                X_ordinal,
+                x_ordinal,
                 y_class,
                 n_categories,
                 target_mean[i],
@@ -584,9 +584,9 @@ class TargetEncoder(OneToOneFeatureMixin, _BaseEncoder):
 
     def _transform_X_ordinal(
         self,
-        X_out,
-        X_ordinal,
-        X_unknown_mask,
+        x_out,
+        x_ordinal,
+        x_unknown_mask,
         row_indices,
         encodings,
         target_mean,
@@ -609,12 +609,12 @@ class TargetEncoder(OneToOneFeatureMixin, _BaseEncoder):
                 feat_idx = e_idx // n_classes
                 # Cycle through each class
                 mean_idx = e_idx % n_classes
-                X_out[row_indices, e_idx] = encoding[X_ordinal[row_indices, feat_idx]]
-                X_out[X_unknown_mask[:, feat_idx], e_idx] = target_mean[mean_idx]
+                x_out[row_indices, e_idx] = encoding[x_ordinal[row_indices, feat_idx]]
+                x_out[x_unknown_mask[:, feat_idx], e_idx] = target_mean[mean_idx]
         else:
             for e_idx, encoding in enumerate(encodings):
-                X_out[row_indices, e_idx] = encoding[X_ordinal[row_indices, e_idx]]
-                X_out[X_unknown_mask[:, e_idx], e_idx] = target_mean
+                x_out[row_indices, e_idx] = encoding[x_ordinal[row_indices, e_idx]]
+                x_out[x_unknown_mask[:, e_idx], e_idx] = target_mean
 
     def get_feature_names_out(self, input_features=None):
         """Get output feature names for transformation.
