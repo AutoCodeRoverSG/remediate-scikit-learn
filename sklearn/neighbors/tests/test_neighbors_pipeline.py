@@ -129,8 +129,8 @@ def test_tsne():
     perplexity = 5
     n_neighbors = int(3.0 * perplexity + 1)
 
-    rng = np.random.RandomState(0)
-    X = rng.randn(20, 2)
+    rng = np.random.default_rng(0)
+    X = rng.standard_normal((20, 2))
 
     for metric in ["minkowski", "sqeuclidean"]:
         # compare the chained version and the compact version
@@ -166,8 +166,8 @@ def test_lof_novelty_false():
     # Test chaining KNeighborsTransformer and LocalOutlierFactor
     n_neighbors = 4
 
-    rng = np.random.RandomState(0)
-    X = rng.randn(40, 2)
+    rng = np.random.default_rng(0)
+    X = rng.standard_normal((40, 2))
 
     # compare the chained version and the compact version
     est_chain = make_pipeline(
@@ -193,9 +193,9 @@ def test_lof_novelty_true():
     # Test chaining KNeighborsTransformer and LocalOutlierFactor
     n_neighbors = 4
 
-    rng = np.random.RandomState(0)
-    X1 = rng.randn(40, 2)
-    X2 = rng.randn(40, 2)
+    rng = np.random.default_rng(0)
+    X1 = rng.standard_normal((40, 2))
+    X2 = rng.standard_normal((40, 2))
 
     # compare the chained version and the compact version
     est_chain = make_pipeline(
@@ -219,10 +219,10 @@ def test_lof_novelty_true():
 
 def test_kneighbors_regressor():
     # Test chaining KNeighborsTransformer and classifiers/regressors
-    rng = np.random.RandomState(0)
-    X = 2 * rng.rand(40, 5) - 1
-    X2 = 2 * rng.rand(40, 5) - 1
-    y = rng.rand(40, 1)
+    rng = np.random.default_rng(0)
+    X = 2 * rng.random((40, 5)) - 1
+    X2 = 2 * rng.random((40, 5)) - 1
+    y = rng.random((40, 1))
 
     n_neighbors = 12
     radius = 1.5
@@ -256,7 +256,7 @@ def test_kneighbors_regressor():
         reg_precomp = clone(reg)
         reg_precomp.set_params(metric="precomputed")
 
-        reg_chain = make_pipeline(clone(trans), reg_precomp)
+        reg_chain = make_pipeline(clone(trans), reg_precomp, memory=None)
 
         y_pred_chain = reg_chain.fit(X, y).predict(X2)
         y_pred_compact = reg_compact.fit(X, y).predict(X2)
