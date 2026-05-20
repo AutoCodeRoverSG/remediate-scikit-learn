@@ -1206,11 +1206,11 @@ class MetadataRouter:
         obj : dict
             A serialized version of the instance in the form of a dictionary.
         """
-        res = dict()
+        res = {}
         if self._self_request:
             res["$self_request"] = self._self_request._serialize()
         for name, route_mapping in self._route_mappings.items():
-            res[name] = dict()
+            res[name] = {}
             res[name]["mapping"] = route_mapping.mapping._serialize()
             res[name]["router"] = route_mapping.router._serialize()
 
@@ -1486,16 +1486,35 @@ class _MetadataRequester:
         # The following list of defined methods mirrors the list of methods
         # in SIMPLE_METHODS.
         # fmt: off
-        def set_fit_request(self, **kwargs): pass
-        def set_partial_fit_request(self, **kwargs): pass
-        def set_predict_request(self, **kwargs): pass
-        def set_predict_proba_request(self, **kwargs): pass
-        def set_predict_log_proba_request(self, **kwargs): pass
-        def set_decision_function_request(self, **kwargs): pass
-        def set_score_request(self, **kwargs): pass
-        def set_split_request(self, **kwargs): pass
-        def set_transform_request(self, **kwargs): pass
-        def set_inverse_transform_request(self, **kwargs): pass
+        def set_fit_request(self, **kwargs):
+            ...  # type stub generated dynamically at runtime
+
+        def set_partial_fit_request(self, **kwargs):
+            ...  # type stub generated dynamically at runtime
+
+        def set_predict_request(self, **kwargs):
+            ...  # type stub generated dynamically at runtime
+
+        def set_predict_proba_request(self, **kwargs):
+            ...  # type stub generated dynamically at runtime
+
+        def set_predict_log_proba_request(self, **kwargs):
+            ...  # type stub generated dynamically at runtime
+
+        def set_decision_function_request(self, **kwargs):
+            ...  # type stub generated dynamically at runtime
+
+        def set_score_request(self, **kwargs):
+            ...  # type stub generated dynamically at runtime
+
+        def set_split_request(self, **kwargs):
+            ...  # type stub generated dynamically at runtime
+
+        def set_transform_request(self, **kwargs):
+            ...  # type stub generated dynamically at runtime
+
+        def set_inverse_transform_request(self, **kwargs):
+            ...  # type stub generated dynamically at runtime
         # fmt: on
 
     def __init_subclass__(cls, **kwargs):
@@ -1546,7 +1565,7 @@ class _MetadataRequester:
         # Here we use `isfunction` instead of `ismethod` because calling `getattr`
         # on a class instead of an instance returns an unbound function.
         if not hasattr(cls, method) or not inspect.isfunction(getattr(cls, method)):
-            return dict()
+            return {}
         # ignore the first parameter of the method, which is usually "self"
         signature_items = list(
             inspect.signature(getattr(cls, method)).parameters.items()
@@ -1722,13 +1741,14 @@ def process_routing(_obj, _method, /, **kwargs):
         # an empty dict on routed_params.ANYTHING.ANY_METHOD.
         class EmptyRequest:
             def get(self, name, default=None):
-                return Bunch(**{method: dict() for method in METHODS})
+                # name and default are unused: EmptyRequest always returns empty metadata
+                return Bunch(**{method: {} for method in METHODS})
 
             def __getitem__(self, name):
-                return Bunch(**{method: dict() for method in METHODS})
+                return Bunch(**{method: {} for method in METHODS})
 
             def __getattr__(self, name):
-                return Bunch(**{method: dict() for method in METHODS})
+                return Bunch(**{method: {} for method in METHODS})
 
         return EmptyRequest()
 
