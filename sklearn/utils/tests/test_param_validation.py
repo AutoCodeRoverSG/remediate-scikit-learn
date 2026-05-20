@@ -69,6 +69,7 @@ class _Estimator(BaseEstimator):
 
     @_fit_context(prefer_skip_nested_validation=True)
     def fit(self, X=None, y=None):
+        # No-op: intentionally empty for parameter validation testing
         pass
 
 
@@ -412,7 +413,7 @@ def test_generate_valid_param(constraint):
             for container in CSR_CONTAINERS
         ],
         ("random_state", 0),
-        ("random_state", np.random.RandomState(0)),
+        ("random_state", np.random.default_rng(0)),
         ("random_state", None),
         (_Class, _Class()),
         (int, 1),
@@ -511,6 +512,7 @@ def test_validate_params_missing_params():
 
     @validate_params({"a": [int]}, prefer_skip_nested_validation=True)
     def func(a, b):
+        # No implementation needed; only parameter validation is being tested.
         pass
 
     func(1, 2)
@@ -724,6 +726,7 @@ def test_skip_param_validation():
 
     @validate_params({"a": [int]}, prefer_skip_nested_validation=True)
     def f(a):
+        # No implementation needed: only the parameter validation decorator is tested
         pass
 
     with pytest.raises(InvalidParameterError, match="The 'a' parameter"):
@@ -740,6 +743,7 @@ def test_skip_nested_validation(prefer_skip_nested_validation):
 
     @validate_params({"a": [int]}, prefer_skip_nested_validation=True)
     def f(a):
+        # No implementation needed: only the parameter validation decorator is tested
         pass
 
     @validate_params(
