@@ -111,15 +111,15 @@ from sklearn.utils.validation import _num_samples, check_is_fitted, has_fit_para
 REGRESSION_DATASET = None
 
 
-def _raise_for_missing_tags(estimator, tag_name, Mixin):
+def _raise_for_missing_tags(estimator, tag_name, mixin):
     tags = get_tags(estimator)
-    estimator_type = Mixin.__name__.replace("Mixin", "")
+    estimator_type = mixin.__name__.replace("Mixin", "")
     if getattr(tags, tag_name) is None:
         raise RuntimeError(
             f"Estimator {estimator.__class__.__name__} seems to be a {estimator_type},"
             f" but the `{tag_name}` tag is not set. Either set the tag manually"
-            f" or inherit from the {Mixin.__name__}. Note that the order of inheritance"
-            f" matters, the {Mixin.__name__} should come before BaseEstimator."
+            f" or inherit from the {mixin.__name__}. Note that the order of inheritance"
+            f" matters, the {mixin.__name__} should come before BaseEstimator."
         )
 
 
@@ -376,13 +376,13 @@ def _yield_array_api_checks(estimator, only_numpy=False):
         # input support and are listed in PER_ESTIMATOR_XFAIL_CHECKS.
         for (
             other_ns_and_device,
-            X_ns_and_device,
+            x_ns_and_device,
             _,
         ) in yield_mixed_namespace_input_permutations():
             yield partial(
                 check_array_api_mixed_inputs,
                 other_ns_and_device=other_ns_and_device,
-                X_ns_and_device=X_ns_and_device,
+                X_ns_and_device=x_ns_and_device,
             )
         # 3. Namespace/device consistency between fit and predict/transform
         # Only test with one namespace to keep costs down
@@ -1015,7 +1015,7 @@ def _is_pairwise_metric(estimator):
     return bool(metric == "precomputed")
 
 
-def _generate_sparse_data(X_csr):
+def _generate_sparse_data(x_csr):
     """Generate sparse matrices or arrays with {32,64}bit indices of diverse format.
 
     Parameters
@@ -1030,19 +1030,19 @@ def _generate_sparse_data(X_csr):
         'coo_64', 'csc_64', 'csr_64']
     """
 
-    assert X_csr.format == "csr"
-    yield "csr", X_csr.copy()
+    assert x_csr.format == "csr"
+    yield "csr", x_csr.copy()
     for sparse_format in ["dok", "lil", "dia", "bsr", "csc", "coo"]:
-        yield sparse_format, X_csr.asformat(sparse_format)
+        yield sparse_format, x_csr.asformat(sparse_format)
 
     # Generate large indices matrix only if its supported by scipy
-    X_coo = X_csr.asformat("coo")
-    X_coo.row = X_coo.row.astype("int64")
-    X_coo.col = X_coo.col.astype("int64")
-    yield "coo_64", X_coo
+    x_coo = x_csr.asformat("coo")
+    x_coo.row = x_coo.row.astype("int64")
+    x_coo.col = x_coo.col.astype("int64")
+    yield "coo_64", x_coo
 
     for sparse_format in ["csc", "csr"]:
-        X = X_csr.asformat(sparse_format)
+        X = x_csr.asformat(sparse_format)
         X.indices = X.indices.astype("int64")
         X.indptr = X.indptr.astype("int64")
         yield sparse_format + "_64", X
@@ -1085,7 +1085,7 @@ def check_supervised_y_no_nan(name, estimator_orig):
 
 def _check_array_api_core(
     estimator_orig,
-    X_ns_and_device,
+    x_ns_and_device,
     other_ns_and_device,
     dtype_name=None,
     check_values=False,
@@ -1093,8 +1093,8 @@ def _check_array_api_core(
     expect_only_array_outputs=True,
 ):
     """Helper to check estimator attributes and method outputs."""
-    xp_X, device_X = _array_api_for_tests(
-        X_ns_and_device.xp, X_ns_and_device.device, dtype_name
+    xp_features, device_features = _array_api_for_tests(
+        x_ns_and_device.xp, x_ns_and_device.device, dtype_name
     )
     xp_other, device_other = _array_api_for_tests(
         other_ns_and_device.xp, other_ns_and_device.device
@@ -1102,9 +1102,9 @@ def _check_array_api_core(
 
     X, y = make_classification(n_samples=30, n_features=10, random_state=42)
     if dtype_name is None:
-        max_float_dtype = _max_precision_float_dtype(xp_X, device_X)
+        max_float_dtype = _max_precision_float_dtype(xp_features, device_features)
         # Convert to string, so it is accepted by NumPy (`X` is NumPy array)
-        dtype_name = "float32" if max_float_dtype == xp_X.float32 else "float64"
+        dtype_name = "float32" if max_float_dtype == xp_features.float32 else "float64"
 
     X = X.astype(dtype_name, copy=False)
 
@@ -1112,9 +1112,9 @@ def _check_array_api_core(
     y = _enforce_estimator_tags_y(estimator_orig, y)
 
     est = clone(estimator_orig)
-    set_random_state(est)
+    set_random_state(est, random_state=0)
 
-    X_xp = xp_X.asarray(X, device=device_X)
+    features_xp = xp_features.asarray(X, device=device_features)
     y_xp = xp_other.asarray(y, device=device_other)
 
     fit_kwargs = {}
@@ -1131,9 +1131,9 @@ def _check_array_api_core(
 
     est_xp = clone(est)
     with config_context(array_api_dispatch=True):
-        est_xp.fit(X_xp, y_xp, **fit_kwargs_xp)
+        est_xp.fit(features_xp, y_xp, **fit_kwargs_xp)
 
-    X_ns = xp_X.__name__
+    features_ns = xp_features.__name__
 
     array_attributes = {
         key: value for key, value in vars(est).items() if isinstance(value, np.ndarray)
@@ -1146,14 +1146,14 @@ def _check_array_api_core(
         with config_context(array_api_dispatch=True):
             attribute_ns = get_namespace(est_xp_param)[0].__name__
         if key != "classes_":
-            assert attribute_ns == X_ns, (
-                f"'{key}' attribute is in wrong namespace, expected {X_ns} "
+            assert attribute_ns == features_ns, (
+                f"'{key}' attribute is in wrong namespace, expected {features_ns} "
                 f"got {attribute_ns}"
             )
 
         with config_context(array_api_dispatch=True):
             if key != "classes_":
-                assert array_device(est_xp_param) == array_device(X_xp)
+                assert array_device(est_xp_param) == array_device(features_xp)
 
         est_xp_param_np = move_to(est_xp_param, xp=np, device="cpu")
         if check_values:
@@ -1168,10 +1168,10 @@ def _check_array_api_core(
             expected_dtype = attribute.dtype
             if np.issubdtype(attribute.dtype, np.floating):
                 max_float_dtype = _max_precision_float_dtype(
-                    xp_X, device=X_ns_and_device.device
+                    xp_features, device=x_ns_and_device.device
                 )
                 # for some devices the maximum supported floating dtype is float32
-                if max_float_dtype == xp_X.float32:
+                if max_float_dtype == xp_features.float32:
                     expected_dtype = np.float32
             assert est_xp_param_np.dtype == expected_dtype
 
@@ -1187,7 +1187,7 @@ def _check_array_api_core(
     )
 
     try:
-        np.asarray(X_xp)
+        np.asarray(features_xp)
         np.asarray(y_xp)
         # TODO There are a few errors in SearchCV with array-api-strict because
         # we end up doing X[train_indices] where X is an array-api-strict array
@@ -1196,7 +1196,7 @@ def _check_array_api_core(
         # all the array API libraries (PyTorch, jax, CuPy) accept indexing with a
         # numpy array. This is probably not worth doing anything about for
         # now since array-api-strict seems a bit too strict ...
-        numpy_asarray_works = xp_X.__name__ != "array_api_strict"
+        numpy_asarray_works = xp_features.__name__ != "array_api_strict"
 
     except (TypeError, RuntimeError, ValueError):
         # PyTorch with CUDA device and CuPy raise TypeError consistently.
@@ -1208,7 +1208,7 @@ def _check_array_api_core(
     if numpy_asarray_works:
         # In this case, array_api_dispatch is disabled and we rely on np.asarray
         # being called to convert the non-NumPy inputs to NumPy arrays when needed.
-        est_fitted_with_as_array = clone(est).fit(X_xp, y_xp)
+        est_fitted_with_as_array = clone(est).fit(features_xp, y_xp)
         # We only do a smoke test for now, in order to avoid complicating the
         # test function even further.
         for method_name in methods:
@@ -1217,9 +1217,9 @@ def _check_array_api_core(
                 continue
 
             if method_name == "score":
-                method(X_xp, y_xp)
+                method(features_xp, y_xp)
             else:
-                method(X_xp)
+                method(features_xp)
 
     for method_name in methods:
         method = getattr(est, method_name, None)
@@ -1229,7 +1229,7 @@ def _check_array_api_core(
         if method_name == "score":
             result = method(X, y)
             with config_context(array_api_dispatch=True):
-                result_xp = getattr(est_xp, method_name)(X_xp, y_xp)
+                result_xp = getattr(est_xp, method_name)(features_xp, y_xp)
             # score typically returns a Python float
             assert isinstance(result, float)
             assert isinstance(result_xp, float)
@@ -1239,18 +1239,18 @@ def _check_array_api_core(
         else:
             result = method(X)
             with config_context(array_api_dispatch=True):
-                result_xp = getattr(est_xp, method_name)(X_xp)
+                result_xp = getattr(est_xp, method_name)(features_xp)
 
         with config_context(array_api_dispatch=True):
             result_ns = get_namespace(result_xp)[0].__name__
-        assert result_ns == X_ns, (
-            f"'{method}' output is in wrong namespace, expected {X_ns}, "
+        assert result_ns == features_ns, (
+            f"'{method}' output is in wrong namespace, expected {features_ns}, "
             f"got {result_ns}."
         )
 
         if expect_only_array_outputs:
             with config_context(array_api_dispatch=True):
-                assert array_device(result_xp) == array_device(X_xp)
+                assert array_device(result_xp) == array_device(features_xp)
 
             result_xp_np = move_to(result_xp, xp=np, device="cpu")
             if check_values:
@@ -1272,12 +1272,12 @@ def _check_array_api_core(
             if expect_only_array_outputs:
                 with config_context(array_api_dispatch=True):
                     inverse_result_ns = get_namespace(inverse_result_xp)[0].__name__
-                assert inverse_result_ns == X_ns, (
+                assert inverse_result_ns == features_ns, (
                     "'inverse_transform' output is in wrong namespace, expected"
-                    f" {X_ns}, got {inverse_result_ns}."
+                    f" {features_ns}, got {inverse_result_ns}."
                 )
                 with config_context(array_api_dispatch=True):
-                    assert array_device(result_xp) == array_device(X_xp)
+                    assert array_device(result_xp) == array_device(features_xp)
 
                 inverse_result_xp_np = move_to(inverse_result_xp, xp=np, device="cpu")
                 if check_values:
@@ -1343,12 +1343,12 @@ def check_array_api_input(
         If `False` the checks are looser; device, shape and dtype checks for method
         outputs are skipped and only a smoke test is performed for `inverse_transform`.
     """
-    X_ns_and_device = NamespaceAndDevice(array_namespace, device_name)
+    x_ns_and_device = NamespaceAndDevice(array_namespace, device_name)
     _check_array_api_core(
         estimator_orig,
-        X_ns_and_device=X_ns_and_device,
+        x_ns_and_device=x_ns_and_device,
         # Make all array inputs of the same namespace/device
-        other_ns_and_device=X_ns_and_device,
+        other_ns_and_device=x_ns_and_device,
         dtype_name=dtype_name,
         check_values=check_values,
         check_sample_weight=check_sample_weight,
@@ -1430,7 +1430,7 @@ def check_array_api_mixed_inputs(
     """
     _check_array_api_core(
         estimator_orig,
-        X_ns_and_device=X_ns_and_device,
+        x_ns_and_device=X_ns_and_device,
         other_ns_and_device=other_ns_and_device,
         dtype_name=None,
         check_values=check_values,
