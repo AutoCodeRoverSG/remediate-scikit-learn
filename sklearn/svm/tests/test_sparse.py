@@ -56,9 +56,9 @@ def check_svm_model_equal(dense_svm, X_train, y_train, X_test):
 
     dense_svm.fit(X_train.toarray(), y_train)
     if sparse.issparse(X_test):
-        X_test_dense = X_test.toarray()
+        x_test_dense = X_test.toarray()
     else:
-        X_test_dense = X_test
+        x_test_dense = X_test
     sparse_svm.fit(X_train, y_train)
     assert sparse.issparse(sparse_svm.support_vectors_)
     assert sparse.issparse(sparse_svm.dual_coef_)
@@ -68,21 +68,21 @@ def check_svm_model_equal(dense_svm, X_train, y_train, X_test):
         assert sparse.issparse(sparse_svm.coef_)
         assert_array_almost_equal(dense_svm.coef_, sparse_svm.coef_.toarray())
     assert_allclose(dense_svm.support_, sparse_svm.support_)
-    assert_allclose(dense_svm.predict(X_test_dense), sparse_svm.predict(X_test))
+    assert_allclose(dense_svm.predict(x_test_dense), sparse_svm.predict(X_test))
 
     assert_array_almost_equal(
-        dense_svm.decision_function(X_test_dense), sparse_svm.decision_function(X_test)
+        dense_svm.decision_function(x_test_dense), sparse_svm.decision_function(X_test)
     )
     assert_array_almost_equal(
-        dense_svm.decision_function(X_test_dense),
-        sparse_svm.decision_function(X_test_dense),
+        dense_svm.decision_function(x_test_dense),
+        sparse_svm.decision_function(x_test_dense),
     )
     if isinstance(dense_svm, svm.OneClassSVM):
         msg = "cannot use sparse input in 'OneClassSVM' trained on dense data"
     else:
         if hasattr(dense_svm, "predict_proba"):
             assert_array_almost_equal(
-                dense_svm.predict_proba(X_test_dense),
+                dense_svm.predict_proba(x_test_dense),
                 sparse_svm.predict_proba(X_test),
                 decimal=4,
             )
@@ -133,14 +133,14 @@ def test_unsorted_indices(csr_container):
     X, y = load_digits(return_X_y=True)
     X_test = csr_container(X[50:100])
     X, y = X[:50], y[:50]
-    tols = dict(rtol=1e-12, atol=1e-14)
+    tols = {"rtol": 1e-12, "atol": 1e-14}
 
-    X_sparse = csr_container(X)
+    x_sparse = csr_container(X)
     coef_dense = (
         svm.SVC(kernel="linear", probability=True, random_state=0).fit(X, y).coef_
     )
     sparse_svc = svm.SVC(kernel="linear", probability=True, random_state=0).fit(
-        X_sparse, y
+        x_sparse, y
     )
     coef_sorted = sparse_svc.coef_
     # make sure dense and sparse SVM give the same result
@@ -156,20 +156,20 @@ def test_unsorted_indices(csr_container):
             new_indices.extend(X.indices[row_slice][::-1])
         return csr_container((new_data, new_indices, X.indptr), shape=X.shape)
 
-    X_sparse_unsorted = scramble_indices(X_sparse)
-    X_test_unsorted = scramble_indices(X_test)
+    x_sparse_unsorted = scramble_indices(x_sparse)
+    x_test_unsorted = scramble_indices(X_test)
 
-    assert not X_sparse_unsorted.has_sorted_indices
-    assert not X_test_unsorted.has_sorted_indices
+    assert not x_sparse_unsorted.has_sorted_indices
+    assert not x_test_unsorted.has_sorted_indices
 
     unsorted_svc = svm.SVC(kernel="linear", probability=True, random_state=0).fit(
-        X_sparse_unsorted, y
+        x_sparse_unsorted, y
     )
     coef_unsorted = unsorted_svc.coef_
     # make sure unsorted indices give same result
     assert_allclose(coef_unsorted.toarray(), coef_sorted.toarray(), **tols)
     assert_allclose(
-        sparse_svc.predict_proba(X_test_unsorted),
+        sparse_svc.predict_proba(x_test_unsorted),
         sparse_svc.predict_proba(X_test),
         **tols,
     )
@@ -180,10 +180,10 @@ def test_svc_with_custom_kernel(lil_container):
     def kfunc(x, y):
         return safe_sparse_dot(x, y.T)
 
-    X_sp = lil_container(X)
-    clf_lin = svm.SVC(kernel="linear").fit(X_sp, Y)
-    clf_mylin = svm.SVC(kernel=kfunc).fit(X_sp, Y)
-    assert_array_equal(clf_lin.predict(X_sp), clf_mylin.predict(X_sp))
+    x_sp = lil_container(X)
+    clf_lin = svm.SVC(kernel="linear").fit(x_sp, Y)
+    clf_mylin = svm.SVC(kernel=kfunc).fit(x_sp, Y)
+    assert_array_equal(clf_lin.predict(x_sp), clf_mylin.predict(x_sp))
 
 
 @skip_if_32bit
@@ -235,13 +235,13 @@ def test_sparse_decision_function(csr_container):
 def test_error(lil_container):
     # Test that it gives proper exception on deficient input
     clf = svm.SVC()
-    X_sp = lil_container(X)
+    x_sp = lil_container(X)
 
     Y2 = Y[:-1]  # wrong dimensions for labels
     with pytest.raises(ValueError):
-        clf.fit(X_sp, Y2)
+        clf.fit(x_sp, Y2)
 
-    clf.fit(X_sp, Y)
+    clf.fit(x_sp, Y)
     assert_array_equal(clf.predict(T), true_result)
 
 
@@ -250,21 +250,21 @@ def test_error(lil_container):
 )
 def test_linearsvc(lil_container, dok_container):
     # Similar to test_SVC
-    X_sp = lil_container(X)
-    X2_sp = dok_container(X2)
+    x_sp = lil_container(X)
+    x2_sp = dok_container(X2)
 
     clf = svm.LinearSVC(random_state=0).fit(X, Y)
-    sp_clf = svm.LinearSVC(random_state=0).fit(X_sp, Y)
+    sp_clf = svm.LinearSVC(random_state=0).fit(x_sp, Y)
 
     assert sp_clf.fit_intercept
 
     assert_array_almost_equal(clf.coef_, sp_clf.coef_, decimal=4)
     assert_array_almost_equal(clf.intercept_, sp_clf.intercept_, decimal=4)
 
-    assert_allclose(clf.predict(X), sp_clf.predict(X_sp))
+    assert_allclose(clf.predict(X), sp_clf.predict(x_sp))
 
     clf.fit(X2, Y2)
-    sp_clf.fit(X2_sp, Y2)
+    sp_clf.fit(x2_sp, Y2)
 
     assert_array_almost_equal(clf.coef_, sp_clf.coef_, decimal=4)
     assert_array_almost_equal(clf.intercept_, sp_clf.intercept_, decimal=4)
@@ -318,14 +318,14 @@ def test_weight(csr_container):
 @pytest.mark.parametrize("lil_container", LIL_CONTAINERS)
 def test_sample_weights(lil_container):
     # Test weights on individual samples
-    X_sp = lil_container(X)
+    x_sp = lil_container(X)
 
     clf = svm.SVC()
-    clf.fit(X_sp, Y)
+    clf.fit(x_sp, Y)
     assert_array_equal(clf.predict([X[2]]), [1.0])
 
     sample_weight = [0.1] * 3 + [10] * 3
-    clf.fit(X_sp, Y, sample_weight=sample_weight)
+    clf.fit(x_sp, Y, sample_weight=sample_weight)
     assert_array_equal(clf.predict([X[2]]), [2.0])
 
 
