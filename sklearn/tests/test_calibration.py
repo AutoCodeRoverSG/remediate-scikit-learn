@@ -93,7 +93,7 @@ def test_calibration(data, method, csr_container, ensemble):
     # Test calibration objects with isotonic, sigmoid
     n_samples = N_SAMPLES // 2
     X, y = data
-    sample_weight = np.random.RandomState(seed=42).uniform(size=y.size)
+    sample_weight = np.random.default_rng(seed=42).uniform(size=y.size)
 
     X = X - X.min()  # MultinomialNB only allows positive X
 
@@ -194,7 +194,7 @@ def test_sample_weight(data, method, ensemble):
     n_samples = N_SAMPLES // 2
     X, y = data
 
-    sample_weight = np.random.RandomState(seed=42).uniform(size=len(y))
+    sample_weight = np.random.default_rng(42).uniform(size=len(y))
     X_train, y_train, sw_train = X[:n_samples], y[:n_samples], sample_weight[:n_samples]
     X_test = X[n_samples:]
 
@@ -293,7 +293,9 @@ def test_calibration_multiclass(method, ensemble, seed):
 
     # Test that calibration of a multiclass classifier decreases log-loss
     # for RandomForestClassifier
-    clf = RandomForestClassifier(n_estimators=30, random_state=42)
+    clf = RandomForestClassifier(
+        n_estimators=30, random_state=42, min_samples_leaf=1, max_features="sqrt"
+    )
     clf.fit(X_train, y_train)
     clf_probs = clf.predict_proba(X_test)
     uncalibrated_brier = multiclass_brier(y_test, clf_probs, n_classes=n_classes)
@@ -336,7 +338,7 @@ def test_calibration_frozen(csr_container, method):
     """Test calibration for frozen classifiers"""
     n_samples = 50
     X, y = make_classification(n_samples=3 * n_samples, n_features=6, random_state=42)
-    sample_weight = np.random.RandomState(seed=42).uniform(size=y.size)
+    sample_weight = np.random.default_rng(seed=42).uniform(size=y.size)
 
     X -= X.min()  # MultinomialNB only allows positive X
 
@@ -414,9 +416,9 @@ def test_sigmoid_calibration():
     ex_f = np.array([5, -4, 1.0])
     ex_y = np.array([1, -1, -1])
     # computed from my python port of the C++ code in LibSVM
-    AB_lin_libsvm = np.array([-0.20261354391187855, 0.65236314980010512])
-    assert_array_almost_equal(AB_lin_libsvm, _sigmoid_calibration(ex_f, ex_y), 3)
-    lin_prob = 1.0 / (1.0 + np.exp(AB_lin_libsvm[0] * ex_f + AB_lin_libsvm[1]))
+    ab_lin_libsvm = np.array([-0.20261354391187855, 0.65236314980010512])
+    assert_array_almost_equal(ab_lin_libsvm, _sigmoid_calibration(ex_f, ex_y), 3)
+    lin_prob = 1.0 / (1.0 + np.exp(ab_lin_libsvm[0] * ex_f + ab_lin_libsvm[1]))
     sk_prob = _SigmoidCalibration().fit(ex_f, ex_y).predict(ex_f)
     assert_array_almost_equal(lin_prob, sk_prob, 6)
 
@@ -446,13 +448,13 @@ def test_temperature_scaling(n_classes, ensemble):
         class_sep=2.0,
         random_state=42,
     )
-    X_train, X_cal, y_train, y_cal = train_test_split(X, y, random_state=42)
+    x_train, x_cal, y_train, y_cal = train_test_split(X, y, random_state=42)
     clf = LogisticRegression(C=np.inf, tol=1e-8, max_iter=200, random_state=0)
-    clf.fit(X_train, y_train)
+    clf.fit(x_train, y_train)
     # Train the calibrator on the calibrating set
     cal_clf = CalibratedClassifierCV(
         FrozenEstimator(clf), cv=3, method="temperature", ensemble=ensemble
-    ).fit(X_cal, y_cal)
+    ).fit(x_cal, y_cal)
 
     calibrated_classifiers = cal_clf.calibrated_classifiers_
 
@@ -469,13 +471,13 @@ def test_temperature_scaling(n_classes, ensemble):
 
     if not ensemble:
         # Accuracy score is invariant under temperature scaling
-        y_pred = clf.predict(X_cal)
-        y_pred_cal = cal_clf.predict(X_cal)
+        y_pred = clf.predict(x_cal)
+        y_pred_cal = cal_clf.predict(x_cal)
         assert accuracy_score(y_cal, y_pred_cal) == accuracy_score(y_cal, y_pred)
 
         # Log Loss should be improved on the calibrating set
-        y_scores = clf.predict_proba(X_cal)
-        y_scores_cal = cal_clf.predict_proba(X_cal)
+        y_scores = clf.predict_proba(x_cal)
+        y_scores_cal = cal_clf.predict_proba(x_cal)
         assert log_loss(y_cal, y_scores_cal) <= log_loss(y_cal, y_scores)
 
         # Refinement error should be invariant under temperature scaling.
@@ -491,7 +493,7 @@ def test_temperature_scaling(n_classes, ensemble):
 
         # For Logistic Regression, the optimal temperature should be close to 1.0
         # on the training set.
-        y_scores_train = clf.predict_proba(X_train)
+        y_scores_train = clf.predict_proba(x_train)
         ts = _TemperatureScaling().fit(y_scores_train, y_train)
         assert_allclose(ts.beta_, 1.0, atol=1e-6, rtol=0)
 
@@ -499,16 +501,16 @@ def test_temperature_scaling(n_classes, ensemble):
 def test_temperature_scaling_input_validation(global_dtype):
     # Check that _TemperatureScaling can handle 2d-array with only 1 feature
     X = np.arange(10).astype(global_dtype)
-    X_2d = X.reshape(-1, 1)
+    x_2d = X.reshape(-1, 1)
     y = np.random.randint(0, 2, size=X.shape[0])
 
     ts = _TemperatureScaling().fit(X, y)
-    ts_2d = _TemperatureScaling().fit(X_2d, y)
+    ts_2d = _TemperatureScaling().fit(x_2d, y)
 
     assert get_tags(ts) == get_tags(ts_2d)
 
     y_pred1 = ts.predict(X)
-    y_pred2 = ts_2d.predict(X_2d)
+    y_pred2 = ts_2d.predict(x_2d)
 
     assert_allclose(y_pred1, y_pred2)
 
@@ -553,7 +555,19 @@ def test_calibration_nan_imputer(method, ensemble):
     )
     X[0, 0] = np.nan
     clf = Pipeline(
-        [("imputer", SimpleImputer()), ("rf", RandomForestClassifier(n_estimators=1))]
+        [
+            ("imputer", SimpleImputer()),
+            (
+                "rf",
+                RandomForestClassifier(
+                    n_estimators=1,
+                    random_state=42,
+                    min_samples_leaf=1,
+                    max_features="sqrt",
+                ),
+            ),
+        ],
+        memory=None,
     )
     clf_c = CalibratedClassifierCV(clf, cv=2, method=method, ensemble=ensemble)
     clf_c.fit(X, y)
@@ -565,7 +579,7 @@ def test_calibration_nan_imputer(method, ensemble):
 def test_calibration_prob_sum(method, ensemble):
     # Test that sum of probabilities is (max) 1. A non-regression test for
     # issue #7796 - when test has fewer classes than train
-    X, _ = make_classification(n_samples=10, n_features=5, n_classes=2)
+    X, _ = make_classification(n_samples=10, n_features=5, n_classes=2, random_state=42)
     y = [1, 1, 1, 1, 1, 0, 0, 0, 0, 0]
     clf = LinearSVC(C=1.0, random_state=7)
     # In the first and last fold, test will have 1 class while train will have 2
@@ -650,7 +664,16 @@ def dict_data():
 def dict_data_pipeline(dict_data):
     X, y = dict_data
     pipeline_prefit = Pipeline(
-        [("vectorizer", DictVectorizer()), ("clf", RandomForestClassifier())]
+        [
+            ("vectorizer", DictVectorizer()),
+            (
+                "clf",
+                RandomForestClassifier(
+                    random_state=42, min_samples_leaf=1, max_features="sqrt"
+                ),
+            ),
+        ],
+        memory=None,
     )
     return pipeline_prefit.fit(X, y)
 
@@ -777,7 +800,7 @@ def test_calibration_display_compute(pyplot, iris_data_binary, n_bins, strategy)
 def test_plot_calibration_curve_pipeline(pyplot, iris_data_binary):
     # Ensure pipelines are supported by CalibrationDisplay.from_estimator
     X, y = iris_data_binary
-    clf = make_pipeline(StandardScaler(), LogisticRegression())
+    clf = make_pipeline(StandardScaler(), LogisticRegression(), memory=None)
     clf.fit(X, y)
     viz = CalibrationDisplay.from_estimator(clf, X, y)
 
