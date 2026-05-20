@@ -403,10 +403,10 @@ def test_quantile_strategy_empty_train():
 
 
 def test_constant_strategy_regressor(global_random_seed):
-    random_state = np.random.RandomState(seed=global_random_seed)
+    random_state = np.random.default_rng(seed=global_random_seed)
 
     X = [[0]] * 5  # ignored
-    y = random_state.randn(5)
+    y = random_state.standard_normal(5)
 
     reg = DummyRegressor(strategy="constant", constant=[43])
     reg.fit(X, y)
@@ -421,16 +421,16 @@ def test_constant_strategy_regressor(global_random_seed):
 
 
 def test_constant_strategy_multioutput_regressor(global_random_seed):
-    random_state = np.random.RandomState(seed=global_random_seed)
+    random_state = np.random.default_rng(seed=global_random_seed)
 
-    x_learn = random_state.randn(10, 10)
-    y_learn = random_state.randn(10, 5)
+    x_learn = random_state.standard_normal((10, 10))
+    y_learn = random_state.standard_normal((10, 5))
 
     # test with 2d array
-    constants = random_state.randn(5)
+    constants = random_state.standard_normal(5)
 
-    x_test = random_state.randn(20, 10)
-    y_test = random_state.randn(20, 5)
+    x_test = random_state.standard_normal((20, 10))
+    y_test = random_state.standard_normal((20, 5))
 
     # Correctness oracle
     est = DummyRegressor(strategy="constant", constant=constants)
@@ -463,9 +463,9 @@ def test_constants_not_specified_regressor():
 
 
 def test_constant_size_multioutput_regressor(global_random_seed):
-    random_state = np.random.RandomState(seed=global_random_seed)
-    X = random_state.randn(10, 10)
-    y = random_state.randn(10, 5)
+    rng = np.random.default_rng(seed=global_random_seed)
+    X = rng.standard_normal((10, 10))
+    y = rng.standard_normal((10, 5))
 
     est = DummyRegressor(strategy="constant", constant=[1, 2, 3, 4])
     err_msg = r"Constant target value should have shape \(5, 1\)."
@@ -622,11 +622,11 @@ def test_most_frequent_and_prior_strategy_sparse_target(csc_container):
 
 
 def test_dummy_regressor_sample_weight(global_random_seed, n_samples=10):
-    random_state = np.random.RandomState(seed=global_random_seed)
+    random_state = np.random.default_rng(seed=global_random_seed)
 
     X = [[0]] * n_samples
-    y = random_state.rand(n_samples)
-    sample_weight = random_state.rand(n_samples)
+    y = random_state.random(n_samples)
+    sample_weight = random_state.random(n_samples)
 
     est = DummyRegressor(strategy="mean").fit(X, y, sample_weight)
     assert est.constant_ == np.average(y, weights=sample_weight)
@@ -638,7 +638,7 @@ def test_dummy_regressor_sample_weight(global_random_seed, n_samples=10):
     assert est.constant_ == _weighted_percentile(y, sample_weight, 95.0)
 
 
-def test_dummy_regressor_on_3D_array():
+def test_dummy_regressor_on_3d_array():
     X = np.array([[["foo"]], [["bar"]], [["baz"]]])
     y = np.array([2, 2, 2])
     y_expected = np.array([2, 2, 2])
@@ -648,7 +648,7 @@ def test_dummy_regressor_on_3D_array():
     assert_array_equal(y_pred, y_expected)
 
 
-def test_dummy_classifier_on_3D_array():
+def test_dummy_classifier_on_3d_array():
     X = np.array([[["foo"]], [["bar"]], [["baz"]]])
     y = [2, 2, 2]
     y_expected = [2, 2, 2]
@@ -681,14 +681,14 @@ def test_dummy_regressor_return_std():
         (np.array([[2, 2], [1, 1], [1, 1], [1, 1]]), [[1.25, 1.25]] * 4),
     ],
 )
-def test_regressor_score_with_None(y, y_test):
+def test_regressor_score_with_none(y, y_test):
     reg = DummyRegressor()
     reg.fit(None, y)
-    assert reg.score(None, y_test) == 1.0
+    assert reg.score(None, y_test) == pytest.approx(1.0)
 
 
 @pytest.mark.parametrize("strategy", ["mean", "median", "quantile", "constant"])
-def test_regressor_prediction_independent_of_X(strategy):
+def test_regressor_prediction_independent_of_x(strategy):
     y = [0, 2, 1, 1]
     X1 = [[0]] * 4
     reg1 = DummyRegressor(strategy=strategy, constant=0, quantile=0.7)
