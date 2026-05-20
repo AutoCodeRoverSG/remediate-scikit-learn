@@ -38,7 +38,7 @@ X_binary, y_binary = X[:100], y[:100]
 )
 def test_estimator_unsupported_response(estimator, response_method):
     """Check the error message with not supported response method."""
-    X, y = np.random.RandomState(0).randn(10, 2), np.array([0, 1] * 5)
+    X, y = np.random.default_rng(0).standard_normal((10, 2)), np.array([0, 1] * 5)
     estimator = clone(estimator).fit(X, y)  # clone to make test execution thread-safe
     err_msg = "has none of the following attributes:"
     with pytest.raises(AttributeError, match=err_msg):
@@ -66,7 +66,7 @@ def test_estimator_get_response_values(
     estimator, response_method, return_response_method_used
 ):
     """Check the behaviour of `_get_response_values`."""
-    X, y = np.random.RandomState(0).randn(10, 2), np.array([0, 1] * 5)
+    X, y = np.random.default_rng(0).standard_normal((10, 2)), np.array([0, 1] * 5)
     estimator = clone(estimator).fit(X, y)  # clone to make test execution thread-safe
     results = _get_response_values(
         estimator,
@@ -382,7 +382,7 @@ def test_response_values_type_of_target_on_classes_no_warning():
 
     Non-regression test for issue #31583.
     """
-    X = np.random.RandomState(0).randn(120, 3)
+    X = np.random.default_rng(0).standard_normal((120, 3))
     # 30 classes, less than 50% of number of samples
     y = np.repeat(np.arange(30), 4)
 
@@ -403,10 +403,10 @@ def test_response_values_type_of_target_on_classes_no_warning():
         (LogisticRegression(), "predict", "multiclass", (10,)),
         (LogisticRegression(), "predict_proba", "multiclass", (10, 4)),
         (LogisticRegression(), "decision_function", "multiclass", (10, 4)),
-        (ClassifierChain(LogisticRegression(random_state=0)), "predict", "multilabel", (10, 2)),
-        (ClassifierChain(LogisticRegression(random_state=0)), "predict_proba", "multilabel", (10, 2)),
+        (ClassifierChain(LogisticRegression(random_state=0), random_state=0), "predict", "multilabel", (10, 2)),
+        (ClassifierChain(LogisticRegression(random_state=0), random_state=0), "predict_proba", "multilabel", (10, 2)),
         (
-            ClassifierChain(LogisticRegression(random_state=0)),
+            ClassifierChain(LogisticRegression(random_state=0), random_state=0),
             "decision_function",
             "multilabel",
             (10, 2),
@@ -433,7 +433,7 @@ def test_response_values_output_shape_(
     - for outlier detection, regression and clustering,
       it is a 1d array of shape `(n_samples,)`.
     """
-    X = np.random.RandomState(0).randn(10, 2)
+    X = np.random.default_rng(0).standard_normal((10, 2))
     if target_type == "binary":
         y = np.array([0, 1] * 5)
     elif target_type == "multiclass":
