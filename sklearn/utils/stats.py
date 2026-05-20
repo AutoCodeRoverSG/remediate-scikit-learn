@@ -90,7 +90,7 @@ def _weighted_percentile(
         If `array` is 2D and `percentile_rank` is 1D, returns a 2D array
             of shape `(array.shape[1], percentile_rank.shape[0])`
     """
-    xp, _, device = get_namespace_and_device(array)
+    xp, _, device = get_namespace_and_device(array, xp=xp)
     # `sample_weight` should follow `array` for dtypes
     floating_dtype = _find_matching_floating_dtype(array, xp=xp)
     array = xp.asarray(array, dtype=floating_dtype, device=device)

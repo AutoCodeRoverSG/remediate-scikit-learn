@@ -10,7 +10,8 @@ def test_init_arpack_v0(seed):
     # check that the initialization a sampling from a uniform distribution
     # where we can fix the random state
     size = 1000
-    v0 = _init_arpack_v0(size, seed)
+    random_state = check_random_state(seed)
+    v0 = _init_arpack_v0(size, random_state)
 
     rng = check_random_state(seed)
     assert_allclose(v0, rng.uniform(-1, 1, size=size))
