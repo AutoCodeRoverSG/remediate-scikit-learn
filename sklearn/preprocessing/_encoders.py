@@ -51,11 +51,11 @@ class _BaseEncoder(TransformerMixin, BaseEstimator):
         """
         if not (hasattr(X, "iloc") and getattr(X, "ndim", 0) == 2):
             # if not a dataframe, do normal check_array validation
-            X_temp = check_array(X, dtype=None, ensure_all_finite=ensure_all_finite)
-            if not hasattr(X, "dtype") and np.issubdtype(X_temp.dtype, np.str_):
+            x_temp = check_array(X, dtype=None, ensure_all_finite=ensure_all_finite)
+            if not hasattr(X, "dtype") and np.issubdtype(x_temp.dtype, np.str_):
                 X = check_array(X, dtype=object, ensure_all_finite=ensure_all_finite)
             else:
-                X = X_temp
+                X = x_temp
             needs_validation = False
         else:
             # pandas dataframe, do validation later column by column, in order
@@ -63,16 +63,16 @@ class _BaseEncoder(TransformerMixin, BaseEstimator):
             needs_validation = ensure_all_finite
 
         n_samples, n_features = X.shape
-        X_columns = []
+        x_columns = []
 
         for i in range(n_features):
-            Xi = _safe_indexing(X, indices=i, axis=1)
-            Xi = check_array(
-                Xi, ensure_2d=False, dtype=None, ensure_all_finite=needs_validation
+            xi = _safe_indexing(X, indices=i, axis=1)
+            xi = check_array(
+                xi, ensure_2d=False, dtype=None, ensure_all_finite=needs_validation
             )
-            X_columns.append(Xi)
+            x_columns.append(xi)
 
-        return X_columns, n_samples, n_features
+        return x_columns, n_samples, n_features
 
     def _fit(
         self,
@@ -84,7 +84,7 @@ class _BaseEncoder(TransformerMixin, BaseEstimator):
     ):
         self._check_infrequent_enabled()
         validate_data(self, X=X, reset=True, skip_check_array=True)
-        X_list, n_samples, n_features = self._check_X(
+        x_list, n_samples, n_features = self._check_X(
             X, ensure_all_finite=ensure_all_finite
         )
         self.n_features_in_ = n_features
@@ -101,34 +101,34 @@ class _BaseEncoder(TransformerMixin, BaseEstimator):
         compute_counts = return_counts or self._infrequent_enabled
 
         for i in range(n_features):
-            Xi = X_list[i]
+            xi = x_list[i]
 
             if self.categories == "auto":
-                result = _unique(Xi, return_counts=compute_counts)
+                result = _unique(xi, return_counts=compute_counts)
                 if compute_counts:
                     cats, counts = result
                     category_counts.append(counts)
                 else:
                     cats = result
             else:
-                if np.issubdtype(Xi.dtype, np.str_):
+                if np.issubdtype(xi.dtype, np.str_):
                     # Always convert string categories to objects to avoid
                     # unexpected string truncation for longer category labels
                     # passed in the constructor.
-                    Xi_dtype = object
+                    xi_dtype = object
                 else:
-                    Xi_dtype = Xi.dtype
+                    xi_dtype = xi.dtype
 
-                cats = np.array(self.categories[i], dtype=Xi_dtype)
+                cats = np.array(self.categories[i], dtype=xi_dtype)
                 if (
                     cats.dtype == object
                     and isinstance(cats[0], bytes)
-                    and Xi.dtype.kind != "S"
+                    and xi.dtype.kind != "S"
                 ):
                     msg = (
                         f"In column {i}, the predefined categories have type 'bytes'"
                         " which is incompatible with values of type"
-                        f" '{type(Xi[0]).__name__}'."
+                        f" '{type(xi[0]).__name__}'."
                     )
                     raise ValueError(msg)
 
@@ -148,7 +148,7 @@ class _BaseEncoder(TransformerMixin, BaseEstimator):
                     )
                     raise ValueError(msg)
 
-                if Xi.dtype.kind not in "OUS":
+                if xi.dtype.kind not in "OUS":
                     sorted_cats = np.sort(cats)
                     error_msg = (
                         "Unsorted categories are not supported for numerical categories"
@@ -159,7 +159,7 @@ class _BaseEncoder(TransformerMixin, BaseEstimator):
                         raise ValueError(error_msg)
 
                 if handle_unknown == "error":
-                    diff = _check_unknown(Xi, cats)
+                    diff = _check_unknown(xi, cats)
                     if diff:
                         msg = (
                             "Found unknown categories {0} in column {1}"
@@ -167,7 +167,7 @@ class _BaseEncoder(TransformerMixin, BaseEstimator):
                         )
                         raise ValueError(msg)
                 if compute_counts:
-                    category_counts.append(_get_counts(Xi, cats))
+                    category_counts.append(_get_counts(xi, cats))
 
             self.categories_.append(cats)
 
@@ -199,18 +199,18 @@ class _BaseEncoder(TransformerMixin, BaseEstimator):
         warn_on_unknown=False,
         ignore_category_indices=None,
     ):
-        X_list, n_samples, n_features = self._check_X(
+        x_list, n_samples, n_features = self._check_X(
             X, ensure_all_finite=ensure_all_finite
         )
         validate_data(self, X=X, reset=False, skip_check_array=True)
 
-        X_int = np.zeros((n_samples, n_features), dtype=int)
-        X_mask = np.ones((n_samples, n_features), dtype=bool)
+        x_int = np.zeros((n_samples, n_features), dtype=int)
+        x_mask = np.ones((n_samples, n_features), dtype=bool)
 
         columns_with_unknown = []
         for i in range(n_features):
-            Xi = X_list[i]
-            diff, valid_mask = _check_unknown(Xi, self.categories_[i], return_mask=True)
+            xi = x_list[i]
+            diff, valid_mask = _check_unknown(xi, self.categories_[i], return_mask=True)
 
             if not np.all(valid_mask):
                 if handle_unknown == "error":
@@ -225,26 +225,26 @@ class _BaseEncoder(TransformerMixin, BaseEstimator):
                     # Set the problematic rows to an acceptable value and
                     # continue `The rows are marked `X_mask` and will be
                     # removed later.
-                    X_mask[:, i] = valid_mask
+                    x_mask[:, i] = valid_mask
                     # cast Xi into the largest string type necessary
                     # to handle different lengths of numpy strings
                     if (
                         self.categories_[i].dtype.kind in ("U", "S")
-                        and self.categories_[i].itemsize > Xi.itemsize
+                        and self.categories_[i].itemsize > xi.itemsize
                     ):
-                        Xi = Xi.astype(self.categories_[i].dtype)
-                    elif self.categories_[i].dtype.kind == "O" and Xi.dtype.kind == "U":
+                        xi = xi.astype(self.categories_[i].dtype)
+                    elif self.categories_[i].dtype.kind == "O" and xi.dtype.kind == "U":
                         # categories are objects and Xi are numpy strings.
                         # Cast Xi to an object dtype to prevent truncation
                         # when setting invalid values.
-                        Xi = Xi.astype("O")
+                        xi = xi.astype("O")
                     else:
-                        Xi = Xi.copy()
+                        xi = xi.copy()
 
-                    Xi[~valid_mask] = self.categories_[i][0]
+                    xi[~valid_mask] = self.categories_[i][0]
             # We use check_unknown=False, since _check_unknown was
             # already called above.
-            X_int[:, i] = _encode(Xi, uniques=self.categories_[i], check_unknown=False)
+            x_int[:, i] = _encode(xi, uniques=self.categories_[i], check_unknown=False)
         if columns_with_unknown:
             if handle_unknown == "infrequent_if_exist":
                 msg = (
@@ -261,8 +261,8 @@ class _BaseEncoder(TransformerMixin, BaseEstimator):
                 )
             warnings.warn(msg, UserWarning)
 
-        self._map_infrequent_categories(X_int, X_mask, ignore_category_indices)
-        return X_int, X_mask
+        self._map_infrequent_categories(x_int, x_mask, ignore_category_indices)
+        return x_int, x_mask
 
     @property
     def infrequent_categories_(self):
@@ -412,7 +412,7 @@ class _BaseEncoder(TransformerMixin, BaseEstimator):
 
             self._default_to_infrequent_mappings.append(mapping)
 
-    def _map_infrequent_categories(self, X_int, X_mask, ignore_category_indices):
+    def _map_infrequent_categories(self, x_int, x_mask, ignore_category_indices):
         """Map infrequent categories to integer representing the infrequent category.
 
         This modifies X_int in-place. Values that were invalid based on `X_mask`
@@ -437,18 +437,18 @@ class _BaseEncoder(TransformerMixin, BaseEstimator):
 
         ignore_category_indices = ignore_category_indices or {}
 
-        for col_idx in range(X_int.shape[1]):
+        for col_idx in range(x_int.shape[1]):
             infrequent_idx = self._infrequent_indices[col_idx]
             if infrequent_idx is None:
                 continue
 
-            X_int[~X_mask[:, col_idx], col_idx] = infrequent_idx[0]
+            x_int[~x_mask[:, col_idx], col_idx] = infrequent_idx[0]
             if self.handle_unknown in ("infrequent_if_exist", "warn"):
                 # All the unknown values are now mapped to the
                 # infrequent_idx[0], which makes the unknown values valid
                 # This is needed in `transform` when the encoding is formed
                 # using `X_mask`.
-                X_mask[:, col_idx] = True
+                x_mask[:, col_idx] = True
 
         # Remaps encoding in `X_int` where the infrequent categories are
         # grouped together.
@@ -458,11 +458,11 @@ class _BaseEncoder(TransformerMixin, BaseEstimator):
 
             if i in ignore_category_indices:
                 # Update rows that are **not** ignored
-                rows_to_update = X_int[:, i] != ignore_category_indices[i]
+                rows_to_update = x_int[:, i] != ignore_category_indices[i]
             else:
                 rows_to_update = slice(None)
 
-            X_int[rows_to_update, i] = np.take(mapping, X_int[rows_to_update, i])
+            x_int[rows_to_update, i] = np.take(mapping, x_int[rows_to_update, i])
 
     def __sklearn_tags__(self):
         tags = super().__sklearn_tags__()
