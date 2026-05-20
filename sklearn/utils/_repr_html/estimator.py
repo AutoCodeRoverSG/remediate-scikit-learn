@@ -440,14 +440,14 @@ def _write_estimator_html(
 
         if (
             hasattr(estimator, "_get_params_html")
-            and not est_block.names == "passthrough"
+            and est_block.names != "passthrough"
         ):
             params = estimator._get_params_html(doc_link=doc_link)._repr_html_inner()
         else:
             params = ""
         if (
             hasattr(estimator, "_get_fitted_attr_html")
-            and not est_block.names == "passthrough"
+            and est_block.names != "passthrough"
             and is_fitted_css_class == "fitted"
         ):
             fitted_attrs = estimator._get_fitted_attr_html(doc_link)

@@ -2683,7 +2683,7 @@ def test_missing_value_is_predictive(tree_cls, expected_score, global_random_see
     n_samples = 500
 
     X = rng.standard_normal(size=(n_samples, 20))
-    y = np.concatenate([np.zeros(n_samples // 2), np.ones(n_samples // 2)])
+    , np.ones(n_samples // 2)])
     # y = rng.randint(0, high=2, size=n_samples)
 
     # Create a predictive feature using `y` and with some noise
