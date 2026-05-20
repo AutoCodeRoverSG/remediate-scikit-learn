@@ -228,9 +228,9 @@ def test_sparse_random_matrix():
 def test_random_projection_transformer_invalid_input():
     n_components = "auto"
     fit_data = [[0, 1, 2]]
-    for RandomProjection in all_RandomProjection:
+    for random_projection_cls in all_RandomProjection:
         with pytest.raises(ValueError):
-            RandomProjection(n_components=n_components).fit(fit_data)
+            random_projection_cls(n_components=n_components).fit(fit_data)
 
 
 @pytest.mark.parametrize("coo_container", COO_CONTAINERS)
@@ -243,9 +243,9 @@ def test_try_to_transform_before_fit(coo_container, global_random_seed):
         random_state=global_random_seed,
         sparse_format=None,
     )
-    for RandomProjection in all_RandomProjection:
+    for random_projection in all_RandomProjection:
         with pytest.raises(NotFittedError):
-            RandomProjection(n_components="auto").transform(data)
+            random_projection(n_components="auto").transform(data)
 
 
 @pytest.mark.parametrize("coo_container", COO_CONTAINERS)
@@ -259,8 +259,8 @@ def test_too_many_samples_to_find_a_safe_embedding(coo_container, global_random_
         sparse_format=None,
     )
 
-    for RandomProjection in all_RandomProjection:
-        rp = RandomProjection(n_components="auto", eps=0.1)
+    for random_projection_cls in all_RandomProjection:
+        rp = random_projection_cls(n_components="auto", eps=0.1)
         expected_msg = (
             "eps=0.100000 and n_samples=1000 lead to a target dimension"
             " of 5920 which is larger than the original space with"
@@ -289,8 +289,8 @@ def test_random_projection_embedding_quality(coo_container):
     # remove 0 distances to avoid division by 0
     original_distances = original_distances[non_identical]
 
-    for RandomProjection in all_RandomProjection:
-        rp = RandomProjection(n_components="auto", eps=eps, random_state=0)
+    for random_projection_cls in all_RandomProjection:
+        rp = random_projection_cls(n_components="auto", eps=eps, random_state=0)
         projected = rp.fit_transform(data)
 
         projected_distances = euclidean_distances(projected, squared=True)
@@ -326,16 +326,16 @@ def test_SparseRandomProj_output_representation(coo_container):
         random_state=0,
         sparse_format="csr",
     )
-    for SparseRandomProj in all_SparseRandomProjection:
+    for sparse_random_proj in all_SparseRandomProjection:
         # when using sparse input, the projected data can be forced to be a
         # dense numpy array
-        rp = SparseRandomProj(n_components=10, dense_output=True, random_state=0)
+        rp = sparse_random_proj(n_components=10, dense_output=True, random_state=0)
         rp.fit(dense_data)
         assert isinstance(rp.transform(dense_data), np.ndarray)
         assert isinstance(rp.transform(sparse_data), np.ndarray)
 
         # the output can be left to a sparse matrix instead
-        rp = SparseRandomProj(n_components=10, dense_output=False, random_state=0)
+        rp = sparse_random_proj(n_components=10, dense_output=False, random_state=0)
         rp = rp.fit(dense_data)
         # output for dense input will stay dense:
         assert isinstance(rp.transform(dense_data), np.ndarray)
@@ -356,15 +356,17 @@ def test_correct_RandomProjection_dimensions_embedding(
         random_state=global_random_seed,
         sparse_format=None,
     )
-    for RandomProjection in all_RandomProjection:
-        rp = RandomProjection(n_components="auto", random_state=0, eps=0.5).fit(data)
+    for random_projection_cls in all_RandomProjection:
+        rp = random_projection_cls(
+            n_components="auto", random_state=0, eps=0.5
+        ).fit(data)
 
         # the number of components is adjusted from the shape of the training
         # set
         assert rp.n_components == "auto"
         assert rp.n_components_ == 110
 
-        if RandomProjection in all_SparseRandomProjection:
+        if random_projection_cls in all_SparseRandomProjection:
             assert rp.density == "auto"
             assert_almost_equal(rp.density_, 0.03, 2)
 
@@ -378,7 +380,7 @@ def test_correct_RandomProjection_dimensions_embedding(
         assert_array_equal(projected_1, projected_2)
 
         # fit transform with same random seed will lead to the same results
-        rp2 = RandomProjection(random_state=0, eps=0.5)
+        rp2 = random_projection_cls(random_state=0, eps=0.5)
         projected_3 = rp2.fit_transform(data)
         assert_array_equal(projected_1, projected_3)
 
@@ -388,8 +390,8 @@ def test_correct_RandomProjection_dimensions_embedding(
 
         # it is also possible to fix the number of components and the density
         # level
-        if RandomProjection in all_SparseRandomProjection:
-            rp = RandomProjection(n_components=100, density=0.001, random_state=0)
+        if random_projection_cls in all_SparseRandomProjection:
+            rp = random_projection_cls(n_components=100, density=0.001, random_state=0)
             projected = rp.fit_transform(data)
             assert projected.shape == (n_samples, 100)
             assert rp.components_.shape == (100, n_features)
@@ -413,9 +415,9 @@ def test_warning_n_components_greater_than_n_features(
         sparse_format=None,
     )
 
-    for RandomProjection in all_RandomProjection:
+    for random_projection_cls in all_RandomProjection:
         with pytest.warns(DataDimensionalityWarning):
-            RandomProjection(n_components=n_features + 1).fit(data)
+            random_projection_cls(n_components=n_features + 1).fit(data)
 
 
 @pytest.mark.parametrize("coo_container", COO_CONTAINERS)
@@ -440,9 +442,9 @@ def test_works_with_sparse_data(coo_container, global_random_seed):
         sparse_format="csr",
     )
 
-    for RandomProjection in all_RandomProjection:
-        rp_dense = RandomProjection(n_components=3, random_state=1).fit(dense_data)
-        rp_sparse = RandomProjection(n_components=3, random_state=1).fit(sparse_data)
+    for random_projection in all_RandomProjection:
+        rp_dense = random_projection(n_components=3, random_state=1).fit(dense_data)
+        rp_sparse = random_projection(n_components=3, random_state=1).fit(sparse_data)
         assert_array_almost_equal(
             densify(rp_dense.components_), densify(rp_sparse.components_)
         )
@@ -502,7 +504,7 @@ def test_inverse_transform(
         random_state=global_random_seed,
     )
 
-    X_dense = make_sparse_random_data(
+    x_dense = make_sparse_random_data(
         coo_container,
         n_samples,
         n_features,
@@ -510,7 +512,7 @@ def test_inverse_transform(
         random_state=global_random_seed,
         sparse_format=None,
     )
-    X_csr = make_sparse_random_data(
+    x_csr = make_sparse_random_data(
         coo_container,
         n_samples,
         n_features,
@@ -519,7 +521,7 @@ def test_inverse_transform(
         sparse_format="csr",
     )
 
-    for X in [X_dense, X_csr]:
+    for x in [x_dense, x_csr]:
         with warnings.catch_warnings():
             warnings.filterwarnings(
                 "ignore",
@@ -528,7 +530,7 @@ def test_inverse_transform(
                 ),
                 category=DataDimensionalityWarning,
             )
-            projected = random_projection.fit_transform(X)
+            projected = random_projection.fit_transform(x)
 
         if compute_inverse_components:
             assert hasattr(random_projection, "inverse_components_")
@@ -536,7 +538,7 @@ def test_inverse_transform(
             assert inv_components.shape == (n_features, n_components)
 
         projected_back = random_projection.inverse_transform(projected)
-        assert projected_back.shape == X.shape
+        assert projected_back.shape == x.shape
 
         projected_again = random_projection.transform(projected_back)
         if hasattr(projected, "toarray"):
