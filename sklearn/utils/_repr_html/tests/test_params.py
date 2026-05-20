@@ -48,7 +48,7 @@ def test_params_dict_repr_mimebundle():
 
 def test_read_params():
     """Check the behavior of the `_read_params` function."""
-    out = _read_params("a", 1, tuple())
+    out = _read_params("a", 1, ())
     assert out["param_type"] == "default"
     assert out["param_name"] == "a"
     assert out["param_value"] == "1"
@@ -61,7 +61,7 @@ def test_read_params():
 
     # check that we escape html tags
     tag_injection = "<script>alert('xss')</script>"
-    out = _read_params("a", tag_injection, tuple())
+    out = _read_params("a", tag_injection, ())
     assert (
         out["param_value"]
         == "&quot;&lt;script&gt;alert(&#x27;xss&#x27;)&lt;/script&gt;&quot;"

@@ -3,6 +3,7 @@
 
 import html
 from contextlib import closing
+from dataclasses import dataclass
 from inspect import isclass
 from io import StringIO
 from pathlib import Path
@@ -10,6 +11,17 @@ from pathlib import Path
 from sklearn import config_context
 from sklearn.utils._repr_html.base import _IDCounter
 from sklearn.utils._repr_html.features import _features_html
+
+_CLOSING_DIV = "</div>"
+
+
+@dataclass
+class _LabelDisplayOptions:
+    """Options for controlling the display of label HTML elements."""
+
+    outer_class: str = "sk-label-container"
+    inner_class: str = "sk-label"
+    checked: bool = False
 
 
 def _get_css_style():
@@ -105,9 +117,7 @@ def _write_label_html(
     name_caption=None,
     doc_link_label=None,
     features=None,
-    outer_class="sk-label-container",
-    inner_class="sk-label",
-    checked=False,
+    display_options=None,
     doc_link="",
     is_fitted_css_class="",
     is_fitted_icon="",
@@ -160,6 +170,12 @@ def _write_label_html(
     param_prefix : str, default=""
         The prefix to prepend to parameter names for nested estimators.
     """
+    if display_options is None:
+        display_options = _LabelDisplayOptions()
+    outer_class = display_options.outer_class
+    inner_class = display_options.inner_class
+    checked = display_options.checked
+
     out.write(
         f'<div class="{outer_class}"><div'
         f' class="{inner_class} {is_fitted_css_class} sk-toggleable">'
@@ -217,7 +233,7 @@ def _write_label_html(
                 name_details = ""
             out.write(f"<pre>{name_details}</pre>")
 
-        out.write("</div>")
+        out.write(_CLOSING_DIV)
         if features is None or len(features) == 0:
             features_div = ""
         else:
@@ -347,7 +363,7 @@ def _write_estimator_html(
                 params = ""
             if (
                 hasattr(estimator, "_get_fitted_attr_html")
-                and is_fitted_css_class == "fitted"
+                and is_fitted_css_class
             ):
                 fitted_attrs = estimator._get_fitted_attr_html(doc_link)
                 attrs = fitted_attrs._repr_html_inner() if len(fitted_attrs) > 0 else ""
@@ -405,9 +421,9 @@ def _write_estimator_html(
                     is_fitted_css_class=is_fitted_css_class,
                     param_prefix=new_prefix,
                 )
-                out.write("</div>")  # sk-parallel-item
+                out.write(_CLOSING_DIV)  # sk-parallel-item
 
-        out.write("</div>")
+        out.write(_CLOSING_DIV)
 
         is_column_transformer = isinstance(estimator, ColumnTransformer)
         has_single_estimator = len(est_block.estimators) == 1
@@ -425,7 +441,7 @@ def _write_estimator_html(
             )
             out.write(total_output_features_item)
 
-        out.write("</div>")
+        out.write(_CLOSING_DIV)
     elif est_block.kind == "single":
         if has_feature_names_out and is_not_pipeline_step and is_fitted_css_class:
             try:
@@ -448,7 +464,7 @@ def _write_estimator_html(
         if (
             hasattr(estimator, "_get_fitted_attr_html")
             and est_block.names != "passthrough"
-            and is_fitted_css_class == "fitted"
+            and is_fitted_css_class
         ):
             fitted_attrs = estimator._get_fitted_attr_html(doc_link)
             attrs = fitted_attrs._repr_html_inner() if len(fitted_attrs) > 0 else ""
@@ -464,9 +480,11 @@ def _write_estimator_html(
             est_block.name_details,
             est_block.name_caption,
             est_block.doc_link_label,
-            outer_class="sk-item",
-            inner_class="sk-estimator",
-            checked=first_call,
+            display_options=_LabelDisplayOptions(
+                outer_class="sk-item",
+                inner_class="sk-estimator",
+                checked=first_call,
+            ),
             doc_link=doc_link,
             features=output_features,
             is_fitted_css_class=is_fitted_css_class,

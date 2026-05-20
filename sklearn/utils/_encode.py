@@ -178,7 +178,7 @@ def _unique_python(values, *, return_inverse, return_counts):
         uniques.extend(missing_values.to_list())
         uniques = np.array(uniques, dtype=values.dtype)
     except TypeError:
-        types = sorted(t.__qualname__ for t in set(type(v) for v in values))
+        types = sorted(t.__qualname__ for t in {type(v) for v in values})
         raise TypeError(
             "Encoders require their input argument must be uniformly "
             f"strings or numbers. Got {types}"
