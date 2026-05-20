@@ -396,27 +396,27 @@ def test_check_array():
     copys = [True, False]
 
     for X, dtype, order, copy in product(xs, dtypes, orders, copys):
-        X_checked = check_array(X, dtype=dtype, order=order, copy=copy)
+        x_checked = check_array(X, dtype=dtype, order=order, copy=copy)
         if dtype is not None:
-            assert X_checked.dtype == dtype
+            assert x_checked.dtype == dtype
         else:
-            assert X_checked.dtype == X.dtype
+            assert x_checked.dtype == X.dtype
         if order == "C":
-            assert X_checked.flags["C_CONTIGUOUS"]
-            assert not X_checked.flags["F_CONTIGUOUS"]
+            assert x_checked.flags["C_CONTIGUOUS"]
+            assert not x_checked.flags["F_CONTIGUOUS"]
         elif order == "F":
-            assert X_checked.flags["F_CONTIGUOUS"]
-            assert not X_checked.flags["C_CONTIGUOUS"]
+            assert x_checked.flags["F_CONTIGUOUS"]
+            assert not x_checked.flags["C_CONTIGUOUS"]
         if copy:
-            assert X is not X_checked
+            assert X is not x_checked
         else:
             # doesn't copy if it was already good
             if (
-                X.dtype == X_checked.dtype
-                and X_checked.flags["C_CONTIGUOUS"] == X.flags["C_CONTIGUOUS"]
-                and X_checked.flags["F_CONTIGUOUS"] == X.flags["F_CONTIGUOUS"]
+                X.dtype == x_checked.dtype
+                and x_checked.flags["C_CONTIGUOUS"] == X.flags["C_CONTIGUOUS"]
+                and x_checked.flags["F_CONTIGUOUS"] == X.flags["F_CONTIGUOUS"]
             ):
-                assert X is X_checked
+                assert X is x_checked
 
     # allowed sparse != None
 
@@ -440,44 +440,44 @@ def test_check_array():
     for X, dtype, accept_sparse, copy in product(
         xs, non_object_dtypes, accept_sparses, copys
     ):
-        X_checked = check_array(X, dtype=dtype, accept_sparse=accept_sparse, copy=copy)
+        x_checked = check_array(X, dtype=dtype, accept_sparse=accept_sparse, copy=copy)
         if dtype is not None:
-            assert X_checked.dtype == dtype
+            assert x_checked.dtype == dtype
         else:
-            assert X_checked.dtype == X.dtype
+            assert x_checked.dtype == X.dtype
         if X.format in accept_sparse:
             # no change if allowed
-            assert X.format == X_checked.format
+            assert X.format == x_checked.format
         else:
             # got converted
-            assert X_checked.format == accept_sparse[0]
+            assert x_checked.format == accept_sparse[0]
         if copy:
-            assert X is not X_checked
+            assert X is not x_checked
         else:
             # doesn't copy if it was already good
-            if X.dtype == X_checked.dtype and X.format == X_checked.format:
-                assert X is X_checked
+            if X.dtype == x_checked.dtype and X.format == x_checked.format:
+                assert X is x_checked
 
     # other input formats
     # convert lists to arrays
-    X_dense = check_array([[1, 2], [3, 4]])
-    assert isinstance(X_dense, np.ndarray)
+    x_dense = check_array([[1, 2], [3, 4]])
+    assert isinstance(x_dense, np.ndarray)
     # raise on too deep lists
     with pytest.raises(ValueError):
         check_array(x_ndim.tolist())
     check_array(x_ndim.tolist(), allow_nd=True)  # doesn't raise
 
     # convert weird stuff to arrays
-    X_no_array = _NotAnArray(X_dense)
-    result = check_array(X_no_array)
+    x_no_array = _NotAnArray(x_dense)
+    result = check_array(x_no_array)
     assert isinstance(result, np.ndarray)
 
     # check negative values when ensure_non_negative=True
-    X_neg = check_array([[1, 2], [-3, 4]])
+    x_neg = check_array([[1, 2], [-3, 4]])
     err_msg = "Negative values in data passed to X in RandomForestRegressor"
     with pytest.raises(ValueError, match=err_msg):
         check_array(
-            X_neg,
+            x_neg,
             ensure_non_negative=True,
             input_name="X",
             estimator=RandomForestRegressor(),
@@ -555,21 +555,21 @@ def test_check_array_pandas_na_support(pd_dtype, dtype, expected_dtype):
         # Extension dtypes with Floats was added in 1.2
         pd = pytest.importorskip("pandas", minversion="1.2")
 
-    X_np = np.array(
+    x_np = np.array(
         [[1, 2, 3, np.nan, np.nan], [np.nan, np.nan, 8, 4, 6], [1, 2, 3, 4, 5]]
     ).T
 
     # Creates dataframe with numerical extension arrays with pd.NA
-    X = pd.DataFrame(X_np, dtype=pd_dtype, columns=["a", "b", "c"])
+    X = pd.DataFrame(x_np, dtype=pd_dtype, columns=["a", "b", "c"])
     # column c has no nans
     X["c"] = X["c"].astype("float")
-    X_checked = check_array(X, ensure_all_finite="allow-nan", dtype=dtype)
-    assert_allclose(X_checked, X_np)
-    assert X_checked.dtype == expected_dtype
+    x_checked = check_array(X, ensure_all_finite="allow-nan", dtype=dtype)
+    assert_allclose(x_checked, x_np)
+    assert x_checked.dtype == expected_dtype
 
-    X_checked = check_array(X, ensure_all_finite=False, dtype=dtype)
-    assert_allclose(X_checked, X_np)
-    assert X_checked.dtype == expected_dtype
+    x_checked = check_array(X, ensure_all_finite=False, dtype=dtype)
+    assert_allclose(x_checked, x_np)
+    assert x_checked.dtype == expected_dtype
 
     msg = "Input contains NaN"
     with pytest.raises(ValueError, match=msg):
@@ -580,51 +580,51 @@ def test_check_array_panadas_na_support_series():
     """Check check_array is correct with pd.NA in a series."""
     pd = pytest.importorskip("pandas")
 
-    X_int64 = pd.Series([1, 2, pd.NA], dtype="Int64")
+    x_int64 = pd.Series([1, 2, pd.NA], dtype="Int64")
 
     msg = "Input contains NaN"
     with pytest.raises(ValueError, match=msg):
-        check_array(X_int64, ensure_all_finite=True, ensure_2d=False)
+        check_array(x_int64, ensure_all_finite=True, ensure_2d=False)
 
-    X_out = check_array(X_int64, ensure_all_finite=False, ensure_2d=False)
-    assert_allclose(X_out, [1, 2, np.nan])
-    assert X_out.dtype == np.float64
+    x_out = check_array(x_int64, ensure_all_finite=False, ensure_2d=False)
+    assert_allclose(x_out, [1, 2, np.nan])
+    assert x_out.dtype == np.float64
 
-    X_out = check_array(
-        X_int64, ensure_all_finite=False, ensure_2d=False, dtype=np.float32
+    x_out = check_array(
+        x_int64, ensure_all_finite=False, ensure_2d=False, dtype=np.float32
     )
-    assert_allclose(X_out, [1, 2, np.nan])
-    assert X_out.dtype == np.float32
+    assert_allclose(x_out, [1, 2, np.nan])
+    assert x_out.dtype == np.float32
 
 
 def test_check_array_pandas_dtype_casting():
     # test that data-frames with homogeneous dtype are not upcast
     pd = pytest.importorskip("pandas")
     X = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]], dtype=np.float32)
-    X_df = pd.DataFrame(X)
-    assert check_array(X_df).dtype == np.float32
-    assert check_array(X_df, dtype=FLOAT_DTYPES).dtype == np.float32
+    x_df = pd.DataFrame(X)
+    assert check_array(x_df).dtype == np.float32
+    assert check_array(x_df, dtype=FLOAT_DTYPES).dtype == np.float32
 
-    X_df = X_df.astype({0: np.float16})
-    assert_array_equal(X_df.dtypes, (np.float16, np.float32, np.float32))
-    assert check_array(X_df).dtype == np.float32
-    assert check_array(X_df, dtype=FLOAT_DTYPES).dtype == np.float32
+    x_df = x_df.astype({0: np.float16})
+    assert_array_equal(x_df.dtypes, (np.float16, np.float32, np.float32))
+    assert check_array(x_df).dtype == np.float32
+    assert check_array(x_df, dtype=FLOAT_DTYPES).dtype == np.float32
 
-    X_df = X_df.astype({0: np.int16})
+    x_df = x_df.astype({0: np.int16})
     # float16, int16, float32 casts to float32
-    assert check_array(X_df).dtype == np.float32
-    assert check_array(X_df, dtype=FLOAT_DTYPES).dtype == np.float32
+    assert check_array(x_df).dtype == np.float32
+    assert check_array(x_df, dtype=FLOAT_DTYPES).dtype == np.float32
 
-    X_df = X_df.astype({2: np.float16})
+    x_df = x_df.astype({2: np.float16})
     # float16, int16, float16 casts to float32
-    assert check_array(X_df).dtype == np.float32
-    assert check_array(X_df, dtype=FLOAT_DTYPES).dtype == np.float32
+    assert check_array(x_df).dtype == np.float32
+    assert check_array(x_df, dtype=FLOAT_DTYPES).dtype == np.float32
 
-    X_df = X_df.astype(np.int16)
-    assert check_array(X_df).dtype == np.int16
+    x_df = x_df.astype(np.int16)
+    assert check_array(x_df).dtype == np.int16
     # we're not using upcasting rules for determining
     # the target type yet, so we cast to the default of float64
-    assert check_array(X_df, dtype=FLOAT_DTYPES).dtype == np.float64
+    assert check_array(x_df, dtype=FLOAT_DTYPES).dtype == np.float64
 
     # check that we handle pandas dtypes in a semi-reasonable way
     # this is actually tricky because we can't really know that this
@@ -651,46 +651,46 @@ def test_check_array_dtype_stability():
 
 
 def test_check_array_dtype_warning():
-    X_int_list = [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
-    X_float32 = np.asarray(X_int_list, dtype=np.float32)
-    X_int64 = np.asarray(X_int_list, dtype=np.int64)
-    X_csr_float32 = sp.csr_array(X_float32)
-    X_csc_float32 = sp.csc_array(X_float32)
-    X_csc_int32 = sp.csc_array(X_int64, dtype=np.int32)
-    integer_data = [X_int64, X_csc_int32]
-    float32_data = [X_float32, X_csr_float32, X_csc_float32]
+    x_int_list = [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
+    x_float32 = np.asarray(x_int_list, dtype=np.float32)
+    x_int64 = np.asarray(x_int_list, dtype=np.int64)
+    x_csr_float32 = sp.csr_array(x_float32)
+    x_csc_float32 = sp.csc_array(x_float32)
+    x_csc_int32 = sp.csc_array(x_int64, dtype=np.int32)
+    integer_data = [x_int64, x_csc_int32]
+    float32_data = [x_float32, x_csr_float32, x_csc_float32]
     with warnings.catch_warnings():
         warnings.simplefilter("error")
 
-        for X in integer_data:
-            X_checked = check_array(X, dtype=np.float64, accept_sparse=True)
-            assert X_checked.dtype == np.float64
+        for x in integer_data:
+            x_checked = check_array(x, dtype=np.float64, accept_sparse=True)
+            assert x_checked.dtype == np.float64
 
-        for X in float32_data:
-            X_checked = check_array(
-                X, dtype=[np.float64, np.float32], accept_sparse=True
+        for x in float32_data:
+            x_checked = check_array(
+                x, dtype=[np.float64, np.float32], accept_sparse=True
             )
-            assert X_checked.dtype == np.float32
-            assert X_checked is X
+            assert x_checked.dtype == np.float32
+            assert x_checked is x
 
-            X_checked = check_array(
-                X,
+            x_checked = check_array(
+                x,
                 dtype=[np.float64, np.float32],
                 accept_sparse=["csr", "dok"],
                 copy=True,
             )
-            assert X_checked.dtype == np.float32
-            assert X_checked is not X
+            assert x_checked.dtype == np.float32
+            assert x_checked is not x
 
-        X_checked = check_array(
-            X_csc_float32,
+        x_checked = check_array(
+            x_csc_float32,
             dtype=[np.float64, np.float32],
             accept_sparse=["csr", "dok"],
             copy=False,
         )
-        assert X_checked.dtype == np.float32
-        assert X_checked is not X_csc_float32
-        assert X_checked.format == "csr"
+        assert x_checked.dtype == np.float32
+        assert x_checked is not x_csc_float32
+        assert x_checked.format == "csr"
 
 
 def test_check_array_accept_sparse_type_exception():
