@@ -47,7 +47,7 @@ from sklearn.utils.fixes import (
 from sklearn.utils.multiclass import check_classification_targets, type_of_target
 
 iris = datasets.load_iris()
-rng = np.random.RandomState(0)
+rng = np.random.default_rng(0)
 perm = rng.permutation(iris.target.size)
 iris.data = iris.data[perm]
 iris.target = iris.target[perm]
@@ -205,22 +205,22 @@ def test_ovr_fit_predict_sparse(sparse_container):
     X_test = X[80:]
 
     clf = OneVsRestClassifier(base_clf).fit(X_train, Y_train)
-    Y_pred = clf.predict(X_test)
+    y_pred = clf.predict(X_test)
 
     clf_sprs = OneVsRestClassifier(base_clf).fit(X_train, sparse_container(Y_train))
-    Y_pred_sprs = clf_sprs.predict(X_test)
+    y_pred_sprs = clf_sprs.predict(X_test)
 
     assert clf.multilabel_
-    assert sp.issparse(Y_pred_sprs)
-    assert_array_equal(Y_pred_sprs.toarray(), Y_pred)
+    assert sp.issparse(y_pred_sprs)
+    assert_array_equal(y_pred_sprs.toarray(), y_pred)
 
     # Test predict_proba
-    Y_proba = clf_sprs.predict_proba(X_test)
+    y_proba = clf_sprs.predict_proba(X_test)
 
     # predict assigns a label if the probability that the
     # sample has the label is greater than 0.5.
-    pred = Y_proba > 0.5
-    assert_array_equal(pred, Y_pred_sprs.toarray())
+    pred = y_proba > 0.5
+    assert_array_equal(pred, y_pred_sprs.toarray())
 
     # Test decision_function
     clf = svm.SVC()
@@ -375,14 +375,14 @@ def test_ovr_multilabel_dataset():
         X_train, Y_train = X[:80], Y[:80]
         X_test, Y_test = X[80:], Y[80:]
         clf = OneVsRestClassifier(base_clf).fit(X_train, Y_train)
-        Y_pred = clf.predict(X_test)
+        y_pred = clf.predict(X_test)
 
         assert clf.multilabel_
         assert_almost_equal(
-            precision_score(Y_test, Y_pred, average="micro"), prec, decimal=2
+            precision_score(Y_test, y_pred, average="micro"), prec, decimal=2
         )
         assert_almost_equal(
-            recall_score(Y_test, Y_pred, average="micro"), recall, decimal=2
+            recall_score(Y_test, y_pred, average="micro"), recall, decimal=2
         )
 
 
@@ -413,13 +413,13 @@ def test_ovr_multilabel_predict_proba():
         assert not hasattr(decision_only, "predict_proba")
         assert hasattr(decision_only, "decision_function")
 
-        Y_pred = clf.predict(X_test)
-        Y_proba = clf.predict_proba(X_test)
+        y_pred = clf.predict(X_test)
+        y_proba = clf.predict_proba(X_test)
 
         # predict assigns a label if the probability that the
         # sample has the label is greater than 0.5.
-        pred = Y_proba > 0.5
-        assert_array_equal(pred, Y_pred)
+        pred = y_proba > 0.5
+        assert_array_equal(pred, y_pred)
 
 
 def test_ovr_single_label_predict_proba():
@@ -433,14 +433,14 @@ def test_ovr_single_label_predict_proba():
     decision_only = OneVsRestClassifier(svm.SVR()).fit(X_train, Y_train)
     assert not hasattr(decision_only, "predict_proba")
 
-    Y_pred = clf.predict(X_test)
-    Y_proba = clf.predict_proba(X_test)
+    y_pred = clf.predict(X_test)
+    y_proba = clf.predict_proba(X_test)
 
-    assert_almost_equal(Y_proba.sum(axis=1), 1.0)
+    assert_almost_equal(y_proba.sum(axis=1), 1.0)
     # predict assigns a label if the probability that the
     # sample has the label with the greatest predictive probability.
-    pred = Y_proba.argmax(axis=1)
-    assert not (pred - Y_pred).any()
+    pred = y_proba.argmax(axis=1)
+    assert not (pred - y_pred).any()
 
 
 def test_ovr_single_label_predict_proba_zero():
@@ -496,11 +496,11 @@ def test_ovr_single_label_decision_function():
 
 def test_ovr_gridsearch():
     ovr = OneVsRestClassifier(LinearSVC(random_state=0))
-    Cs = [0.1, 0.5, 0.8]
-    cv = GridSearchCV(ovr, {"estimator__C": Cs})
+    c_values = [0.1, 0.5, 0.8]
+    cv = GridSearchCV(ovr, {"estimator__C": c_values})
     cv.fit(iris.data, iris.target)
     best_C = cv.best_estimator_.estimators_[0].C
-    assert best_C in Cs
+    assert best_C in c_values
 
 
 def test_ovr_pipeline():
