@@ -89,7 +89,7 @@ def _line_search_wolfe1(
 
 
 def _line_search_wolfe12(
-    f, fprime, xk, pk, gfk, old_fval, old_old_fval, xp, device, verbose=0, **kwargs
+    f, fprime, xk, pk, gfk, old_fval, old_old_fval, xp, verbose=0, **kwargs
 ):
     """
     Same as line_search_wolfe1, but fall back to line_search_wolfe2 if
@@ -119,7 +119,7 @@ def _line_search_wolfe12(
         # Have a look at the line_search method of our NewtonSolver class. We borrow
         # the logic from there
         # Deal with relative loss differences around machine precision.
-        args = kwargs.get("args", tuple())
+        args = kwargs.get("args", ())
         fval = f(xk + pk, *args)
         tiny_loss = xp.abs(old_fval * eps)
         loss_improvement = fval - old_fval
@@ -197,7 +197,7 @@ def _cg(fhess_p, fgrad, maxiter, tol, xp, device, verbose=0):
     """
     eps = 16 * xp.finfo(fgrad.dtype).eps
     xsupi = xp.zeros(size(fgrad), dtype=fgrad.dtype, device=device)
-    ri = xp.asarray(fgrad, copy=True)  # residual = fgrad - fhess_p @ xsupi
+    ri = xp.asarray(fgrad, copy=True)  
     psupi = -ri
     i = 0
     dri0 = ri @ ri
@@ -214,9 +214,9 @@ def _cg(fhess_p, fgrad, maxiter, tol, xp, device, verbose=0):
                 )
             break
 
-        Ap = fhess_p(psupi)
+        a_p = fhess_p(psupi)
         # check curvature
-        curv = psupi @ Ap
+        curv = psupi @ a_p
         if 0 <= curv <= eps * psupi_norm2:
             # See https://arxiv.org/abs/1803.02924, Algo 1 Capped Conjugate Gradient.
             if is_verbose:
@@ -243,7 +243,7 @@ def _cg(fhess_p, fgrad, maxiter, tol, xp, device, verbose=0):
                 break
         alphai = dri0 / curv
         xsupi += alphai * psupi
-        ri += alphai * Ap
+        ri += alphai * a_p
         dri1 = ri @ ri
         betai = dri1 / dri0
         psupi = -ri + betai * psupi
@@ -369,7 +369,7 @@ def _newton_cg(
 
         if line_search:
             try:
-                alphak, fc, gc, old_fval, old_old_fval, gfkp1 = _line_search_wolfe12(
+                alphak, _, _, old_fval, old_old_fval, _ = _line_search_wolfe12(
                     func,
                     grad,
                     xk,
@@ -378,7 +378,6 @@ def _newton_cg(
                     old_fval,
                     old_old_fval,
                     xp=xp,
-                    device=device,
                     verbose=verbose,
                     args=args,
                 )

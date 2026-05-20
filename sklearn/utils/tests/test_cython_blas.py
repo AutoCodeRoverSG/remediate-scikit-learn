@@ -122,9 +122,9 @@ def test_scal(dtype):
 def test_rotg(dtype):
     rotg = _rotg_memview[_numpy_to_cython(dtype)]
 
-    rng = np.random.RandomState(0)
-    a = dtype(rng.randn())
-    b = dtype(rng.randn())
+    rng = np.random.default_rng(0)
+    a = dtype(rng.standard_normal())
+    b = dtype(rng.standard_normal())
     c, s = 0.0, 0.0
 
     def expected_rotg(a, b):
@@ -134,7 +134,10 @@ def test_rotg(dtype):
         else:
             r = np.sqrt(a**2 + b**2) * (1 if roe >= 0 else -1)
             c, s = a / r, b / r
-            z = s if roe == a else (1 if c == 0 else 1 / c)
+            if roe == a:
+                z = s
+            else:
+                z = 1 if c == 0 else 1 / c
         return r, z, c, s
 
     expected = expected_rotg(a, b)
@@ -147,11 +150,11 @@ def test_rotg(dtype):
 def test_rot(dtype):
     rot = _rot_memview[_numpy_to_cython(dtype)]
 
-    rng = np.random.RandomState(0)
-    x = rng.random_sample(10).astype(dtype, copy=False)
-    y = rng.random_sample(10).astype(dtype, copy=False)
-    c = dtype(rng.randn())
-    s = dtype(rng.randn())
+    rng = np.random.default_rng(0)
+    x = rng.random(10).astype(dtype, copy=False)
+    y = rng.random(10).astype(dtype, copy=False)
+    c = dtype(rng.standard_normal())
+    s = dtype(rng.standard_normal())
 
     expected_x = c * x + s * y
     expected_y = c * y - s * x
