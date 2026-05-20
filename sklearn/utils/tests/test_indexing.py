@@ -354,7 +354,7 @@ def test_safe_indexing_2d_scalar_axis_1(array_type, expected_output_type, indice
 
 
 @pytest.mark.parametrize("array_type", ["list", "array", "sparse"])
-def test_safe_indexing_None_axis_0(array_type):
+def test_safe_indexing_none_axis_0(array_type):
     X = _convert_container([[1, 2, 3], [4, 5, 6], [7, 8, 9]], array_type)
     x_subset = _safe_indexing(X, None, axis=0)
     assert_allclose_dense_sparse(x_subset, X)
@@ -443,11 +443,11 @@ def test_safe_indexing_list_axis_1_unsupported(indices):
 @pytest.mark.parametrize("array_type", ["array", "sparse", "pandas"])
 def test_safe_assign(array_type):
     """Check that `_safe_assign` works as expected."""
-    rng = np.random.RandomState(0)
-    x_array = rng.randn(10, 5)
+    rng = np.random.default_rng(0)
+    x_array = rng.standard_normal((10, 5))
 
     row_indexer = [1, 2]
-    values = rng.randn(len(row_indexer), x_array.shape[1])
+    values = rng.standard_normal((len(row_indexer), x_array.shape[1]))
     X = _convert_container(x_array, array_type)
     _safe_assign(X, values, row_indexer=row_indexer)
 
@@ -457,7 +457,7 @@ def test_safe_assign(array_type):
     )
 
     column_indexer = [1, 2]
-    values = rng.randn(x_array.shape[0], len(column_indexer))
+    values = rng.standard_normal((x_array.shape[0], len(column_indexer)))
     X = _convert_container(x_array, array_type)
     _safe_assign(X, values, column_indexer=column_indexer)
 
@@ -467,7 +467,7 @@ def test_safe_assign(array_type):
     )
 
     row_indexer, column_indexer = None, None
-    values = rng.randn(*X.shape)
+    values = rng.standard_normal(X.shape)
     X = _convert_container(x_array, array_type)
     _safe_assign(X, values, column_indexer=column_indexer)
 
@@ -601,7 +601,7 @@ def test_resample_weighted():
 
 def test_resample_stratified():
     # Make sure resample can stratify
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
     n_samples = 100
     p = 0.9
     X = rng.normal(size=(n_samples, 1))
@@ -617,16 +617,16 @@ def test_resample_stratified():
 
 def test_resample_stratified_replace():
     # Make sure stratified resampling supports the replace parameter
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
     n_samples = 100
     X = rng.normal(size=(n_samples, 1))
-    y = rng.randint(0, 2, size=n_samples)
+    y = rng.integers(0, 2, size=n_samples)
 
     x_replace, _ = resample(
-        X, y, replace=True, n_samples=50, random_state=rng, stratify=y
+        X, y, replace=True, n_samples=50, random_state=0, stratify=y
     )
     x_no_replace, _ = resample(
-        X, y, replace=False, n_samples=50, random_state=rng, stratify=y
+        X, y, replace=False, n_samples=50, random_state=0, stratify=y
     )
     assert np.unique(x_replace).shape[0] < 50
     assert np.unique(x_no_replace).shape[0] == 50
@@ -634,7 +634,7 @@ def test_resample_stratified_replace():
     # make sure n_samples can be greater than X.shape[0] if we sample with
     # replacement
     x_replace, _ = resample(
-        X, y, replace=True, n_samples=1000, random_state=rng, stratify=y
+        X, y, replace=True, n_samples=1000, random_state=0, stratify=y
     )
     assert x_replace.shape[0] == 1000
     assert np.unique(x_replace).shape[0] == 100
@@ -642,11 +642,11 @@ def test_resample_stratified_replace():
 
 def test_resample_stratify_2dy():
     # Make sure y can be 2d when stratifying
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
     n_samples = 100
     X = rng.normal(size=(n_samples, 1))
-    y = rng.randint(0, 2, size=(n_samples, 2))
-    X, y = resample(X, y, n_samples=50, random_state=rng, stratify=y)
+    y = rng.integers(0, 2, size=(n_samples, 2))
+    X, y = resample(X, y, n_samples=50, random_state=0, stratify=y)
     assert y.ndim == 2
 
 
@@ -667,20 +667,20 @@ def test_notimplementederror():
 @pytest.mark.parametrize("csr_container", CSR_CONTAINERS)
 def test_resample_stratify_sparse_error(csr_container):
     # resample must be ndarray
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
     n_samples = 100
     X = rng.normal(size=(n_samples, 2))
-    y = rng.randint(0, 2, size=n_samples)
+    y = rng.integers(0, 2, size=n_samples)
     stratify = csr_container(y.reshape(-1, 1))
     with pytest.raises(TypeError, match="Sparse data was passed"):
-        X, y = resample(X, y, n_samples=50, random_state=rng, stratify=stratify)
+        X, y = resample(X, y, n_samples=50, random_state=0, stratify=stratify)
 
 
 def test_shuffle_on_ndim_equals_three():
     def to_tuple(a):  # to make the inner arrays hashable
         return tuple(tuple(tuple(c) for c in b) for b in a)
 
-    A = np.array([[[1, 2], [3, 4]], [[5, 6], [7, 8]]])  # A.shape = (2,2,2)
+    A = np.array([[[1, 2], [3, 4]], [[5, 6], [7, 8]]])  
     S = set(to_tuple(A))
     shuffle(A)  # shouldn't raise a ValueError for dim = 3
     assert set(to_tuple(A)) == S
