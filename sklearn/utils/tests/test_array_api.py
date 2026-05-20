@@ -1030,9 +1030,9 @@ def test_half_multinomial_loss(use_sample_weight, namespace, device_name, dtype_
     """
     n_samples = 5
     n_classes = 3
-    rng = numpy.random.RandomState(42)
-    y = rng.randint(0, n_classes, n_samples).astype(dtype_name)
-    pred = rng.rand(n_samples, n_classes).astype(dtype_name)
+    rng = numpy.random.default_rng(42)
+    y = rng.integers(0, n_classes, n_samples).astype(dtype_name)
+    pred = rng.random((n_samples, n_classes)).astype(dtype_name)
     xp, device = _array_api_for_tests(namespace, device_name, dtype_name)
     y_xp = xp.asarray(y, device=device)
     pred_xp = xp.asarray(pred, device=device)

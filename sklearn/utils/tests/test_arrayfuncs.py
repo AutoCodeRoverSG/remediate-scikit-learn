@@ -8,7 +8,7 @@ from sklearn.utils.arrayfuncs import _all_with_any_reduction_axis_1, min_pos
 def test_min_pos():
     # Check that min_pos returns a positive value and that it's consistent
     # between float and double
-    X = np.random.RandomState(0).randn(100)
+    X = np.random.default_rng(0).standard_normal(100)
 
     min_double = min_pos(X)
     min_float = min_pos(X.astype(np.float32))

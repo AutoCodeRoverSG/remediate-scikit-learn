@@ -51,7 +51,7 @@ except ImportError:
 
 
 def _object_dtype_isnan(X):
-    return X != X
+    return np.not_equal(X, X)
 
 
 # TODO: Remove when SciPy 1.11 is the minimum supported version
@@ -492,9 +492,8 @@ def _safely_cast_index_arrays(array, idx_dtype=np.int32, msg=""):
         if array.indptr[-1] > max_value:
             raise ValueError(f"indptr values too large for {msg}")
         # check shape vs dtype
-        if max(*array.shape) > max_value:
-            if (array.indices > max_value).any():
-                raise ValueError(f"indices values too large for {msg}")
+        if max(*array.shape) > max_value and (array.indices > max_value).any():
+            raise ValueError(f"indices values too large for {msg}")
 
         indices = array.indices.astype(idx_dtype, copy=False)
         indptr = array.indptr.astype(idx_dtype, copy=False)
@@ -512,19 +511,20 @@ def _safely_cast_index_arrays(array, idx_dtype=np.int32, msg=""):
         return tuple(co.astype(idx_dtype, copy=False) for co in coords)
 
     elif array.format == "dia":
-        if max(*array.shape) > max_value:
-            if (array.offsets > max_value).any():
-                raise ValueError(f"offsets values too large for {msg}")
+        if max(*array.shape) > max_value and (array.offsets > max_value).any():
+            raise ValueError(f"offsets values too large for {msg}")
         offsets = array.offsets.astype(idx_dtype, copy=False)
         return offsets
 
     elif array.format == "bsr":
-        R, C = array.blocksize
-        if array.indptr[-1] * R > max_value:
+        row_block, col_block = array.blocksize
+        if array.indptr[-1] * row_block > max_value:
             raise ValueError("indptr values too large for {msg}")
-        if max(*array.shape) > max_value:
-            if (array.indices * C > max_value).any():
-                raise ValueError(f"indices values too large for {msg}")
+        if (
+            max(*array.shape) > max_value
+            and (array.indices * col_block > max_value).any()
+        ):
+            raise ValueError(f"indices values too large for {msg}")
         indices = array.indices.astype(idx_dtype, copy=False)
         indptr = array.indptr.astype(idx_dtype, copy=False)
         return indices, indptr
