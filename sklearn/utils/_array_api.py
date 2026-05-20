@@ -32,6 +32,8 @@ REMOVE_TYPES_DEFAULT = (
     tuple,
 )
 
+_REAL_FLOATING_DTYPE_KIND = "real floating"
+
 NamespaceAndDevice = namedtuple("NamespaceAndDevice", ["xp", "device"])
 
 
@@ -303,7 +305,7 @@ def supported_float_dtypes(xp, device=None):
     https://data-apis.org/array-api/latest/API_specification/data_types.html
     """
     dtypes_dict = xp.__array_namespace_info__().dtypes(
-        kind="real floating", device=device
+        kind=_REAL_FLOATING_DTYPE_KIND, device=device
     )
     valid_float_dtypes = []
     for dtype_key in ("float64", "float32"):
@@ -496,7 +498,7 @@ def get_namespace_and_device(
     device : device
         `device` object (see the "Device Support" section of the array API spec).
     """
-    skip_remove_kwargs = dict(remove_none=False, remove_types=[])
+    skip_remove_kwargs = {"remove_none": False, "remove_types": []}
 
     array_list = _remove_non_arrays(
         *array_list,
@@ -753,7 +755,7 @@ def _max_precision_float_dtype(xp, device):
         return xp.float64
 
     floating_dtypes = xp.__array_namespace_info__().dtypes(
-        kind="real floating", device=device
+        kind=_REAL_FLOATING_DTYPE_KIND, device=device
     )
     if "float64" in floating_dtypes:
         return xp.float64
@@ -774,7 +776,7 @@ def _find_matching_floating_dtype(*arrays, xp):
     """
     dtyped_arrays = [xp.asarray(a) for a in arrays if hasattr(a, "dtype")]
     floating_dtypes = [
-        a.dtype for a in dtyped_arrays if xp.isdtype(a.dtype, "real floating")
+        a.dtype for a in dtyped_arrays if xp.isdtype(a.dtype, _REAL_FLOATING_DTYPE_KIND)
     ]
     if floating_dtypes:
         # Return the floating dtype with the highest precision:
@@ -846,7 +848,7 @@ def _average(a, axis=None, weights=None, normalize=True, xp=None):
         return sum_
 
     scale = xp.sum(weights, axis=axis)
-    if xp.any(scale == 0.0):
+    if xp.any(scale == 0):
         raise ZeroDivisionError("Weights sum to zero, can't be normalized")
 
     return sum_ / scale
@@ -881,7 +883,7 @@ def _xlogy(x, y, xp=None):
 
     with numpy.errstate(divide="ignore", invalid="ignore"):
         temp = x * xp.log(y)
-    return xp.where(x == 0.0, xp.asarray(0.0, dtype=temp.dtype, device=device_), temp)
+    return xp.where(x == 0, xp.asarray(0.0, dtype=temp.dtype, device=device_), temp)
 
 
 def _nanmin(X, axis=None, xp=None):
@@ -942,13 +944,13 @@ def _nanmean(X, axis=None, xp=None):
 def _nansum(X, axis=None, xp=None, keepdims=False, dtype=None):
     # TODO: refactor once nan-aware reductions are standardized:
     # https://github.com/data-apis/array-api/issues/621
-    xp, _, X_device = get_namespace_and_device(X, xp=xp)
+    xp, _, x_device = get_namespace_and_device(X, xp=xp)
 
     if _is_numpy_namespace(xp):
         return xp.asarray(numpy.nansum(X, axis=axis, keepdims=keepdims, dtype=dtype))
 
     mask = xp.isnan(X)
-    masked_arr = xp.where(mask, xp.asarray(0, device=X_device, dtype=X.dtype), X)
+    masked_arr = xp.where(mask, xp.asarray(0, device=x_device, dtype=X.dtype), X)
     return xp.sum(masked_arr, axis=axis, keepdims=keepdims, dtype=dtype)
 
 
@@ -1130,18 +1132,18 @@ def check_same_namespace(X, estimator, *, attribute, method):
     attr = getattr(estimator, attribute)
     a_xp, _, a_device = get_namespace_and_device(attr)
 
-    X_xp, _, X_device = get_namespace_and_device(X)
+    x_xp, _, x_device = get_namespace_and_device(X)
 
-    if X_xp == a_xp and X_device == a_device:
+    if x_xp == a_xp and x_device == a_device:
         return
 
-    if X_xp != a_xp:
+    if x_xp != a_xp:
         msg = (
             f"Array namespaces used during fit ({a_xp.__name__}) "
-            f"and {method} ({X_xp.__name__}) differ."
+            f"and {method} ({x_xp.__name__}) differ."
         )
     else:  # pragma: no cover
-        msg = f"Devices used during fit ({a_device}) and {method} ({X_device}) differ."
+        msg = f"Devices used during fit ({a_device}) and {method} ({x_device}) differ."
 
     raise ValueError(
         f"Inputs passed to {estimator.__class__.__name__}.{method}() "
@@ -1366,7 +1368,7 @@ def _linalg_solve(cov_chol, eye_matrix, xp):
 
 def _half_multinomial_loss(y, pred, sample_weight=None, xp=None):
     """A version of the multinomial loss that is compatible with the array API"""
-    xp, _, device_ = get_namespace_and_device(y, pred, sample_weight)
+    xp, _, device_ = get_namespace_and_device(y, pred, sample_weight, xp=xp)
     log_sum_exp = _logsumexp(pred, axis=1, xp=xp)
     y = xp.asarray(y, dtype=xp.int64, device=device_)
     class_margins = xp.arange(y.shape[0], device=device_) * pred.shape[1]
