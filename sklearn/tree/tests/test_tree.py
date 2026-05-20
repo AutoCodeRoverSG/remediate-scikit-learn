@@ -1330,8 +1330,9 @@ def test_realloc():
 def test_huge_allocations():
     n_bits = 8 * struct.calcsize("P")
 
-    X = np.random.randn(10, 2)
-    y = np.random.randint(0, 2, 10)
+    rng = np.random.default_rng(0)
+    X = rng.standard_normal((10, 2))
+    y = rng.integers(0, 2, 10)
 
     # Sanity check: we cannot request more memory than the size of the address
     # space. Currently raises OverflowError.
@@ -1542,8 +1543,8 @@ def test_explicit_sparse_zeros(tree_type, csc_container, csr_container):
     x_sparse_test = x_sparse_test.copy()
 
     # Ensure that we have explicit zeros
-    assert (x_sparse.data == 0.0).sum() > 0
-    assert (x_sparse_test.data == 0.0).sum() > 0
+    assert np.isclose(x_sparse.data, 0.0).sum() > 0
+    assert np.isclose(x_sparse_test.data, 0.0).sum() > 0
 
     # Perform the comparison
     d = tree_estimator(random_state=0, max_depth=max_depth).fit(x_dense, y)
@@ -1869,7 +1870,7 @@ def test_criterion_copy():
 @pytest.mark.parametrize("sparse_container", [None] + CSC_CONTAINERS)
 def test_empty_leaf_infinite_threshold(sparse_container):
     # try to make empty leaf by using near infinite value.
-    data = np.random.RandomState(0).randn(100, 11) * 2e38
+    data = np.random.default_rng(0).standard_normal((100, 11)) * 2e38
     data = xpx.nan_to_num(data.astype("float32"))
     X = data[:, :-1]
     if sparse_container is not None:
@@ -2071,24 +2072,24 @@ def test_poisson_vs_mse():
     # than squared error measured in Poisson deviance as metric.
     # We have a similar test, test_poisson(), in
     # sklearn/ensemble/_hist_gradient_boosting/tests/test_gradient_boosting.py
-    rng = np.random.RandomState(42)
+    rng = np.random.default_rng(42)
     n_train, n_test, n_features = 500, 500, 10
     X = datasets.make_low_rank_matrix(
-        n_samples=n_train + n_test, n_features=n_features, random_state=rng
+        n_samples=n_train + n_test, n_features=n_features, random_state=42
     )
     # We create a log-linear Poisson model and downscale coef as it will get
     # exponentiated.
     coef = rng.uniform(low=-2, high=2, size=n_features) / np.max(X, axis=0)
     y = rng.poisson(lam=np.exp(X @ coef))
     X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=n_test, random_state=rng
+        X, y, test_size=n_test, random_state=42
     )
     # We prevent some overfitting by setting min_samples_split=10.
     tree_poi = DecisionTreeRegressor(
-        criterion="poisson", min_samples_split=10, random_state=rng
+        criterion="poisson", min_samples_split=10, random_state=42
     )
     tree_mse = DecisionTreeRegressor(
-        criterion="squared_error", min_samples_split=10, random_state=rng
+        criterion="squared_error", min_samples_split=10, random_state=42
     )
 
     tree_poi.fit(X_train, y_train)
@@ -2386,7 +2387,7 @@ def test_check_node_ndarray():
 )
 def test_splitter_serializable(splitter_cls):
     """Check that splitters are serializable."""
-    rng = np.random.RandomState(42)
+    rng = check_random_state(42)
     max_features = 10
     n_outputs, n_classes = 2, np.array([3, 2], dtype=np.intp)
 
@@ -2427,10 +2428,10 @@ def test_min_sample_split_1_error(tree_cls):
     X = np.array([[0, 0], [1, 1]])
     y = np.array([0, 1])
 
-    # min_samples_split=1.0 is valid
+    
     tree_cls(min_samples_split=1.0).fit(X, y)
 
-    # min_samples_split=1 is invalid
+    
     tree = tree_cls(min_samples_split=1)
     msg = (
         r"'min_samples_split' .* must be an int in the range \[2, inf\) "
@@ -2641,7 +2642,7 @@ def test_missing_values_is_resilience(
     )
 
     x_missing = X.copy()
-    rng = np.random.RandomState(global_random_seed)
+    rng = np.random.default_rng(global_random_seed)
     x_missing[rng.choice([False, True], size=X.shape, p=[0.9, 0.1])] = np.nan
     x_missing_train, x_missing_test, y_train, y_test = train_test_split(
         x_missing, y, random_state=global_random_seed
