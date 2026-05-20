@@ -716,10 +716,10 @@ def test_incremental_weighted_mean_and_variance_array_api(
     array_namespace, device_name, dtype_name
 ):
     xp, device = _array_api_for_tests(array_namespace, device_name, dtype_name)
-    rng = np.random.RandomState(42)
+    rng = np.random.default_rng(42)
     mult = 10
-    X = rng.rand(1000, 20).astype(dtype_name) * mult
-    sample_weight = rng.rand(X.shape[0]).astype(dtype_name) * mult
+    X = rng.random((1000, 20)).astype(dtype_name) * mult
+    sample_weight = rng.random(X.shape[0]).astype(dtype_name) * mult
     mean, var, _ = _incremental_mean_and_var(X, 0, 0, 0, sample_weight=sample_weight)
 
     x_xp = xp.asarray(X, device=device)
@@ -750,7 +750,7 @@ def test_incremental_weighted_mean_and_variance_array_api(
     "weight_loc, weight_scale", [(0, 1), (0, 1e-8), (1, 1e-8), (10, 1), (1e7, 1)]
 )
 def test_incremental_weighted_mean_and_variance(mean, var, weight_loc, weight_scale):
-    rng = np.random.RandomState(42)
+    rng = np.random.default_rng(42)
 
     # Testing of correctness and numerical stability
     def _assert(X, sample_weight, expected_mean, expected_var):
@@ -895,14 +895,6 @@ def test_incremental_variance_numerical_stability():
         expx_2 = (X.sum(axis=0) / n) ** 2
         return exp_x2 - expx_2
 
-    # Two-pass algorithm, stable.
-    # We use it as a benchmark. It is not an online algorithm
-    # https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Two-pass_algorithm
-    def two_pass_var(X):
-        mean = X.mean(axis=0)
-        Y = X.copy()
-        return np.mean((Y - mean) ** 2, axis=0)
-
     # Naive online implementation
     # https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Online_algorithm
     # This works only for chunks for size 1
@@ -955,8 +947,8 @@ def test_incremental_variance_numerical_stability():
 
 def test_incremental_variance_ddof():
     # Test that degrees of freedom parameter for calculations are correct.
-    rng = np.random.RandomState(1999)
-    X = rng.randn(50, 10)
+    rng = np.random.default_rng(1999)
+    X = rng.standard_normal((50, 10))
     n_samples, _ = X.shape
     for batch_size in [11, 20, 37]:
         steps = np.arange(0, X.shape[0], batch_size)
@@ -987,7 +979,7 @@ def test_incremental_variance_ddof():
 
 def test_vector_sign_flip():
     # Testing that sign flip is working & largest value has positive sign
-    data = np.random.RandomState(36).randn(5, 5)
+    data = np.random.default_rng(36).standard_normal((5, 5))
     max_abs_rows = np.argmax(np.abs(data), axis=1)
     data_flipped = _deterministic_vector_sign_flip(data)
     max_rows = np.argmax(data_flipped, axis=1)
@@ -997,8 +989,8 @@ def test_vector_sign_flip():
 
 
 def test_softmax():
-    rng = np.random.RandomState(0)
-    X = rng.randn(3, 5)
+    rng = np.random.default_rng(0)
+    X = rng.standard_normal((3, 5))
     exp_x = np.exp(X)
     sum_exp_x = np.sum(exp_x, axis=1).reshape((-1, 1))
     assert_array_almost_equal(softmax(X), exp_x / sum_exp_x)
@@ -1020,10 +1012,10 @@ def test_stable_cumsum_deprecation():
     ids=["dense"] + [container.__name__ for container in CSR_CONTAINERS],
 )
 def test_safe_sparse_dot_2d(a_container, b_container):
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
 
-    A = rng.random_sample((30, 10))
-    B = rng.random_sample((10, 20))
+    A = rng.random((30, 10))
+    B = rng.random((10, 20))
     expected = np.dot(A, B)
 
     A = a_container(A)
@@ -1035,19 +1027,19 @@ def test_safe_sparse_dot_2d(a_container, b_container):
 
 @pytest.mark.parametrize("csr_container", CSR_CONTAINERS)
 def test_safe_sparse_dot_nd(csr_container):
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
 
     # dense ND / sparse
-    A = rng.random_sample((2, 3, 4, 5, 6))
-    B = rng.random_sample((6, 7))
+    A = rng.random((2, 3, 4, 5, 6))
+    B = rng.random((6, 7))
     expected = np.dot(A, B)
     B = csr_container(B)
     actual = safe_sparse_dot(A, B)
     assert_allclose(actual, expected)
 
     # sparse / dense ND
-    A = rng.random_sample((2, 3))
-    B = rng.random_sample((4, 5, 3, 6))
+    A = rng.random((2, 3))
+    B = rng.random((4, 5, 3, 6))
     expected = np.dot(A, B)
     A = csr_container(A)
     actual = safe_sparse_dot(A, B)
@@ -1060,17 +1052,17 @@ def test_safe_sparse_dot_nd(csr_container):
     ids=["dense"] + [container.__name__ for container in CSR_CONTAINERS],
 )
 def test_safe_sparse_dot_2d_1d(container):
-    rng = np.random.RandomState(0)
-    B = rng.random_sample((10))
+    rng = np.random.default_rng(0)
+    B = rng.random((10))
 
     # 2D @ 1D
-    A = rng.random_sample((30, 10))
+    A = rng.random((30, 10))
     expected = np.dot(A, B)
     actual = safe_sparse_dot(container(A), B)
     assert_allclose(actual, expected)
 
     # 1D @ 2D
-    A = rng.random_sample((10, 30))
+    A = rng.random((10, 30))
     expected = np.dot(B, A)
     actual = safe_sparse_dot(B, container(A))
     assert_allclose(actual, expected)
@@ -1153,11 +1145,15 @@ def test_randomized_range_finder_array_api_compliance(
     atol = 1e-5 if dtype_name == "float32" else 0
 
     with config_context(array_api_dispatch=True):
-        q_np = randomized_range_finder(X, size=size, n_iter=n_iter, random_state=0)
-        q_xp = randomized_range_finder(x_xp, size=size, n_iter=n_iter, random_state=0)
+        range_np = randomized_range_finder(
+            X, size=size, n_iter=n_iter, random_state=0
+        )
+        range_xp = randomized_range_finder(
+            x_xp, size=size, n_iter=n_iter, random_state=0
+        )
 
-        assert get_namespace(q_xp)[0].__name__ == xp.__name__
-        assert_allclose(move_to(q_xp, xp=np, device="cpu"), q_np, atol=atol)
+        assert get_namespace(range_xp)[0].__name__ == xp.__name__
+        assert_allclose(move_to(range_xp, xp=np, device="cpu"), range_np, atol=atol)
 
     max_dtype = _max_precision_float_dtype(xp, device=device)
     # Also test with integer input only once per namespace/device for
@@ -1169,9 +1165,15 @@ def test_randomized_range_finder_array_api_compliance(
     atol *= 10
     x_xp = xp.asarray(x_int, device=device)
     with config_context(array_api_dispatch=True):
-        q_np = randomized_range_finder(x_int, size=size, n_iter=n_iter, random_state=0)
-        q_xp = randomized_range_finder(x_xp, size=size, n_iter=n_iter, random_state=0)
+        range_np = randomized_range_finder(
+            x_int, size=size, n_iter=n_iter, random_state=0
+        )
+        range_xp = randomized_range_finder(
+            x_xp, size=size, n_iter=n_iter, random_state=0
+        )
 
-        assert get_namespace(q_xp)[0].__name__ == xp.__name__
-        assert q_xp.dtype == max_dtype
-        assert_allclose(move_to(q_xp, xp=np, device="cpu"), q_np, atol=atol)
+        assert get_namespace(range_xp)[0].__name__ == xp.__name__
+        assert range_xp.dtype == max_dtype
+        assert_allclose(
+            move_to(range_xp, xp=np, device="cpu"), range_np, atol=atol
+        )
