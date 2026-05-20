@@ -251,85 +251,94 @@ INIT_PARAMS = {
         {
             "cv": 2,
             "error_score": "raise",
-            "estimator": Pipeline(steps=[("pca", PCA()), ("ridge", Ridge())]),
+            "estimator": Pipeline(
+                steps=[("pca", PCA()), ("ridge", Ridge())], memory=None
+            ),
             "param_grid": {"ridge__alpha": [0.1, 1.0]},
         },
         {
             "cv": 2,
             "error_score": "raise",
             "estimator": Pipeline(
-                steps=[("pca", PCA()), ("logisticregression", LogisticRegression())]
+                steps=[("pca", PCA()), ("logisticregression", LogisticRegression())],
+                memory=None,
             ),
             "param_grid": {"logisticregression__C": [0.1, 1.0]},
         },
     ],
     HalvingGridSearchCV: [
-        dict(
-            cv=2,
-            error_score="raise",
-            estimator=Ridge(),
-            min_resources="smallest",
-            param_grid={"alpha": [0.1, 1.0]},
-            random_state=0,
-        ),
-        dict(
-            cv=2,
-            error_score="raise",
-            estimator=LogisticRegression(),
-            min_resources="smallest",
-            param_grid={"C": [0.1, 1.0]},
-            random_state=0,
-        ),
-        dict(
-            cv=2,
-            error_score="raise",
-            estimator=Pipeline(steps=[("pca", PCA()), ("ridge", Ridge())]),
-            min_resources="smallest",
-            param_grid={"ridge__alpha": [0.1, 1.0]},
-            random_state=0,
-        ),
-        dict(
-            cv=2,
-            error_score="raise",
-            estimator=Pipeline(
-                steps=[("pca", PCA()), ("logisticregression", LogisticRegression())]
+        {
+            "cv": 2,
+            "error_score": "raise",
+            "estimator": Ridge(),
+            "min_resources": "smallest",
+            "param_grid": {"alpha": [0.1, 1.0]},
+            "random_state": 0,
+        },
+        {
+            "cv": 2,
+            "error_score": "raise",
+            "estimator": LogisticRegression(),
+            "min_resources": "smallest",
+            "param_grid": {"C": [0.1, 1.0]},
+            "random_state": 0,
+        },
+        {
+            "cv": 2,
+            "error_score": "raise",
+            "estimator": Pipeline(
+                steps=[("pca", PCA()), ("ridge", Ridge())], memory=None
             ),
-            min_resources="smallest",
-            param_grid={"logisticregression__C": [0.1, 1.0]},
-            random_state=0,
-        ),
+            "min_resources": "smallest",
+            "param_grid": {"ridge__alpha": [0.1, 1.0]},
+            "random_state": 0,
+        },
+        {
+            "cv": 2,
+            "error_score": "raise",
+            "estimator": Pipeline(
+                steps=[("pca", PCA()), ("logisticregression", LogisticRegression())],
+                memory=None,
+            ),
+            "min_resources": "smallest",
+            "param_grid": {"logisticregression__C": [0.1, 1.0]},
+            "random_state": 0,
+        },
     ],
     HalvingRandomSearchCV: [
-        dict(
-            cv=2,
-            error_score="raise",
-            estimator=Ridge(),
-            param_distributions={"alpha": [0.1, 1.0]},
-            random_state=0,
-        ),
-        dict(
-            cv=2,
-            error_score="raise",
-            estimator=LogisticRegression(),
-            param_distributions={"C": [0.1, 1.0]},
-            random_state=0,
-        ),
-        dict(
-            cv=2,
-            error_score="raise",
-            estimator=Pipeline(steps=[("pca", PCA()), ("ridge", Ridge())]),
-            param_distributions={"ridge__alpha": [0.1, 1.0]},
-            random_state=0,
-        ),
-        dict(
-            cv=2,
-            error_score="raise",
-            estimator=Pipeline(
-                steps=[("pca", PCA()), ("logisticregression", LogisticRegression())]
+        {
+            "cv": 2,
+            "error_score": "raise",
+            "estimator": Ridge(),
+            "param_distributions": {"alpha": [0.1, 1.0]},
+            "random_state": 0,
+        },
+        {
+            "cv": 2,
+            "error_score": "raise",
+            "estimator": LogisticRegression(),
+            "param_distributions": {"C": [0.1, 1.0]},
+            "random_state": 0,
+        },
+        {
+            "cv": 2,
+            "error_score": "raise",
+            "estimator": Pipeline(
+                steps=[("pca", PCA()), ("ridge", Ridge())], memory=None
             ),
-            param_distributions={"logisticregression__C": [0.1, 1.0]},
-            random_state=0,
-        ),
+            "param_distributions": {"ridge__alpha": [0.1, 1.0]},
+            "random_state": 0,
+        },
+        {
+            "cv": 2,
+            "error_score": "raise",
+            "estimator": Pipeline(
+                steps=[("pca", PCA()), ("logisticregression", LogisticRegression())],
+                memory=None,
+            ),
+            "param_distributions": {"logisticregression__C": [0.1, 1.0]},
+            "random_state": 0,
+        },
     ],
     HDBSCAN: dict(min_samples=1),
     # The default min_samples_leaf (20) isn't appropriate for small
@@ -407,36 +416,39 @@ INIT_PARAMS = {
     RandomForestClassifier: dict(n_estimators=5),
     RandomForestRegressor: dict(n_estimators=5),
     RandomizedSearchCV: [
-        dict(
-            cv=2,
-            error_score="raise",
-            estimator=Ridge(),
-            param_distributions={"alpha": [0.1, 1.0]},
-            random_state=0,
-        ),
-        dict(
-            cv=2,
-            error_score="raise",
-            estimator=LogisticRegression(),
-            param_distributions={"C": [0.1, 1.0]},
-            random_state=0,
-        ),
-        dict(
-            cv=2,
-            error_score="raise",
-            estimator=Pipeline(steps=[("pca", PCA()), ("ridge", Ridge())]),
-            param_distributions={"ridge__alpha": [0.1, 1.0]},
-            random_state=0,
-        ),
-        dict(
-            cv=2,
-            error_score="raise",
-            estimator=Pipeline(
-                steps=[("pca", PCA()), ("logisticregression", LogisticRegression())]
+        {
+            "cv": 2,
+            "error_score": "raise",
+            "estimator": Ridge(),
+            "param_distributions": {"alpha": [0.1, 1.0]},
+            "random_state": 0,
+        },
+        {
+            "cv": 2,
+            "error_score": "raise",
+            "estimator": LogisticRegression(),
+            "param_distributions": {"C": [0.1, 1.0]},
+            "random_state": 0,
+        },
+        {
+            "cv": 2,
+            "error_score": "raise",
+            "estimator": Pipeline(
+                steps=[("pca", PCA()), ("ridge", Ridge())], memory=None
             ),
-            param_distributions={"logisticregression__C": [0.1, 1.0]},
-            random_state=0,
-        ),
+            "param_distributions": {"ridge__alpha": [0.1, 1.0]},
+            "random_state": 0,
+        },
+        {
+            "cv": 2,
+            "error_score": "raise",
+            "estimator": Pipeline(
+                steps=[("pca", PCA()), ("logisticregression", LogisticRegression())],
+                memory=None,
+            ),
+            "param_distributions": {"logisticregression__C": [0.1, 1.0]},
+            "random_state": 0,
+        },
     ],
     RandomTreesEmbedding: dict(n_estimators=5),
     # `RANSACRegressor` will raise an error with any model other
