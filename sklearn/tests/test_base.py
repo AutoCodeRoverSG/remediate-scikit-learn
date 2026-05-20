@@ -107,6 +107,7 @@ class Buggy(BaseEstimator):
 
 class NoEstimator:
     def __init__(self):
+        # Intentionally empty to test behavior with a non-estimator class
         pass
 
     def fit(self, X=None, y=None):
@@ -166,7 +167,7 @@ def test_clone_buggy():
     with pytest.raises(RuntimeError):
         clone(buggy)
 
-    no_estimator = NoEstimator()
+    no_estimator: object = NoEstimator()
     with pytest.raises(TypeError):
         clone(no_estimator)
 
@@ -213,7 +214,7 @@ def test_clone_sparse_matrices():
     sparse_matrix_classes = [
         cls
         for name in dir(sp)
-        if name.endswith("_matrix") or name.endswith("_array")
+        if name.endswith(("_matrix", "_array"))
         if type(cls := getattr(sp, name)) is type
     ]
 
@@ -262,7 +263,7 @@ def test_conditional_attrs_not_in_dir():
 def test_repr():
     # Smoke test the repr of the base estimator.
     my_estimator = MyEstimator()
-    repr(my_estimator)
+    assert repr(my_estimator) == "MyEstimator()"
     test = T(K(), K())
     assert repr(test) == "T(a=K(), b=K())"
 
@@ -273,7 +274,7 @@ def test_repr():
 def test_str():
     # Smoke test the str of the base estimator
     my_estimator = MyEstimator()
-    str(my_estimator)
+    assert "MyEstimator" in str(my_estimator)
 
 
 def test_get_params():
@@ -382,7 +383,7 @@ def test_set_params_updates_valid_params():
     # DecisionTreeClassifier().C
     gscv = GridSearchCV(DecisionTreeClassifier(), {})
     gscv.set_params(estimator=SVC(), estimator__C=42.0)
-    assert gscv.estimator.C == 42.0
+    assert gscv.estimator.C == pytest.approx(42.0)
 
 
 @pytest.mark.parametrize(
@@ -400,13 +401,13 @@ def test_set_params_updates_valid_params():
 )
 def test_score_sample_weight(tree, dataset):
     tree = clone(tree)  # avoid side effects from previous tests.
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
     # check that the score with and without sample weights are different
     X, y = dataset
 
     tree.fit(X, y)
     # generate random sample weights
-    sample_weight = rng.randint(1, 10, size=len(y))
+    sample_weight = rng.integers(1, 10, size=len(y))
     score_unweighted = tree.score(X, y)
     score_weighted = tree.score(X, y, sample_weight=sample_weight)
     msg = "Unweighted and weighted scores are unexpectedly equal"
@@ -435,6 +436,7 @@ def test_clone_pandas_dataframe():
             self.scalar_param = scalar_param
 
         def fit(self, X, y=None):
+            # No-op: intentionally empty for testing purposes
             pass
 
         def transform(self, X):
@@ -673,6 +675,8 @@ def test_tag_inheritance():
 def test_raises_on_get_params_non_attribute():
     class MyEstimator(BaseEstimator):
         def __init__(self, param=5):
+            # Intentionally not setting self.param to test that get_params
+            # raises an error when init params are not stored as attributes.
             pass
 
         def fit(self, X, y=None):
@@ -708,7 +712,7 @@ def test_repr_html_wraps():
     with config_context(display="text"):
         msg = "_repr_html_ is only defined when"
         with pytest.raises(AttributeError, match=msg):
-            output = tree._repr_html_()
+            tree._repr_html_()
 
 
 def test_n_features_in_validation():
@@ -1074,7 +1078,7 @@ def test_param_is_non_default(default_value, test_value):
     assert "param" in non_default
 
 
-def test_param_is_non_default_when_pandas_NA():
+def test_param_is_non_default_when_pandas_na():
     """Check that we detect pandas.Na as non-default parameter.
 
     Non-regression test for:
