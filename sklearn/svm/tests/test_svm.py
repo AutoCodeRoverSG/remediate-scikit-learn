@@ -665,16 +665,16 @@ def test_negative_weights_svc_leave_two_labels(
 
 
 @pytest.mark.parametrize(
-    "Estimator", [svm.SVC, svm.NuSVC, svm.NuSVR], ids=["SVC", "NuSVC", "NuSVR"]
+    "estimator", [svm.SVC, svm.NuSVC, svm.NuSVR], ids=["SVC", "NuSVC", "NuSVR"]
 )
 @pytest.mark.parametrize(
     "sample_weight",
     [[1, -0.5, 1, 1, 1, 1], [1, 1, 1, 0, 1, 1]],
     ids=["partial-mask-label-1", "partial-mask-label-2"],
 )
-def test_negative_weight_equal_coeffs(Estimator, sample_weight):
+def test_negative_weight_equal_coeffs(estimator, sample_weight):
     # model generates equal coefficients
-    est = Estimator(kernel="linear")
+    est = estimator(kernel="linear")
     est.fit(X, Y, sample_weight=sample_weight)
     coef = np.abs(est.coef_).ravel()
     assert coef[0] == pytest.approx(coef[1], rel=1e-3)
@@ -727,13 +727,13 @@ def test_bad_input(lil_container, global_random_seed):
 
     # Test with arrays that are non-contiguous.
     for clf in (svm.SVC(), svm.LinearSVC(random_state=global_random_seed)):
-        Xf = np.asfortranarray(X)
-        assert not Xf.flags["C_CONTIGUOUS"]
+        x_fortran = np.asfortranarray(X)
+        assert not x_fortran.flags["C_CONTIGUOUS"]
         yf = np.ascontiguousarray(np.tile(Y, (2, 1)).T)
         yf = yf[:, -1]
         assert not yf.flags["F_CONTIGUOUS"]
         assert not yf.flags["C_CONTIGUOUS"]
-        clf.fit(Xf, yf)
+        clf.fit(x_fortran, yf)
         assert_array_equal(clf.predict(T), true_result)
 
     # error for precomputed kernelsx
@@ -746,15 +746,15 @@ def test_bad_input(lil_container, global_random_seed):
     with pytest.raises(ValueError):
         clf.predict(lil_container(X))
 
-    Xt = np.array(X).T
-    clf.fit(np.dot(X, Xt), Y)
+    x_transposed = np.array(X).T
+    clf.fit(np.dot(X, x_transposed), Y)
     with pytest.raises(ValueError):
         clf.predict(X)
 
     clf = svm.SVC()
     clf.fit(X, Y)
     with pytest.raises(ValueError):
-        clf.predict(Xt)
+        clf.predict(x_transposed)
 
 
 def test_svc_nonfinite_params(global_random_seed):
@@ -906,11 +906,11 @@ def test_linearsvc_fit_sampleweight(global_random_seed):
 
     pred1 = lsvc_unflat.predict(T)
 
-    X_flat = np.repeat(X, random_weight, axis=0)
+    x_flat = np.repeat(X, random_weight, axis=0)
     y_flat = np.repeat(Y, random_weight, axis=0)
     lsvc_flat = svm.LinearSVC(
         random_state=global_random_seed, tol=1e-12, max_iter=1000
-    ).fit(X_flat, y_flat)
+    ).fit(x_flat, y_flat)
     pred2 = lsvc_flat.predict(T)
 
     assert_array_equal(pred1, pred2)
@@ -1249,11 +1249,11 @@ def test_ovr_decision_function():
     assert np.all(pred_class_deci_val[:, 0] < pred_class_deci_val[:, 1])
 
 
-@pytest.mark.parametrize("SVCClass", [svm.SVC, svm.NuSVC])
-def test_svc_invalid_break_ties_param(SVCClass, global_random_seed):
+@pytest.mark.parametrize("svc_class", [svm.SVC, svm.NuSVC])
+def test_svc_invalid_break_ties_param(svc_class, global_random_seed):
     X, y = make_blobs(random_state=global_random_seed)
 
-    svm = SVCClass(
+    svm = svc_class(
         kernel="linear",
         decision_function_shape="ovo",
         break_ties=True,
@@ -1264,12 +1264,12 @@ def test_svc_invalid_break_ties_param(SVCClass, global_random_seed):
         svm.predict(y)
 
 
-@pytest.mark.parametrize("SVCClass", [svm.SVC, svm.NuSVC])
-def test_svc_ovr_tie_breaking(SVCClass, global_random_seed):
+@pytest.mark.parametrize("svc_class", [svm.SVC, svm.NuSVC])
+def test_svc_ovr_tie_breaking(svc_class, global_random_seed):
     """Test if predict breaks ties in OVR mode.
     Related issue: https://github.com/scikit-learn/scikit-learn/issues/8277
     """
-    if SVCClass.__name__ == "NuSVC" and _IS_32BIT:
+    if svc_class.__name__ == "NuSVC" and _IS_32BIT:
         # XXX: known failure to be investigated. Either the code needs to be
         # fixed or the test itself might need to be made less sensitive to
         # random changes in test data and rounding errors more generally.
@@ -1282,13 +1282,13 @@ def test_svc_ovr_tie_breaking(SVCClass, global_random_seed):
     ys = np.linspace(X[:, 1].min(), X[:, 1].max(), 100)
     xx, yy = np.meshgrid(xs, ys)
 
-    common_params = dict(
-        kernel="rbf",
-        gamma=1e6,
-        random_state=global_random_seed,
-        decision_function_shape="ovr",
-    )
-    svm = SVCClass(
+    common_params = {
+        "kernel": "rbf",
+        "gamma": 1e6,
+        "random_state": global_random_seed,
+        "decision_function_shape": "ovr",
+    }
+    svm = svc_class(
         break_ties=False,
         **common_params,
     ).fit(X, y)
@@ -1296,7 +1296,7 @@ def test_svc_ovr_tie_breaking(SVCClass, global_random_seed):
     dv = svm.decision_function(np.c_[xx.ravel(), yy.ravel()])
     assert not np.all(pred == np.argmax(dv, axis=1))
 
-    svm = SVCClass(
+    svm = svc_class(
         break_ties=True,
         **common_params,
     ).fit(X, y)
@@ -1316,7 +1316,7 @@ def test_gamma_scale():
 # XXX: https://github.com/scikit-learn/scikit-learn/issues/31883
 @pytest.mark.thread_unsafe
 @pytest.mark.parametrize(
-    "SVM, params",
+    "svm_class, params",
     [
         (LinearSVC, {"penalty": "l1", "loss": "squared_hinge", "dual": False}),
         (LinearSVC, {"penalty": "l2", "loss": "squared_hinge", "dual": True}),
@@ -1327,7 +1327,7 @@ def test_gamma_scale():
         (LinearSVR, {"loss": "squared_epsilon_insensitive", "dual": True}),
     ],
 )
-def test_linearsvm_liblinear_sample_weight(SVM, params, global_random_seed):
+def test_linearsvm_liblinear_sample_weight(svm_class, params, global_random_seed):
     X = np.array(
         [
             [1, 3],
@@ -1361,7 +1361,7 @@ def test_linearsvm_liblinear_sample_weight(SVM, params, global_random_seed):
         X2, y2, sample_weight, random_state=global_random_seed
     )
 
-    base_estimator = SVM(random_state=global_random_seed)
+    base_estimator = svm_class(random_state=global_random_seed)
     base_estimator.set_params(**params)
     base_estimator.set_params(tol=1e-12, max_iter=1000)
     est_no_weight = base.clone(base_estimator).fit(X, y)
@@ -1376,22 +1376,22 @@ def test_linearsvm_liblinear_sample_weight(SVM, params, global_random_seed):
             assert_allclose(result_without_weight, result_with_weight, rtol=1e-6)
 
 
-@pytest.mark.parametrize("Klass", (OneClassSVM, SVR, NuSVR))
-def test_n_support(Klass):
+@pytest.mark.parametrize("klass", (OneClassSVM, SVR, NuSVR))
+def test_n_support(klass):
     # Make n_support is correct for oneclass and SVR (used to be
     # non-initialized)
     # this is a non regression test for issue #14774
     X = np.array([[0], [0.44], [0.45], [0.46], [1]])
     y = np.arange(X.shape[0])
-    est = Klass()
+    est = klass()
     assert not hasattr(est, "n_support_")
     est.fit(X, y)
     assert est.n_support_[0] == est.support_vectors_.shape[0]
     assert est.n_support_.size == 1
 
 
-@pytest.mark.parametrize("Estimator", [svm.SVC, svm.SVR])
-def test_custom_kernel_not_array_input(Estimator):
+@pytest.mark.parametrize("estimator", [svm.SVC, svm.SVR])
+def test_custom_kernel_not_array_input(estimator):
     """Test using a custom kernel that is not fed with array-like for floats"""
     data = ["A A", "A", "B", "B B", "A B"]
     X = np.array([[2, 0], [1, 0], [0, 1], [0, 2], [1, 1]])  # count encoding
@@ -1412,9 +1412,9 @@ def test_custom_kernel_not_array_input(Estimator):
     K = string_kernel(data, data)
     assert_array_equal(np.dot(X, X.T), K)
 
-    svc1 = Estimator(kernel=string_kernel).fit(data, y)
-    svc2 = Estimator(kernel="linear").fit(X, y)
-    svc3 = Estimator(kernel="precomputed").fit(K, y)
+    svc1 = estimator(kernel=string_kernel).fit(data, y)
+    svc2 = estimator(kernel="linear").fit(X, y)
+    svc3 = estimator(kernel="precomputed").fit(K, y)
 
     assert svc1.score(data, y) == svc3.score(K, y)
     assert svc1.score(data, y) == svc2.score(X, y)
