@@ -513,9 +513,9 @@ class Interval(_Constraint):
         right_bracket = "]" if self.closed in ("right", "both") else ")"
 
         # better repr if the bounds were given as integers
-        if not self.type == Integral and isinstance(self.left, Real):
+        if self.type != Integral and isinstance(self.left, Real):
             left_bound = float(left_bound)
-        if not self.type == Integral and isinstance(self.right, Real):
+        if self.type != Integral and isinstance(self.right, Real):
             right_bound = float(right_bound)
 
         return (

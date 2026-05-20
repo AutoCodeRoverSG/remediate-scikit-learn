@@ -30,9 +30,9 @@ def _fail(x):
     "kwargs",
     [
         {},
-        {"check_X": _success},
+        {"check_x": _success},
         {"check_y": _success},
-        {"check_X": _success, "check_y": _success},
+        {"check_x": _success, "check_y": _success},
     ],
 )
 def test_check_on_fit_success(iris, kwargs):
@@ -43,11 +43,11 @@ def test_check_on_fit_success(iris, kwargs):
 @pytest.mark.parametrize(
     "kwargs",
     [
-        {"check_X": _fail},
+        {"check_x": _fail},
         {"check_y": _fail},
-        {"check_X": _success, "check_y": _fail},
-        {"check_X": _fail, "check_y": _success},
-        {"check_X": _fail, "check_y": _fail},
+        {"check_x": _success, "check_y": _fail},
+        {"check_x": _fail, "check_y": _success},
+        {"check_x": _fail, "check_y": _fail},
     ],
 )
 def test_check_on_fit_fail(iris, kwargs):
@@ -62,7 +62,7 @@ def test_check_on_fit_fail(iris, kwargs):
 )
 def test_check_X_on_predict_success(iris, pred_func):
     X, y = iris
-    clf = CheckingClassifier(check_X=_success).fit(X, y)
+    clf = CheckingClassifier(check_x=_success).fit(X, y)
     getattr(clf, pred_func)(X)
 
 
@@ -71,8 +71,8 @@ def test_check_X_on_predict_success(iris, pred_func):
 )
 def test_check_X_on_predict_fail(iris, pred_func):
     X, y = iris
-    clf = CheckingClassifier(check_X=_success).fit(X, y)
-    clf.set_params(check_X=_fail)
+    clf = CheckingClassifier(check_x=_success).fit(X, y)
+    clf.set_params(check_x=_fail)
     with pytest.raises(AssertionError):
         getattr(clf, pred_func)(X)
 
@@ -122,13 +122,13 @@ def test_checking_classifier_with_params(iris, csr_container):
     X, y = iris
     X_sparse = csr_container(X)
 
-    clf = CheckingClassifier(check_X=sparse.issparse)
+    clf = CheckingClassifier(check_x=sparse.issparse)
     with pytest.raises(AssertionError):
         clf.fit(X, y)
     clf.fit(X_sparse, y)
 
     clf = CheckingClassifier(
-        check_X=check_array, check_X_params={"accept_sparse": False}
+        check_x=check_array, check_x_params={"accept_sparse": False}
     )
     clf.fit(X, y)
     with pytest.raises(TypeError, match="Sparse data was passed"):
@@ -167,7 +167,7 @@ def test_checking_classifier_methods_to_check(iris, methods_to_check, predict_me
     X, y = iris
 
     clf = CheckingClassifier(
-        check_X=sparse.issparse,
+        check_x=sparse.issparse,
         methods_to_check=methods_to_check,
     )
 

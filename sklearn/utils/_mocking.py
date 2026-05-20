@@ -59,7 +59,7 @@ class MockDataFrame:
         return MockDataFrame(self.array == other.array)
 
     def __ne__(self, other):
-        return not self == other
+        return MockDataFrame(self.array != other.array)
 
     def take(self, indices, axis=0):
         return MockDataFrame(self.array.take(indices, axis=axis))
@@ -136,8 +136,8 @@ class CheckingClassifier(ClassifierMixin, BaseEstimator):
         *,
         check_y=None,
         check_y_params=None,
-        check_X=None,
-        check_X_params=None,
+        check_x=None,
+        check_x_params=None,
         methods_to_check="all",
         foo_param=0,
         expected_sample_weight=None,
@@ -146,8 +146,8 @@ class CheckingClassifier(ClassifierMixin, BaseEstimator):
     ):
         self.check_y = check_y
         self.check_y_params = check_y_params
-        self.check_X = check_X
-        self.check_X_params = check_X_params
+        self.check_x = check_x
+        self.check_x_params = check_x_params
         self.methods_to_check = methods_to_check
         self.foo_param = foo_param
         self.expected_sample_weight = expected_sample_weight
@@ -175,13 +175,13 @@ class CheckingClassifier(ClassifierMixin, BaseEstimator):
         """
         if should_be_fitted:
             check_is_fitted(self)
-        if self.check_X is not None:
-            params = {} if self.check_X_params is None else self.check_X_params
-            checked_X = self.check_X(X, **params)
-            if isinstance(checked_X, (bool, np.bool_)):
-                assert checked_X
+        if self.check_x is not None:
+            params = {} if self.check_x_params is None else self.check_x_params
+            checked_x = self.check_x(X, **params)
+            if isinstance(checked_x, (bool, np.bool_)):
+                assert checked_x
             else:
-                X = checked_X
+                X = checked_x
         if y is not None and self.check_y is not None:
             params = {} if self.check_y_params is None else self.check_y_params
             checked_y = self.check_y(y, **params)
@@ -253,7 +253,7 @@ class CheckingClassifier(ClassifierMixin, BaseEstimator):
             Predictions of the first class seen in `classes_`.
         """
         if self.methods_to_check == "all" or "predict" in self.methods_to_check:
-            X, y = self._check_X_y(X)
+            X, _ = self._check_X_y(X)
         rng = check_random_state(self.random_state)
         return rng.choice(self.classes_, size=_num_samples(X))
 
@@ -274,7 +274,7 @@ class CheckingClassifier(ClassifierMixin, BaseEstimator):
             The probabilities for each sample and class.
         """
         if self.methods_to_check == "all" or "predict_proba" in self.methods_to_check:
-            X, y = self._check_X_y(X)
+            X, _ = self._check_X_y(X)
         rng = check_random_state(self.random_state)
         proba = rng.randn(_num_samples(X), len(self.classes_))
         proba = np.abs(proba, out=proba)
@@ -299,7 +299,7 @@ class CheckingClassifier(ClassifierMixin, BaseEstimator):
             self.methods_to_check == "all"
             or "decision_function" in self.methods_to_check
         ):
-            X, y = self._check_X_y(X)
+            X, _ = self._check_X_y(X)
         rng = check_random_state(self.random_state)
         if len(self.classes_) == 2:
             # for binary classifier, the confidence score is related to
@@ -308,7 +308,7 @@ class CheckingClassifier(ClassifierMixin, BaseEstimator):
         else:
             return rng.randn(_num_samples(X), len(self.classes_))
 
-    def score(self, X=None, Y=None):
+    def score(self, X=None, Y=None, sample_weight=None):
         """Fake score.
 
         Parameters
@@ -403,6 +403,7 @@ class _MockEstimatorOnOffPrediction(BaseEstimator):
         self.response_methods = response_methods
 
     def fit(self, X, y):
+        # X is not used but is required for the estimator API contract
         self.classes_ = np.unique(y)
         return self
 
