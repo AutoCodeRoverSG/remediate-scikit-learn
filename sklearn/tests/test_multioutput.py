@@ -533,15 +533,17 @@ def test_classifier_chain_fit_and_predict_with_sparse_data(csr_container):
     X, Y = generate_multilabel_dataset_with_correlations()
     x_sparse = csr_container(X)
 
-    classifier_chain = ClassifierChain(LogisticRegression(), random_state=0).fit(
-        x_sparse, Y
-    )
-    Y_pred_sparse = classifier_chain.predict(x_sparse)
+    classifier_chain = ClassifierChain(
+        LogisticRegression(random_state=0), random_state=0
+    ).fit(x_sparse, Y)
+    y_pred_sparse = classifier_chain.predict(x_sparse)
 
-    classifier_chain = ClassifierChain(LogisticRegression(), random_state=0).fit(X, Y)
-    Y_pred_dense = classifier_chain.predict(X)
+    classifier_chain = ClassifierChain(
+        LogisticRegression(random_state=0), random_state=0
+    ).fit(X, Y)
+    y_pred_dense = classifier_chain.predict(X)
 
-    assert_array_equal(Y_pred_sparse, Y_pred_dense)
+    assert_array_equal(y_pred_sparse, y_pred_dense)
 
 
 def test_classifier_chain_vs_independent_models():
@@ -554,16 +556,16 @@ def test_classifier_chain_vs_independent_models():
     Y_train = Y[:600, :]
     Y_test = Y[600:, :]
 
-    ovr = OneVsRestClassifier(LogisticRegression())
+    ovr = OneVsRestClassifier(LogisticRegression(random_state=0))
     ovr.fit(X_train, Y_train)
-    Y_pred_ovr = ovr.predict(X_test)
+    y_pred_ovr = ovr.predict(X_test)
 
-    chain = ClassifierChain(LogisticRegression())
+    chain = ClassifierChain(LogisticRegression(random_state=0))
     chain.fit(X_train, Y_train)
-    Y_pred_chain = chain.predict(X_test)
+    y_pred_chain = chain.predict(X_test)
 
-    assert jaccard_score(Y_test, Y_pred_chain, average="samples") > jaccard_score(
-        Y_test, Y_pred_ovr, average="samples"
+    assert jaccard_score(Y_test, y_pred_chain, average="samples") > jaccard_score(
+        Y_test, y_pred_ovr, average="samples"
     )
 
 
@@ -575,19 +577,21 @@ def test_classifier_chain_vs_independent_models():
 def test_classifier_chain_fit_and_predict(chain_method, response_method):
     # Fit classifier chain and verify predict performance
     X, Y = generate_multilabel_dataset_with_correlations()
-    chain = ClassifierChain(LogisticRegression(), chain_method=chain_method)
+    chain = ClassifierChain(
+        LogisticRegression(random_state=0), chain_method=chain_method
+    )
     chain.fit(X, Y)
-    Y_pred = chain.predict(X)
-    assert Y_pred.shape == Y.shape
+    y_pred = chain.predict(X)
+    assert y_pred.shape == Y.shape
     assert [c.coef_.size for c in chain.estimators_] == list(
         range(X.shape[1], X.shape[1] + Y.shape[1])
     )
 
-    Y_prob = getattr(chain, response_method)(X)
+    y_prob = getattr(chain, response_method)(X)
     if response_method == "predict_log_proba":
-        Y_prob = np.exp(Y_prob)
-    Y_binary = Y_prob >= 0.5
-    assert_array_equal(Y_binary, Y_pred)
+        y_prob = np.exp(y_prob)
+    y_binary = y_prob >= 0.5
+    assert_array_equal(y_binary, y_pred)
 
     assert isinstance(chain, ClassifierMixin)
 
