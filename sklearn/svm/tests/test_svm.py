@@ -85,11 +85,11 @@ def test_libsvm_iris(global_random_seed):
     (
         libsvm_support,
         libsvm_support_vectors,
-        libsvm_n_class_SV,
+        libsvm_n_class_sv,
         libsvm_sv_coef,
         libsvm_intercept,
-        libsvm_probA,
-        libsvm_probB,
+        libsvm_prob_a,
+        libsvm_prob_b,
         # libsvm_fit_status and libsvm_n_iter won't be used below.
         libsvm_fit_status,
         libsvm_n_iter,
@@ -98,11 +98,11 @@ def test_libsvm_iris(global_random_seed):
     model_params = {
         "support": libsvm_support,
         "SV": libsvm_support_vectors,
-        "nSV": libsvm_n_class_SV,
+        "nSV": libsvm_n_class_sv,
         "sv_coef": libsvm_sv_coef,
         "intercept": libsvm_intercept,
-        "probA": libsvm_probA,
-        "probB": libsvm_probB,
+        "probA": libsvm_prob_a,
+        "probB": libsvm_prob_b,
     }
     pred = _libsvm.predict(iris.data, **model_params)
     assert np.mean(pred == iris.target) > 0.95
@@ -112,11 +112,11 @@ def test_libsvm_iris(global_random_seed):
     (
         libsvm_support,
         libsvm_support_vectors,
-        libsvm_n_class_SV,
+        libsvm_n_class_sv,
         libsvm_sv_coef,
         libsvm_intercept,
-        libsvm_probA,
-        libsvm_probB,
+        libsvm_prob_a,
+        libsvm_prob_b,
         # libsvm_fit_status and libsvm_n_iter won't be used below.
         libsvm_fit_status,
         libsvm_n_iter,
@@ -125,11 +125,11 @@ def test_libsvm_iris(global_random_seed):
     model_params = {
         "support": libsvm_support,
         "SV": libsvm_support_vectors,
-        "nSV": libsvm_n_class_SV,
+        "nSV": libsvm_n_class_sv,
         "sv_coef": libsvm_sv_coef,
         "intercept": libsvm_intercept,
-        "probA": libsvm_probA,
-        "probB": libsvm_probB,
+        "probA": libsvm_prob_a,
+        "probB": libsvm_prob_b,
     }
     pred = _libsvm.predict(iris.data, **model_params, kernel="linear")
     assert np.mean(pred == iris.target) > 0.95
@@ -289,10 +289,10 @@ def test_linearsvr_fit_sampleweight(global_random_seed):
         diabetes.data, diabetes.target, sample_weight=random_weight
     )
 
-    X_flat = np.repeat(diabetes.data, random_weight, axis=0)
+    x_flat = np.repeat(diabetes.data, random_weight, axis=0)
     y_flat = np.repeat(diabetes.target, random_weight, axis=0)
-    lsvr_flat = svm.LinearSVR(C=1e3, tol=1e-12, max_iter=10000).fit(X_flat, y_flat)
-    score4 = lsvr_flat.score(X_flat, y_flat)
+    lsvr_flat = svm.LinearSVR(C=1e3, tol=1e-12, max_iter=10000).fit(x_flat, y_flat)
+    score4 = lsvr_flat.score(x_flat, y_flat)
 
     assert_almost_equal(score3, score4, 2)
 
@@ -336,7 +336,7 @@ def test_oneclass_decision_function():
     X = 0.3 * rnd.randn(20, 2)
     X_test = np.r_[X + 2, X - 2]
     # Generate some abnormal novel observations
-    X_outliers = rnd.uniform(low=-4, high=4, size=(20, 2))
+    x_outliers = rnd.uniform(low=-4, high=4, size=(20, 2))
 
     # fit the model
     clf = svm.OneClassSVM(nu=0.1, kernel="rbf", gamma=0.1)
@@ -345,11 +345,11 @@ def test_oneclass_decision_function():
     # predict things
     y_pred_test = clf.predict(X_test)
     assert np.mean(y_pred_test == 1) > 0.9
-    y_pred_outliers = clf.predict(X_outliers)
+    y_pred_outliers = clf.predict(x_outliers)
     assert np.mean(y_pred_outliers == -1) > 0.9
     dec_func_test = clf.decision_function(X_test)
     assert_array_equal((dec_func_test > 0).ravel(), y_pred_test == 1)
-    dec_func_outliers = clf.decision_function(X_outliers)
+    dec_func_outliers = clf.decision_function(x_outliers)
     assert_array_equal((dec_func_outliers > 0).ravel(), y_pred_outliers == 1)
 
 
@@ -436,13 +436,13 @@ def test_decision_function(global_random_seed):
     assert_array_almost_equal(dec.ravel(), clf.decision_function(X))
 
 
-@pytest.mark.parametrize("SVM", (svm.SVC, svm.NuSVC))
-def test_decision_function_shape(SVM, global_random_seed):
+@pytest.mark.parametrize("svm_class", (svm.SVC, svm.NuSVC))
+def test_decision_function_shape(svm_class, global_random_seed):
     # check that decision_function_shape='ovr' or 'ovo' gives
     # correct shape and is consistent with predict
     iris = get_iris_dataset(global_random_seed)
 
-    linear_ovr_svm = SVM(
+    linear_ovr_svm = svm_class(
         kernel="linear",
         decision_function_shape="ovr",
         random_state=global_random_seed,
@@ -457,7 +457,7 @@ def test_decision_function_shape(SVM, global_random_seed):
 
     # with five classes:
     X, y = make_blobs(n_samples=80, centers=5, random_state=global_random_seed)
-    X_train, X_test, y_train, y_test = train_test_split(
+    X_train, X_test, y_train, _ = train_test_split(
         X, y, random_state=global_random_seed
     )
 
@@ -467,7 +467,7 @@ def test_decision_function_shape(SVM, global_random_seed):
     assert_array_equal(linear_ovr_svm.predict(X_test), np.argmax(dec, axis=1))
 
     # check shape of ovo_decision_function=True
-    linear_ovo_svm = SVM(
+    linear_ovo_svm = svm_class(
         kernel="linear",
         decision_function_shape="ovo",
         random_state=global_random_seed,
@@ -593,7 +593,7 @@ def test_svm_equivalence_sample_weight_C():
 
 
 @pytest.mark.parametrize(
-    "Estimator, err_msg",
+    "estimator, err_msg",
     [
         (svm.SVC, "Invalid input - all samples have zero or negative weights."),
         (
@@ -612,14 +612,14 @@ def test_svm_equivalence_sample_weight_C():
     [[0] * len(Y), [-0.3] * len(Y)],
     ids=["weights-are-zero", "weights-are-negative"],
 )
-def test_negative_sample_weights_mask_all_samples(Estimator, err_msg, sample_weight):
-    est = Estimator(kernel="linear")
+def test_negative_sample_weights_mask_all_samples(estimator, err_msg, sample_weight):
+    est = estimator(kernel="linear")
     with pytest.raises(ValueError, match=err_msg):
         est.fit(X, Y, sample_weight=sample_weight)
 
 
 @pytest.mark.parametrize(
-    "Classifier, err_msg",
+    "classifier, err_msg",
     [
         (
             svm.SVC,
@@ -637,14 +637,14 @@ def test_negative_sample_weights_mask_all_samples(Estimator, err_msg, sample_wei
     [[0, -0.5, 0, 1, 1, 1], [1, 1, 1, 0, -0.1, -0.3]],
     ids=["mask-label-1", "mask-label-2"],
 )
-def test_negative_weights_svc_leave_just_one_label(Classifier, err_msg, sample_weight):
-    clf = Classifier(kernel="linear")
+def test_negative_weights_svc_leave_just_one_label(classifier, err_msg, sample_weight):
+    clf = classifier(kernel="linear")
     with pytest.raises(ValueError, match=err_msg):
         clf.fit(X, Y, sample_weight=sample_weight)
 
 
 @pytest.mark.parametrize(
-    "Classifier, model",
+    "classifier, model",
     [
         (svm.SVC, {"when-left": [0.3998, 0.4], "when-right": [0.4, 0.3999]}),
         (svm.NuSVC, {"when-left": [0.3333, 0.3333], "when-right": [0.3333, 0.3333]}),
@@ -657,9 +657,9 @@ def test_negative_weights_svc_leave_just_one_label(Classifier, err_msg, sample_w
     ids=["partial-mask-label-1", "partial-mask-label-2"],
 )
 def test_negative_weights_svc_leave_two_labels(
-    Classifier, model, sample_weight, mask_side
+    classifier, model, sample_weight, mask_side
 ):
-    clf = Classifier(kernel="linear")
+    clf = classifier(kernel="linear")
     clf.fit(X, Y, sample_weight=sample_weight)
     assert_allclose(clf.coef_, [model[mask_side]], rtol=1e-3)
 
@@ -1521,7 +1521,7 @@ def test_svm_with_infinite_C(Estimator, make_dataset, C_inf, global_random_seed)
 )
 @pytest.mark.parametrize("probability", [True, False])
 def test_probability_raises_futurewarning(Estimator, name, probability):
-    X, y = make_classification()
+    X, y = make_classification(random_state=0)
     with pytest.warns(FutureWarning, match="probability.+parameter.+deprecated"):
         Estimator(probability=probability).fit(X, y)
 
