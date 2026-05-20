@@ -280,8 +280,8 @@ def test_linearsvr_fit_sampleweight(global_random_seed):
 
     # check that fit(X)  = fit([X1, X2, X3], sample_weight = [n1, n2, n3]) where
     # X = X1 repeated n1 times, X2 repeated n2 times and so forth
-    rng = np.random.RandomState(global_random_seed)
-    random_weight = rng.randint(0, 10, n_samples)
+    rng = np.random.default_rng(global_random_seed)
+    random_weight = rng.integers(0, 10, n_samples)
     lsvr_unflat = svm.LinearSVR(C=1e3, tol=1e-12, max_iter=10000).fit(
         diabetes.data, diabetes.target, sample_weight=random_weight
     )
@@ -325,7 +325,6 @@ def test_oneclass():
 # TODO: rework this test to be independent of the random seeds.
 def test_oneclass_decision_function():
     # Test OneClassSVM decision function
-    clf = svm.OneClassSVM()
     rnd = check_random_state(2)
 
     # Generate train data
@@ -582,7 +581,7 @@ def test_svm_regressor_sided_sample_weight(estimator):
     assert y_pred > 1.5
 
 
-def test_svm_equivalence_sample_weight_C():
+def test_svm_equivalence_sample_weight_c():
     # test that rescaling all samples is the same as changing C
     clf = svm.SVC()
     clf.fit(X, Y)
@@ -1397,15 +1396,15 @@ def test_custom_kernel_not_array_input(estimator):
     X = np.array([[2, 0], [1, 0], [0, 1], [0, 2], [1, 1]])  # count encoding
     y = np.array([1, 1, 2, 2, 1])
 
-    def string_kernel(X1, X2):
-        assert isinstance(X1[0], str)
-        n_samples1 = _num_samples(X1)
-        n_samples2 = _num_samples(X2)
+    def string_kernel(x1, x2):
+        assert isinstance(x1[0], str)
+        n_samples1 = _num_samples(x1)
+        n_samples2 = _num_samples(x2)
         K = np.zeros((n_samples1, n_samples2))
         for ii in range(n_samples1):
             for jj in range(ii, n_samples2):
-                K[ii, jj] = X1[ii].count("A") * X2[jj].count("A")
-                K[ii, jj] += X1[ii].count("B") * X2[jj].count("B")
+                K[ii, jj] = x1[ii].count("A") * x2[jj].count("A")
+                K[ii, jj] += x1[ii].count("B") * x2[jj].count("B")
                 K[jj, ii] = K[ii, jj]
         return K
 
@@ -1498,32 +1497,32 @@ def test_dual_auto_edge_cases():
 
 
 @pytest.mark.parametrize(
-    "Estimator, make_dataset",
+    "estimator_cls, make_dataset",
     [(svm.SVC, make_classification), (svm.SVR, make_regression)],
 )
-@pytest.mark.parametrize("C_inf", [np.inf, float("inf")])
-def test_svm_with_infinite_C(Estimator, make_dataset, C_inf, global_random_seed):
+@pytest.mark.parametrize("c_inf", [np.inf, float("inf")])
+def test_svm_with_infinite_C(estimator_cls, make_dataset, c_inf, global_random_seed):
     """Check that we can pass `C=inf` that is equivalent to a very large C value.
 
     Non-regression test for
     https://github.com/scikit-learn/scikit-learn/issues/29772
     """
     X, y = make_dataset(random_state=global_random_seed)
-    estimator_C_inf = Estimator(C=C_inf).fit(X, y)
-    estimator_C_large = Estimator(C=1e10).fit(X, y)
+    estimator_c_inf = estimator_cls(C=c_inf).fit(X, y)
+    estimator_c_large = estimator_cls(C=1e10).fit(X, y)
 
-    assert_allclose(estimator_C_large.predict(X), estimator_C_inf.predict(X))
+    assert_allclose(estimator_c_large.predict(X), estimator_c_inf.predict(X))
 
 
 @pytest.mark.parametrize(
-    "Estimator, name",
+    "estimator_class, name",
     [(svm.SVC, "SVC"), (svm.NuSVC, "NuSVC")],
 )
 @pytest.mark.parametrize("probability", [True, False])
-def test_probability_raises_futurewarning(Estimator, name, probability):
+def test_probability_raises_futurewarning(estimator_class, name, probability):
     X, y = make_classification(random_state=0)
     with pytest.warns(FutureWarning, match="probability.+parameter.+deprecated"):
-        Estimator(probability=probability).fit(X, y)
+        estimator_class(probability=probability).fit(X, y)
 
 
 @pytest.mark.parametrize("est", [svm.SVC, svm.NuSVC])
