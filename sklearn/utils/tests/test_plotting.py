@@ -366,7 +366,7 @@ def test_validate_curve_kwargs_default_kwargs(n_curves, curve_kwargs):
     )
     if n_curves > 1:
         # `default_multi_curve_kwargs` are incorporated
-        assert all(kwarg["alpha"] == 0.7 for kwarg in curve_kwargs_out)
+        assert all(kwarg["alpha"] == pytest.approx(0.7) for kwarg in curve_kwargs_out)
         assert all(kwarg["linestyle"] == "--" for kwarg in curve_kwargs_out)
         if curve_kwargs is None:
             # `default_multi_curve_kwargs` over-rides `default_curve_kwargs`

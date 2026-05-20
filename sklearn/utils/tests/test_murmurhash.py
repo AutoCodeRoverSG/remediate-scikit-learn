@@ -22,8 +22,8 @@ def test_mmhash3_int():
 
 
 def test_mmhash3_int_array():
-    rng = np.random.RandomState(42)
-    keys = rng.randint(-5342534, 345345, size=3 * 2 * 1).astype(np.int32)
+    rng = np.random.default_rng(42)
+    keys = rng.integers(-5342534, 345345, size=3 * 2 * 1).astype(np.int32)
     keys = keys.reshape((3, 2, 1))
 
     for seed in [0, 42]:
