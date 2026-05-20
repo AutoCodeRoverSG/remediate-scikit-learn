@@ -263,8 +263,8 @@ def test_same_min_max(strategy):
         est.fit(X)
     assert est.n_bins_[0] == 1
     # replace the feature with zeros
-    Xt = est.transform(X)
-    assert_array_equal(Xt[:, 0], np.zeros(X.shape[0]))
+    x_trans = est.transform(X)
+    assert_array_equal(x_trans[:, 0], np.zeros(X.shape[0]))
 
 
 def test_transform_1d_behavior():
@@ -281,47 +281,47 @@ def test_transform_1d_behavior():
 
 @pytest.mark.parametrize("i", range(1, 9))
 def test_numeric_stability(i):
-    X_init = np.array([2.0, 4.0, 6.0, 8.0, 10.0]).reshape(-1, 1)
-    Xt_expected = np.array([0, 0, 1, 1, 1]).reshape(-1, 1)
+    x_init = np.array([2.0, 4.0, 6.0, 8.0, 10.0]).reshape(-1, 1)
+    xt_expected = np.array([0, 0, 1, 1, 1]).reshape(-1, 1)
 
     # Test up to discretizing nano units
-    X = X_init / 10**i
-    Xt = KBinsDiscretizer(
+    X = x_init / 10**i
+    xt = KBinsDiscretizer(
         n_bins=2, encode="ordinal", quantile_method="averaged_inverted_cdf"
     ).fit_transform(X)
-    assert_array_equal(Xt_expected, Xt)
+    assert_array_equal(xt_expected, xt)
 
 
 def test_encode_options():
     est = KBinsDiscretizer(
         n_bins=[2, 3, 3, 3], encode="ordinal", quantile_method="averaged_inverted_cdf"
     ).fit(X)
-    Xt_1 = est.transform(X)
+    xt_1 = est.transform(X)
     est = KBinsDiscretizer(
         n_bins=[2, 3, 3, 3],
         encode="onehot-dense",
         quantile_method="averaged_inverted_cdf",
     ).fit(X)
-    Xt_2 = est.transform(X)
-    assert not sp.issparse(Xt_2)
+    xt_2 = est.transform(X)
+    assert not sp.issparse(xt_2)
     assert_array_equal(
         OneHotEncoder(
             categories=[np.arange(i) for i in [2, 3, 3, 3]], sparse_output=False
-        ).fit_transform(Xt_1),
-        Xt_2,
+        ).fit_transform(xt_1),
+        xt_2,
     )
     est = KBinsDiscretizer(
         n_bins=[2, 3, 3, 3], encode="onehot", quantile_method="averaged_inverted_cdf"
     ).fit(X)
-    Xt_3 = est.transform(X)
-    assert sp.issparse(Xt_3)
+    xt_3 = est.transform(X)
+    assert sp.issparse(xt_3)
     assert_array_equal(
         OneHotEncoder(
             categories=[np.arange(i) for i in [2, 3, 3, 3]], sparse_output=True
         )
-        .fit_transform(Xt_1)
+        .fit_transform(xt_1)
         .toarray(),
-        Xt_3.toarray(),
+        xt_3.toarray(),
     )
 
 
@@ -360,22 +360,22 @@ def test_nonuniform_strategies(
     est = KBinsDiscretizer(
         n_bins=2, strategy=strategy, quantile_method=quantile_method, encode="ordinal"
     )
-    Xt = est.fit_transform(X)
-    assert_array_equal(expected_2bins, Xt.ravel())
+    x_t = est.fit_transform(X)
+    assert_array_equal(expected_2bins, x_t.ravel())
 
     # with 3 bins
     est = KBinsDiscretizer(
         n_bins=3, strategy=strategy, quantile_method=quantile_method, encode="ordinal"
     )
-    Xt = est.fit_transform(X)
-    assert_array_equal(expected_3bins, Xt.ravel())
+    x_t = est.fit_transform(X)
+    assert_array_equal(expected_3bins, x_t.ravel())
 
     # with 5 bins
     est = KBinsDiscretizer(
         n_bins=5, strategy=strategy, quantile_method=quantile_method, encode="ordinal"
     )
-    Xt = est.fit_transform(X)
-    assert_array_equal(expected_5bins, Xt.ravel())
+    x_t = est.fit_transform(X)
+    assert_array_equal(expected_5bins, x_t.ravel())
 
 
 @pytest.mark.parametrize(
@@ -418,9 +418,9 @@ def test_inverse_transform(strategy, encode, expected_inv, quantile_method):
     kbd = KBinsDiscretizer(
         n_bins=3, strategy=strategy, quantile_method=quantile_method, encode=encode
     )
-    Xt = kbd.fit_transform(X)
-    Xinv = kbd.inverse_transform(Xt)
-    assert_array_almost_equal(expected_inv, Xinv)
+    x_t = kbd.fit_transform(X)
+    x_inv = kbd.inverse_transform(x_t)
+    assert_array_almost_equal(expected_inv, x_inv)
 
 
 @pytest.mark.parametrize("strategy", ["uniform", "kmeans", "quantile"])
