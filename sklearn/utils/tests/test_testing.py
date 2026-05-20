@@ -40,8 +40,8 @@ def test_set_random_state():
     lda = LinearDiscriminantAnalysis()
     tree = DecisionTreeClassifier()
     # Linear Discriminant Analysis doesn't have random state: smoke test
-    set_random_state(lda, 3)
-    set_random_state(tree, 3)
+    set_random_state(lda, random_state=3)
+    set_random_state(tree, random_state=3)
     assert tree.random_state == 3
 
 
@@ -1025,7 +1025,7 @@ def test_raises():
     # no raise with default may_pass=False
     with pytest.raises(AssertionError, match="Did not raise"):
         with raises(TypeError) as cm:
-            pass
+            pass  # intentionally not raising to test "Did not raise" assertion
     assert not cm.raised_and_matched
 
     # no raise with may_pass=True
@@ -1102,8 +1102,8 @@ def test_convert_container_sparse_to_sparse(constructor_name):
     """Non-regression test to check that we can still convert a sparse container
     from a given format to another format.
     """
-    X_sparse = _sparse_random_array((10, 10), density=0.1, format="csr")
-    _convert_container(X_sparse, constructor_name)
+    x_sparse = _sparse_random_array((10, 10), density=0.1, format="csr")
+    _convert_container(x_sparse, constructor_name)
 
 
 def check_warnings_as_errors(warning_info, warnings_as_errors):
