@@ -1211,8 +1211,8 @@ def test_kneighbors_regressor(
     n_samples=40, n_features=5, n_test_pts=10, n_neighbors=3, random_state=0
 ):
     # Test k-neighbors regression
-    rng = np.random.RandomState(random_state)
-    X = 2 * rng.rand(n_samples, n_features) - 1
+    rng = np.random.default_rng(random_state)
+    X = 2 * rng.random((n_samples, n_features)) - 1
     y = np.sqrt((X**2).sum(1))
     y /= y.max()
 
@@ -1226,12 +1226,12 @@ def test_kneighbors_regressor(
                 n_neighbors=n_neighbors, weights=weights, algorithm=algorithm
             )
             knn.fit(X, y)
-            epsilon = 1e-5 * (2 * rng.rand(1, n_features) - 1)
+            epsilon = 1e-5 * (2 * rng.random((1, n_features)) - 1)
             y_pred = knn.predict(X[:n_test_pts] + epsilon)
             assert np.all(abs(y_pred - y_target) < 0.3)
 
 
-def test_KNeighborsRegressor_multioutput_uniform_weight():
+def test_kneighbors_regressor_multioutput_uniform_weight():
     # Test k-neighbors in multi-output regression with uniform weight
     rng = check_random_state(0)
     n_features = 5
@@ -1260,8 +1260,8 @@ def test_kneighbors_regressor_multioutput(
     n_samples=40, n_features=5, n_test_pts=10, n_neighbors=3, random_state=0
 ):
     # Test k-neighbors in multi-output regression
-    rng = np.random.RandomState(random_state)
-    X = 2 * rng.rand(n_samples, n_features) - 1
+    rng = np.random.default_rng(random_state)
+    X = 2 * rng.random((n_samples, n_features)) - 1
     y = np.sqrt((X**2).sum(1))
     y /= y.max()
     y = np.vstack([y, y]).T
@@ -1274,7 +1274,7 @@ def test_kneighbors_regressor_multioutput(
             n_neighbors=n_neighbors, weights=weights, algorithm=algorithm
         )
         knn.fit(X, y)
-        epsilon = 1e-5 * (2 * rng.rand(1, n_features) - 1)
+        epsilon = 1e-5 * (2 * rng.random((1, n_features)) - 1)
         y_pred = knn.predict(X[:n_test_pts] + epsilon)
         assert y_pred.shape == y_target.shape
 
@@ -1285,8 +1285,8 @@ def test_radius_neighbors_regressor(
     n_samples=40, n_features=3, n_test_pts=10, radius=0.5, random_state=0
 ):
     # Test radius-based neighbors regression
-    rng = np.random.RandomState(random_state)
-    X = 2 * rng.rand(n_samples, n_features) - 1
+    rng = np.random.default_rng(random_state)
+    X = 2 * rng.random((n_samples, n_features)) - 1
     y = np.sqrt((X**2).sum(1))
     y /= y.max()
 
@@ -1300,7 +1300,7 @@ def test_radius_neighbors_regressor(
                 radius=radius, weights=weights, algorithm=algorithm
             )
             neigh.fit(X, y)
-            epsilon = 1e-5 * (2 * rng.rand(1, n_features) - 1)
+            epsilon = 1e-5 * (2 * rng.random((1, n_features)) - 1)
             y_pred = neigh.predict(X[:n_test_pts] + epsilon)
             assert np.all(abs(y_pred - y_target) < radius / 2)
 
@@ -1320,7 +1320,7 @@ def test_radius_neighbors_regressor(
         assert np.all(np.isnan(pred))
 
 
-def test_RadiusNeighborsRegressor_multioutput_with_uniform_weight():
+def test_radius_neighbors_regressor_multioutput_with_uniform_weight():
     # Test radius neighbors in multi-output regression (uniform weight)
 
     rng = check_random_state(0)
@@ -1347,12 +1347,12 @@ def test_RadiusNeighborsRegressor_multioutput_with_uniform_weight():
         assert_allclose(y_pred, y_pred_idx)
 
 
-def test_RadiusNeighborsRegressor_multioutput(
+def test_radius_neighbors_regressor_multioutput(
     n_samples=40, n_features=5, n_test_pts=10, random_state=0
 ):
     # Test k-neighbors in multi-output regression with various weight
-    rng = np.random.RandomState(random_state)
-    X = 2 * rng.rand(n_samples, n_features) - 1
+    rng = np.random.default_rng(random_state)
+    X = 2 * rng.random((n_samples, n_features)) - 1
     y = np.sqrt((X**2).sum(1))
     y /= y.max()
     y = np.vstack([y, y]).T
@@ -1363,7 +1363,7 @@ def test_RadiusNeighborsRegressor_multioutput(
     for algorithm, weights in product(ALGORITHMS, weights):
         rnn = neighbors.RadiusNeighborsRegressor(weights=weights, algorithm=algorithm)
         rnn.fit(X, y)
-        epsilon = 1e-5 * (2 * rng.rand(1, n_features) - 1)
+        epsilon = 1e-5 * (2 * rng.random((1, n_features)) - 1)
         y_pred = rnn.predict(X[:n_test_pts] + epsilon)
 
         assert y_pred.shape == y_target.shape
@@ -1376,8 +1376,8 @@ def test_kneighbors_regressor_sparse(
 ):
     # Test radius-based regression on sparse matrices
     # Like the above, but with various types of sparse matrices
-    rng = np.random.RandomState(random_state)
-    X = 2 * rng.rand(n_samples, n_features) - 1
+    rng = np.random.default_rng(random_state)
+    X = 2 * rng.random((n_samples, n_features)) - 1
     y = ((X**2).sum(axis=1) < 0.25).astype(int)
 
     for sparsemat in SPARSE_TYPES:
@@ -1446,7 +1446,7 @@ def test_kneighbors_graph():
     # Test kneighbors_graph to build the k-Nearest Neighbor graph.
     X = np.array([[0, 1], [1.01, 1.0], [2, 0]])
 
-    # n_neighbors = 1
+    
     A = neighbors.kneighbors_graph(X, 1, mode="connectivity", include_self=True)
     assert_array_equal(A.toarray(), np.eye(A.shape[0]))
 
@@ -1455,7 +1455,7 @@ def test_kneighbors_graph():
         A.toarray(), [[0.00, 1.01, 0.0], [1.01, 0.0, 0.0], [0.00, 1.40716026, 0.0]]
     )
 
-    # n_neighbors = 2
+    
     A = neighbors.kneighbors_graph(X, 2, mode="connectivity", include_self=True)
     assert_array_equal(A.toarray(), [[1.0, 1.0, 0.0], [1.0, 1.0, 0.0], [0.0, 1.0, 1.0]])
 
@@ -2053,7 +2053,7 @@ def test_same_knn_parallel(algorithm):
     X, y = datasets.make_classification(
         n_samples=30, n_features=5, n_redundant=0, random_state=0
     )
-    X_train, X_test, y_train, _ = train_test_split(X, y)
+    X_train, X_test, y_train, _ = train_test_split(X, y, random_state=0)
 
     clf = neighbors.KNeighborsClassifier(n_neighbors=3, algorithm=algorithm)
     clf.fit(X_train, y_train)
@@ -2078,7 +2078,7 @@ def test_same_radius_neighbors_parallel(algorithm):
     X, y = datasets.make_classification(
         n_samples=30, n_features=5, n_redundant=0, random_state=0
     )
-    X_train, X_test, y_train, _ = train_test_split(X, y)
+    X_train, X_test, y_train, _ = train_test_split(X, y, random_state=0)
 
     clf = neighbors.RadiusNeighborsClassifier(radius=10, algorithm=algorithm)
     clf.fit(X_train, y_train)
@@ -2111,7 +2111,7 @@ def test_knn_forcing_backend(backend, algorithm):
         X, y = datasets.make_classification(
             n_samples=30, n_features=5, n_redundant=0, random_state=0
         )
-        X_train, X_test, y_train, _ = train_test_split(X, y)
+        X_train, X_test, y_train, _ = train_test_split(X, y, random_state=0)
 
         clf = neighbors.KNeighborsClassifier(
             n_neighbors=3, algorithm=algorithm, n_jobs=2
