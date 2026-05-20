@@ -810,7 +810,6 @@ def test_qda_shrinkage_performance(
     # a case where there's a small number of samples per class relative to
     # the number of features.
     n_samples = 1000
-    n_features = n_features
 
     rng = np.random.default_rng(global_random_seed)
 
@@ -820,8 +819,8 @@ def test_qda_shrinkage_performance(
 
     X = np.concatenate(
         [
-            np.random.randn(n_samples // 2, n_features) * np.sqrt(vars1),
-            np.random.randn(n_samples // 2, n_features) * np.sqrt(vars2),
+            rng.standard_normal((n_samples // 2, n_features)) * np.sqrt(vars1),
+            rng.standard_normal((n_samples // 2, n_features)) * np.sqrt(vars2),
         ],
         axis=0,
     )
