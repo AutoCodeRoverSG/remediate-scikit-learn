@@ -178,7 +178,7 @@ def test_check_inverse_func_or_inverse_not_provided():
 
 def test_function_transformer_frame():
     pd = pytest.importorskip("pandas")
-    x_df = pd.DataFrame(np.random.randn(100, 10))
+    x_df = pd.DataFrame(np.random.default_rng(0).standard_normal((100, 10)))
     transformer = FunctionTransformer()
     x_df_trans = transformer.fit_transform(x_df)
     assert hasattr(x_df_trans, "loc")
@@ -214,7 +214,7 @@ def test_function_transformer_raise_error_with_mixed_dtype(x_type):
         transformer.fit(data)
 
 
-def test_function_transformer_support_all_numerical_dataframes_check_inverse_True():
+def test_function_transformer_support_all_numerical_dataframes_check_inverse_true():
     """Check support for dataframes with only numerical values."""
     pd = pytest.importorskip("pandas")
 
@@ -387,8 +387,8 @@ def test_function_transformer_validate_inverse():
     `inverse_transform`."""
 
     def add_constant_feature(X):
-        X_one = np.ones((X.shape[0], 1))
-        return np.concatenate((X, X_one), axis=1)
+        x_one = np.ones((X.shape[0], 1))
+        return np.concatenate((X, x_one), axis=1)
 
     def inverse_add_constant(X):
         return X[:, :-1]
@@ -399,10 +399,10 @@ def test_function_transformer_validate_inverse():
         inverse_func=inverse_add_constant,
         validate=True,
     )
-    X_trans = trans.fit_transform(X)
+    x_trans = trans.fit_transform(X)
     assert trans.n_features_in_ == X.shape[1]
 
-    trans.inverse_transform(X_trans)
+    trans.inverse_transform(x_trans)
     assert trans.n_features_in_ == X.shape[1]
 
 
@@ -432,8 +432,8 @@ def test_get_feature_names_out_dataframe_with_string_data(
     if in_pipeline:
         transformer = make_pipeline(transformer)
 
-    X_trans = transformer.fit_transform(X)
-    assert isinstance(X_trans, pd.DataFrame)
+    x_trans = transformer.fit_transform(X)
+    assert isinstance(x_trans, pd.DataFrame)
 
     names = transformer.get_feature_names_out()
     assert isinstance(names, np.ndarray)
@@ -454,9 +454,9 @@ def test_set_output_func():
         warnings.simplefilter("error", UserWarning)
         ft.set_output(transform="pandas")
 
-    X_trans = ft.fit_transform(X)
-    assert isinstance(X_trans, pd.DataFrame)
-    assert_array_equal(X_trans.columns, ["a", "b"])
+    x_trans = ft.fit_transform(X)
+    assert isinstance(x_trans, pd.DataFrame)
+    assert_array_equal(x_trans.columns, ["a", "b"])
 
     ft = FunctionTransformer(lambda x: 2 * x)
     ft.set_output(transform="pandas")
@@ -464,9 +464,9 @@ def test_set_output_func():
     # no warning is raised when func returns a panda dataframe
     with warnings.catch_warnings():
         warnings.simplefilter("error", UserWarning)
-        X_trans = ft.fit_transform(X)
-    assert isinstance(X_trans, pd.DataFrame)
-    assert_array_equal(X_trans.columns, ["a", "b"])
+        x_trans = ft.fit_transform(X)
+    assert isinstance(x_trans, pd.DataFrame)
+    assert_array_equal(x_trans.columns, ["a", "b"])
 
     # Warning is raised when func returns an ndarray
     ft_np = FunctionTransformer(lambda x: np.asarray(x))
@@ -500,14 +500,16 @@ def test_consistence_column_name_between_steps():
         return [name + "__log" for name in names]
 
     pipeline = make_pipeline(
-        FunctionTransformer(np.log1p, feature_names_out=with_suffix), StandardScaler()
+        FunctionTransformer(np.log1p, feature_names_out=with_suffix),
+        StandardScaler(),
+        memory=None,
     )
 
     df = pd.DataFrame([[1, 2], [3, 4], [5, 6]], columns=["a", "b"])
-    X_trans = pipeline.fit_transform(df)
+    x_trans = pipeline.fit_transform(df)
     assert pipeline.get_feature_names_out().tolist() == ["a__log", "b__log"]
     # StandardScaler will convert to a numpy array
-    assert isinstance(X_trans, np.ndarray)
+    assert isinstance(x_trans, np.ndarray)
 
 
 @pytest.mark.parametrize("dataframe_lib", ["pandas", "polars"])
@@ -526,11 +528,11 @@ def test_function_transformer_overwrite_column_names(dataframe_lib, transform_ou
     transformer = FunctionTransformer(feature_names_out=with_suffix).set_output(
         transform=transform_output
     )
-    X_trans = transformer.fit_transform(df)
-    assert_array_equal(np.asarray(X_trans), np.asarray(df))
+    x_trans = transformer.fit_transform(df)
+    assert_array_equal(np.asarray(x_trans), np.asarray(df))
 
     feature_names = transformer.get_feature_names_out()
-    assert list(X_trans.columns) == with_suffix(None, df.columns)
+    assert list(x_trans.columns) == with_suffix(None, df.columns)
     assert feature_names.tolist() == with_suffix(None, df.columns)
 
 
@@ -546,11 +548,11 @@ def test_function_transformer_overwrite_column_names_numerical(feature_names_out
     df = pd.DataFrame({0: [1, 2, 3], 1: [10, 20, 100]})
 
     transformer = FunctionTransformer(feature_names_out=feature_names_out)
-    X_trans = transformer.fit_transform(df)
-    assert_array_equal(np.asarray(X_trans), np.asarray(df))
+    x_trans = transformer.fit_transform(df)
+    assert_array_equal(np.asarray(x_trans), np.asarray(df))
 
     feature_names = transformer.get_feature_names_out()
-    assert list(X_trans.columns) == list(feature_names)
+    assert list(x_trans.columns) == list(feature_names)
 
 
 @pytest.mark.parametrize("dataframe_lib", ["pandas", "polars"])
