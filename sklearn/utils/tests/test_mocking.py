@@ -60,9 +60,9 @@ def test_check_on_fit_fail(iris, kwargs):
 @pytest.mark.parametrize(
     "pred_func", ["predict", "predict_proba", "decision_function", "score"]
 )
-def test_check_X_on_predict_success(iris, pred_func):
+def test_check_x_on_predict_success(iris, pred_func):
     X, y = iris
-    clf = CheckingClassifier(check_x=_success).fit(X, y)
+    clf = CheckingClassifier(check_x=_success, random_state=0).fit(X, y)
     getattr(clf, pred_func)(X)
 
 
@@ -71,7 +71,7 @@ def test_check_X_on_predict_success(iris, pred_func):
 )
 def test_check_X_on_predict_fail(iris, pred_func):
     X, y = iris
-    clf = CheckingClassifier(check_x=_success).fit(X, y)
+    clf = CheckingClassifier(check_x=_success, random_state=0).fit(X, y)
     clf.set_params(check_x=_fail)
     with pytest.raises(AssertionError):
         getattr(clf, pred_func)(X)
@@ -82,7 +82,7 @@ def test_checking_classifier(iris, input_type):
     # Check that the CheckingClassifier outputs what we expect
     X, y = iris
     X = _convert_container(X, input_type)
-    clf = CheckingClassifier()
+    clf = CheckingClassifier(random_state=0)
     clf.fit(X, y)
 
     assert_array_equal(clf.classes_, np.unique(y))
@@ -120,25 +120,25 @@ def test_checking_classifier(iris, input_type):
 @pytest.mark.parametrize("csr_container", CSR_CONTAINERS)
 def test_checking_classifier_with_params(iris, csr_container):
     X, y = iris
-    X_sparse = csr_container(X)
+    x_sparse = csr_container(X)
 
-    clf = CheckingClassifier(check_x=sparse.issparse)
+    clf = CheckingClassifier(check_x=sparse.issparse, random_state=0)
     with pytest.raises(AssertionError):
         clf.fit(X, y)
-    clf.fit(X_sparse, y)
+    clf.fit(x_sparse, y)
 
     clf = CheckingClassifier(
-        check_x=check_array, check_x_params={"accept_sparse": False}
+        check_x=check_array, check_x_params={"accept_sparse": False}, random_state=0
     )
     clf.fit(X, y)
     with pytest.raises(TypeError, match="Sparse data was passed"):
-        clf.fit(X_sparse, y)
+        clf.fit(x_sparse, y)
 
 
 def test_checking_classifier_fit_params(iris):
     # check the error raised when the number of samples is not the one expected
     X, y = iris
-    clf = CheckingClassifier(expected_sample_weight=True)
+    clf = CheckingClassifier(expected_sample_weight=True, random_state=42)
     sample_weight = np.ones(len(X) // 2)
 
     msg = f"sample_weight.shape == ({len(X) // 2},), expected ({len(X)},)!"
@@ -149,7 +149,7 @@ def test_checking_classifier_fit_params(iris):
 
 def test_checking_classifier_missing_fit_params(iris):
     X, y = iris
-    clf = CheckingClassifier(expected_sample_weight=True)
+    clf = CheckingClassifier(expected_sample_weight=True, random_state=42)
     err_msg = "Expected sample_weight to be passed"
     with pytest.raises(AssertionError, match=err_msg):
         clf.fit(X, y)
@@ -169,6 +169,7 @@ def test_checking_classifier_methods_to_check(iris, methods_to_check, predict_me
     clf = CheckingClassifier(
         check_x=sparse.issparse,
         methods_to_check=methods_to_check,
+        random_state=42,
     )
 
     clf.fit(X, y)
