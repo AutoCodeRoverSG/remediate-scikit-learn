@@ -66,7 +66,7 @@ from sklearn.utils.validation import has_fit_parameter
 @pytest.mark.thread_unsafe  # import side-effects
 def test_all_estimator_no_base_class():
     # test that all_estimators doesn't find abstract classes.
-    for name, Estimator in all_estimators():
+    for name, estimator in all_estimators():
         msg = (
             "Base estimators such as {0} should not be included in all_estimators"
         ).format(name)
@@ -74,6 +74,7 @@ def test_all_estimator_no_base_class():
 
 
 def _sample_func(x, y=1):
+    # Intentionally empty: used as a dummy function for testing purposes
     pass
 
 
@@ -237,7 +238,7 @@ def _estimators_that_predict_in_fit():
 column_name_estimators = list(
     chain(
         _tested_estimators(),
-        [make_pipeline(LogisticRegression(C=1))],
+        [make_pipeline(LogisticRegression(C=1), memory=None)],
         _estimators_that_predict_in_fit(),
     )
 )
@@ -329,7 +330,7 @@ SET_OUTPUT_ESTIMATORS = list(
     chain(
         _tested_estimators("transformer"),
         [
-            make_pipeline(StandardScaler(), MinMaxScaler()),
+            make_pipeline(StandardScaler(), MinMaxScaler(), memory=None),
             OneHotEncoder(sparse_output=False),
             FunctionTransformer(feature_names_out="one-to-one"),
         ],

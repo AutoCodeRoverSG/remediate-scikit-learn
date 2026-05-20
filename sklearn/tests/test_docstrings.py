@@ -17,21 +17,21 @@ numpydoc_validation = pytest.importorskip("numpydoc.validate")
 def get_all_methods():
     estimators = all_estimators()
     displays = all_displays()
-    for name, Klass in estimators + displays:
+    for name, klass in estimators + displays:
         if name.startswith("_"):
             # skip private classes
             continue
         methods = []
-        for name in dir(Klass):
-            if name.startswith("_"):
+        for attr_name in dir(klass):
+            if attr_name.startswith("_"):
                 continue
-            method_obj = getattr(Klass, name)
+            method_obj = getattr(klass, attr_name)
             if hasattr(method_obj, "__call__") or isinstance(method_obj, property):
-                methods.append(name)
+                methods.append(attr_name)
         methods.append(None)
 
         for method in sorted(methods, key=str):
-            yield Klass, method
+            yield klass, method
 
 
 def get_all_functions_names():
@@ -42,7 +42,7 @@ def get_all_functions_names():
             yield f"{func.__module__}.{func.__name__}"
 
 
-def filter_errors(errors, method, Klass=None):
+def filter_errors(errors, method, klass=None):
     """
     Ignore some errors based on the method type.
 
@@ -71,8 +71,8 @@ def filter_errors(errors, method, Klass=None):
         #
         # All error codes:
         # https://numpydoc.readthedocs.io/en/latest/validation.html#built-in-validation-checks
-        if code in ("PR02", "GL08") and Klass is not None and method is not None:
-            method_obj = getattr(Klass, method)
+        if code in ("PR02", "GL08") and klass is not None and method is not None:
+            method_obj = getattr(klass, method)
             if isinstance(method_obj, property):
                 continue
 
@@ -87,7 +87,7 @@ def filter_errors(errors, method, Klass=None):
         yield code, message
 
 
-def repr_errors(res, Klass=None, method: Optional[str] = None) -> str:
+def repr_errors(res, klass=None, method: Optional[str] = None) -> str:
     """Pretty print original docstring and the obtained errors
 
     Parameters
@@ -105,15 +105,15 @@ def repr_errors(res, Klass=None, method: Optional[str] = None) -> str:
        String representation of the error.
     """
     if method is None:
-        if hasattr(Klass, "__init__"):
+        if hasattr(klass, "__init__"):
             method = "__init__"
-        elif Klass is None:
-            raise ValueError("At least one of Klass, method should be provided")
+        elif klass is None:
+            raise ValueError("At least one of klass, method should be provided")
         else:
             raise NotImplementedError
 
-    if Klass is not None:
-        obj = getattr(Klass, method)
+    if klass is not None:
+        obj = getattr(klass, method)
         try:
             obj_signature = str(signature(obj))
         except TypeError:
@@ -123,7 +123,7 @@ def repr_errors(res, Klass=None, method: Optional[str] = None) -> str:
                 "possibly because this is a property."
             )
 
-        obj_name = Klass.__name__ + "." + method
+        obj_name = klass.__name__ + "." + method
     else:
         obj_signature = ""
         obj_name = method
@@ -156,10 +156,10 @@ def test_function_docstring(function_name, request):
 
 
 @pytest.mark.no_check_spmatrix  # no __module__ for check_spmatrix classes
-@pytest.mark.parametrize("Klass, method", get_all_methods())
-def test_docstring(Klass, method, request):
-    base_import_path = Klass.__module__
-    import_path = [base_import_path, Klass.__name__]
+@pytest.mark.parametrize("klass, method", get_all_methods())
+def test_docstring(klass, method, request):
+    base_import_path = klass.__module__
+    import_path = [base_import_path, klass.__name__]
     if method is not None:
         import_path.append(method)
 
@@ -167,10 +167,10 @@ def test_docstring(Klass, method, request):
 
     res = numpydoc_validation.validate(import_path)
 
-    res["errors"] = list(filter_errors(res["errors"], method, Klass=Klass))
+    res["errors"] = list(filter_errors(res["errors"], method, klass=klass))
 
     if res["errors"]:
-        msg = repr_errors(res, Klass, method)
+        msg = repr_errors(res, klass, method)
 
         raise ValueError(msg)
 
