@@ -319,7 +319,7 @@ def test_empty_pipeline():
     X = iris.data
     y = iris.target
 
-    pipe = Pipeline([])
+    pipe = Pipeline([], memory=None)
     msg = "The pipeline is empty. Please add steps."
     with pytest.raises(ValueError, match=msg):
         pipe.fit(X, y)
@@ -327,7 +327,7 @@ def test_empty_pipeline():
 
 def test_empty_pipeline_dir():
     """Check that dir() works on an empty pipeline"""
-    pipe = Pipeline([])
+    pipe = Pipeline([], memory=None)
     attrs = dir(pipe)
     assert "steps" in attrs
 
@@ -335,7 +335,7 @@ def test_empty_pipeline_dir():
 def test_pipeline_init_tuple():
     # Pipeline accepts steps as tuple
     X = np.array([[1, 2]])
-    pipe = Pipeline((("transf", Transf()), ("clf", FitParamT())))
+    pipe = Pipeline((("transf", Transf()), ("clf", FitParamT())), memory=None)
     pipe.fit(X, y=None)
     pipe.score(X)
 
@@ -351,7 +351,7 @@ def test_pipeline_methods_anova():
     # Test with Anova + LogisticRegression
     clf = LogisticRegression()
     filter1 = SelectKBest(f_classif, k=2)
-    pipe = Pipeline([("anova", filter1), ("logistic", clf)])
+    pipe = Pipeline([("anova", filter1), ("logistic", clf)], memory=None)
     pipe.fit(X, y)
     pipe.predict(X)
     pipe.predict_proba(X)
@@ -361,7 +361,7 @@ def test_pipeline_methods_anova():
 
 def test_pipeline_fit_params():
     # Test that the pipeline can take fit parameters
-    pipe = Pipeline([("transf", Transf()), ("clf", FitParamT())])
+    pipe = Pipeline([("transf", Transf()), ("clf", FitParamT())], memory=None)
     pipe.fit(X=None, y=None, clf__should_succeed=True)
     # classifier should return True
     assert pipe.predict(None)
@@ -378,7 +378,7 @@ def test_pipeline_fit_params():
 def test_pipeline_sample_weight_supported():
     # Pipeline should pass sample_weight
     X = np.array([[1, 2]])
-    pipe = Pipeline([("transf", Transf()), ("clf", FitParamT())])
+    pipe = Pipeline([("transf", Transf()), ("clf", FitParamT())], memory=None)
     pipe.fit(X, y=None)
     assert pipe.score(X) == 3
     assert pipe.score(X, y=None) == 3
@@ -389,7 +389,7 @@ def test_pipeline_sample_weight_supported():
 def test_pipeline_sample_weight_unsupported():
     # When sample_weight is None it shouldn't be passed
     X = np.array([[1, 2]])
-    pipe = Pipeline([("transf", Transf()), ("clf", Mult())])
+    pipe = Pipeline([("transf", Transf()), ("clf", Mult())], memory=None)
     pipe.fit(X, y=None)
     assert pipe.score(X) == 3
     assert pipe.score(X, sample_weight=None) == 3
@@ -401,7 +401,7 @@ def test_pipeline_sample_weight_unsupported():
 
 def test_pipeline_raise_set_params_error():
     # Test pipeline raises set params error message for nested models.
-    pipe = Pipeline([("cls", LinearRegression())])
+    pipe = Pipeline([("cls", LinearRegression())], memory=None)
 
     # expected error message
     error_msg = re.escape(
@@ -433,7 +433,7 @@ def test_pipeline_methods_pca_classifier():
     # Test with PCA + LogisticRegression
     clf = LogisticRegression()
     pca = PCA(svd_solver="full", n_components="mle", whiten=True)
-    pipe = Pipeline([("pca", pca), ("classifier", clf)])
+    pipe = Pipeline([("pca", pca), ("classifier", clf)], memory=None)
     pipe.fit(X, y)
     pipe.predict(X)
     pipe.predict_proba(X)
@@ -448,7 +448,7 @@ def test_pipeline_score_samples_pca_lof():
     # applying transform and score_samples steps separately.
     pca = PCA(svd_solver="full", n_components="mle", whiten=True)
     lof = LocalOutlierFactor(novelty=True)
-    pipe = Pipeline([("pca", pca), ("lof", lof)])
+    pipe = Pipeline([("pca", pca), ("lof", lof)], memory=None)
     pipe.fit(X)
     # Check the shapes
     assert pipe.score_samples(X).shape == (X.shape[0],)
