@@ -657,10 +657,10 @@ def test_min_samples_leaf():
     # test both DepthFirstTreeBuilder and BestFirstTreeBuilder
     # by setting max_leaf_nodes
     for max_leaf_nodes, name in product((None, 1000), ALL_TREES.keys()):
-        TreeEstimator = ALL_TREES[name]
+        tree_estimator = ALL_TREES[name]
 
         # test integer parameter
-        est = TreeEstimator(
+        est = tree_estimator(
             min_samples_leaf=5, max_leaf_nodes=max_leaf_nodes, random_state=0
         )
         est.fit(X, y)
@@ -671,7 +671,7 @@ def test_min_samples_leaf():
         assert np.min(leaf_count) > 4, "Failed with {0}".format(name)
 
         # test float parameter
-        est = TreeEstimator(
+        est = tree_estimator(
             min_samples_leaf=0.1, max_leaf_nodes=max_leaf_nodes, random_state=0
         )
         est.fit(X, y)
@@ -693,12 +693,12 @@ def check_min_weight_fraction_leaf(name, datasets, sparse_container=None):
     weights = rng.rand(X.shape[0])
     total_weight = np.sum(weights)
 
-    TreeEstimator = ALL_TREES[name]
+    tree_estimator = ALL_TREES[name]
 
     # test both DepthFirstTreeBuilder and BestFirstTreeBuilder
     # by setting max_leaf_nodes
     for max_leaf_nodes, frac in product((None, 1000), np.linspace(0, 0.5, 6)):
-        est = TreeEstimator(
+        est = tree_estimator(
             min_weight_fraction_leaf=frac, max_leaf_nodes=max_leaf_nodes, random_state=0
         )
         est.fit(X, y, sample_weight=weights)
@@ -721,7 +721,7 @@ def check_min_weight_fraction_leaf(name, datasets, sparse_container=None):
     total_weight = X.shape[0]
 
     for max_leaf_nodes, frac in product((None, 1000), np.linspace(0, 0.5, 6)):
-        est = TreeEstimator(
+        est = tree_estimator(
             min_weight_fraction_leaf=frac, max_leaf_nodes=max_leaf_nodes, random_state=0
         )
         est.fit(X, y)
@@ -763,10 +763,10 @@ def check_min_weight_fraction_leaf_with_min_samples_leaf(
     y = DATASETS[datasets]["y"]
 
     total_weight = X.shape[0]
-    TreeEstimator = ALL_TREES[name]
+    tree_estimator = ALL_TREES[name]
     for max_leaf_nodes, frac in product((None, 1000), np.linspace(0, 0.5, 3)):
         # test integer min_samples_leaf
-        est = TreeEstimator(
+        est = tree_estimator(
             min_weight_fraction_leaf=frac,
             max_leaf_nodes=max_leaf_nodes,
             min_samples_leaf=5,
@@ -789,7 +789,7 @@ def check_min_weight_fraction_leaf_with_min_samples_leaf(
         )
     for max_leaf_nodes, frac in product((None, 1000), np.linspace(0, 0.5, 3)):
         # test float min_samples_leaf
-        est = TreeEstimator(
+        est = tree_estimator(
             min_weight_fraction_leaf=frac,
             max_leaf_nodes=max_leaf_nodes,
             min_samples_leaf=0.1,
@@ -831,13 +831,13 @@ def test_min_weight_fraction_leaf_with_min_samples_leaf_on_sparse_input(
 # TODO(1.11): remove the deprecated friedman_mse criterion parametrization
 @pytest.mark.filterwarnings("ignore:.*friedman_mse.*:FutureWarning")
 @pytest.mark.parametrize(
-    "TreeEstimator, criterion",
+    "tree_estimator, criterion",
     [
         *product(REG_TREES.values(), REG_CRITERIONS),
         *product(CLF_TREES.values(), CLF_CRITERIONS),
     ],
 )
-def test_min_impurity_decrease(TreeEstimator, criterion, global_random_seed):
+def test_min_impurity_decrease(tree_estimator, criterion, global_random_seed):
     # test if min_impurity_decrease ensure that a split is made only if
     # if the impurity decrease is at least that value
     X, y = datasets.make_classification(n_samples=100, random_state=global_random_seed)
@@ -846,7 +846,7 @@ def test_min_impurity_decrease(TreeEstimator, criterion, global_random_seed):
     # by setting max_leaf_nodes
     for max_leaf_nodes in [None, 1000]:
         for expected_decrease in [0.05, 0.0001, 0.1]:
-            est = TreeEstimator(
+            est = tree_estimator(
                 criterion=criterion,
                 max_leaf_nodes=max_leaf_nodes,
                 min_impurity_decrease=expected_decrease,
@@ -875,13 +875,13 @@ def test_min_impurity_decrease(TreeEstimator, criterion, global_random_seed):
 
 def test_pickle():
     """Test pickling preserves Tree properties and performance."""
-    for name, TreeEstimator in ALL_TREES.items():
+    for name, tree_estimator in ALL_TREES.items():
         if "Classifier" in name:
             X, y = iris.data, iris.target
         else:
             X, y = diabetes.data, diabetes.target
 
-        est = TreeEstimator(random_state=0)
+        est = tree_estimator(random_state=0)
         est.fit(X, y)
         score = est.score(X, y)
 
@@ -927,13 +927,13 @@ def test_pickle():
 # TODO(1.11): remove the deprecated friedman_mse criterion parametrization
 @pytest.mark.filterwarnings("ignore:.*friedman_mse.*:FutureWarning")
 @pytest.mark.parametrize(
-    "Tree, criterion",
+    "tree, criterion",
     [
         *product(REG_TREES.values(), REG_CRITERIONS),
         *product(CLF_TREES.values(), CLF_CRITERIONS),
     ],
 )
-def test_multioutput(Tree, criterion):
+def test_multioutput(tree, criterion):
     # Check estimators on multi-output problems.
     X = [
         [-2, -1],
@@ -978,7 +978,7 @@ def test_multioutput(Tree, criterion):
 
     if is_clf:
         # toy classification problem
-        clf = Tree(random_state=0, criterion=criterion)
+        clf = tree(random_state=0, criterion=criterion)
         y_hat = clf.fit(X, y).predict(T)
         assert_array_equal(y_hat, y_true)
         assert y_hat.shape == (4, 2)
@@ -994,7 +994,7 @@ def test_multioutput(Tree, criterion):
         assert log_proba[1].shape == (4, 4)
     else:
         # toy regression problem
-        reg = Tree(random_state=0, criterion=criterion)
+        reg = tree(random_state=0, criterion=criterion)
         y_hat = reg.fit(X, y).predict(T)
         assert_almost_equal(y_hat, y_true)
         assert y_hat.shape == (4, 2)
@@ -1002,9 +1002,9 @@ def test_multioutput(Tree, criterion):
 
 def test_classes_shape():
     # Test that n_classes_ and classes_ have proper shape.
-    for name, TreeClassifier in CLF_TREES.items():
+    for name, tree_classifier in CLF_TREES.items():
         # Classification, single output
-        clf = TreeClassifier(random_state=0)
+        clf = tree_classifier(random_state=0)
         clf.fit(X, y)
 
         assert clf.n_classes_ == 2
@@ -1012,7 +1012,7 @@ def test_classes_shape():
 
         # Classification, multi-output
         _y = np.vstack((y, np.array(y) * 2)).T
-        clf = TreeClassifier(random_state=0)
+        clf = tree_classifier(random_state=0)
         clf.fit(X, _y)
         assert len(clf.n_classes_) == 2
         assert len(clf.classes_) == 2
@@ -1022,22 +1022,22 @@ def test_classes_shape():
 
 def test_unbalanced_iris():
     # Check class rebalancing.
-    unbalanced_X = iris.data[:125]
+    unbalanced_x = iris.data[:125]
     unbalanced_y = iris.target[:125]
     sample_weight = compute_sample_weight("balanced", unbalanced_y)
 
-    for name, TreeClassifier in CLF_TREES.items():
-        clf = TreeClassifier(random_state=0)
-        clf.fit(unbalanced_X, unbalanced_y, sample_weight=sample_weight)
-        assert_almost_equal(clf.predict(unbalanced_X), unbalanced_y)
+    for name, tree_classifier in CLF_TREES.items():
+        clf = tree_classifier(random_state=0)
+        clf.fit(unbalanced_x, unbalanced_y, sample_weight=sample_weight)
+        assert_almost_equal(clf.predict(unbalanced_x), unbalanced_y)
 
 
 def test_memory_layout():
     # Check that it works no matter the memory layout
-    for (name, TreeEstimator), dtype in product(
+    for (name, tree_estimator), dtype in product(
         ALL_TREES.items(), [np.float64, np.float32]
     ):
-        est = TreeEstimator(random_state=0)
+        est = tree_estimator(random_state=0)
 
         # Nothing
         X = np.asarray(iris.data, dtype=dtype)
