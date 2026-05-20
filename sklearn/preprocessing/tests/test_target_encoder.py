@@ -200,7 +200,7 @@ def test_encoding_multiclass(
     )
 
     # Manually compute encodings for cv splits to validate `fit_transform`
-    expected_X_fit_transform = np.empty(
+    expected_x_fit_transform = np.empty(
         (x_train_int.shape[0], x_train_int.shape[1] * n_classes),
         dtype=np.float64,
     )
@@ -214,7 +214,7 @@ def test_encoding_multiclass(
                 # c_idx:   0, 1, 2, 0, 1, 2
                 # exp_idx: 0, 1, 2, 3, 4, 5
                 exp_idx = c_idx + (f_idx * n_classes)
-                expected_X_fit_transform[test_idx, exp_idx] = current_encoding[
+                expected_x_fit_transform[test_idx, exp_idx] = current_encoding[
                     x_train_int[test_idx, f_idx]
                 ]
 
@@ -222,10 +222,10 @@ def test_encoding_multiclass(
         smooth=smooth,
         cv=cv,
     )
-    X_fit_transform = target_encoder.fit_transform(X_train, y_train)
+    x_fit_transform = target_encoder.fit_transform(X_train, y_train)
 
     assert target_encoder.target_type_ == "multiclass"
-    assert_allclose(X_fit_transform, expected_X_fit_transform)
+    assert_allclose(x_fit_transform, expected_x_fit_transform)
 
     # Manually compute encoding to validate `transform`
     expected_encodings = []
@@ -243,37 +243,37 @@ def test_encoding_multiclass(
     assert_array_equal(target_encoder.classes_, target_labels)
 
     # Include unknown values at the end
-    X_test_int = np.array([[0, 1], [1, 2], [4, 5]])
+    x_test_int = np.array([[0, 1], [1, 2], [4, 5]])
     if unknown_values == "auto":
-        X_test = X_test_int
+        X_test = x_test_int
     else:
-        X_test = np.empty_like(X_test_int[:-1, :], dtype=object)
-        for column_idx in range(X_test_int.shape[1]):
-            X_test[:, column_idx] = categories[0][X_test_int[:-1, column_idx]]
+        X_test = np.empty_like(x_test_int[:-1, :], dtype=object)
+        for column_idx in range(x_test_int.shape[1]):
+            X_test[:, column_idx] = categories[0][x_test_int[:-1, column_idx]]
         # Add unknown values at end
         X_test = np.vstack((X_test, unknown_values))
 
     y_mean = np.mean(y_train_enc, axis=0)
-    expected_X_test_transform = np.empty(
-        (X_test_int.shape[0], X_test_int.shape[1] * n_classes),
+    expected_x_test_transform = np.empty(
+        (x_test_int.shape[0], x_test_int.shape[1] * n_classes),
         dtype=np.float64,
     )
-    n_rows = X_test_int.shape[0]
+    n_rows = x_test_int.shape[0]
     f_idx = [0, 0, 0, 1, 1, 1]
     # Last row are unknowns, dealt with later
     for row_idx in range(n_rows - 1):
         for i, enc in enumerate(expected_encodings):
-            expected_X_test_transform[row_idx, i] = enc[X_test_int[row_idx, f_idx[i]]]
+            expected_x_test_transform[row_idx, i] = enc[x_test_int[row_idx, f_idx[i]]]
 
     # Unknowns encoded as target mean for each class
     # `y_mean` contains target mean for each class, thus cycle through mean of
     # each class, `n_features` times
     mean_idx = [0, 1, 2, 0, 1, 2]
     for i in range(n_classes * n_features):
-        expected_X_test_transform[n_rows - 1, i] = y_mean[mean_idx[i]]
+        expected_x_test_transform[n_rows - 1, i] = y_mean[mean_idx[i]]
 
-    X_test_transform = target_encoder.transform(X_test)
-    assert_allclose(X_test_transform, expected_X_test_transform)
+    x_test_transform = target_encoder.transform(X_test)
+    assert_allclose(x_test_transform, expected_x_test_transform)
 
 
 @pytest.mark.parametrize(
@@ -300,8 +300,8 @@ def test_custom_categories(X, categories, smooth):
 
     # The last element is unknown and encoded as the mean
     y_mean = y.mean()
-    X_trans = enc.transform(X[-1:])
-    assert X_trans[0, 0] == pytest.approx(y_mean)
+    x_trans = enc.transform(X[-1:])
+    assert x_trans[0, 0] == pytest.approx(y_mean)
 
     assert len(enc.encodings_) == 1
     # custom category that is not in training data
@@ -363,7 +363,7 @@ def test_feature_names_out_set_output(y, feature_names):
     """Check TargetEncoder works with set_output."""
     pd = pytest.importorskip("pandas")
 
-    X_df = pd.DataFrame({"A": ["a", "b"] * 10, "B": [1, 2] * 10})
+    x_df = pd.DataFrame({"A": ["a", "b"] * 10, "B": [1, 2] * 10})
 
     cv = StratifiedKFold(n_splits=2, random_state=0, shuffle=True)
     enc_default = TargetEncoder(cv=cv, smooth=3.0)
@@ -371,12 +371,12 @@ def test_feature_names_out_set_output(y, feature_names):
     enc_pandas = TargetEncoder(cv=cv, smooth=3.0)
     enc_pandas.set_output(transform="pandas")
 
-    X_default = enc_default.fit_transform(X_df, y)
-    X_pandas = enc_pandas.fit_transform(X_df, y)
+    x_default = enc_default.fit_transform(x_df, y)
+    x_pandas = enc_pandas.fit_transform(x_df, y)
 
-    assert_allclose(X_pandas.to_numpy(), X_default)
+    assert_allclose(x_pandas.to_numpy(), x_default)
     assert_array_equal(enc_pandas.get_feature_names_out(), feature_names)
-    assert_array_equal(enc_pandas.get_feature_names_out(), X_pandas.columns)
+    assert_array_equal(enc_pandas.get_feature_names_out(), x_pandas.columns)
 
 
 @pytest.mark.parametrize("to_pandas", [True, False])
@@ -384,7 +384,7 @@ def test_feature_names_out_set_output(y, feature_names):
 @pytest.mark.parametrize("target_type", ["binary-ints", "binary-str", "continuous"])
 def test_multiple_features_quick(to_pandas, smooth, target_type):
     """Check target encoder with multiple features."""
-    X_ordinal = np.array(
+    x_ordinal = np.array(
         [[1, 1], [0, 1], [1, 1], [2, 1], [1, 0], [0, 1], [1, 0], [0, 0]], dtype=np.int64
     )
     if target_type == "binary-str":
@@ -416,30 +416,30 @@ def test_multiple_features_quick(to_pandas, smooth, target_type):
         # convert second feature to an object
         X_train = pd.DataFrame(
             {
-                "feat0": X_ordinal[:, 0],
-                "feat1": np.array(["cat", "dog"], dtype=object)[X_ordinal[:, 1]],
+                "feat0": x_ordinal[:, 0],
+                "feat1": np.array(["cat", "dog"], dtype=object)[x_ordinal[:, 1]],
             }
         )
         # "snake" is unknown
         X_test = pd.DataFrame({"feat0": X_test[:, 0], "feat1": ["dog", "cat", "snake"]})
     else:
-        X_train = X_ordinal
+        X_train = x_ordinal
 
     # manually compute encoding for fit_transform
-    expected_X_fit_transform = np.empty_like(X_ordinal, dtype=np.float64)
+    expected_X_fit_transform = np.empty_like(x_ordinal, dtype=np.float64)
     for f_idx, cats in enumerate(categories):
-        for train_idx, test_idx in cv.split(X_ordinal, y_integer):
-            X_, y_ = X_ordinal[train_idx, f_idx], y_integer[train_idx]
+        for train_idx, test_idx in cv.split(x_ordinal, y_integer):
+            X_, y_ = x_ordinal[train_idx, f_idx], y_integer[train_idx]
             current_encoding = _encode_target(X_, y_, len(cats), smooth)
             expected_X_fit_transform[test_idx, f_idx] = current_encoding[
-                X_ordinal[test_idx, f_idx]
+                x_ordinal[test_idx, f_idx]
             ]
 
     # manually compute encoding for transform
     expected_encodings = []
     for f_idx, cats in enumerate(categories):
         current_encoding = _encode_target(
-            X_ordinal[:, f_idx], y_integer, len(cats), smooth
+            x_ordinal[:, f_idx], y_integer, len(cats), smooth
         )
         expected_encodings.append(current_encoding)
 
