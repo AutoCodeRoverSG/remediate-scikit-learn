@@ -151,10 +151,7 @@ def test_config_threadsafe():
     sleep_durations = [0.1, 0.2, 0.1, 0.2]
 
     with ThreadPoolExecutor(max_workers=2) as e:
-        items = [
-            output
-            for output in e.map(set_assume_finite, assume_finites, sleep_durations)
-        ]
+        items = list(e.map(set_assume_finite, assume_finites, sleep_durations))
 
     assert items == [False, True, False, True]
 
@@ -165,7 +162,7 @@ def test_config_array_api_dispatch_error_scipy(monkeypatch):
 
     with pytest.raises(ImportError, match="SciPy must be 1.14.0 or newer"):
         with config_context(array_api_dispatch=True):
-            pass
+            pass  # Error is raised when entering the context
 
     with pytest.raises(ImportError, match="SciPy must be 1.14.0 or newer"):
         set_config(array_api_dispatch=True)

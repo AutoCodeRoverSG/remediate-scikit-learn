@@ -297,7 +297,7 @@ def test_discretenb_partial_fit(discrete_naive_bayes):
 
 
 @pytest.mark.parametrize("naive_bayes", ALL_NAIVE_BAYES_CLASSES)
-def test_NB_partial_fit_no_first_classes(naive_bayes, global_random_seed):
+def test_nb_partial_fit_no_first_classes(naive_bayes, global_random_seed):
     # classes is required for first call to partial fit
     X2, y2 = get_random_integer_x_three_classes_y(global_random_seed)
 
@@ -961,11 +961,11 @@ def test_check_alpha():
     )
     b = BernoulliNB(alpha=0, force_alpha=False)
     with pytest.warns(UserWarning, match=msg):
-        assert b._check_alpha() == _ALPHA_MIN
+        assert b._check_alpha() == pytest.approx(_ALPHA_MIN)
 
     b = BernoulliNB(alpha=0, force_alpha=False)
     with pytest.warns(UserWarning, match=msg):
-        assert b._check_alpha() == _ALPHA_MIN
+        assert b._check_alpha() == pytest.approx(_ALPHA_MIN)
 
     b = BernoulliNB(alpha=alphas, force_alpha=False)
     # We manually set `n_features_in_` not to have `_check_alpha` err

@@ -770,7 +770,7 @@ def test_setting_request_on_sub_estimator_removes_error(metaestimator):
     if "estimator" not in metaestimator:
         # This test only makes sense for metaestimators which have a
         # sub-estimator, e.g. MyMetaEstimator(estimator=MySubEstimator())
-        return
+        pytest.skip("estimator not in metaestimator")
 
     metaestimator_class = metaestimator["metaestimator"]
     X = metaestimator["X"]
