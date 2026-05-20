@@ -124,14 +124,14 @@ def test_get_namespace_array_api(monkeypatch):
     """Test get_namespace for ArrayAPI arrays."""
     xp = pytest.importorskip("array_api_strict")
 
-    X_np = numpy.asarray([[1, 2, 3]])
-    X_xp = xp.asarray(X_np)
+    x_np = numpy.asarray([[1, 2, 3]])
+    x_xp = xp.asarray(x_np)
     with config_context(array_api_dispatch=True):
-        xp_out, is_array_api_compliant = get_namespace(X_xp)
+        _, is_array_api_compliant = get_namespace(x_xp)
         assert is_array_api_compliant
 
         with pytest.raises(TypeError):
-            xp_out, is_array_api_compliant = get_namespace(X_xp, X_np)
+            _, is_array_api_compliant = get_namespace(x_xp, x_np)
 
         def mock_getenv(key):
             if key == "SCIPY_ARRAY_API":
@@ -143,7 +143,7 @@ def test_get_namespace_array_api(monkeypatch):
             RuntimeError,
             match="scipy's own support is not enabled.",
         ):
-            get_namespace(X_xp)
+            get_namespace(x_xp)
 
 
 @pytest.mark.parametrize(
@@ -198,10 +198,10 @@ def test_asarray_with_order(array_api):
     xp = pytest.importorskip(array_api)
 
     X = xp.asarray([1.2, 3.4, 5.1])
-    X_new = _asarray_with_order(X, order="F", xp=xp)
+    x_new = _asarray_with_order(X, order="F", xp=xp)
 
-    X_new_np = numpy.asarray(X_new)
-    assert X_new_np.flags["F_CONTIGUOUS"]
+    x_new_np = numpy.asarray(x_new)
+    assert x_new_np.flags["F_CONTIGUOUS"]
 
 
 @pytest.mark.parametrize(
@@ -472,23 +472,23 @@ def test_convert_to_numpy_gpu(library):  # pragma: nocover
     if library == "torch":
         if not xp.backends.cuda.is_built():
             pytest.skip("test requires cuda")
-        X_gpu = xp.asarray([1.0, 2.0, 3.0], device="cuda")
+        x_gpu = xp.asarray([1.0, 2.0, 3.0], device="cuda")
     else:
-        X_gpu = xp.asarray([1.0, 2.0, 3.0])
+        x_gpu = xp.asarray([1.0, 2.0, 3.0])
 
-    X_cpu = _convert_to_numpy(X_gpu, xp=xp)
+    x_cpu = _convert_to_numpy(x_gpu, xp=xp)
     expected_output = numpy.asarray([1.0, 2.0, 3.0])
-    assert_allclose(X_cpu, expected_output)
+    assert_allclose(x_cpu, expected_output)
 
 
 def test_convert_to_numpy_cpu():
     """Check convert_to_numpy for PyTorch CPU arrays."""
     torch = pytest.importorskip("torch")
-    X_torch = torch.asarray([1.0, 2.0, 3.0], device="cpu")
+    x_torch = torch.asarray([1.0, 2.0, 3.0], device="cpu")
 
-    X_cpu = _convert_to_numpy(X_torch, xp=torch)
+    x_cpu = _convert_to_numpy(x_torch, xp=torch)
     expected_output = numpy.asarray([1.0, 2.0, 3.0])
-    assert_allclose(X_cpu, expected_output)
+    assert_allclose(x_cpu, expected_output)
 
 
 class SimpleEstimator(BaseEstimator):
@@ -552,8 +552,8 @@ def test_convert_estimator_to_ndarray(array_namespace, converter):
 def test_convert_estimator_with_custom_logic():
     xp = pytest.importorskip("array_api_strict")
 
-    X_np = numpy.asarray([[1.3, 4.5]])
-    est = SimpleEstimator().fit(X_np)
+    x_np = numpy.asarray([[1.3, 4.5]])
+    est = SimpleEstimator().fit(x_np)
 
     new_est = _estimator_with_converted_arrays(est, lambda array: xp.asarray(array))
     assert hasattr(new_est.X_, "__array_namespace__")
