@@ -44,6 +44,12 @@ import pandas as pd
 import scipy as sp
 import seaborn as sns
 
+MEDAE_TRAIN_LABEL = "MedAE on training set"
+MEDAE_TEST_LABEL = "MedAE on testing set"
+RIDGE_SMALL_REG_TITLE = "Ridge model, small regularization"
+LEGEND_LOC = "upper left"
+RAW_COEF_XLABEL = "Raw coefficient values"
+
 # %%
 # The dataset: wages
 # ------------------
@@ -160,6 +166,7 @@ model = make_pipeline(
     TransformedTargetRegressor(
         regressor=Ridge(alpha=1e-10), func=np.log10, inverse_func=sp.special.exp10
     ),
+    memory=None,
 )
 
 # %%
@@ -181,8 +188,8 @@ mae_train = median_absolute_error(y_train, model.predict(X_train))
 y_pred = model.predict(X_test)
 mae_test = median_absolute_error(y_test, y_pred)
 scores = {
-    "MedAE on training set": f"{mae_train:.2f} $/hour",
-    "MedAE on testing set": f"{mae_test:.2f} $/hour",
+    MEDAE_TRAIN_LABEL: f"{mae_train:.2f} $/hour",
+    MEDAE_TEST_LABEL: f"{mae_test:.2f} $/hour",
 }
 
 # %%
@@ -190,10 +197,10 @@ _, ax = plt.subplots(figsize=(5, 5))
 display = PredictionErrorDisplay.from_predictions(
     y_test, y_pred, kind="actual_vs_predicted", ax=ax, scatter_kwargs={"alpha": 0.5}
 )
-ax.set_title("Ridge model, small regularization")
+ax.set_title(RIDGE_SMALL_REG_TITLE)
 for name, score in scores.items():
     ax.plot([], [], " ", label=f"{name}: {score}")
-ax.legend(loc="upper left")
+ax.legend(loc=LEGEND_LOC)
 plt.tight_layout()
 
 # %%
@@ -219,7 +226,7 @@ coefs = pd.DataFrame(
     index=feature_names,
 )
 
-coefs
+print(coefs)
 
 # %%
 # The AGE coefficient is expressed in "dollars/hour per living years" while the
@@ -236,9 +243,9 @@ coefs
 # visible if we plot the coefficients.
 
 coefs.plot.barh(figsize=(9, 7))
-plt.title("Ridge model, small regularization")
+plt.title(RIDGE_SMALL_REG_TITLE)
 plt.axvline(x=0, color=".5")
-plt.xlabel("Raw coefficient values")
+plt.xlabel(RAW_COEF_XLABEL)
 plt.subplots_adjust(left=0.3)
 
 # %%
@@ -282,7 +289,7 @@ coefs = pd.DataFrame(
 )
 coefs.plot(kind="barh", figsize=(9, 7))
 plt.xlabel("Coefficient values corrected by the feature's std. dev.")
-plt.title("Ridge model, small regularization")
+plt.title(RIDGE_SMALL_REG_TITLE)
 plt.axvline(x=0, color=".5")
 plt.subplots_adjust(left=0.3)
 
@@ -371,7 +378,7 @@ sns.boxplot(data=coefs, orient="h", color="cyan", saturation=0.5, whis=10)
 plt.axvline(x=0, color=".5")
 plt.xlabel("Coefficient importance")
 plt.title("Coefficient importance and its variability")
-plt.suptitle("Ridge model, small regularization")
+plt.suptitle(RIDGE_SMALL_REG_TITLE)
 plt.subplots_adjust(left=0.3)
 
 # %%
@@ -465,6 +472,7 @@ model = make_pipeline(
     TransformedTargetRegressor(
         regressor=Ridge(alpha=1e-10), func=np.log10, inverse_func=sp.special.exp10
     ),
+    memory=None,
 )
 model.fit(X_train, y_train)
 
@@ -476,18 +484,18 @@ mae_train = median_absolute_error(y_train, model.predict(X_train))
 y_pred = model.predict(X_test)
 mae_test = median_absolute_error(y_test, y_pred)
 scores = {
-    "MedAE on training set": f"{mae_train:.2f} $/hour",
-    "MedAE on testing set": f"{mae_test:.2f} $/hour",
+    MEDAE_TRAIN_LABEL: f"{mae_train:.2f} $/hour",
+    MEDAE_TEST_LABEL: f"{mae_test:.2f} $/hour",
 }
 
 _, ax = plt.subplots(figsize=(5, 5))
 display = PredictionErrorDisplay.from_predictions(
     y_test, y_pred, kind="actual_vs_predicted", ax=ax, scatter_kwargs={"alpha": 0.5}
 )
-ax.set_title("Ridge model, small regularization")
+ax.set_title(RIDGE_SMALL_REG_TITLE)
 for name, score in scores.items():
     ax.plot([], [], " ", label=f"{name}: {score}")
-ax.legend(loc="upper left")
+ax.legend(loc=LEGEND_LOC)
 plt.tight_layout()
 
 # %%
@@ -501,7 +509,7 @@ coefs = pd.DataFrame(
 )
 coefs.plot.barh(figsize=(9, 7))
 plt.title("Ridge model, small regularization, normalized variables")
-plt.xlabel("Raw coefficient values")
+plt.xlabel(RAW_COEF_XLABEL)
 plt.axvline(x=0, color=".5")
 plt.subplots_adjust(left=0.3)
 
@@ -553,6 +561,7 @@ model = make_pipeline(
         func=np.log10,
         inverse_func=sp.special.exp10,
     ),
+    memory=None,
 )
 model.fit(X_train, y_train)
 
@@ -567,8 +576,8 @@ mae_train = median_absolute_error(y_train, model.predict(X_train))
 y_pred = model.predict(X_test)
 mae_test = median_absolute_error(y_test, y_pred)
 scores = {
-    "MedAE on training set": f"{mae_train:.2f} $/hour",
-    "MedAE on testing set": f"{mae_test:.2f} $/hour",
+    MEDAE_TRAIN_LABEL: f"{mae_train:.2f} $/hour",
+    MEDAE_TEST_LABEL: f"{mae_test:.2f} $/hour",
 }
 
 _, ax = plt.subplots(figsize=(5, 5))
@@ -578,7 +587,7 @@ display = PredictionErrorDisplay.from_predictions(
 ax.set_title("Ridge model, optimum regularization")
 for name, score in scores.items():
     ax.plot([], [], " ", label=f"{name}: {score}")
-ax.legend(loc="upper left")
+ax.legend(loc=LEGEND_LOC)
 plt.tight_layout()
 
 # %%
@@ -592,7 +601,7 @@ coefs = pd.DataFrame(
 )
 coefs.plot.barh(figsize=(9, 7))
 plt.title("Ridge model, with regularization, normalized variables")
-plt.xlabel("Raw coefficient values")
+plt.xlabel(RAW_COEF_XLABEL)
 plt.axvline(x=0, color=".5")
 plt.subplots_adjust(left=0.3)
 
@@ -655,6 +664,7 @@ model = make_pipeline(
         func=np.log10,
         inverse_func=sp.special.exp10,
     ),
+    memory=None,
 )
 
 _ = model.fit(X_train, y_train)
@@ -671,8 +681,8 @@ mae_train = median_absolute_error(y_train, model.predict(X_train))
 y_pred = model.predict(X_test)
 mae_test = median_absolute_error(y_test, y_pred)
 scores = {
-    "MedAE on training set": f"{mae_train:.2f} $/hour",
-    "MedAE on testing set": f"{mae_test:.2f} $/hour",
+    MEDAE_TRAIN_LABEL: f"{mae_train:.2f} $/hour",
+    MEDAE_TEST_LABEL: f"{mae_test:.2f} $/hour",
 }
 
 _, ax = plt.subplots(figsize=(6, 6))
@@ -682,7 +692,7 @@ display = PredictionErrorDisplay.from_predictions(
 ax.set_title("Lasso model, optimum regularization")
 for name, score in scores.items():
     ax.plot([], [], " ", label=f"{name}: {score}")
-ax.legend(loc="upper left")
+ax.legend(loc=LEGEND_LOC)
 plt.tight_layout()
 
 # %%
