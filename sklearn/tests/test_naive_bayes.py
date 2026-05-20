@@ -50,8 +50,8 @@ def get_random_normal_x_binary_y(global_random_seed):
 def get_random_integer_x_three_classes_y(global_random_seed):
     # Data is 6 random integer points in a 100 dimensional space classified to
     # three classes.
-    rng = np.random.RandomState(global_random_seed)
-    X2 = rng.randint(5, size=(6, 100))
+    rng = np.random.default_rng(global_random_seed)
+    X2 = rng.integers(5, size=(6, 100))
     y2 = np.array([1, 1, 2, 2, 3, 3])
     return X2, y2
 
@@ -100,9 +100,9 @@ def test_gnb_sample_weight(global_random_seed):
 
     # Fitting twice with half sample-weights should result
     # in same result as fitting once with full weights
-    rng = np.random.RandomState(global_random_seed)
+    rng = np.random.default_rng(global_random_seed)
 
-    sw = rng.rand(y.shape[0])
+    sw = rng.random(y.shape[0])
     clf1 = GaussianNB().fit(X, y, sample_weight=sw)
     clf2 = GaussianNB().partial_fit(X, y, classes=[1, 2], sample_weight=sw / 2)
     clf2.partial_fit(X, y, sample_weight=sw / 2)
@@ -112,7 +112,7 @@ def test_gnb_sample_weight(global_random_seed):
 
     # Check that duplicate entries and correspondingly increased sample
     # weights yield the same result
-    ind = rng.randint(0, X.shape[0], 20)
+    ind = rng.integers(0, X.shape[0], 20)
     sample_weight = np.bincount(ind, minlength=X.shape[0])
 
     clf_dupl = GaussianNB().fit(X[ind], y[ind])
@@ -124,7 +124,7 @@ def test_gnb_sample_weight(global_random_seed):
     # non-regression test for gh-24140 where a division by zero was
     # occurring when a single class was present
     sample_weight = (y == 1).astype(np.float64)
-    clf = GaussianNB().fit(X, y, sample_weight=sample_weight)
+    GaussianNB().fit(X, y, sample_weight=sample_weight)
 
 
 def test_gnb_neg_priors():
@@ -204,8 +204,8 @@ def test_gnb_check_update_with_no_data():
     var = 1.0
     x_empty = np.empty((0, X.shape[1]))
     tmean, tvar = GaussianNB._update_mean_variance(prev_points, mean, var, x_empty)
-    assert tmean == mean
-    assert tvar == var
+    assert tmean == pytest.approx(mean)
+    assert tvar == pytest.approx(var)
 
 
 def test_gnb_partial_fit(global_dtype):
@@ -910,20 +910,20 @@ def test_check_accuracy_on_digits():
     # separable dataset
     X, y = load_digits(return_X_y=True)
     binary_3v8 = np.logical_or(y == 3, y == 8)
-    X_3v8, y_3v8 = X[binary_3v8], y[binary_3v8]
+    x_3v8, y_3v8 = X[binary_3v8], y[binary_3v8]
 
     # Multinomial NB
     scores = cross_val_score(MultinomialNB(alpha=10), X, y, cv=10)
     assert scores.mean() > 0.86
 
-    scores = cross_val_score(MultinomialNB(alpha=10), X_3v8, y_3v8, cv=10)
+    scores = cross_val_score(MultinomialNB(alpha=10), x_3v8, y_3v8, cv=10)
     assert scores.mean() > 0.94
 
     # Bernoulli NB
     scores = cross_val_score(BernoulliNB(alpha=10), X > 4, y, cv=10)
     assert scores.mean() > 0.83
 
-    scores = cross_val_score(BernoulliNB(alpha=10), X_3v8 > 4, y_3v8, cv=10)
+    scores = cross_val_score(BernoulliNB(alpha=10), x_3v8 > 4, y_3v8, cv=10)
     assert scores.mean() > 0.92
 
     # Gaussian NB
@@ -933,7 +933,7 @@ def test_check_accuracy_on_digits():
     scores = cross_val_score(GaussianNB(var_smoothing=0.1), X, y, cv=10)
     assert scores.mean() > 0.89
 
-    scores = cross_val_score(GaussianNB(), X_3v8, y_3v8, cv=10)
+    scores = cross_val_score(GaussianNB(), x_3v8, y_3v8, cv=10)
     assert scores.mean() > 0.86
 
 
@@ -974,20 +974,20 @@ def test_check_alpha():
         assert_array_equal(b._check_alpha(), np.array([_ALPHA_MIN, 1.0]))
 
 
-@pytest.mark.parametrize("Estimator", ALL_NAIVE_BAYES_CLASSES)
-def test_predict_joint_proba(Estimator, global_random_seed):
+@pytest.mark.parametrize("estimator", ALL_NAIVE_BAYES_CLASSES)
+def test_predict_joint_proba(estimator, global_random_seed):
     X2, y2 = get_random_integer_x_three_classes_y(global_random_seed)
-    est = Estimator().fit(X2, y2)
+    est = estimator().fit(X2, y2)
     jll = est.predict_joint_log_proba(X2)
     log_prob_x = logsumexp(jll, axis=1)
     log_prob_x_y = jll - np.atleast_2d(log_prob_x).T
     assert_allclose(est.predict_log_proba(X2), log_prob_x_y, atol=1e-12)
 
 
-@pytest.mark.parametrize("Estimator", ALL_NAIVE_BAYES_CLASSES)
-def test_categorical_input_tag(Estimator):
-    tags = Estimator().__sklearn_tags__()
-    if Estimator is CategoricalNB:
+@pytest.mark.parametrize("estimator", ALL_NAIVE_BAYES_CLASSES)
+def test_categorical_input_tag(estimator):
+    tags = estimator().__sklearn_tags__()
+    if estimator is CategoricalNB:
         assert tags.input_tags.categorical
     else:
         assert not tags.input_tags.categorical
@@ -1004,8 +1004,8 @@ def test_gnb_array_api_compliance(
 ):
     """Tests that :class:`GaussianNB` works correctly with array API inputs."""
     xp, device = _array_api_for_tests(array_namespace, device_name, dtype_name)
-    X_np = X.astype(dtype_name)
-    X_xp = xp.asarray(X_np, device=device)
+    x_np = X.astype(dtype_name)
+    x_xp = xp.asarray(x_np, device=device)
     if use_str_y:
         y_np = np.array(["a", "a", "a", "b", "b", "b"])
         y_xp_or_np = np.array(["a", "a", "a", "b", "b", "b"])
@@ -1018,34 +1018,34 @@ def test_gnb_array_api_compliance(
     else:
         sample_weight = None
 
-    clf_np = GaussianNB().fit(X_np, y_np, sample_weight=sample_weight)
-    y_pred_np = clf_np.predict(X_np)
-    y_pred_proba_np = clf_np.predict_proba(X_np)
-    y_pred_log_proba_np = clf_np.predict_log_proba(X_np)
+    clf_np = GaussianNB().fit(x_np, y_np, sample_weight=sample_weight)
+    y_pred_np = clf_np.predict(x_np)
+    y_pred_proba_np = clf_np.predict_proba(x_np)
+    y_pred_log_proba_np = clf_np.predict_log_proba(x_np)
     with config_context(array_api_dispatch=True):
-        clf_xp = GaussianNB().fit(X_xp, y_xp_or_np, sample_weight=sample_weight)
+        clf_xp = GaussianNB().fit(x_xp, y_xp_or_np, sample_weight=sample_weight)
         for fitted_attr in ("class_count_", "class_prior_", "theta_", "var_"):
             xp_attr = getattr(clf_xp, fitted_attr)
             np_attr = getattr(clf_np, fitted_attr)
-            assert xp_attr.dtype == X_xp.dtype
-            assert array_api_device(xp_attr) == array_api_device(X_xp)
+            assert xp_attr.dtype == x_xp.dtype
+            assert array_api_device(xp_attr) == array_api_device(x_xp)
             assert_allclose(move_to(xp_attr, xp=np, device="cpu"), np_attr)
 
-        y_pred_xp = clf_xp.predict(X_xp)
+        y_pred_xp = clf_xp.predict(x_xp)
         if not use_str_y:
-            assert array_api_device(y_pred_xp) == array_api_device(X_xp)
+            assert array_api_device(y_pred_xp) == array_api_device(x_xp)
             y_pred_xp = move_to(y_pred_xp, xp=np, device="cpu")
         assert_array_equal(y_pred_xp, y_pred_np)
         assert y_pred_xp.dtype == y_pred_np.dtype
 
-        y_pred_proba_xp = clf_xp.predict_proba(X_xp)
-        assert y_pred_proba_xp.dtype == X_xp.dtype
-        assert array_api_device(y_pred_proba_xp) == array_api_device(X_xp)
+        y_pred_proba_xp = clf_xp.predict_proba(x_xp)
+        assert y_pred_proba_xp.dtype == x_xp.dtype
+        assert array_api_device(y_pred_proba_xp) == array_api_device(x_xp)
         assert_allclose(move_to(y_pred_proba_xp, xp=np, device="cpu"), y_pred_proba_np)
 
-        y_pred_log_proba_xp = clf_xp.predict_log_proba(X_xp)
-        assert y_pred_log_proba_xp.dtype == X_xp.dtype
-        assert array_api_device(y_pred_log_proba_xp) == array_api_device(X_xp)
+        y_pred_log_proba_xp = clf_xp.predict_log_proba(x_xp)
+        assert y_pred_log_proba_xp.dtype == x_xp.dtype
+        assert array_api_device(y_pred_log_proba_xp) == array_api_device(x_xp)
         assert_allclose(
             move_to(y_pred_log_proba_xp, xp=np, device="cpu"), y_pred_log_proba_np
         )
