@@ -18,6 +18,7 @@ class MockClass1:
 class MockClass2:
     @deprecated("mockclass2_method")
     def method(self):
+        # intentionally empty, used as a mock for deprecation tests
         pass
 
     @deprecated("n_features_ is deprecated")  # type: ignore[prop-decorator]
@@ -30,6 +31,7 @@ class MockClass2:
 class MockClass3:
     @deprecated()
     def __init__(self):
+        # No-op init for testing deprecation of a class with an empty constructor
         pass
 
 
@@ -93,6 +95,7 @@ def test_deprecated_class_signature():
     @deprecated()
     class MockClass:
         def __init__(self, a, b=1, c=2):
+            # No-op: intentionally empty mock for testing deprecation of parameters
             pass
 
     assert list(signature(MockClass).parameters.keys()) == ["a", "b", "c"]

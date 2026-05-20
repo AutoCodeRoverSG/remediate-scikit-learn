@@ -10,7 +10,7 @@ def floyd_warshall_slow(graph, directed=False):
     N = graph.shape[0]
 
     # set nonzero entries to infinity
-    graph[np.where(graph == 0)] = np.inf
+    graph[np.nonzero(graph == 0)] = np.inf
 
     # set diagonal to zero
     graph.flat[:: N + 1] = 0
@@ -23,25 +23,25 @@ def floyd_warshall_slow(graph, directed=False):
             for j in range(N):
                 graph[i, j] = min(graph[i, j], graph[i, k] + graph[k, j])
 
-    graph[np.where(np.isinf(graph))] = 0
+    graph[np.nonzero(np.isinf(graph))] = 0
 
     return graph
 
 
-def generate_graph(N=20):
+def generate_graph(n=20):
     # sparse grid of distances
-    rng = np.random.RandomState(0)
-    dist_matrix = rng.random_sample((N, N))
+    rng = np.random.default_rng(0)
+    dist_matrix = rng.random((n, n))
 
     # make symmetric: distances are not direction-dependent
     dist_matrix = dist_matrix + dist_matrix.T
 
     # make graph sparse
-    i = (rng.randint(N, size=N * N // 2), rng.randint(N, size=N * N // 2))
+    i = (rng.integers(n, size=n * n // 2), rng.integers(n, size=n * n // 2))
     dist_matrix[i] = 0
 
     # set diagonal to zero
-    dist_matrix.flat[:: N + 1] = 0
+    dist_matrix.flat[:: n + 1] = 0
 
     return dist_matrix
 
