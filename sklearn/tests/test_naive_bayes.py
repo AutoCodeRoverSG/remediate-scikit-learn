@@ -41,7 +41,7 @@ y = np.array([1, 1, 1, 2, 2, 2])
 
 def get_random_normal_x_binary_y(global_random_seed):
     # A bit more random tests
-    rng = np.random.RandomState(global_random_seed)
+    rng = np.random.default_rng(global_random_seed)
     X1 = rng.normal(size=(10, 3))
     y1 = (rng.normal(size=10) > 0).astype(int)
     return X1, y1
@@ -423,11 +423,11 @@ def test_discretenb_sample_weight_multiclass(discrete_naive_bayes):
     assert_array_equal(clf.predict(X), [0, 1, 1, 2])
 
 
-@pytest.mark.parametrize("DiscreteNaiveBayes", DISCRETE_NAIVE_BAYES_CLASSES)
+@pytest.mark.parametrize("discrete_naive_bayes", DISCRETE_NAIVE_BAYES_CLASSES)
 @pytest.mark.parametrize("use_partial_fit", [False, True])
 @pytest.mark.parametrize("train_on_single_class_y", [False, True])
 def test_discretenb_degenerate_one_class_case(
-    DiscreteNaiveBayes,
+    discrete_naive_bayes,
     use_partial_fit,
     train_on_single_class_y,
 ):
@@ -445,10 +445,10 @@ def test_discretenb_degenerate_one_class_case(
     if train_on_single_class_y:
         X = X[:-1]
         y = y[:-1]
-    classes = sorted(list(set(y)))
+    classes = sorted(set(y))
     num_classes = len(classes)
 
-    clf = DiscreteNaiveBayes()
+    clf = discrete_naive_bayes()
     if use_partial_fit:
         clf.partial_fit(X, y, classes=classes)
     else:
@@ -728,13 +728,13 @@ def test_categoricalnb(global_random_seed):
         clf.fit(X, y)
 
     # Test alpha
-    X3_test = np.array([[2, 5]])
+    x3_test = np.array([[2, 5]])
     # alpha=1 increases the count of all categories by one so the final
     # probability for each category is not 50/50 but 1/3 to 2/3
     bayes_numerator = np.array([[1 / 3 * 1 / 3, 2 / 3 * 2 / 3]])
     bayes_denominator = bayes_numerator.sum()
     assert_array_almost_equal(
-        clf.predict_proba(X3_test), bayes_numerator / bayes_denominator
+        clf.predict_proba(x3_test), bayes_numerator / bayes_denominator
     )
 
     # Assert category_count has counted all features
@@ -759,7 +759,7 @@ def test_categoricalnb(global_random_seed):
 
 
 @pytest.mark.parametrize(
-    "min_categories, exp_X1_count, exp_X2_count, new_X, exp_n_categories_",
+    "min_categories, exp_x1_count, exp_x2_count, new_x, exp_n_categories_",
     [
         # check min_categories with int > observed categories
         (
@@ -790,18 +790,18 @@ def test_categoricalnb(global_random_seed):
     ],
 )
 def test_categoricalnb_with_min_categories(
-    min_categories, exp_X1_count, exp_X2_count, new_X, exp_n_categories_
+    min_categories, exp_x1_count, exp_x2_count, new_x, exp_n_categories_
 ):
-    X_n_categories = np.array([[0, 0], [0, 1], [0, 0], [1, 1]])
+    x_n_categories = np.array([[0, 0], [0, 1], [0, 0], [1, 1]])
     y_n_categories = np.array([1, 1, 2, 2])
     expected_prediction = np.array([1])
 
     clf = CategoricalNB(alpha=1, fit_prior=False, min_categories=min_categories)
-    clf.fit(X_n_categories, y_n_categories)
-    X1_count, X2_count = clf.category_count_
-    assert_array_equal(X1_count, exp_X1_count)
-    assert_array_equal(X2_count, exp_X2_count)
-    predictions = clf.predict(new_X)
+    clf.fit(x_n_categories, y_n_categories)
+    x1_count, x2_count = clf.category_count_
+    assert_array_equal(x1_count, exp_x1_count)
+    assert_array_equal(x2_count, exp_x2_count)
+    predictions = clf.predict(new_x)
     assert_array_equal(predictions, expected_prediction)
     assert_array_equal(clf.n_categories_, exp_n_categories_)
 
