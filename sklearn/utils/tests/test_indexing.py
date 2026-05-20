@@ -356,8 +356,8 @@ def test_safe_indexing_2d_scalar_axis_1(array_type, expected_output_type, indice
 @pytest.mark.parametrize("array_type", ["list", "array", "sparse"])
 def test_safe_indexing_None_axis_0(array_type):
     X = _convert_container([[1, 2, 3], [4, 5, 6], [7, 8, 9]], array_type)
-    X_subset = _safe_indexing(X, None, axis=0)
-    assert_allclose_dense_sparse(X_subset, X)
+    x_subset = _safe_indexing(X, None, axis=0)
+    assert_allclose_dense_sparse(x_subset, X)
 
 
 def test_safe_indexing_pandas_no_matching_cols_error():
@@ -375,27 +375,27 @@ def test_safe_indexing_error_axis(axis):
 
 
 @pytest.mark.parametrize(
-    "X_constructor", ["array", "series", "polars_series", "pyarrow_array"]
+    "x_constructor", ["array", "series", "polars_series", "pyarrow_array"]
 )
-def test_safe_indexing_1d_array_error(X_constructor):
+def test_safe_indexing_1d_array_error(x_constructor):
     # check that we are raising an error if the array-like passed is 1D and
     # we try to index on the 2nd dimension
     X = list(range(5))
-    if X_constructor == "array":
-        X_constructor = np.asarray(X)
-    elif X_constructor == "series":
+    if x_constructor == "array":
+        x_constructor = np.asarray(X)
+    elif x_constructor == "series":
         pd = pytest.importorskip("pandas")
-        X_constructor = pd.Series(X)
-    elif X_constructor == "polars_series":
+        x_constructor = pd.Series(X)
+    elif x_constructor == "polars_series":
         pl = pytest.importorskip("polars")
-        X_constructor = pl.Series(values=X)
-    elif X_constructor == "pyarrow_array":
+        x_constructor = pl.Series(values=X)
+    elif x_constructor == "pyarrow_array":
         pa = pytest.importorskip("pyarrow")
-        X_constructor = pa.array(X)
+        x_constructor = pa.array(X)
 
     err_msg = "'X' should be a 2D NumPy array, 2D sparse matrix or dataframe"
     with pytest.raises(ValueError, match=err_msg):
-        _safe_indexing(X_constructor, [0, 1], axis=1)
+        _safe_indexing(x_constructor, [0, 1], axis=1)
 
 
 def test_safe_indexing_container_axis_0_unsupported_type():
@@ -420,12 +420,12 @@ def test_safe_indexing_pandas_no_settingwithcopy_warning():
     X = pd.DataFrame({"a": [1, 2, 3], "b": [3, 4, 5]})
     subset = _safe_indexing(X, [0, 1], axis=0)
     if hasattr(pd.errors, "SettingWithCopyWarning"):
-        SettingWithCopyWarning = pd.errors.SettingWithCopyWarning
+        setting_with_copy_warning = pd.errors.SettingWithCopyWarning
     else:
         # backward compatibility for pandas < 1.5
-        SettingWithCopyWarning = pd.core.common.SettingWithCopyWarning
+        setting_with_copy_warning = pd.core.common.SettingWithCopyWarning
     with warnings.catch_warnings():
-        warnings.simplefilter("error", SettingWithCopyWarning)
+        warnings.simplefilter("error", setting_with_copy_warning)
         subset.iloc[0, 0] = 10
     # The original dataframe is unaffected by the assignment on the subset:
     assert X.iloc[0, 0] == 1
@@ -444,11 +444,11 @@ def test_safe_indexing_list_axis_1_unsupported(indices):
 def test_safe_assign(array_type):
     """Check that `_safe_assign` works as expected."""
     rng = np.random.RandomState(0)
-    X_array = rng.randn(10, 5)
+    x_array = rng.randn(10, 5)
 
     row_indexer = [1, 2]
-    values = rng.randn(len(row_indexer), X_array.shape[1])
-    X = _convert_container(X_array, array_type)
+    values = rng.randn(len(row_indexer), x_array.shape[1])
+    X = _convert_container(x_array, array_type)
     _safe_assign(X, values, row_indexer=row_indexer)
 
     assigned_portion = _safe_indexing(X, row_indexer, axis=0)
@@ -457,8 +457,8 @@ def test_safe_assign(array_type):
     )
 
     column_indexer = [1, 2]
-    values = rng.randn(X_array.shape[0], len(column_indexer))
-    X = _convert_container(X_array, array_type)
+    values = rng.randn(x_array.shape[0], len(column_indexer))
+    X = _convert_container(x_array, array_type)
     _safe_assign(X, values, column_indexer=column_indexer)
 
     assigned_portion = _safe_indexing(X, column_indexer, axis=1)
@@ -468,7 +468,7 @@ def test_safe_assign(array_type):
 
     row_indexer, column_indexer = None, None
     values = rng.randn(*X.shape)
-    X = _convert_container(X_array, array_type)
+    X = _convert_container(x_array, array_type)
     _safe_assign(X, values, column_indexer=column_indexer)
 
     assert_allclose_dense_sparse(X, _convert_container(values, array_type))
@@ -487,10 +487,10 @@ def test_safe_assign(array_type):
 )
 def test_get_column_indices_error(key, err_msg):
     pd = pytest.importorskip("pandas")
-    X_df = pd.DataFrame(X_toy, columns=["col_0", "col_1", "col_2"])
+    x_df = pd.DataFrame(X_toy, columns=["col_0", "col_1", "col_2"])
 
     with pytest.raises(ValueError, match=err_msg):
-        _get_column_indices(X_df, key)
+        _get_column_indices(x_df, key)
 
 
 @pytest.mark.parametrize(
@@ -622,22 +622,22 @@ def test_resample_stratified_replace():
     X = rng.normal(size=(n_samples, 1))
     y = rng.randint(0, 2, size=n_samples)
 
-    X_replace, _ = resample(
+    x_replace, _ = resample(
         X, y, replace=True, n_samples=50, random_state=rng, stratify=y
     )
-    X_no_replace, _ = resample(
+    x_no_replace, _ = resample(
         X, y, replace=False, n_samples=50, random_state=rng, stratify=y
     )
-    assert np.unique(X_replace).shape[0] < 50
-    assert np.unique(X_no_replace).shape[0] == 50
+    assert np.unique(x_replace).shape[0] < 50
+    assert np.unique(x_no_replace).shape[0] == 50
 
     # make sure n_samples can be greater than X.shape[0] if we sample with
     # replacement
-    X_replace, _ = resample(
+    x_replace, _ = resample(
         X, y, replace=True, n_samples=1000, random_state=rng, stratify=y
     )
-    assert X_replace.shape[0] == 1000
-    assert np.unique(X_replace).shape[0] == 100
+    assert x_replace.shape[0] == 1000
+    assert np.unique(x_replace).shape[0] == 100
 
 
 def test_resample_stratify_2dy():
@@ -677,8 +677,8 @@ def test_resample_stratify_sparse_error(csr_container):
 
 
 def test_shuffle_on_ndim_equals_three():
-    def to_tuple(A):  # to make the inner arrays hashable
-        return tuple(tuple(tuple(C) for C in B) for B in A)
+    def to_tuple(a):  # to make the inner arrays hashable
+        return tuple(tuple(tuple(c) for c in b) for b in a)
 
     A = np.array([[[1, 2], [3, 4]], [[5, 6], [7, 8]]])  # A.shape = (2,2,2)
     S = set(to_tuple(A))
@@ -698,13 +698,13 @@ def test_shuffle_dont_convert_to_array(csc_container):
     a_s, b_s, c_s, d_s, e_s = shuffle(a, b, c, d, e, random_state=0)
 
     assert a_s == ["c", "b", "a"]
-    assert type(a_s) == list
+    assert isinstance(a_s, list)
 
     assert_array_equal(b_s, ["c", "b", "a"])
     assert b_s.dtype == object
 
     assert c_s == [3, 2, 1]
-    assert type(c_s) == list
+    assert isinstance(c_s, list)
 
     assert_array_equal(d_s, np.array([["c", 2], ["b", 1], ["a", 0]], dtype=object))
     assert type(d_s) == MockDataFrame
