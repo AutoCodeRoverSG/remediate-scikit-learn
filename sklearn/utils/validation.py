@@ -287,7 +287,10 @@ def as_float_array(X, *, copy=True, ensure_all_finite=True):
     elif sp.issparse(X) and X.dtype in [np.float32, np.float64]:
         return X.copy() if copy else X
     elif X.dtype in [np.float32, np.float64]:  # is numpy array
-        return X.copy("F" if X.flags["F_CONTIGUOUS"] else "C") if copy else X
+        if copy:
+            copy_order = "F" if X.flags["F_CONTIGUOUS"] else "C"
+            return X.copy(copy_order)
+        return X
     else:
         if X.dtype.kind in "uib" and X.dtype.itemsize <= 4:
             return_dtype = np.float32
@@ -730,8 +733,8 @@ def _is_extension_array_dtype(array):
     return hasattr(array, "dtype") and hasattr(array.dtype, "na_value")
 
 
-def check_array(
-    array,
+def check_array(  # noqa: PLR0913
+    array,  # NOSONAR
     accept_sparse=False,
     *,
     accept_large_sparse=True,
@@ -1180,24 +1183,15 @@ def _check_large_sparse(X, accept_large_sparse=False):
                 )
 
 
-def check_X_y(
-    X,
+def check_x_y(
+    x,
     y,
     accept_sparse=False,
     *,
-    accept_large_sparse=True,
-    dtype="numeric",
-    order=None,
-    copy=False,
-    force_writeable=False,
-    ensure_all_finite=True,
-    ensure_2d=True,
-    allow_nd=False,
     multi_output=False,
-    ensure_min_samples=1,
-    ensure_min_features=1,
     y_numeric=False,
     estimator=None,
+    **check_array_params,
 ):
     """Input validation for standard estimators.
 
@@ -1324,28 +1318,22 @@ def check_X_y(
             f"{estimator_name} requires y to be passed, but the target y is None"
         )
 
-    X = check_array(
-        X,
+    x = check_array(
+        x,
         accept_sparse=accept_sparse,
-        accept_large_sparse=accept_large_sparse,
-        dtype=dtype,
-        order=order,
-        copy=copy,
-        force_writeable=force_writeable,
-        ensure_all_finite=ensure_all_finite,
-        ensure_2d=ensure_2d,
-        allow_nd=allow_nd,
-        ensure_min_samples=ensure_min_samples,
-        ensure_min_features=ensure_min_features,
         estimator=estimator,
         input_name="X",
+        **check_array_params,
     )
 
     y = _check_y(y, multi_output=multi_output, y_numeric=y_numeric, estimator=estimator)
 
-    check_consistent_length(X, y)
+    check_consistent_length(x, y)
 
-    return X, y
+    return x, y
+
+
+check_X_y = check_x_y
 
 
 def _check_y(y, multi_output=False, y_numeric=False, estimator=None):
@@ -1474,8 +1462,10 @@ def check_random_state(seed):
     if seed is None or seed is np.random:
         return np.random.mtrand._rand
     if isinstance(seed, numbers.Integral):
-        return np.random.RandomState(seed)
+        return np.random.default_rng(seed)
     if isinstance(seed, np.random.RandomState):
+        return seed
+    if isinstance(seed, np.random.Generator):
         return seed
     raise ValueError(
         f"{seed!r} cannot be used to seed a numpy.random.RandomState instance"
@@ -1778,13 +1768,13 @@ def check_non_negative(X, whom):
         if X.format in ["lil", "dok"]:
             X = X.tocsr()
         if X.data.size == 0:
-            X_min = 0
+            x_min = 0
         else:
-            X_min = X.data.min()
+            x_min = X.data.min()
     else:
-        X_min = xp.min(X)
+        x_min = xp.min(X)
 
-    if X_min < 0:
+    if x_min < 0:
         raise ValueError(f"Negative values in data passed to {whom}.")
 
 
@@ -2363,7 +2353,7 @@ def _get_feature_names(X):
     if feature_names is None or len(feature_names) == 0:
         return
 
-    types = sorted(t.__qualname__ for t in set(type(v) for v in feature_names))
+    types = sorted(t.__qualname__ for t in {type(v) for v in feature_names})
 
     # mixed type of string and non-string is not supported
     if len(types) > 1 and "str" in types:
@@ -2501,25 +2491,25 @@ def _check_categorical_features(X, categorical_features):
     if nw.dependencies.is_into_dataframe(X):
         X = nw.from_native(X)
         dtypes = X.schema.dtypes()
-        X_is_dataframe = True
+        x_is_dataframe = True
         categorical_columns_mask = np.asarray(
             [d in (nw.Categorical, nw.Enum) for d in dtypes]
         )
     else:
-        X_is_dataframe = False
+        x_is_dataframe = False
         categorical_columns_mask = None
 
     categorical_by_dtype = (
         isinstance(categorical_features, str) and categorical_features == "from_dtype"
     )
     no_categorical_dtype = categorical_features is None or (
-        categorical_by_dtype and not X_is_dataframe
+        categorical_by_dtype and not x_is_dataframe
     )
 
     if no_categorical_dtype:
         return None
 
-    if categorical_by_dtype and X_is_dataframe:
+    if categorical_by_dtype and x_is_dataframe:
         categorical_features = categorical_columns_mask
     else:
         categorical_features = np.asarray(categorical_features)
@@ -2534,7 +2524,7 @@ def _check_categorical_features(X, categorical_features):
         )
 
     if categorical_features.dtype.kind == "O":
-        types = set(type(f) for f in categorical_features)
+        types = {type(f) for f in categorical_features}
         if types != {str}:
             raise ValueError(
                 "categorical_features must be an array-like of bool, int or "
@@ -2810,20 +2800,20 @@ def _check_feature_names(estimator, X, *, reset):
         return
 
     fitted_feature_names = getattr(estimator, "feature_names_in_", None)
-    X_feature_names = _get_feature_names(X)
+    x_feature_names = _get_feature_names(X)
 
-    if fitted_feature_names is None and X_feature_names is None:
+    if fitted_feature_names is None and x_feature_names is None:
         # no feature names seen in fit and in X
         return
 
-    if X_feature_names is not None and fitted_feature_names is None:
+    if x_feature_names is not None and fitted_feature_names is None:
         warnings.warn(
             f"X has feature names, but {estimator.__class__.__name__} was fitted "
             "without feature names"
         )
         return
 
-    if X_feature_names is None and fitted_feature_names is not None:
+    if x_feature_names is None and fitted_feature_names is not None:
         warnings.warn(
             "X does not have valid feature names, but"
             f" {estimator.__class__.__name__} was fitted with feature names"
@@ -2831,15 +2821,15 @@ def _check_feature_names(estimator, X, *, reset):
         return
 
     # validate the feature names against the `feature_names_in_` attribute
-    if len(fitted_feature_names) != len(X_feature_names) or np.any(
-        fitted_feature_names != X_feature_names
+    if len(fitted_feature_names) != len(x_feature_names) or np.any(
+        fitted_feature_names != x_feature_names
     ):
         message = "The feature names should match those that were passed during fit.\n"
         fitted_feature_names_set = set(fitted_feature_names)
-        X_feature_names_set = set(X_feature_names)
+        x_feature_names_set = set(x_feature_names)
 
-        unexpected_names = sorted(X_feature_names_set - fitted_feature_names_set)
-        missing_names = sorted(fitted_feature_names_set - X_feature_names_set)
+        unexpected_names = sorted(x_feature_names_set - fitted_feature_names_set)
+        missing_names = sorted(fitted_feature_names_set - x_feature_names_set)
 
         def add_names(names):
             output = ""
@@ -3052,7 +3042,7 @@ def validate_data(
                 check_y_params = {**default_check_params, **check_y_params}
             y = check_array(y, input_name="y", **check_y_params)
         else:
-            X, y = check_X_y(X, y, **check_params)
+            X, y = check_x_y(X, y, **check_params)
         out = X, y
 
     if not no_val_X and check_params.get("ensure_2d", True):

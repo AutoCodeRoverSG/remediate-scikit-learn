@@ -41,6 +41,7 @@ from sklearn.utils.validation import (
     check_scalar,
     check_symmetric,
     check_X_y,
+    check_x_y,
     column_or_1d,
     indexable,
 )
@@ -60,6 +61,7 @@ __all__ = [
     "as_float_array",
     "assert_all_finite",
     "check_X_y",
+    "check_x_y",
     "check_array",
     "check_consistent_length",
     "check_random_state",
