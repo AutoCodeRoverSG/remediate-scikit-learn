@@ -95,9 +95,9 @@ def unique_labels(*ys, ys_types=None):
     if (
         label_type == "multilabel-indicator"
         and len(
-            set(
+            {
                 check_array(y, accept_sparse=["csr", "csc", "coo"]).shape[1] for y in ys
-            )
+            }
         )
         > 1
     ):
@@ -116,10 +116,10 @@ def unique_labels(*ys, ys_types=None):
         return xp.unique_values(unique_ys)
 
     ys_labels = set(
-        chain.from_iterable((i for i in _unique_labels(y, xp=xp)) for y in ys)
+        chain.from_iterable(_unique_labels(y, xp=xp) for y in ys)
     )
     # Check that we don't mix string type with number type
-    if len(set(isinstance(label, str) for label in ys_labels)) > 1:
+    if len({isinstance(label, str) for label in ys_labels}) > 1:
         msg_details = (
             "Got " + " and ".join([f"{xp.unique_values(y)}" for y in ys]) + "."
         )
@@ -129,7 +129,7 @@ def unique_labels(*ys, ys_types=None):
 
 
 def _is_integral_float(y):
-    xp, is_array_api_compliant = get_namespace(y)
+    xp, _ = get_namespace(y)
     return xp.isdtype(y.dtype, "real floating") and bool(
         xp.all(xp.astype((xp.astype(y, xp.int64)), y.dtype) == y)
     )
@@ -167,14 +167,14 @@ def is_multilabel(y):
     if hasattr(y, "__array__") or isinstance(y, Sequence) or is_array_api_compliant:
         # DeprecationWarning will be replaced by ValueError, see NEP 34
         # https://numpy.org/neps/nep-0034-infer-dtype-is-object.html
-        check_y_kwargs = dict(
-            accept_sparse=True,
-            allow_nd=True,
-            ensure_all_finite=False,
-            ensure_2d=False,
-            ensure_min_samples=0,
-            ensure_min_features=0,
-        )
+        check_y_kwargs = {
+            "accept_sparse": True,
+            "allow_nd": True,
+            "ensure_all_finite": False,
+            "ensure_2d": False,
+            "ensure_min_samples": 0,
+            "ensure_min_features": 0,
+        }
         with warnings.catch_warnings():
             warnings.simplefilter("error", VisibleDeprecationWarning)
             try:
@@ -330,8 +330,8 @@ def type_of_target(y, input_name="", raise_unknown=False):
         'unknown'.
         """
         if raise_unknown:
-            input = input_name if input_name else "data"
-            raise ValueError(f"Unknown label type for {input}: {y!r}")
+            target_name = input_name if input_name else "data"
+            raise ValueError(f"Unknown label type for {target_name}: {y!r}")
         else:
             return "unknown"
 
@@ -356,14 +356,14 @@ def type_of_target(y, input_name="", raise_unknown=False):
     # https://numpy.org/neps/nep-0034-infer-dtype-is-object.html
     # We therefore catch both deprecation (NumPy < 1.24) warning and
     # value error (NumPy >= 1.24).
-    check_y_kwargs = dict(
-        accept_sparse=True,
-        allow_nd=True,
-        ensure_all_finite=False,
-        ensure_2d=False,
-        ensure_min_samples=0,
-        ensure_min_features=0,
-    )
+    check_y_kwargs = {
+        "accept_sparse": True,
+        "allow_nd": True,
+        "ensure_all_finite": False,
+        "ensure_2d": False,
+        "ensure_min_samples": 0,
+        "ensure_min_features": 0,
+    }
 
     with warnings.catch_warnings():
         warnings.simplefilter("error", VisibleDeprecationWarning)
@@ -506,7 +506,7 @@ def class_distribution(y, sample_weight=None):
     n_classes = []
     class_prior = []
 
-    n_samples, n_outputs = y.shape
+    _, n_outputs = y.shape
     if sample_weight is not None:
         sample_weight = np.asarray(sample_weight)
 

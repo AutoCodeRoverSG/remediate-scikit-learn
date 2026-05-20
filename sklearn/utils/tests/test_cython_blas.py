@@ -94,8 +94,8 @@ def test_nrm2(dtype):
 def test_copy(dtype):
     copy = _copy_memview[_numpy_to_cython(dtype)]
 
-    rng = np.random.RandomState(0)
-    x = rng.random_sample(10).astype(dtype, copy=False)
+    rng = np.random.default_rng(0)
+    x = rng.random(10).astype(dtype, copy=False)
     y = np.empty_like(x)
 
     expected = x.copy()
@@ -108,8 +108,8 @@ def test_copy(dtype):
 def test_scal(dtype):
     scal = _scal_memview[_numpy_to_cython(dtype)]
 
-    rng = np.random.RandomState(0)
-    x = rng.random_sample(10).astype(dtype, copy=False)
+    rng = np.random.default_rng(0)
+    x = rng.random(10).astype(dtype, copy=False)
     alpha = 2.5
 
     expected = alpha * x
