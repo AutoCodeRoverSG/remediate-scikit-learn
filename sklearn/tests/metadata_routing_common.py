@@ -49,7 +49,7 @@ def record_metadata(obj, record_default=True, **kwargs):
     obj._records[callee][caller].append(kwargs)
 
 
-def check_recorded_metadata(obj, method, parent, split_params=tuple(), **kwargs):
+def check_recorded_metadata(obj, method, parent, split_params=(), **kwargs):
     """Check whether the expected metadata is passed to the object's method.
 
     Parameters
@@ -69,7 +69,7 @@ def check_recorded_metadata(obj, method, parent, split_params=tuple(), **kwargs)
         passed metadata
     """
     all_records = (
-        getattr(obj, "_records", dict()).get(method, dict()).get(parent, list())
+        getattr(obj, "_records", {}).get(method, {}).get(parent, [])
     )
     for record in all_records:
         # first check that the names of the metadata passed are the same as
@@ -163,6 +163,8 @@ class ConsumingRegressor(RegressorMixin, BaseEstimator):
         self.registry = registry
 
     def partial_fit(self, X, y, sample_weight="default", metadata="default"):
+        """Partial fit. X and y are accepted for API compatibility."""
+        # X, y are not used here but required by the estimator API.
         if self.registry is not None:
             self.registry.append(self)
 
@@ -172,15 +174,12 @@ class ConsumingRegressor(RegressorMixin, BaseEstimator):
         return self
 
     def fit(self, X, y, sample_weight="default", metadata="default"):
-        if self.registry is not None:
-            self.registry.append(self)
-
-        record_metadata_not_default(
-            self, sample_weight=sample_weight, metadata=metadata
+        return self.partial_fit(
+            X, y, sample_weight=sample_weight, metadata=metadata
         )
-        return self
 
     def predict(self, X, y=None, sample_weight="default", metadata="default"):
+        # y is not used in predict; it's present for API compatibility.
         record_metadata_not_default(
             self, sample_weight=sample_weight, metadata=metadata
         )
@@ -205,6 +204,7 @@ class NonConsumingClassifier(ClassifierMixin, BaseEstimator):
         return self
 
     def partial_fit(self, X, y, classes=None):
+        """Partial fit accepting X, y, and classes for API compatibility."""
         return self
 
     def decision_function(self, X):
@@ -232,9 +232,11 @@ class NonConsumingRegressor(RegressorMixin, BaseEstimator):
     """A classifier which accepts no metadata on any method."""
 
     def fit(self, X, y):
+        # X and y are required by the estimator interface but intentionally unused
         return self
 
     def partial_fit(self, X, y):
+        # X and y are required by the estimator interface but intentionally unused
         return self
 
     def predict(self, X):
@@ -264,6 +266,7 @@ class ConsumingClassifier(ClassifierMixin, BaseEstimator):
     def partial_fit(
         self, X, y, classes=None, sample_weight="default", metadata="default"
     ):
+        # X, y are accepted for API compatibility.
         if self.registry is not None:
             self.registry.append(self)
 
@@ -271,6 +274,8 @@ class ConsumingClassifier(ClassifierMixin, BaseEstimator):
             self, sample_weight=sample_weight, metadata=metadata
         )
         _check_partial_fit_first_call(self, classes)
+        self.coef_ = np.ones_like(X)
+        self.classes_ = np.unique(y)
         return self
 
     def fit(self, X, y, sample_weight="default", metadata="default"):
@@ -381,6 +386,7 @@ class ConsumingTransformer(TransformerMixin, BaseEstimator):
         self.registry = registry
 
     def fit(self, X, y=None, sample_weight="default", metadata="default"):
+        # X and y are part of the standard transformer interface
         if self.registry is not None:
             self.registry.append(self)
 
@@ -424,6 +430,7 @@ class ConsumingNoFitTransformTransformer(BaseEstimator):
         self.registry = registry
 
     def fit(self, X, y=None, sample_weight=None, metadata=None):
+        # X and y are part of the required transformer API but not used here.
         if self.registry is not None:
             self.registry.append(self)
 
@@ -577,6 +584,7 @@ class MetaTransformer(MetaEstimatorMixin, TransformerMixin, BaseEstimator):
         return self
 
     def transform(self, X, y=None, **transform_params):
+        # y is not used in this transformer; it is present for API compatibility.
         params = process_routing(self, "transform", **transform_params)
         return self.transformer_.transform(X, **params.transformer.transform)
 
