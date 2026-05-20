@@ -809,7 +809,7 @@ def test_set_pipeline_steps():
 def test_pipeline_named_steps():
     transf = Transf()
     mult2 = Mult(mult=2)
-    pipeline = Pipeline([("mock", transf), ("mult", mult2)])
+    pipeline = Pipeline([("mock", transf), ("mult", mult2)], memory=None)
 
     # Test access via named_steps bunch object
     assert "mock" in pipeline.named_steps
@@ -818,7 +818,7 @@ def test_pipeline_named_steps():
     assert pipeline.named_steps.mult is mult2
 
     # Test bunch with conflict attribute of dict
-    pipeline = Pipeline([("values", transf), ("mult", mult2)])
+    pipeline = Pipeline([("values", transf), ("mult", mult2)], memory=None)
     assert pipeline.named_steps.values is not transf
     assert pipeline.named_steps.mult is mult2
 
@@ -832,7 +832,8 @@ def test_pipeline_correctly_adjusts_steps(passthrough):
     mult5 = Mult(mult=5)
 
     pipeline = Pipeline(
-        [("m2", mult2), ("bad", passthrough), ("m3", mult3), ("m5", mult5)]
+        [("m2", mult2), ("bad", passthrough), ("m3", mult3), ("m5", mult5)],
+        memory=None,
     )
 
     pipeline.fit(X, y)
@@ -850,7 +851,7 @@ def test_set_pipeline_step_passthrough(passthrough):
     mult5 = Mult(mult=5)
 
     def make():
-        return Pipeline([("m2", mult2), ("m3", mult3), ("last", mult5)])
+        return Pipeline([("m2", mult2), ("m3", mult3), ("last", mult5)], memory=None)
 
     pipeline = make()
 
@@ -916,35 +917,35 @@ def test_set_pipeline_step_passthrough(passthrough):
 
     # Check 'passthrough' step at construction time
     exp = 2 * 5
-    pipeline = Pipeline([("m2", mult2), ("m3", passthrough), ("last", mult5)])
+    pipeline = Pipeline([("m2", mult2), ("m3", passthrough), ("last", mult5)], memory=None)
     assert_array_equal([[exp]], pipeline.fit_transform(X, y))
     assert_array_equal([exp], pipeline.fit(X).predict(X))
     assert_array_equal(X, pipeline.inverse_transform([[exp]]))
 
 
 def test_pipeline_ducktyping():
-    pipeline = make_pipeline(Mult(5))
+    pipeline = make_pipeline(Mult(5), memory=None)
     pipeline.predict
     pipeline.transform
     pipeline.inverse_transform
 
-    pipeline = make_pipeline(Transf())
+    pipeline = make_pipeline(Transf(), memory=None)
     assert not hasattr(pipeline, "predict")
     pipeline.transform
     pipeline.inverse_transform
 
-    pipeline = make_pipeline("passthrough")
+    pipeline = make_pipeline("passthrough", memory=None)
     assert pipeline.steps[0] == ("passthrough", "passthrough")
     assert not hasattr(pipeline, "predict")
     pipeline.transform
     pipeline.inverse_transform
 
-    pipeline = make_pipeline(Transf(), NoInvTransf())
+    pipeline = make_pipeline(Transf(), NoInvTransf(), memory=None)
     assert not hasattr(pipeline, "predict")
     pipeline.transform
     assert not hasattr(pipeline, "inverse_transform")
 
-    pipeline = make_pipeline(NoInvTransf(), Transf())
+    pipeline = make_pipeline(NoInvTransf(), Transf(), memory=None)
     assert not hasattr(pipeline, "predict")
     pipeline.transform
     assert not hasattr(pipeline, "inverse_transform")
