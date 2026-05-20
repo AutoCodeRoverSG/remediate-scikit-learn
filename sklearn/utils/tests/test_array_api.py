@@ -211,7 +211,7 @@ def test_asarray_with_order(array_api):
 @pytest.mark.parametrize(
     "weights, axis, normalize, expected",
     [
-        # normalize = True
+        
         (None, None, True, 3.5),
         (None, 0, True, [2.5, 3.5, 4.5]),
         (None, 1, True, [2, 5]),
@@ -223,7 +223,7 @@ def test_asarray_with_order(array_api):
         ([1, 1, 2], 1, True, [2.25, 5.25]),
         ([[1, 2, 3], [1, 2, 3]], 0, True, [2.5, 3.5, 4.5]),
         ([[1, 2, 1], [2, 2, 2]], 1, True, [2, 5]),
-        # normalize = False
+        
         (None, None, False, 21),
         (None, 0, False, [5, 7, 9]),
         (None, 1, False, [6, 15]),
@@ -569,8 +569,8 @@ def test_convert_estimator_with_custom_logic():
 def test_custom_conversion_estimator_to_array_api_strict():
     xp = pytest.importorskip("array_api_strict")
 
-    X_np = numpy.asarray([[1.3, 4.5]])
-    est = SimpleEstimatorCustomLogic().fit(X_np)
+    x_np = numpy.asarray([[1.3, 4.5]])
+    est = SimpleEstimatorCustomLogic().fit(x_np)
 
     with config_context(array_api_dispatch=True):
         new_est = move_estimator_to(est, xp, device=None)
@@ -586,8 +586,8 @@ def test_custom_conversion_estimator_to_array_api_strict():
 def test_convert_estimator_to_array_api_strict():
     xp = pytest.importorskip("array_api_strict")
 
-    X_np = numpy.asarray([[1.3, 4.5]])
-    est = SimpleEstimator().fit(X_np)
+    x_np = numpy.asarray([[1.3, 4.5]])
+    est = SimpleEstimator().fit(x_np)
 
     with config_context(array_api_dispatch=True):
         new_est = move_estimator_to(est, xp, device=None)
@@ -612,7 +612,7 @@ def test_check_fitted_attribute():
     yield_namespace_device_dtype_combinations(),
 )
 def test_indexing_dtype(namespace, device_name, dtype_name):
-    xp, device = _array_api_for_tests(namespace, device_name, dtype_name)
+    xp, _ = _array_api_for_tests(namespace, device_name, dtype_name)
 
     if _IS_32BIT:
         assert indexing_dtype(xp) == xp.int32
@@ -880,20 +880,20 @@ def test_median(namespace, device_name, dtype_name, axis):
     # that array API namespaces yield consistent results even when the median is
     # not mathematically uniquely defined.
     xp, device = _array_api_for_tests(namespace, device_name, dtype_name)
-    rng = numpy.random.RandomState(0)
+    rng = numpy.random.default_rng(0)
 
-    X_np = rng.uniform(low=0.0, high=1.0, size=(5, 4)).astype(dtype_name)
-    result_np = numpy.median(X_np, axis=axis)
+    x_np = rng.uniform(low=0.0, high=1.0, size=(5, 4)).astype(dtype_name)
+    result_np = numpy.median(x_np, axis=axis)
 
-    X_xp = xp.asarray(X_np, device=device)
+    x_xp = xp.asarray(x_np, device=device)
     with config_context(array_api_dispatch=True):
-        result_xp = _median(X_xp, axis=axis)
+        result_xp = _median(x_xp, axis=axis)
 
         if xp.__name__ != "array_api_strict":
             # We convert array-api-strict arrays to numpy arrays as `median` is not
             # part of the Array API spec
             assert get_namespace(result_xp)[0] == xp
-            assert result_xp.device == X_xp.device
+            assert result_xp.device == x_xp.device
     assert_allclose(result_np, move_to(result_xp, xp=numpy, device="cpu"))
 
 
@@ -1060,8 +1060,8 @@ def test_half_multinomial_loss(use_sample_weight, namespace, device_name, dtype_
 )
 def test_matching_numpy_dtype(namespace, device_name, dtype_name):
     xp, device = _array_api_for_tests(namespace, device_name, dtype_name)
-    X_np = numpy.arange(1000).astype(dtype_name)
-    X_xp = xp.asarray(X_np, device=device)
+    x_np = numpy.arange(1000).astype(dtype_name)
+    x_xp = xp.asarray(x_np, device=device)
     with config_context(array_api_dispatch=True):
-        ret_dtype = _matching_numpy_dtype(X_xp, xp=xp)
-    assert ret_dtype == X_np.dtype
+        ret_dtype = _matching_numpy_dtype(x_xp, xp=xp)
+    assert ret_dtype == x_np.dtype
