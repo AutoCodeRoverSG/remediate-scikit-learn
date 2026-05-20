@@ -869,7 +869,7 @@ class OneHotEncoder(_BaseEncoder):
                 zip(drop_array, self.categories_)
             ):
                 if not is_scalar_nan(drop_val):
-                    drop_idx = np.where(cat_list == drop_val)[0]
+                    drop_idx = np.nonzero(cat_list == drop_val)[0]
                     if drop_idx.size:  # found drop idx
                         drop_indices.append(
                             self._map_drop_idx_to_infrequent(feature_idx, drop_idx[0])
