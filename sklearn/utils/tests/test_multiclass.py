@@ -66,7 +66,7 @@ EXAMPLES = {
         # valid when the data is formatted as sparse or dense, identified
         # by CSR format when the testing takes place
         *_generate_sparse(
-            np.random.RandomState(42).randint(2, size=(10, 10)),
+            np.random.default_rng(42).integers(2, size=(10, 10)),
             sparse_containers=CSR_CONTAINERS,
             dtypes=(int,),
         ),
@@ -183,7 +183,7 @@ EXAMPLES = {
 
 ARRAY_API_EXAMPLES = {
     "multilabel-indicator": [
-        np.random.RandomState(42).randint(2, size=(10, 10)),
+        np.random.default_rng(42).integers(2, size=(10, 10)),
         [[0, 1], [1, 0]],
         [[0, 1]],
         multilabel_explicit_zero,
@@ -624,13 +624,13 @@ def test_safe_split_with_precomputed_kernel():
     train, test = next(iter(cv.split(X)))
 
     X_train, y_train = _safe_split(clf, X, y, train)
-    K_train, y_train2 = _safe_split(clfp, K, y, train)
-    assert_array_almost_equal(K_train, np.dot(X_train, X_train.T))
+    k_train, y_train2 = _safe_split(clfp, K, y, train)
+    assert_array_almost_equal(k_train, np.dot(X_train, X_train.T))
     assert_array_almost_equal(y_train, y_train2)
 
     X_test, y_test = _safe_split(clf, X, y, test, train)
-    K_test, y_test2 = _safe_split(clfp, K, y, test, train)
-    assert_array_almost_equal(K_test, np.dot(X_test, X_train.T))
+    k_test, y_test2 = _safe_split(clfp, K, y, test, train)
+    assert_array_almost_equal(k_test, np.dot(X_test, X_train.T))
     assert_array_almost_equal(y_test, y_test2)
 
 
