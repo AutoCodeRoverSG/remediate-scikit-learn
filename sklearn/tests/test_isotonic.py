@@ -124,7 +124,8 @@ def test_isotonic_regression():
     assert_array_equal(ir.transform(x), ir.predict(x))
 
     # check that it is immune to permutation
-    perm = np.random.permutation(len(y))
+    rng = np.random.default_rng(42)
+    perm = rng.permutation(len(y))
     ir = IsotonicRegression(y_min=0.0, y_max=1.0)
     assert_array_equal(ir.fit_transform(x[perm], y[perm]), ir.fit_transform(x, y)[perm])
     assert_array_equal(ir.transform(x[perm]), ir.transform(x)[perm])
@@ -266,7 +267,7 @@ def test_isotonic_regression_auto_increasing():
 
 def test_assert_raises_exceptions():
     ir = IsotonicRegression()
-    rng = np.random.RandomState(42)
+    rng = np.random.default_rng(42)
 
     msg = "Found input variables with inconsistent numbers of samples"
     with pytest.raises(ValueError, match=msg):
@@ -277,21 +278,21 @@ def test_assert_raises_exceptions():
 
     msg = "X should be a 1d array"
     with pytest.raises(ValueError, match=msg):
-        ir.fit(rng.randn(3, 10), [0, 1, 2])
+        ir.fit(rng.standard_normal((3, 10)), [0, 1, 2])
 
     msg = "Isotonic regression input X should be a 1d array"
     with pytest.raises(ValueError, match=msg):
-        ir.transform(rng.randn(3, 10))
+        ir.transform(rng.standard_normal((3, 10)))
 
 
 def test_isotonic_sample_weight_parameter_default_value():
     # check if default value of sample_weight parameter is one
     ir = IsotonicRegression()
     # random test data
-    rng = np.random.RandomState(42)
+    rng = np.random.default_rng(42)
     n = 100
     x = np.arange(n)
-    y = rng.randint(-50, 50, size=(n,)) + 50.0 * np.log(1 + np.arange(n))
+    y = rng.integers(-50, 50, size=(n,)) + 50.0 * np.log(1 + np.arange(n))
     # check if value is correctly used
     weights = np.ones(n)
     y_set_value = ir.fit_transform(x, y, sample_weight=weights)
@@ -439,7 +440,7 @@ def test_isotonic_zero_weight_loop():
     # https://github.com/scikit-learn/scikit-learn/issues/4297
 
     # Get deterministic RNG with seed
-    rng = np.random.RandomState(42)
+    rng = np.random.default_rng(42)
 
     # Create regression and samples
     regression = IsotonicRegression()
@@ -460,17 +461,17 @@ def test_fast_predict():
     # test that the faster prediction change doesn't
     # affect out-of-sample predictions:
     # https://github.com/scikit-learn/scikit-learn/pull/6206
-    rng = np.random.RandomState(123)
+    rng = np.random.default_rng(123)
     n_samples = 10**3
     # X values over the -10,10 range
-    X_train = 20.0 * rng.rand(n_samples) - 10
+    X_train = 20.0 * rng.random(n_samples) - 10
     y_train = (
-        np.less(rng.rand(n_samples), expit(X_train)).astype("int64").astype("float64")
+        np.less(rng.random(n_samples), expit(X_train)).astype("int64").astype("float64")
     )
 
-    weights = rng.rand(n_samples)
+    weights = rng.random(n_samples)
     # we also want to test that everything still works when some weights are 0
-    weights[rng.rand(n_samples) < 0.1] = 0
+    weights[rng.random(n_samples) < 0.1] = 0
 
     slow_model = IsotonicRegression(y_min=0, y_max=1, out_of_bounds="clip")
     fast_model = IsotonicRegression(y_min=0, y_max=1, out_of_bounds="clip")
@@ -478,15 +479,15 @@ def test_fast_predict():
     # Build interpolation function with ALL input data, not just the
     # non-redundant subset. The following 2 lines are taken from the
     # .fit() method, without removing unnecessary points
-    X_train_fit, y_train_fit = slow_model._build_y(
+    x_train_fit, y_train_fit = slow_model._build_y(
         X_train, y_train, sample_weight=weights, trim_duplicates=False
     )
-    slow_model._build_f(X_train_fit, y_train_fit)
+    slow_model._build_f(x_train_fit, y_train_fit)
 
     # fit with just the necessary data
     fast_model.fit(X_train, y_train, sample_weight=weights)
 
-    X_test = 20.0 * rng.rand(n_samples) - 10
+    X_test = 20.0 * rng.random(n_samples) - 10
     y_pred_slow = slow_model.predict(X_test)
     y_pred_fast = fast_model.predict(X_test)
 
@@ -585,20 +586,20 @@ def test_isotonic_thresholds(increasing):
     X = rng.normal(size=n_samples)
     y = rng.normal(size=n_samples)
     ireg = IsotonicRegression(increasing=increasing).fit(X, y)
-    X_thresholds, y_thresholds = ireg.X_thresholds_, ireg.y_thresholds_
-    assert X_thresholds.shape == y_thresholds.shape
+    x_thresholds, y_thresholds = ireg.X_thresholds_, ireg.y_thresholds_
+    assert x_thresholds.shape == y_thresholds.shape
 
     # Input thresholds are a strict subset of the training set (unless
     # the data is already strictly monotonic which is not the case with
     # this random data)
-    assert X_thresholds.shape[0] < X.shape[0]
-    assert np.isin(X_thresholds, X).all()
+    assert x_thresholds.shape[0] < X.shape[0]
+    assert np.isin(x_thresholds, X).all()
 
     # Output thresholds lie in the range of the training set:
     assert y_thresholds.max() <= y.max()
     assert y_thresholds.min() >= y.min()
 
-    assert all(np.diff(X_thresholds) > 0)
+    assert all(np.diff(x_thresholds) > 0)
     if increasing:
         assert all(np.diff(y_thresholds) >= 0)
     else:
@@ -609,11 +610,11 @@ def test_input_shape_validation():
     # Test from #15012
     # Check that IsotonicRegression can handle 2darray with only 1 feature
     X = np.arange(10)
-    X_2d = X.reshape(-1, 1)
+    x_2d = X.reshape(-1, 1)
     y = np.arange(10)
 
     iso_reg = IsotonicRegression().fit(X, y)
-    iso_reg_2d = IsotonicRegression().fit(X_2d, y)
+    iso_reg_2d = IsotonicRegression().fit(x_2d, y)
 
     assert iso_reg.X_max_ == iso_reg_2d.X_max_
     assert iso_reg.X_min_ == iso_reg_2d.X_min_
@@ -623,26 +624,26 @@ def test_input_shape_validation():
     assert_array_equal(iso_reg.y_thresholds_, iso_reg_2d.y_thresholds_)
 
     y_pred1 = iso_reg.predict(X)
-    y_pred2 = iso_reg_2d.predict(X_2d)
+    y_pred2 = iso_reg_2d.predict(x_2d)
     assert_allclose(y_pred1, y_pred2)
 
 
 def test_isotonic_2darray_more_than_1_feature():
     # Ensure IsotonicRegression raises error if input has more than 1 feature
     X = np.arange(10)
-    X_2d = np.c_[X, X]
+    x_2d = np.c_[X, X]
     y = np.arange(10)
 
     msg = "should be a 1d array or 2d array with 1 feature"
     with pytest.raises(ValueError, match=msg):
-        IsotonicRegression().fit(X_2d, y)
+        IsotonicRegression().fit(x_2d, y)
 
     iso_reg = IsotonicRegression().fit(X, y)
     with pytest.raises(ValueError, match=msg):
-        iso_reg.predict(X_2d)
+        iso_reg.predict(x_2d)
 
     with pytest.raises(ValueError, match=msg):
-        iso_reg.transform(X_2d)
+        iso_reg.transform(x_2d)
 
 
 def test_isotonic_regression_sample_weight_not_overwritten():
@@ -692,8 +693,8 @@ def test_isotonic_regression_output_predict():
     regressor = IsotonicRegression()
     with sklearn.config_context(transform_output="pandas"):
         regressor.fit(X, y)
-        X_trans = regressor.transform(X)
+        x_trans = regressor.transform(X)
         y_pred = regressor.predict(X)
 
-    assert isinstance(X_trans, pd.DataFrame)
+    assert isinstance(x_trans, pd.DataFrame)
     assert isinstance(y_pred, np.ndarray)
