@@ -695,7 +695,7 @@ def test_check_array_dtype_warning():
 
 def test_check_array_accept_sparse_type_exception():
     X = [[1, 2], [3, 4]]
-    X_csr = sp.csr_array(X)
+    x_csr = sp.csr_array(X)
     invalid_type = SVR()
 
     msg = (
@@ -703,39 +703,39 @@ def test_check_array_accept_sparse_type_exception():
         r"Use '.toarray\(\)' to convert to a dense numpy array."
     )
     with pytest.raises(TypeError, match=msg):
-        check_array(X_csr, accept_sparse=False)
+        check_array(x_csr, accept_sparse=False)
 
     msg = (
         "Parameter 'accept_sparse' should be a string, "
         "boolean or list of strings. You provided 'accept_sparse=.*'."
     )
     with pytest.raises(ValueError, match=msg):
-        check_array(X_csr, accept_sparse=invalid_type)
+        check_array(x_csr, accept_sparse=invalid_type)
 
     msg = (
         "When providing 'accept_sparse' as a tuple or list, "
         "it must contain at least one string value."
     )
     with pytest.raises(ValueError, match=msg):
-        check_array(X_csr, accept_sparse=[])
+        check_array(x_csr, accept_sparse=[])
     with pytest.raises(ValueError, match=msg):
-        check_array(X_csr, accept_sparse=())
+        check_array(x_csr, accept_sparse=())
     with pytest.raises(TypeError, match="SVR"):
-        check_array(X_csr, accept_sparse=[invalid_type])
+        check_array(x_csr, accept_sparse=[invalid_type])
 
 
 def test_check_array_accept_sparse_no_exception():
     X = [[1, 2], [3, 4]]
-    X_csr = sp.csr_array(X)
+    x_csr = sp.csr_array(X)
 
-    check_array(X_csr, accept_sparse=True)
-    check_array(X_csr, accept_sparse="csr")
-    check_array(X_csr, accept_sparse=["csr"])
-    check_array(X_csr, accept_sparse=("csr",))
+    check_array(x_csr, accept_sparse=True)
+    check_array(x_csr, accept_sparse="csr")
+    check_array(x_csr, accept_sparse=["csr"])
+    check_array(x_csr, accept_sparse=("csr",))
 
 
 @pytest.fixture(params=["csr", "csc", "coo", "bsr"])
-def X_64bit(request):
+def x_64bit(request):
     X = _sparse_random_array((20, 10), format=request.param)
 
     if request.param == "coo":
@@ -757,19 +757,19 @@ def X_64bit(request):
     yield X
 
 
-def test_check_array_accept_large_sparse_no_exception(X_64bit):
+def test_check_array_accept_large_sparse_no_exception(x_64bit):
     # When large sparse are allowed
-    check_array(X_64bit, accept_large_sparse=True, accept_sparse=True)
+    check_array(x_64bit, accept_large_sparse=True, accept_sparse=True)
 
 
-def test_check_array_accept_large_sparse_raise_exception(X_64bit):
+def test_check_array_accept_large_sparse_raise_exception(x_64bit):
     # When large sparse are not allowed
     msg = (
         "Only sparse matrices with 32-bit integer indices "
         "are accepted. Got int64 indices. Please do report"
     )
     with pytest.raises(ValueError, match=msg):
-        check_array(X_64bit, accept_sparse=True, accept_large_sparse=False)
+        check_array(x_64bit, accept_sparse=True, accept_large_sparse=False)
 
 
 def test_check_array_min_samples_and_features_messages():
