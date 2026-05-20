@@ -297,10 +297,10 @@ def test_regressor_exceptions():
 
 
 def test_median_strategy_regressor(global_random_seed):
-    random_state = np.random.RandomState(seed=global_random_seed)
+    random_state = np.random.default_rng(seed=global_random_seed)
 
     X = [[0]] * 5  # ignored
-    y = random_state.randn(5)
+    y = random_state.standard_normal(5)
 
     reg = DummyRegressor(strategy="median")
     reg.fit(X, y)
@@ -308,31 +308,31 @@ def test_median_strategy_regressor(global_random_seed):
 
 
 def test_median_strategy_multioutput_regressor(global_random_seed):
-    random_state = np.random.RandomState(seed=global_random_seed)
+    rng = np.random.default_rng(seed=global_random_seed)
 
-    X_learn = random_state.randn(10, 10)
-    y_learn = random_state.randn(10, 5)
+    x_learn = rng.standard_normal((10, 10))
+    y_learn = rng.standard_normal((10, 5))
 
     median = np.median(y_learn, axis=0).reshape((1, -1))
 
-    X_test = random_state.randn(20, 10)
-    y_test = random_state.randn(20, 5)
+    x_test = rng.standard_normal((20, 10))
+    y_test = rng.standard_normal((20, 5))
 
     # Correctness oracle
     est = DummyRegressor(strategy="median")
-    est.fit(X_learn, y_learn)
-    y_pred_learn = est.predict(X_learn)
-    y_pred_test = est.predict(X_test)
+    est.fit(x_learn, y_learn)
+    y_pred_learn = est.predict(x_learn)
+    y_pred_test = est.predict(x_test)
 
     _check_equality_regressor(median, y_learn, y_pred_learn, y_test, y_pred_test)
     _check_behavior_2d(est)
 
 
 def test_quantile_strategy_regressor(global_random_seed):
-    random_state = np.random.RandomState(seed=global_random_seed)
+    random_state = np.random.default_rng(seed=global_random_seed)
 
     X = [[0]] * 5  # ignored
-    y = random_state.randn(5)
+    y = random_state.standard_normal(5)
 
     reg = DummyRegressor(strategy="quantile", quantile=0.5)
     reg.fit(X, y)
@@ -352,31 +352,31 @@ def test_quantile_strategy_regressor(global_random_seed):
 
 
 def test_quantile_strategy_multioutput_regressor(global_random_seed):
-    random_state = np.random.RandomState(seed=global_random_seed)
+    rng = np.random.default_rng(seed=global_random_seed)
 
-    X_learn = random_state.randn(10, 10)
-    y_learn = random_state.randn(10, 5)
+    x_learn = rng.standard_normal((10, 10))
+    y_learn = rng.standard_normal((10, 5))
 
     median = np.median(y_learn, axis=0).reshape((1, -1))
     quantile_values = np.percentile(y_learn, axis=0, q=80).reshape((1, -1))
 
-    X_test = random_state.randn(20, 10)
-    y_test = random_state.randn(20, 5)
+    x_test = rng.standard_normal((20, 10))
+    y_test = rng.standard_normal((20, 5))
 
     # Correctness oracle
     est = DummyRegressor(strategy="quantile", quantile=0.5)
-    est.fit(X_learn, y_learn)
-    y_pred_learn = est.predict(X_learn)
-    y_pred_test = est.predict(X_test)
+    est.fit(x_learn, y_learn)
+    y_pred_learn = est.predict(x_learn)
+    y_pred_test = est.predict(x_test)
 
     _check_equality_regressor(median, y_learn, y_pred_learn, y_test, y_pred_test)
     _check_behavior_2d(est)
 
     # Correctness oracle
     est = DummyRegressor(strategy="quantile", quantile=0.8)
-    est.fit(X_learn, y_learn)
-    y_pred_learn = est.predict(X_learn)
-    y_pred_test = est.predict(X_test)
+    est.fit(x_learn, y_learn)
+    y_pred_learn = est.predict(x_learn)
+    y_pred_test = est.predict(x_test)
 
     _check_equality_regressor(
         quantile_values, y_learn, y_pred_learn, y_test, y_pred_test
@@ -423,20 +423,20 @@ def test_constant_strategy_regressor(global_random_seed):
 def test_constant_strategy_multioutput_regressor(global_random_seed):
     random_state = np.random.RandomState(seed=global_random_seed)
 
-    X_learn = random_state.randn(10, 10)
+    x_learn = random_state.randn(10, 10)
     y_learn = random_state.randn(10, 5)
 
     # test with 2d array
     constants = random_state.randn(5)
 
-    X_test = random_state.randn(20, 10)
+    x_test = random_state.randn(20, 10)
     y_test = random_state.randn(20, 5)
 
     # Correctness oracle
     est = DummyRegressor(strategy="constant", constant=constants)
-    est.fit(X_learn, y_learn)
-    y_pred_learn = est.predict(X_learn)
-    y_pred_test = est.predict(X_test)
+    est.fit(x_learn, y_learn)
+    y_pred_learn = est.predict(x_learn)
+    y_pred_test = est.predict(x_test)
 
     _check_equality_regressor(constants, y_learn, y_pred_learn, y_test, y_pred_test)
     _check_behavior_2d_for_constant(est)
@@ -536,7 +536,7 @@ def test_constant_strategy_multioutput():
 def test_constant_strategy_exceptions(y, params, err_msg):
     X = [[0], [0], [0], [0]]
 
-    clf = DummyClassifier(strategy="constant", **params)
+    clf = DummyClassifier(strategy="constant", random_state=0, **params)
     with pytest.raises(ValueError, match=err_msg):
         clf.fit(X, y)
 
@@ -546,7 +546,7 @@ def test_classification_sample_weight():
     y = [0, 1, 0]
     sample_weight = [0.1, 1.0, 0.1]
 
-    clf = DummyClassifier(strategy="stratified").fit(X, y, sample_weight)
+    clf = DummyClassifier(strategy="stratified", random_state=0).fit(X, y, sample_weight)
     assert_array_almost_equal(clf.class_prior_, [0.2 / 1.2, 1.0 / 1.2])
 
 
@@ -653,7 +653,7 @@ def test_dummy_classifier_on_3D_array():
     y = [2, 2, 2]
     y_expected = [2, 2, 2]
     y_proba_expected = [[1], [1], [1]]
-    cls = DummyClassifier(strategy="stratified")
+    cls = DummyClassifier(strategy="stratified", random_state=0)
     cls.fit(X, y)
     y_pred = cls.predict(X)
     y_pred_proba = cls.predict_proba(X)
