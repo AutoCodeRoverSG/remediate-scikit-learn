@@ -133,7 +133,7 @@ def test_ovr_partial_fit():
 
     # Test when mini batches doesn't have all classes
     # with SGDClassifier
-    X = np.abs(np.random.randn(14, 2))
+    X = np.abs(np.random.default_rng(0).standard_normal((14, 2)))
     y = [1, 1, 1, 1, 2, 3, 3, 0, 0, 2, 3, 1, 2, 3]
 
     ovr = OneVsRestClassifier(
@@ -155,7 +155,7 @@ def test_ovr_partial_fit():
 
 def test_ovr_partial_fit_exceptions():
     ovr = OneVsRestClassifier(MultinomialNB())
-    X = np.abs(np.random.randn(14, 2))
+    X = np.abs(np.random.default_rng(42).standard_normal((14, 2)))
     y = [1, 1, 1, 1, 2, 3, 3, 0, 0, 2, 3, 1, 2, 3]
     ovr.partial_fit(X[:7], y[:7], np.unique(y))
     # If a new class that was not in the first call of partial fit is seen
@@ -573,7 +573,7 @@ def test_ovo_partial_fit_predict():
     assert np.mean(y == pred1) > 0.65
 
     ovo = OneVsOneClassifier(MultinomialNB())
-    X = np.random.rand(14, 2)
+    X = np.random.default_rng(0).random((14, 2))
     y = [1, 1, 2, 3, 3, 0, 0, 4, 4, 4, 4, 4, 2, 2]
     ovo.partial_fit(X[:7], y[:7], [0, 1, 2, 3, 4])
     ovo.partial_fit(X[7:], y[7:])
@@ -772,6 +772,7 @@ def test_ecoc_delegate_sparse_base_estimator(csc_container):
     base_estimator = CheckingClassifier(
         check_X=check_array,
         check_X_params={"ensure_2d": True, "accept_sparse": False},
+        random_state=0,
     )
     ecoc = OutputCodeClassifier(base_estimator, random_state=0)
 
@@ -783,7 +784,7 @@ def test_ecoc_delegate_sparse_base_estimator(csc_container):
         ecoc.predict(x_sp)
 
     # smoke test to check when sparse input should be supported
-    ecoc = OutputCodeClassifier(LinearSVC(random_state=0))
+    ecoc = OutputCodeClassifier(LinearSVC(random_state=0), random_state=0)
     ecoc.fit(x_sp, y).predict(x_sp)
     assert len(ecoc.estimators_) == 4
 
@@ -875,30 +876,30 @@ def test_pairwise_n_features_in():
 
 
 @pytest.mark.parametrize(
-    "MultiClassClassifier", [OneVsRestClassifier, OneVsOneClassifier]
+    "multi_class_classifier", [OneVsRestClassifier, OneVsOneClassifier]
 )
-def test_pairwise_tag(MultiClassClassifier):
+def test_pairwise_tag(multi_class_classifier):
     clf_precomputed = svm.SVC(kernel="precomputed")
     clf_notprecomputed = svm.SVC()
 
-    ovr_false = MultiClassClassifier(clf_notprecomputed)
+    ovr_false = multi_class_classifier(clf_notprecomputed)
     assert not ovr_false.__sklearn_tags__().input_tags.pairwise
 
-    ovr_true = MultiClassClassifier(clf_precomputed)
+    ovr_true = multi_class_classifier(clf_precomputed)
     assert ovr_true.__sklearn_tags__().input_tags.pairwise
 
 
 @pytest.mark.parametrize(
-    "MultiClassClassifier", [OneVsRestClassifier, OneVsOneClassifier]
+    "multi_class_classifier", [OneVsRestClassifier, OneVsOneClassifier]
 )
-def test_pairwise_cross_val_score(MultiClassClassifier):
+def test_pairwise_cross_val_score(multi_class_classifier):
     clf_precomputed = svm.SVC(kernel="precomputed")
     clf_notprecomputed = svm.SVC(kernel="linear")
 
     X, y = iris.data, iris.target
 
-    multiclass_clf_notprecomputed = MultiClassClassifier(clf_notprecomputed)
-    multiclass_clf_precomputed = MultiClassClassifier(clf_precomputed)
+    multiclass_clf_notprecomputed = multi_class_classifier(clf_notprecomputed)
+    multiclass_clf_precomputed = multi_class_classifier(clf_precomputed)
 
     linear_kernel = np.dot(X, X.T)
     score_not_precomputed = cross_val_score(
@@ -911,22 +912,22 @@ def test_pairwise_cross_val_score(MultiClassClassifier):
 
 
 @pytest.mark.parametrize(
-    "MultiClassClassifier", [OneVsRestClassifier, OneVsOneClassifier]
+    "multi_class_classifier", [OneVsRestClassifier, OneVsOneClassifier]
 )
 # FIXME: we should move this test in `estimator_checks` once we are able
 # to construct meta-estimator instances
-def test_support_missing_values(MultiClassClassifier):
+def test_support_missing_values(multi_class_classifier):
     # smoke test to check that pipeline OvR and OvO classifiers are letting
     # the validation of missing values to
     # the underlying pipeline or classifiers
-    rng = np.random.RandomState(42)
+    rng = np.random.default_rng(42)
     X, y = iris.data, iris.target
     X = np.copy(X)  # Copy to avoid that the original data is modified
     mask = rng.choice([1, 0], X.shape, p=[0.1, 0.9]).astype(bool)
     X[mask] = np.nan
-    lr = make_pipeline(SimpleImputer(), LogisticRegression(random_state=rng))
+    lr = make_pipeline(SimpleImputer(), LogisticRegression(random_state=42), memory=None)
 
-    MultiClassClassifier(lr).fit(X, y).score(X, y)
+    multi_class_classifier(lr).fit(X, y).score(X, y)
 
 
 @pytest.mark.parametrize("make_y", [np.ones, np.zeros])
