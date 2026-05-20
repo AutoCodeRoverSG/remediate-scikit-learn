@@ -294,7 +294,7 @@ def test_encoding_multiclass(
 @pytest.mark.parametrize("smooth", [4.0, "auto"])
 def test_custom_categories(X, categories, smooth):
     """Custom categories with unknown categories that are not in training data."""
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
     y = rng.uniform(low=-10, high=20, size=X.shape[0])
     enc = TargetEncoder(categories=categories, smooth=smooth, random_state=0).fit(X, y)
 
@@ -698,9 +698,9 @@ def test_target_encoding_for_linear_regression(smooth, global_random_seed):
     # Let's now disable the internal cross-validation by calling fit and then
     # transform separately on the training set:
     target_encoder = TargetEncoder(smooth=smooth, cv=cv).fit(X_train, y_train)
-    X_enc_no_cv_train = target_encoder.transform(X_train)
-    X_enc_no_cv_test = target_encoder.transform(X_test)
-    model_no_cv = linear_regression.fit(X_enc_no_cv_train, y_train)
+    x_enc_no_cv_train = target_encoder.transform(X_train)
+    x_enc_no_cv_test = target_encoder.transform(X_test)
+    model_no_cv = linear_regression.fit(x_enc_no_cv_train, y_train)
 
     # The linear regression model should always overfit because it assigns
     # too much weight to the extremely high cardinality feature relatively to
@@ -708,8 +708,8 @@ def test_target_encoding_for_linear_regression(smooth, global_random_seed):
     # the empirical Bayes smoothing which is not enough to prevent such
     # overfitting alone.
     coef = model_no_cv.coef_
-    assert model_no_cv.score(X_enc_no_cv_train, y_train) > 0.7, coef
-    assert model_no_cv.score(X_enc_no_cv_test, y_test) < 0.5, coef
+    assert model_no_cv.score(x_enc_no_cv_train, y_train) > 0.7, coef
+    assert model_no_cv.score(x_enc_no_cv_test, y_test) < 0.5, coef
 
     # The model overfits because it assigns too much weight to the high
     # cardinality yet non-informative feature instead of the lower
