@@ -2019,15 +2019,15 @@ def test_apply_path_readonly_all_trees(name, splitter, sparse_container):
 # TODO(1.11): remove the deprecated friedman_mse criterion parametrization
 @pytest.mark.filterwarnings("ignore:.*friedman_mse.*:FutureWarning")
 @pytest.mark.parametrize("criterion", ["squared_error", "friedman_mse", "poisson"])
-@pytest.mark.parametrize("Tree", REG_TREES.values())
-def test_balance_property(criterion, Tree):
+@pytest.mark.parametrize("tree", REG_TREES.values())
+def test_balance_property(criterion, tree):
     # Test that sum(y_pred)=sum(y_true) on training set.
     # This works if the mean is predicted (should even be true for each leaf).
     # MAE predicts the median and is therefore excluded from this test.
 
     # Choose a training set with non-negative targets (for poisson)
     X, y = diabetes.data, diabetes.target
-    reg = Tree(criterion=criterion)
+    reg = tree(criterion=criterion)
     reg.fit(X, y)
     assert np.sum(reg.predict(X)) == pytest.approx(np.sum(y))
 
@@ -2108,9 +2108,9 @@ def test_poisson_vs_mse():
         assert metric_poi < 0.75 * metric_dummy
 
 
-@pytest.mark.parametrize("Tree", [DecisionTreeClassifier, ExtraTreeClassifier])
+@pytest.mark.parametrize("tree_cls", [DecisionTreeClassifier, ExtraTreeClassifier])
 @pytest.mark.parametrize("n_classes", [2, 4])
-def test_criterion_entropy_same_as_log_loss(Tree, n_classes):
+def test_criterion_entropy_same_as_log_loss(tree_cls, n_classes):
     """Test that criterion=entropy gives same as log_loss."""
     n_samples, n_features = 50, 5
     X, y = datasets.make_classification(
@@ -2121,13 +2121,13 @@ def test_criterion_entropy_same_as_log_loss(Tree, n_classes):
         n_redundant=0,
         random_state=42,
     )
-    tree_log_loss = Tree(criterion="log_loss", random_state=43).fit(X, y)
-    tree_entropy = Tree(criterion="entropy", random_state=43).fit(X, y)
+    tree_log_loss = tree_cls(criterion="log_loss", random_state=43).fit(X, y)
+    tree_entropy = tree_cls(criterion="entropy", random_state=43).fit(X, y)
 
     assert_tree_equal(
         tree_log_loss.tree_,
         tree_entropy.tree_,
-        f"{Tree!r} with criterion 'entropy' and 'log_loss' gave different trees.",
+        f"{tree_cls!r} with criterion 'entropy' and 'log_loss' gave different trees.",
     )
     assert_allclose(tree_log_loss.predict(X), tree_entropy.predict(X))
 
@@ -2344,7 +2344,7 @@ def test_check_node_ndarray():
     ]
 
     for arr in valid_node_ndarrays:
-        _check_node_ndarray(node_ndarray, expected_dtype=expected_dtype)
+        _check_node_ndarray(arr, expected_dtype=expected_dtype)
 
     with pytest.raises(ValueError, match="Wrong dimensions.+node array"):
         problematic_node_ndarray = np.zeros((5, 2), dtype=expected_dtype)
@@ -2382,21 +2382,21 @@ def test_check_node_ndarray():
 
 
 @pytest.mark.parametrize(
-    "Splitter", chain(DENSE_SPLITTERS.values(), SPARSE_SPLITTERS.values())
+    "splitter_cls", chain(DENSE_SPLITTERS.values(), SPARSE_SPLITTERS.values())
 )
-def test_splitter_serializable(Splitter):
+def test_splitter_serializable(splitter_cls):
     """Check that splitters are serializable."""
     rng = np.random.RandomState(42)
     max_features = 10
     n_outputs, n_classes = 2, np.array([3, 2], dtype=np.intp)
 
     criterion = CRITERIA_CLF["gini"](n_outputs, n_classes)
-    splitter = Splitter(criterion, max_features, 5, 0.5, rng, monotonic_cst=None)
+    splitter = splitter_cls(criterion, max_features, 5, 0.5, rng, monotonic_cst=None)
     splitter_serialize = pickle.dumps(splitter)
 
     splitter_back = pickle.loads(splitter_serialize)
     assert splitter_back.max_features == max_features
-    assert isinstance(splitter_back, Splitter)
+    assert isinstance(splitter_back, splitter_cls)
 
 
 def test_tree_deserialization_from_read_only_buffer(tmpdir):
@@ -2418,8 +2418,8 @@ def test_tree_deserialization_from_read_only_buffer(tmpdir):
     )
 
 
-@pytest.mark.parametrize("Tree", ALL_TREES.values())
-def test_min_sample_split_1_error(Tree):
+@pytest.mark.parametrize("tree_cls", ALL_TREES.values())
+def test_min_sample_split_1_error(tree_cls):
     """Check that an error is raised when min_sample_split=1.
 
     non-regression test for issue gh-25481.
@@ -2428,10 +2428,10 @@ def test_min_sample_split_1_error(Tree):
     y = np.array([0, 1])
 
     # min_samples_split=1.0 is valid
-    Tree(min_samples_split=1.0).fit(X, y)
+    tree_cls(min_samples_split=1.0).fit(X, y)
 
     # min_samples_split=1 is invalid
-    tree = Tree(min_samples_split=1)
+    tree = tree_cls(min_samples_split=1)
     msg = (
         r"'min_samples_split' .* must be an int in the range \[2, inf\) "
         r"or a float in the range \(0.0, 1.0\]"
@@ -2457,11 +2457,11 @@ def test_missing_values_best_splitter_on_equal_nodes_no_missing(criterion):
     assert_allclose(y_pred, [node_value_func(y[-5:])])
 
     # equal number of elements in both nodes
-    X_equal = X[:-1]
+    x_equal = X[:-1]
     y_equal = y[:-1]
 
     dtc = DecisionTreeRegressor(random_state=42, max_depth=1, criterion=criterion)
-    dtc.fit(X_equal, y_equal)
+    dtc.fit(x_equal, y_equal)
 
     # Goes to right node because the implementation sets:
     # missing_go_to_left = n_left > n_right, which is False
@@ -2590,8 +2590,8 @@ def test_missing_value_errors(sparse_container, tree):
         tree.fit(X, y)
 
 
-@pytest.mark.parametrize("Tree", REG_TREES.values())
-def test_missing_values_poisson(Tree):
+@pytest.mark.parametrize("tree", REG_TREES.values())
+def test_missing_values_poisson(tree):
     """Smoke test for poisson regression and missing values."""
     X, y = diabetes.data.copy(), diabetes.target
 
@@ -2599,7 +2599,7 @@ def test_missing_values_poisson(Tree):
     X[::5, 0] = np.nan
     X[::6, -1] = np.nan
 
-    reg = Tree(criterion="poisson", random_state=42)
+    reg = tree(criterion="poisson", random_state=42)
     reg.fit(X, y)
 
     y_pred = reg.predict(X)
@@ -2613,7 +2613,7 @@ def make_friedman1_classification(*args, **kwargs):
 
 
 @pytest.mark.parametrize(
-    "make_data, Tree, tolerance",
+    "make_data, tree_cls, tolerance",
     [
         # Due to the sine link between X and y, we expect the native handling of
         # missing values to always be better than the naive mean imputation in the
@@ -2629,7 +2629,7 @@ def make_friedman1_classification(*args, **kwargs):
 )
 @pytest.mark.parametrize("sample_weight_train", [None, "ones"])
 def test_missing_values_is_resilience(
-    make_data, Tree, sample_weight_train, global_random_seed, tolerance
+    make_data, tree_cls, sample_weight_train, global_random_seed, tolerance
 ):
     """Check that trees can deal with missing values have decent performance."""
     n_samples, n_features = 5_000, 10
@@ -2640,29 +2640,29 @@ def test_missing_values_is_resilience(
         random_state=global_random_seed,
     )
 
-    X_missing = X.copy()
+    x_missing = X.copy()
     rng = np.random.RandomState(global_random_seed)
-    X_missing[rng.choice([False, True], size=X.shape, p=[0.9, 0.1])] = np.nan
-    X_missing_train, X_missing_test, y_train, y_test = train_test_split(
-        X_missing, y, random_state=global_random_seed
+    x_missing[rng.choice([False, True], size=X.shape, p=[0.9, 0.1])] = np.nan
+    x_missing_train, x_missing_test, y_train, y_test = train_test_split(
+        x_missing, y, random_state=global_random_seed
     )
     if sample_weight_train == "ones":
-        sample_weight = np.ones(X_missing_train.shape[0])
+        sample_weight = np.ones(x_missing_train.shape[0])
     else:
         sample_weight = None
 
     # max_depth is used to avoid overfitting and also improve the runtime
     # of the test.
     max_depth = 10
-    native_tree = Tree(max_depth=max_depth, random_state=global_random_seed)
-    native_tree.fit(X_missing_train, y_train, sample_weight=sample_weight)
-    score_native_tree = native_tree.score(X_missing_test, y_test)
+    native_tree = tree_cls(max_depth=max_depth, random_state=global_random_seed)
+    native_tree.fit(x_missing_train, y_train, sample_weight=sample_weight)
+    score_native_tree = native_tree.score(x_missing_test, y_test)
 
     tree_with_imputer = make_pipeline(
-        SimpleImputer(), Tree(max_depth=max_depth, random_state=global_random_seed)
+        SimpleImputer(), tree_cls(max_depth=max_depth, random_state=global_random_seed)
     )
-    tree_with_imputer.fit(X_missing_train, y_train)
-    score_tree_with_imputer = tree_with_imputer.score(X_missing_test, y_test)
+    tree_with_imputer.fit(x_missing_train, y_train)
+    score_tree_with_imputer = tree_with_imputer.score(x_missing_test, y_test)
 
     assert score_native_tree + tolerance > score_tree_with_imputer, (
         f"{score_native_tree=} + {tolerance} should be strictly greater than"
