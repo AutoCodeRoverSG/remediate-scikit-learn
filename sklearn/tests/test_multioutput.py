@@ -560,7 +560,7 @@ def test_classifier_chain_vs_independent_models():
     ovr.fit(X_train, Y_train)
     y_pred_ovr = ovr.predict(X_test)
 
-    chain = ClassifierChain(LogisticRegression(random_state=0))
+    chain = ClassifierChain(LogisticRegression(random_state=0), random_state=0)
     chain.fit(X_train, Y_train)
     y_pred_chain = chain.predict(X_test)
 
@@ -578,7 +578,9 @@ def test_classifier_chain_fit_and_predict(chain_method, response_method):
     # Fit classifier chain and verify predict performance
     X, Y = generate_multilabel_dataset_with_correlations()
     chain = ClassifierChain(
-        LogisticRegression(random_state=0), chain_method=chain_method
+        LogisticRegression(random_state=0),
+        chain_method=chain_method,
+        random_state=0,
     )
     chain.fit(X, Y)
     y_pred = chain.predict(X)
@@ -627,8 +629,8 @@ def test_base_chain_random_order():
     # Fit base chain with random order
     X, Y = generate_multilabel_dataset_with_correlations()
     for chain in [
-        ClassifierChain(LogisticRegression(random_state=42)),
-        RegressorChain(Ridge(random_state=42)),
+        ClassifierChain(LogisticRegression(random_state=42), random_state=42),
+        RegressorChain(Ridge(random_state=42), random_state=42),
     ]:
         chain_random = clone(chain).set_params(order="random", random_state=42)
         chain_random.fit(X, Y)
@@ -661,7 +663,9 @@ def test_base_chain_crossval_fit_and_predict(chain_type, chain_method):
 
     if chain_type == "classifier":
         chain = ClassifierChain(
-            LogisticRegression(random_state=0), chain_method=chain_method
+            LogisticRegression(random_state=0),
+            chain_method=chain_method,
+            random_state=0,
         )
     else:
         chain = RegressorChain(Ridge())
@@ -684,7 +688,9 @@ def test_base_chain_crossval_fit_and_predict(chain_type, chain_method):
     [
         RandomForestClassifier(n_estimators=2, random_state=42),
         MultiOutputClassifier(RandomForestClassifier(n_estimators=2, random_state=42)),
-        ClassifierChain(RandomForestClassifier(n_estimators=2, random_state=42)),
+        ClassifierChain(
+            RandomForestClassifier(n_estimators=2, random_state=42), random_state=42
+        ),
     ],
 )
 def test_multi_output_classes_(estimator):
@@ -753,12 +759,12 @@ def test_regressor_chain_w_fit_params():
 
 
 @pytest.mark.parametrize(
-    "MultiOutputEstimator, Estimator",
+    "multi_output_estimator, estimator",
     [(MultiOutputClassifier, LogisticRegression), (MultiOutputRegressor, Ridge)],
 )
 # FIXME: we should move this test in `estimator_checks` once we are able
 # to construct meta-estimator instances
-def test_support_missing_values(MultiOutputEstimator, Estimator):
+def test_support_missing_values(multi_output_estimator, estimator):
     # smoke test to check that pipeline MultioutputEstimators are letting
     # the validation of missing values to
     # the underlying pipeline, regressor or classifier
@@ -767,8 +773,8 @@ def test_support_missing_values(MultiOutputEstimator, Estimator):
     mask = rng.choice([1, 0], X.shape, p=[0.01, 0.99]).astype(bool)
     X[mask] = np.nan
 
-    pipe = make_pipeline(SimpleImputer(), Estimator())
-    MultiOutputEstimator(pipe).fit(X, y).score(X, y)
+    pipe = make_pipeline(SimpleImputer(), estimator(), memory=None)
+    multi_output_estimator(pipe).fit(X, y).score(X, y)
 
 
 @pytest.mark.parametrize("order_type", [list, np.array, tuple])
@@ -778,7 +784,9 @@ def test_classifier_chain_tuple_order(order_type):
     order = order_type([1, 0])
 
     chain = ClassifierChain(
-        RandomForestClassifier(n_estimators=2, random_state=0), order=order
+        RandomForestClassifier(n_estimators=2, random_state=0),
+        order=order,
+        random_state=0,
     )
 
     chain.fit(X, y)
@@ -790,7 +798,7 @@ def test_classifier_chain_tuple_order(order_type):
 def test_classifier_chain_tuple_invalid_order():
     X = [[1, 2, 3], [4, 5, 6], [1.5, 2.5, 3.5]]
     y = [[3, 2], [2, 3], [3, 2]]
-    order = tuple([1, 2])
+    order = (1, 2)
 
     chain = ClassifierChain(RandomForestClassifier(), order=order)
 
