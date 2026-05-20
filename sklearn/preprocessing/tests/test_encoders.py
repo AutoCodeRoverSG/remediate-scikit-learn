@@ -23,30 +23,30 @@ def test_one_hot_encoder_sparse_dense():
     enc_sparse = OneHotEncoder()
     enc_dense = OneHotEncoder(sparse_output=False)
 
-    X_trans_sparse = enc_sparse.fit_transform(X)
-    X_trans_dense = enc_dense.fit_transform(X)
+    x_trans_sparse = enc_sparse.fit_transform(X)
+    x_trans_dense = enc_dense.fit_transform(X)
 
-    assert X_trans_sparse.shape == (2, 5)
-    assert X_trans_dense.shape == (2, 5)
+    assert x_trans_sparse.shape == (2, 5)
+    assert x_trans_dense.shape == (2, 5)
 
-    assert sparse.issparse(X_trans_sparse)
-    assert not sparse.issparse(X_trans_dense)
+    assert sparse.issparse(x_trans_sparse)
+    assert not sparse.issparse(x_trans_dense)
 
     # check outcome
     assert_array_equal(
-        X_trans_sparse.toarray(), [[0.0, 1.0, 0.0, 1.0, 1.0], [1.0, 0.0, 1.0, 0.0, 1.0]]
+        x_trans_sparse.toarray(), [[0.0, 1.0, 0.0, 1.0, 1.0], [1.0, 0.0, 1.0, 0.0, 1.0]]
     )
-    assert_array_equal(X_trans_sparse.toarray(), X_trans_dense)
+    assert_array_equal(x_trans_sparse.toarray(), x_trans_dense)
 
 
 def test_one_hot_encoder_sparse_index_array_int32():
     X = np.array([[3, 2, 1], [0, 1, 1]])
     enc_sparse = OneHotEncoder(sparse_output=True)
 
-    X_trans_sparse = enc_sparse.fit_transform(X)
-    assert X_trans_sparse.format == "csr"
-    assert X_trans_sparse.indices.dtype == np.int32
-    assert X_trans_sparse.indptr.dtype == np.int32
+    x_trans_sparse = enc_sparse.fit_transform(X)
+    assert x_trans_sparse.format == "csr"
+    assert x_trans_sparse.indices.dtype == np.int32
+    assert x_trans_sparse.indptr.dtype == np.int32
 
 
 @pytest.mark.parametrize("handle_unknown", ["ignore", "infrequent_if_exist", "warn"])
@@ -64,13 +64,13 @@ def test_one_hot_encoder_handle_unknown(handle_unknown):
     # Test the ignore option, ignores unknown features (giving all 0's)
     oh = OneHotEncoder(handle_unknown=handle_unknown)
     oh.fit(X)
-    X2_passed = X2.copy()
+    x2_passed = X2.copy()
     assert_array_equal(
-        oh.transform(X2_passed).toarray(),
+        oh.transform(x2_passed).toarray(),
         np.array([[0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0]]),
     )
     # ensure transformed data was not modified in place
-    assert_allclose(X2, X2_passed)
+    assert_allclose(X2, x2_passed)
 
 
 @pytest.mark.parametrize("handle_unknown", ["ignore", "infrequent_if_exist", "warn"])
@@ -83,44 +83,44 @@ def test_one_hot_encoder_handle_unknown_strings(handle_unknown):
     # than the unknown category strings
     oh = OneHotEncoder(handle_unknown=handle_unknown)
     oh.fit(X)
-    X2_passed = X2.copy()
+    x2_passed = X2.copy()
     assert_array_equal(
-        oh.transform(X2_passed).toarray(),
+        oh.transform(x2_passed).toarray(),
         np.array([[0.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0]]),
     )
     # ensure transformed data was not modified in place
-    assert_array_equal(X2, X2_passed)
+    assert_array_equal(X2, x2_passed)
 
 
 @pytest.mark.parametrize("output_dtype", [np.int32, np.float32, np.float64])
 @pytest.mark.parametrize("input_dtype", [np.int32, np.float32, np.float64])
 def test_one_hot_encoder_dtype(input_dtype, output_dtype):
     X = np.asarray([[0, 1]], dtype=input_dtype).T
-    X_expected = np.asarray([[1, 0], [0, 1]], dtype=output_dtype)
+    x_expected = np.asarray([[1, 0], [0, 1]], dtype=output_dtype)
 
     oh = OneHotEncoder(categories="auto", dtype=output_dtype)
-    assert_array_equal(oh.fit_transform(X).toarray(), X_expected)
-    assert_array_equal(oh.fit(X).transform(X).toarray(), X_expected)
+    assert_array_equal(oh.fit_transform(X).toarray(), x_expected)
+    assert_array_equal(oh.fit(X).transform(X).toarray(), x_expected)
 
     oh = OneHotEncoder(categories="auto", dtype=output_dtype, sparse_output=False)
-    assert_array_equal(oh.fit_transform(X), X_expected)
-    assert_array_equal(oh.fit(X).transform(X), X_expected)
+    assert_array_equal(oh.fit_transform(X), x_expected)
+    assert_array_equal(oh.fit(X).transform(X), x_expected)
 
 
 @pytest.mark.parametrize("output_dtype", [np.int32, np.float32, np.float64])
 def test_one_hot_encoder_dtype_pandas(output_dtype):
     pd = pytest.importorskip("pandas")
 
-    X_df = pd.DataFrame({"A": ["a", "b"], "B": [1, 2]})
-    X_expected = np.array([[1, 0, 1, 0], [0, 1, 0, 1]], dtype=output_dtype)
+    x_df = pd.DataFrame({"A": ["a", "b"], "B": [1, 2]})
+    x_expected = np.array([[1, 0, 1, 0], [0, 1, 0, 1]], dtype=output_dtype)
 
     oh = OneHotEncoder(dtype=output_dtype)
-    assert_array_equal(oh.fit_transform(X_df).toarray(), X_expected)
-    assert_array_equal(oh.fit(X_df).transform(X_df).toarray(), X_expected)
+    assert_array_equal(oh.fit_transform(x_df).toarray(), x_expected)
+    assert_array_equal(oh.fit(x_df).transform(x_df).toarray(), x_expected)
 
     oh = OneHotEncoder(dtype=output_dtype, sparse_output=False)
-    assert_array_equal(oh.fit_transform(X_df), X_expected)
-    assert_array_equal(oh.fit(X_df).transform(X_df), X_expected)
+    assert_array_equal(oh.fit_transform(x_df), x_expected)
+    assert_array_equal(oh.fit(x_df).transform(x_df), x_expected)
 
 
 def test_one_hot_encoder_feature_names():
@@ -233,15 +233,15 @@ def test_one_hot_encoder_set_params():
 
 def check_categorical_onehot(X):
     enc = OneHotEncoder(categories="auto")
-    Xtr1 = enc.fit_transform(X)
+    xtr1 = enc.fit_transform(X)
 
     enc = OneHotEncoder(categories="auto", sparse_output=False)
-    Xtr2 = enc.fit_transform(X)
+    xtr2 = enc.fit_transform(X)
 
-    assert_allclose(Xtr1.toarray(), Xtr2)
+    assert_allclose(xtr1.toarray(), xtr2)
 
-    assert sparse.issparse(Xtr1) and Xtr1.format == "csr"
-    return Xtr1.toarray()
+    assert sparse.issparse(xtr1) and xtr1.format == "csr"
+    return xtr1.toarray()
 
 
 @pytest.mark.parametrize(
