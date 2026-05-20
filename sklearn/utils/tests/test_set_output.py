@@ -384,8 +384,8 @@ def test_set_output_pandas_keep_index():
     est = EstimatorWithSetOutputIndex().set_output(transform="pandas")
     est.fit(X)
 
-    X_trans = est.transform(X)
-    assert_array_equal(X_trans.index, ["s0", "s1"])
+    x_trans = est.transform(X)
+    assert_array_equal(x_trans.index, ["s0", "s1"])
 
 
 class EstimatorReturnTuple(_SetOutputMixin):

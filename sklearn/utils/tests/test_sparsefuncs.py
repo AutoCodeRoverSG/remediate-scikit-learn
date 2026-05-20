@@ -43,15 +43,15 @@ def test_mean_variance_axis0(csc_container, csr_container, lil_container):
     X[0, 0] = 0
     X[2, 1] = 0
     X[4, 3] = 0
-    X_lil = lil_container(X)
-    X_lil[1, 0] = 0
+    x_lil = lil_container(X)
+    x_lil[1, 0] = 0
     X[1, 0] = 0
 
     with pytest.raises(TypeError):
-        mean_variance_axis(X_lil, axis=0)
+        mean_variance_axis(x_lil, axis=0)
 
-    X_csr = csr_container(X_lil)
-    X_csc = csc_container(X_lil)
+    x_csr = csr_container(x_lil)
+    x_csc = csc_container(x_lil)
 
     expected_dtypes = [
         (np.float32, np.float32),
@@ -61,14 +61,14 @@ def test_mean_variance_axis0(csc_container, csr_container, lil_container):
     ]
 
     for input_dtype, output_dtype in expected_dtypes:
-        X_test = X.astype(input_dtype)
-        for X_sparse in (X_csr, X_csc):
-            X_sparse = X_sparse.astype(input_dtype)
-            X_means, X_vars = mean_variance_axis(X_sparse, axis=0)
-            assert X_means.dtype == output_dtype
-            assert X_vars.dtype == output_dtype
-            assert_array_almost_equal(X_means, np.mean(X_test, axis=0))
-            assert_array_almost_equal(X_vars, np.var(X_test, axis=0))
+        x_test = X.astype(input_dtype)
+        for x_sparse in (x_csr, x_csc):
+            x_sparse = x_sparse.astype(input_dtype)
+            x_means, x_vars = mean_variance_axis(x_sparse, axis=0)
+            assert x_means.dtype == output_dtype
+            assert x_vars.dtype == output_dtype
+            assert_array_almost_equal(x_means, np.mean(x_test, axis=0))
+            assert_array_almost_equal(x_vars, np.var(x_test, axis=0))
 
 
 @pytest.mark.parametrize("dtype", [np.float32, np.float64])
@@ -76,7 +76,7 @@ def test_mean_variance_axis0(csc_container, csr_container, lil_container):
 def test_mean_variance_axis0_precision(dtype, sparse_constructor):
     # Check that there's no big loss of precision when the real variance is
     # exactly 0. (#19766)
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
     X = np.full(fill_value=100.0, shape=(1000, 1), dtype=dtype)
     # Add some missing records which should be ignored:
     missing_indices = rng.choice(np.arange(X.shape[0]), 10, replace=False)
@@ -84,7 +84,7 @@ def test_mean_variance_axis0_precision(dtype, sparse_constructor):
     X = sparse_constructor(X)
 
     # Random positive weights:
-    sample_weight = rng.rand(X.shape[0]).astype(dtype)
+    sample_weight = rng.random(X.shape[0]).astype(dtype)
 
     _, var = mean_variance_axis(X, weights=sample_weight, axis=0)
 
@@ -100,15 +100,15 @@ def test_mean_variance_axis1(csc_container, csr_container, lil_container):
     X[0, 0] = 0
     X[2, 1] = 0
     X[4, 3] = 0
-    X_lil = lil_container(X)
-    X_lil[1, 0] = 0
+    x_lil = lil_container(X)
+    x_lil[1, 0] = 0
     X[1, 0] = 0
 
     with pytest.raises(TypeError):
-        mean_variance_axis(X_lil, axis=1)
+        mean_variance_axis(x_lil, axis=1)
 
-    X_csr = csr_container(X_lil)
-    X_csc = csc_container(X_lil)
+    x_csr = csr_container(x_lil)
+    x_csc = csc_container(x_lil)
 
     expected_dtypes = [
         (np.float32, np.float32),
@@ -118,14 +118,14 @@ def test_mean_variance_axis1(csc_container, csr_container, lil_container):
     ]
 
     for input_dtype, output_dtype in expected_dtypes:
-        X_test = X.astype(input_dtype)
-        for X_sparse in (X_csr, X_csc):
-            X_sparse = X_sparse.astype(input_dtype)
-            X_means, X_vars = mean_variance_axis(X_sparse, axis=0)
-            assert X_means.dtype == output_dtype
-            assert X_vars.dtype == output_dtype
-            assert_array_almost_equal(X_means, np.mean(X_test, axis=0))
-            assert_array_almost_equal(X_vars, np.var(X_test, axis=0))
+        x_test = X.astype(input_dtype)
+        for x_sparse in (x_csr, x_csc):
+            x_sparse = x_sparse.astype(input_dtype)
+            x_means, x_vars = mean_variance_axis(x_sparse, axis=0)
+            assert x_means.dtype == output_dtype
+            assert x_vars.dtype == output_dtype
+            assert_array_almost_equal(x_means, np.mean(x_test, axis=0))
+            assert_array_almost_equal(x_vars, np.var(x_test, axis=0))
 
 
 @pytest.mark.parametrize(
