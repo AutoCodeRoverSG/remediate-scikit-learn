@@ -1275,7 +1275,7 @@ def test_polynomial_features_behaviour_on_zero_degree(sparse_container):
         assert_array_equal(output, np.ones((X.shape[0], 1)))
 
 
-def test_sizeof_LARGEST_INT_t():
+def test_sizeof_largest_int_t():
     # On Windows, scikit-learn is typically compiled with MSVC that
     # does not support int128 arithmetic (at the time of writing):
     # https://stackoverflow.com/a/6761962/163740
@@ -1354,41 +1354,41 @@ def test_polynomial_features_array_api_compliance(
     """Test array API compliance for PolynomialFeatures on 2 features up to degree 3."""
     xp, device = _array_api_for_tests(array_namespace, device_name, dtype_name)
     X, _ = two_features_degree3
-    X_np = X.astype(dtype_name)
-    X_xp = xp.asarray(X_np, device=device)
+    x_np = X.astype(dtype_name)
+    x_xp = xp.asarray(x_np, device=device)
     with config_context(array_api_dispatch=True):
         tf_np = PolynomialFeatures(
             degree=degree, include_bias=include_bias, interaction_only=interaction_only
-        ).fit(X_np)
+        ).fit(x_np)
 
         tf_xp = PolynomialFeatures(
             degree=degree, include_bias=include_bias, interaction_only=interaction_only
-        ).fit(X_xp)
-        out_np = tf_np.transform(X_np)
-        out_xp = tf_xp.transform(X_xp)
+        ).fit(x_xp)
+        out_np = tf_np.transform(x_np)
+        out_xp = tf_xp.transform(x_xp)
         assert_allclose(move_to(out_xp, xp=np, device="cpu"), out_np)
         assert get_namespace(out_xp)[0].__name__ == xp.__name__
-        assert array_api_device(out_xp) == array_api_device(X_xp)
-        assert out_xp.dtype == X_xp.dtype
+        assert array_api_device(out_xp) == array_api_device(x_xp)
+        assert out_xp.dtype == x_xp.dtype
 
 
 @pytest.mark.parametrize(
     "array_namespace, device_name, dtype_name",
     yield_namespace_device_dtype_combinations(),
 )
-def test_polynomial_features_array_api_raises_on_order_F(
+def test_polynomial_features_array_api_raises_on_order_f(
     array_namespace, device_name, dtype_name
 ):
     """Test that PolynomialFeatures with order='F' raises ValueError on
     array API namespaces other than numpy."""
     xp, device = _array_api_for_tests(array_namespace, device_name, dtype_name)
-    X = np.arange(6).reshape((3, 2)).astype(dtype_name)
-    X_xp = xp.asarray(X, device=device)
+    x_np = np.arange(6).reshape((3, 2)).astype(dtype_name)
+    x_xp = xp.asarray(x_np, device=device)
     msg = "PolynomialFeatures does not support order='F' for non-numpy arrays"
     with config_context(array_api_dispatch=True):
-        pf = PolynomialFeatures(order="F").fit(X_xp)
+        pf = PolynomialFeatures(order="F").fit(x_xp)
         if _is_numpy_namespace(xp):  # Numpy should not raise
-            pf.transform(X_xp)
+            pf.transform(x_xp)
         else:
             with pytest.raises(ValueError, match=msg):
-                pf.transform(X_xp)
+                pf.transform(x_xp)
