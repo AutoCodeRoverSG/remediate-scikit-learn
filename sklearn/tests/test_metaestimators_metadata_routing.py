@@ -603,7 +603,7 @@ def filter_metadata_in_routing_methods(estimator_routing_methods):
         It specifies the list of metadata keys for each routing method.
         By default the list includes `sample_weight` and `metadata`.
     """
-    res = dict()
+    res = {}
     for method_spec in estimator_routing_methods:
         if isinstance(method_spec, str):
             method = method_spec
