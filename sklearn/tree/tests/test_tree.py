@@ -1556,39 +1556,39 @@ def test_explicit_sparse_zeros(tree_type, csc_container, csr_container):
     )
 
     xs = (x_test, x_sparse_test)
-    for x1, x2 in product(xs, xs):
-        assert_array_almost_equal(s.tree_.apply(x1), d.tree_.apply(x2))
-        assert_array_almost_equal(s.apply(x1), d.apply(x2))
-        assert_array_almost_equal(s.apply(x1), s.tree_.apply(x1))
+    for x_a, x_b in product(xs, xs):
+        assert_array_almost_equal(s.tree_.apply(x_a), d.tree_.apply(x_b))
+        assert_array_almost_equal(s.apply(x_a), d.apply(x_b))
+        assert_array_almost_equal(s.apply(x_a), s.tree_.apply(x_a))
 
         assert_array_almost_equal(
-            s.tree_.decision_path(x1).toarray(), d.tree_.decision_path(x2).toarray()
+            s.tree_.decision_path(x_a).toarray(), d.tree_.decision_path(x_b).toarray()
         )
         assert_array_almost_equal(
-            s.decision_path(x1).toarray(), d.decision_path(x2).toarray()
+            s.decision_path(x_a).toarray(), d.decision_path(x_b).toarray()
         )
         assert_array_almost_equal(
-            s.decision_path(x1).toarray(), s.tree_.decision_path(x1).toarray()
+            s.decision_path(x_a).toarray(), s.tree_.decision_path(x_a).toarray()
         )
 
-        assert_array_almost_equal(s.predict(x1), d.predict(x2))
+        assert_array_almost_equal(s.predict(x_a), d.predict(x_b))
 
         if tree_type in CLF_TREES:
-            assert_array_almost_equal(s.predict_proba(x1), d.predict_proba(x2))
+            assert_array_almost_equal(s.predict_proba(x_a), d.predict_proba(x_b))
 
 
 def check_raise_error_on_1d_input(name):
-    TreeEstimator = ALL_TREES[name]
+    tree_estimator = ALL_TREES[name]
 
     X = iris.data[:, 0].ravel()
-    X_2d = iris.data[:, 0].reshape((-1, 1))
+    x_2d = iris.data[:, 0].reshape((-1, 1))
     y = iris.target
 
     with pytest.raises(ValueError):
-        TreeEstimator(random_state=0).fit(X, y)
+        tree_estimator(random_state=0).fit(X, y)
 
-    est = TreeEstimator(random_state=0)
-    est.fit(X_2d, y)
+    est = tree_estimator(random_state=0)
+    est.fit(x_2d, y)
     with pytest.raises(ValueError):
         est.predict([X])
 
@@ -1602,7 +1602,7 @@ def test_1d_input(name):
 @pytest.mark.parametrize("name", ALL_TREES)
 @pytest.mark.parametrize("sparse_container", [None] + CSC_CONTAINERS)
 def test_min_weight_leaf_split_level(name, sparse_container):
-    TreeEstimator = ALL_TREES[name]
+    tree_estimator = ALL_TREES[name]
 
     X = np.array([[0], [0], [0], [0], [1]])
     y = [0, 0, 0, 0, 1]
@@ -1610,32 +1610,32 @@ def test_min_weight_leaf_split_level(name, sparse_container):
     if sparse_container is not None:
         X = sparse_container(X)
 
-    est = TreeEstimator(random_state=0)
+    est = tree_estimator(random_state=0)
     est.fit(X, y, sample_weight=sample_weight)
     assert est.tree_.max_depth == 1
 
-    est = TreeEstimator(random_state=0, min_weight_fraction_leaf=0.4)
+    est = tree_estimator(random_state=0, min_weight_fraction_leaf=0.4)
     est.fit(X, y, sample_weight=sample_weight)
     assert est.tree_.max_depth == 0
 
 
 @pytest.mark.parametrize("name", ALL_TREES)
 def test_public_apply_all_trees(name):
-    X_small32 = X_small.astype(np.float32, copy=False)
+    x_small_32 = X_small.astype(np.float32, copy=False)
 
     est = ALL_TREES[name]()
     est.fit(X_small, y_small)
-    assert_array_equal(est.apply(X_small), est.tree_.apply(X_small32))
+    assert_array_equal(est.apply(X_small), est.tree_.apply(x_small_32))
 
 
 @pytest.mark.parametrize("name", SPARSE_TREES)
 @pytest.mark.parametrize("csr_container", CSR_CONTAINERS)
 def test_public_apply_sparse_trees(name, csr_container):
-    X_small32 = csr_container(X_small.astype(np.float32, copy=False))
+    x_small_32 = csr_container(X_small.astype(np.float32, copy=False))
 
     est = ALL_TREES[name]()
     est.fit(X_small, y_small)
-    assert_array_equal(est.apply(X_small), est.tree_.apply(X_small32))
+    assert_array_equal(est.apply(X_small), est.tree_.apply(x_small_32))
 
 
 def test_decision_path_hardcoded():
@@ -1663,8 +1663,8 @@ def test_decision_path(name):
     y = iris.target
     n_samples = X.shape[0]
 
-    TreeEstimator = ALL_TREES[name]
-    est = TreeEstimator(random_state=0, max_depth=2)
+    tree_estimator = ALL_TREES[name]
+    est = tree_estimator(random_state=0, max_depth=2)
     est.fit(X, y)
 
     node_indicator_csr = est.decision_path(X)
@@ -1692,9 +1692,9 @@ def test_decision_path(name):
 def test_no_sparse_y_support(name, csr_container):
     # Currently we don't support sparse y
     X, y = X_multilabel, csr_container(y_multilabel)
-    TreeEstimator = ALL_TREES[name]
+    tree_estimator = ALL_TREES[name]
     with pytest.raises(TypeError):
-        TreeEstimator(random_state=0).fit(X, y)
+        tree_estimator(random_state=0).fit(X, y)
 
 
 def test_mae():
@@ -1992,27 +1992,27 @@ def assert_is_subtree(tree, subtree):
 @pytest.mark.parametrize("sparse_container", [None] + CSC_CONTAINERS + CSR_CONTAINERS)
 def test_apply_path_readonly_all_trees(name, splitter, sparse_container):
     dataset = DATASETS["clf_small"]
-    X_small = dataset["X"].astype(np.float32, copy=False)
+    x_small = dataset["X"].astype(np.float32, copy=False)
     if sparse_container is None:
-        X_readonly = create_memmap_backed_data(X_small)
+        x_readonly = create_memmap_backed_data(x_small)
     else:
-        X_readonly = sparse_container(dataset["X"])
+        x_readonly = sparse_container(dataset["X"])
 
-        X_readonly.data = np.array(X_readonly.data, dtype=np.float32)
+        x_readonly.data = np.array(x_readonly.data, dtype=np.float32)
         (
-            X_readonly.data,
-            X_readonly.indices,
-            X_readonly.indptr,
+            x_readonly.data,
+            x_readonly.indices,
+            x_readonly.indptr,
         ) = create_memmap_backed_data(
-            (X_readonly.data, X_readonly.indices, X_readonly.indptr)
+            (x_readonly.data, x_readonly.indices, x_readonly.indptr)
         )
 
     y_readonly = create_memmap_backed_data(np.array(y_small, dtype=np.float32))
     est = ALL_TREES[name](splitter=splitter)
-    est.fit(X_readonly, y_readonly)
-    assert_array_equal(est.predict(X_readonly), est.predict(X_small))
+    est.fit(x_readonly, y_readonly)
+    assert_array_equal(est.predict(x_readonly), est.predict(x_small))
     assert_array_equal(
-        est.decision_path(X_readonly).todense(), est.decision_path(X_small).todense()
+        est.decision_path(x_readonly).todense(), est.decision_path(x_small).todense()
     )
 
 
