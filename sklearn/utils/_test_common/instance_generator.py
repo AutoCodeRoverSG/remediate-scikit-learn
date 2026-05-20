@@ -224,44 +224,44 @@ INIT_PARAMS = {
     FeatureAgglomeration: {"n_clusters": 2},
     FeatureUnion: {"transformer_list": [("trans1", StandardScaler())]},
     FixedThresholdClassifier: {"estimator": LogisticRegression(C=1)},
-    GammaRegressor: dict(max_iter=5),
-    GaussianMixture: dict(n_init=2, max_iter=5),
+    GammaRegressor: {"max_iter": 5},
+    GaussianMixture: {"n_init": 2, "max_iter": 5},
     # Due to the jl lemma and often very few samples, the number
     # of components of the random matrix projection will be probably
     # greater than the number of features.
     # So we impose a smaller number (avoid "auto" mode)
-    GaussianRandomProjection: dict(n_components=2),
-    GradientBoostingClassifier: dict(n_estimators=5),
-    GradientBoostingRegressor: dict(n_estimators=5),
-    GraphicalLassoCV: dict(max_iter=5, cv=3),
-    GraphicalLasso: dict(max_iter=5),
+    GaussianRandomProjection: {"n_components": 2},
+    GradientBoostingClassifier: {"n_estimators": 5},
+    GradientBoostingRegressor: {"n_estimators": 5},
+    GraphicalLassoCV: {"max_iter": 5, "cv": 3},
+    GraphicalLasso: {"max_iter": 5},
     GridSearchCV: [
-        dict(
-            cv=2,
-            error_score="raise",
-            estimator=Ridge(),
-            param_grid={"alpha": [0.1, 1.0]},
-        ),
-        dict(
-            cv=2,
-            error_score="raise",
-            estimator=LogisticRegression(),
-            param_grid={"C": [0.1, 1.0]},
-        ),
-        dict(
-            cv=2,
-            error_score="raise",
-            estimator=Pipeline(steps=[("pca", PCA()), ("ridge", Ridge())]),
-            param_grid={"ridge__alpha": [0.1, 1.0]},
-        ),
-        dict(
-            cv=2,
-            error_score="raise",
-            estimator=Pipeline(
+        {
+            "cv": 2,
+            "error_score": "raise",
+            "estimator": Ridge(),
+            "param_grid": {"alpha": [0.1, 1.0]},
+        },
+        {
+            "cv": 2,
+            "error_score": "raise",
+            "estimator": LogisticRegression(),
+            "param_grid": {"C": [0.1, 1.0]},
+        },
+        {
+            "cv": 2,
+            "error_score": "raise",
+            "estimator": Pipeline(steps=[("pca", PCA()), ("ridge", Ridge())]),
+            "param_grid": {"ridge__alpha": [0.1, 1.0]},
+        },
+        {
+            "cv": 2,
+            "error_score": "raise",
+            "estimator": Pipeline(
                 steps=[("pca", PCA()), ("logisticregression", LogisticRegression())]
             ),
-            param_grid={"logisticregression__C": [0.1, 1.0]},
-        ),
+            "param_grid": {"logisticregression__C": [0.1, 1.0]},
+        },
     ],
     HalvingGridSearchCV: [
         dict(
