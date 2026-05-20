@@ -79,17 +79,17 @@ from sklearn.tests.metadata_routing_common import (
 )
 from sklearn.utils.metadata_routing import MetadataRouter
 
-rng = np.random.RandomState(42)
+rng = np.random.default_rng(42)
 N, M = 100, 4
-X = rng.rand(N, M)
-y = rng.randint(0, 3, size=N)
+X = rng.random((N, M))
+y = rng.integers(0, 3, size=N)
 y_binary = (y >= 1).astype(int)
 classes = np.unique(y)
-y_multi = rng.randint(0, 3, size=(N, 3))
+y_multi = rng.integers(0, 3, size=(N, 3))
 classes_multi = [np.unique(y_multi[:, i]) for i in range(y_multi.shape[1])]
-metadata = rng.randint(0, 10, size=N)
-sample_weight = rng.rand(N)
-groups = rng.randint(0, 10, size=len(y))
+metadata = rng.integers(0, 10, size=N)
+sample_weight = rng.random(N)
+groups = rng.integers(0, 10, size=len(y))
 
 
 METAESTIMATORS: list = [

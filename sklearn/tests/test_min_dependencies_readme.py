@@ -169,7 +169,7 @@ def check_pyproject_sections(pyproject_toml, min_dependencies):
 
         pyproject_build_min_versions = {}
         # Assuming pyproject.toml build section has something like "my-package>=2.3.0"
-        pattern = r"([\w-]+)\s*[>=]=\s*([\d\w.]+)"
+        pattern = r"([\w-]+)\s*[>=]=\s*([\w.]+)"
         for requirement in info:
             match = re.search(pattern, requirement)
             if match is None:
