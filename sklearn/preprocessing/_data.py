@@ -113,7 +113,7 @@ def _handle_zeros_in_scale(scale, copy=True, constant_mask=None):
     """
     # if we are fitting on 1D arrays, scale might be a scalar
     if np.isscalar(scale):
-        if scale == 0.0:
+        if abs(scale) < 10 * np.finfo(np.float64).eps:
             scale = 1.0
         return scale
     # scale is an array
@@ -2497,8 +2497,8 @@ class KernelCenterer(ClassNamePrefixFeaturesOutMixin, TransformerMixin, BaseEsti
     """
 
     # X is called K in these methods.
-    __metadata_request__transform = {"k": metadata_routing.UNUSED}
-    __metadata_request__fit = {"k": metadata_routing.UNUSED}
+    _metadata_request__transform = {"k": metadata_routing.UNUSED}
+    _metadata_request__fit = {"k": metadata_routing.UNUSED}
 
     def fit(self, k, y=None):
         """Fit KernelCenterer.
@@ -2780,7 +2780,7 @@ class QuantileTransformer(OneToOneFeatureMixin, TransformerMixin, BaseEstimator)
         output_distribution="uniform",
         ignore_implicit_zeros=False,
         subsample=10_000,
-        random_state=None,
+        random_state=0,
         copy=True,
     ):
         self.n_quantiles = n_quantiles
@@ -2904,7 +2904,7 @@ class QuantileTransformer(OneToOneFeatureMixin, TransformerMixin, BaseEstimator)
 
         return self
 
-    def _transform_col(self, X_col, quantiles, inverse):
+    def _transform_col(self, x_col, quantiles, inverse):
         """Private function to transform a single feature."""
 
         output_distribution = self.output_distribution
@@ -2922,20 +2922,20 @@ class QuantileTransformer(OneToOneFeatureMixin, TransformerMixin, BaseEstimator)
             # for inverse transform, match a uniform distribution
             with np.errstate(invalid="ignore"):  # hide NaN comparison warnings
                 if output_distribution == "normal":
-                    X_col = stats.norm.cdf(X_col)
+                    x_col = stats.norm.cdf(x_col)
                 # else output distribution is already a uniform distribution
 
         # find index for lower and higher bounds
         with np.errstate(invalid="ignore"):  # hide NaN comparison warnings
             if output_distribution == "normal":
-                lower_bounds_idx = X_col - BOUNDS_THRESHOLD < lower_bound_x
-                upper_bounds_idx = X_col + BOUNDS_THRESHOLD > upper_bound_x
+                lower_bounds_idx = x_col - BOUNDS_THRESHOLD < lower_bound_x
+                upper_bounds_idx = x_col + BOUNDS_THRESHOLD > upper_bound_x
             if output_distribution == "uniform":
-                lower_bounds_idx = X_col == lower_bound_x
-                upper_bounds_idx = X_col == upper_bound_x
+                lower_bounds_idx = x_col == lower_bound_x
+                upper_bounds_idx = x_col == upper_bound_x
 
-        isfinite_mask = ~np.isnan(X_col)
-        X_col_finite = X_col[isfinite_mask]
+        isfinite_mask = ~np.isnan(x_col)
+        x_col_finite = x_col[isfinite_mask]
         if not inverse:
             # Interpolate in one direction and in the other and take the
             # mean. This is in case of repeated values in the features
@@ -2944,30 +2944,30 @@ class QuantileTransformer(OneToOneFeatureMixin, TransformerMixin, BaseEstimator)
             # If we don't do this, only one extreme of the duplicated is
             # used (the upper when we do ascending, and the
             # lower for descending). We take the mean of these two
-            X_col[isfinite_mask] = 0.5 * (
-                np.interp(X_col_finite, quantiles, self.references_)
-                - np.interp(-X_col_finite, -quantiles[::-1], -self.references_[::-1])
+            x_col[isfinite_mask] = 0.5 * (
+                np.interp(x_col_finite, quantiles, self.references_)
+                - np.interp(-x_col_finite, -quantiles[::-1], -self.references_[::-1])
             )
         else:
-            X_col[isfinite_mask] = np.interp(X_col_finite, self.references_, quantiles)
+            x_col[isfinite_mask] = np.interp(x_col_finite, self.references_, quantiles)
 
-        X_col[upper_bounds_idx] = upper_bound_y
-        X_col[lower_bounds_idx] = lower_bound_y
+        x_col[upper_bounds_idx] = upper_bound_y
+        x_col[lower_bounds_idx] = lower_bound_y
         # for forward transform, match the output distribution
         if not inverse:
             with np.errstate(invalid="ignore"):  # hide NaN comparison warnings
                 if output_distribution == "normal":
-                    X_col = stats.norm.ppf(X_col)
+                    x_col = stats.norm.ppf(x_col)
                     # find the value to clip the data to avoid mapping to
                     # infinity. Clip such that the inverse transform will be
                     # consistent
                     clip_min = stats.norm.ppf(BOUNDS_THRESHOLD - np.spacing(1))
                     clip_max = stats.norm.ppf(1 - (BOUNDS_THRESHOLD - np.spacing(1)))
-                    X_col = np.clip(X_col, clip_min, clip_max)
+                    x_col = np.clip(x_col, clip_min, clip_max)
                 # else output distribution is uniform and the ppf is the
                 # identity function so we let X_col unchanged
 
-        return X_col
+        return x_col
 
     def _check_inputs(self, X, in_fit, accept_sparse_negative=False, copy=False):
         """Check inputs before fit and transform."""
@@ -3075,7 +3075,7 @@ class QuantileTransformer(OneToOneFeatureMixin, TransformerMixin, BaseEstimator)
             ensure_all_finite="allow-nan",
         )
 
-        if not X.shape[1] == self.n_features_in_:
+        if X.shape[1] != self.n_features_in_:
             raise ValueError(
                 f"X has {X.shape[1]} features, but QuantileTransformer "
                 f"is expecting {self.n_features_in_} features as input."
@@ -3102,7 +3102,7 @@ def quantile_transform(
     output_distribution="uniform",
     ignore_implicit_zeros=False,
     subsample=int(1e5),
-    random_state=None,
+    random_state=0,
     copy=True,
 ):
     """Transform features using quantiles information.
@@ -3391,6 +3391,7 @@ class PowerTransformer(OneToOneFeatureMixin, TransformerMixin, BaseEstimator):
         return self._fit(X, y, force_transform=True)
 
     def _fit(self, X, y=None, force_transform=False):
+        # y is not used but is accepted for API consistency.
         X = self._check_input(X, in_fit=True, check_positive=True)
 
         if not self.copy and not force_transform:  # if call from fit()
@@ -3503,7 +3504,7 @@ class PowerTransformer(OneToOneFeatureMixin, TransformerMixin, BaseEstimator):
             ensure_all_finite="allow-nan",
         )
 
-        if not X.shape[1] == self.n_features_in_:
+        if X.shape[1] != self.n_features_in_:
             raise ValueError(
                 f"X has {X.shape[1]} features, but PowerTransformer "
                 f"is expecting {self.n_features_in_} features as input."
@@ -3620,7 +3621,7 @@ class PowerTransformer(OneToOneFeatureMixin, TransformerMixin, BaseEstimator):
                     "applied to strictly positive data"
                 )
 
-        if check_shape and not X.shape[1] == len(self.lambdas_):
+        if check_shape and X.shape[1] != len(self.lambdas_):
             raise ValueError(
                 "Input data has a different number of features "
                 "than fitting data. Should have {n}, data has {m}".format(
