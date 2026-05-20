@@ -2404,17 +2404,17 @@ def test_power_transformer_boxcox_strictly_positive_exception():
 
     pt = PowerTransformer(method="box-cox")
     pt.fit(np.abs(X_2d))
-    X_with_negatives = X_2d
+    x_with_negatives = X_2d
     not_positive_message = "strictly positive"
 
     with pytest.raises(ValueError, match=not_positive_message):
-        pt.transform(X_with_negatives)
+        pt.transform(x_with_negatives)
 
     with pytest.raises(ValueError, match=not_positive_message):
-        pt.fit(X_with_negatives)
+        pt.fit(x_with_negatives)
 
     with pytest.raises(ValueError, match=not_positive_message):
-        power_transform(X_with_negatives, method="box-cox")
+        power_transform(x_with_negatives, method="box-cox")
 
     with pytest.raises(ValueError, match=not_positive_message):
         pt.transform(np.zeros(X_2d.shape))
@@ -2457,8 +2457,8 @@ def test_power_transformer_lambda_zero():
 
     # Test the lambda = 0 case
     pt.lambdas_ = np.array([0])
-    X_trans = pt.transform(X)
-    assert_array_almost_equal(pt.inverse_transform(X_trans), X)
+    x_trans = pt.transform(X)
+    assert_array_almost_equal(pt.inverse_transform(x_trans), X)
 
 
 def test_power_transformer_lambda_one():
@@ -2467,8 +2467,8 @@ def test_power_transformer_lambda_one():
     X = np.abs(X_2d)[:, 0:1]
 
     pt.lambdas_ = np.array([1])
-    X_trans = pt.transform(X)
-    assert_array_almost_equal(X_trans, X)
+    x_trans = pt.transform(X)
+    assert_array_almost_equal(x_trans, X)
 
 
 @pytest.mark.parametrize(
@@ -2499,22 +2499,22 @@ def test_optimization_power_transformer(method, lmbda):
 
     pt = PowerTransformer(method=method, standardize=False).fit(np.abs(X))
     pt.lambdas_ = [lmbda]
-    X_inv = pt.inverse_transform(X)
+    x_inv = pt.inverse_transform(X)
 
     pt = PowerTransformer(method=method, standardize=False)
-    X_inv_trans = pt.fit_transform(X_inv)
+    x_inv_trans = pt.fit_transform(x_inv)
 
-    assert_almost_equal(0, np.linalg.norm(X - X_inv_trans) / n_samples, decimal=2)
-    assert_almost_equal(0, X_inv_trans.mean(), decimal=1)
-    assert_almost_equal(1, X_inv_trans.std(), decimal=1)
+    assert_almost_equal(0, np.linalg.norm(X - x_inv_trans) / n_samples, decimal=2)
+    assert_almost_equal(0, x_inv_trans.mean(), decimal=1)
+    assert_almost_equal(1, x_inv_trans.std(), decimal=1)
 
 
 def test_invserse_box_cox():
     # output nan if the input is invalid
     pt = PowerTransformer(method="box-cox", standardize=False).fit([[1.0], [2.0]])
     pt.lambdas_ = [0.5]
-    X_inv = pt.inverse_transform([[-2.1]])
-    assert np.isnan(X_inv)
+    x_inv = pt.inverse_transform([[-2.1]])
+    assert np.isnan(x_inv)
 
 
 def test_yeo_johnson_darwin_example():
@@ -2545,8 +2545,8 @@ def test_power_transformer_nans(method):
 
     assert_almost_equal(lmbda_no_nans, lmbda_nans, decimal=5)
 
-    X_trans = pt.transform(X)
-    assert_array_equal(np.isnan(X_trans), np.isnan(X))
+    x_trans = pt.transform(X)
+    assert_array_equal(np.isnan(x_trans), np.isnan(X))
 
 
 @pytest.mark.parametrize("method", ["box-cox", "yeo-johnson"])
@@ -2570,23 +2570,23 @@ def test_power_transformer_copy_True(method, standardize):
     if method == "box-cox":
         X = np.abs(X)
 
-    X_original = X.copy()
-    assert X is not X_original  # sanity checks
-    assert_array_almost_equal(X, X_original)
+    x_original = X.copy()
+    assert X is not x_original  # sanity checks
+    assert_array_almost_equal(X, x_original)
 
     pt = PowerTransformer(method, standardize=standardize, copy=True)
 
     pt.fit(X)
-    assert_array_almost_equal(X, X_original)
-    X_trans = pt.transform(X)
-    assert X_trans is not X
+    assert_array_almost_equal(X, x_original)
+    x_trans = pt.transform(X)
+    assert x_trans is not X
 
-    X_trans = pt.fit_transform(X)
-    assert_array_almost_equal(X, X_original)
-    assert X_trans is not X
+    x_trans = pt.fit_transform(X)
+    assert_array_almost_equal(X, x_original)
+    assert x_trans is not X
 
-    X_inv_trans = pt.inverse_transform(X_trans)
-    assert X_trans is not X_inv_trans
+    x_inv_trans = pt.inverse_transform(x_trans)
+    assert x_trans is not x_inv_trans
 
 
 @pytest.mark.parametrize("method", ["box-cox", "yeo-johnson"])
