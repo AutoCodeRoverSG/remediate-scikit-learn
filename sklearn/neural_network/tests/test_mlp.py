@@ -188,8 +188,8 @@ def test_gradient():
     for n_labels in [2, 3]:
         n_samples = 5
         n_features = 10
-        random_state = np.random.RandomState(seed=42)
-        X = random_state.rand(n_samples, n_features)
+        random_state = np.random.default_rng(seed=42)
+        X = random_state.random((n_samples, n_features))
         y = 1 + np.mod(np.arange(n_samples) + 1, n_labels)
         Y = LabelBinarizer().fit_transform(y)
 
@@ -508,7 +508,7 @@ def test_partial_fit_errors():
 def test_nonfinite_params():
     # Check that MLPRegressor throws ValueError when dealing with non-finite
     # parameter values
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
     n_samples = 10
     fmax = np.finfo(np.float64).max
     X = fmax * rng.uniform(size=(n_samples, 2))
@@ -546,7 +546,7 @@ def test_predict_proba_binary():
     assert_array_equal(proba_max, proba_log_max)
     assert_allclose(y_log_proba, np.log(y_proba))
 
-    assert roc_auc_score(y, y_proba[:, 1]) == 1.0
+    assert roc_auc_score(y, y_proba[:, 1]) == pytest.approx(1.0)
 
 
 def test_predict_proba_multiclass():
@@ -939,8 +939,8 @@ def test_mlp_loading_from_joblib_partial_fit(tmp_path):
     assert_allclose(predicted_value, fine_tune_target, rtol=1e-4)
 
 
-@pytest.mark.parametrize("Estimator", [MLPClassifier, MLPRegressor])
-def test_preserve_feature_names(Estimator):
+@pytest.mark.parametrize("estimator", [MLPClassifier, MLPRegressor])
+def test_preserve_feature_names(estimator):
     """Check that feature names are preserved when early stopping is enabled.
 
     Feature names are required for consistency checks during scoring.
@@ -948,22 +948,22 @@ def test_preserve_feature_names(Estimator):
     Non-regression test for gh-24846
     """
     pd = pytest.importorskip("pandas")
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
 
-    X = pd.DataFrame(data=rng.randn(10, 2), columns=["colname_a", "colname_b"])
+    X = pd.DataFrame(data=rng.standard_normal((10, 2)), columns=["colname_a", "colname_b"])
     y = pd.Series(data=np.full(10, 1), name="colname_y")
 
-    model = Estimator(early_stopping=True, validation_fraction=0.2)
+    model = estimator(early_stopping=True, validation_fraction=0.2)
 
     with warnings.catch_warnings():
         warnings.simplefilter("error", UserWarning)
         model.fit(X, y)
 
 
-@pytest.mark.parametrize("MLPEstimator", [MLPClassifier, MLPRegressor])
-def test_mlp_warm_start_with_early_stopping(MLPEstimator):
+@pytest.mark.parametrize("mlp_estimator", [MLPClassifier, MLPRegressor])
+def test_mlp_warm_start_with_early_stopping(mlp_estimator):
     """Check that early stopping works with warm start."""
-    mlp = MLPEstimator(
+    mlp = mlp_estimator(
         max_iter=10, random_state=0, warm_start=True, early_stopping=True
     )
     with warnings.catch_warnings():
@@ -975,15 +975,15 @@ def test_mlp_warm_start_with_early_stopping(MLPEstimator):
     assert len(mlp.validation_scores_) > n_validation_scores
 
 
-@pytest.mark.parametrize("MLPEstimator", [MLPClassifier, MLPRegressor])
+@pytest.mark.parametrize("mlp_estimator", [MLPClassifier, MLPRegressor])
 @pytest.mark.parametrize("solver", ["sgd", "adam", "lbfgs"])
-def test_mlp_warm_start_no_convergence(MLPEstimator, solver):
+def test_mlp_warm_start_no_convergence(mlp_estimator, solver):
     """Check that we stop the number of iteration at `max_iter` when warm starting.
 
     Non-regression test for:
     https://github.com/scikit-learn/scikit-learn/issues/24764
     """
-    model = MLPEstimator(
+    model = mlp_estimator(
         solver=solver,
         warm_start=True,
         early_stopping=False,
@@ -1002,13 +1002,13 @@ def test_mlp_warm_start_no_convergence(MLPEstimator, solver):
     assert model.n_iter_ == 20
 
 
-@pytest.mark.parametrize("MLPEstimator", [MLPClassifier, MLPRegressor])
-def test_mlp_partial_fit_after_fit(MLPEstimator):
+@pytest.mark.parametrize("mlp_estimator", [MLPClassifier, MLPRegressor])
+def test_mlp_partial_fit_after_fit(mlp_estimator):
     """Check partial fit does not fail after fit when early_stopping=True.
 
     Non-regression test for gh-25693.
     """
-    mlp = MLPEstimator(early_stopping=True, random_state=0).fit(X_iris, y_iris)
+    mlp = mlp_estimator(early_stopping=True, random_state=0).fit(X_iris, y_iris)
 
     msg = "partial_fit does not support early_stopping=True"
     with pytest.raises(ValueError, match=msg):
@@ -1056,15 +1056,15 @@ def test_mlp_sample_weight_with_early_stopping():
         random_state=42,
     )
     sw = np.ones_like(y)
-    params = dict(
-        hidden_layer_sizes=10,
-        solver="adam",
-        early_stopping=True,
-        tol=1e-2,
-        learning_rate_init=0.01,
-        batch_size=10,
-        random_state=42,
-    )
+    params = {
+        "hidden_layer_sizes": 10,
+        "solver": "adam",
+        "early_stopping": True,
+        "tol": 1e-2,
+        "learning_rate_init": 0.01,
+        "batch_size": 10,
+        "random_state": 42,
+    }
     m1 = MLPRegressor(
         **params,
     )
@@ -1092,7 +1092,7 @@ def test_mlp_vs_poisson_glm_equivalent(global_random_seed):
         alpha=0,
         solver="lbfgs",
         tol=1e-7,
-        random_state=np.random.RandomState(global_random_seed + 1),
+        random_state=global_random_seed + 1,
     ).fit(X, y)
 
     assert_allclose(mlp.predict(X), glm.predict(X), rtol=1e-4)
@@ -1106,7 +1106,7 @@ def test_mlp_vs_poisson_glm_equivalent(global_random_seed):
         alpha=0,
         solver="lbfgs",
         tol=1e-7,
-        random_state=np.random.RandomState(global_random_seed + 1),
+        random_state=global_random_seed + 1,
     ).fit(X, y)
     assert not np.allclose(mlp.predict(X), glm.predict(X), rtol=1e-4)
 
