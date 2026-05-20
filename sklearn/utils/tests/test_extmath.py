@@ -312,10 +312,10 @@ def test_randomized_eigsh_reconst_low_rank(n, rank):
     assert_array_almost_equal(np.linalg.norm(V, axis=0), np.ones(S.shape))
     assert_array_almost_equal(V.T @ V, np.diag(np.ones(S.shape)))
     # reconstruction
-    A_reconstruct = V @ np.diag(S) @ V.T
+    a_reconstruct = V @ np.diag(S) @ V.T
 
     # test that the approximation is good
-    assert_array_almost_equal(A_reconstruct, A, decimal=6)
+    assert_array_almost_equal(a_reconstruct, A, decimal=6)
 
 
 @pytest.mark.parametrize("dtype", (np.float32, np.float64))
@@ -334,16 +334,16 @@ def test_row_norms(dtype, csr_container):
     assert_array_almost_equal(np.sqrt(sq_norm), row_norms(X), precision)
 
     for csr_index_dtype in [np.int32, np.int64]:
-        Xcsr = csr_container(X, dtype=dtype)
+        x_csr = csr_container(X, dtype=dtype)
         # csr_matrix will use int32 indices by default,
         # up-casting those to int64 when necessary
         if csr_index_dtype is np.int64:
-            Xcsr.indptr = Xcsr.indptr.astype(csr_index_dtype, copy=False)
-            Xcsr.indices = Xcsr.indices.astype(csr_index_dtype, copy=False)
-        assert Xcsr.indices.dtype == csr_index_dtype
-        assert Xcsr.indptr.dtype == csr_index_dtype
-        assert_array_almost_equal(sq_norm, row_norms(Xcsr, squared=True), precision)
-        assert_array_almost_equal(np.sqrt(sq_norm), row_norms(Xcsr), precision)
+            x_csr.indptr = x_csr.indptr.astype(csr_index_dtype, copy=False)
+            x_csr.indices = x_csr.indices.astype(csr_index_dtype, copy=False)
+        assert x_csr.indices.dtype == csr_index_dtype
+        assert x_csr.indptr.dtype == csr_index_dtype
+        assert_array_almost_equal(sq_norm, row_norms(x_csr, squared=True), precision)
+        assert_array_almost_equal(np.sqrt(sq_norm), row_norms(x_csr), precision)
 
 
 def test_randomized_svd_low_rank_with_noise():
@@ -446,7 +446,7 @@ def test_randomized_svd_transpose_consistency():
 
     U1, s1, V1 = randomized_svd(X, k, n_iter=3, transpose=False, random_state=0)
     U2, s2, V2 = randomized_svd(X, k, n_iter=3, transpose=True, random_state=0)
-    U3, s3, V3 = randomized_svd(X, k, n_iter=3, transpose="auto", random_state=0)
+    _, s3, _ = randomized_svd(X, k, n_iter=3, transpose="auto", random_state=0)
     U4, s4, V4 = linalg.svd(X, full_matrices=False)
 
     assert_almost_equal(s1, s4[:k], decimal=3)
@@ -469,38 +469,38 @@ def test_randomized_svd_power_iteration_normalizer():
     n_components = 50
 
     # Check that it diverges with many (non-normalized) power iterations
-    U, s, Vt = randomized_svd(
+    U, s, vt = randomized_svd(
         X, n_components, n_iter=2, power_iteration_normalizer="none", random_state=0
     )
-    A = X - U.dot(np.diag(s).dot(Vt))
+    A = X - U.dot(np.diag(s).dot(vt))
     error_2 = linalg.norm(A, ord="fro")
-    U, s, Vt = randomized_svd(
+    U, s, vt = randomized_svd(
         X, n_components, n_iter=20, power_iteration_normalizer="none", random_state=0
     )
-    A = X - U.dot(np.diag(s).dot(Vt))
+    A = X - U.dot(np.diag(s).dot(vt))
     error_20 = linalg.norm(A, ord="fro")
     assert np.abs(error_2 - error_20) > 100
 
     for normalizer in ["LU", "QR", "auto"]:
-        U, s, Vt = randomized_svd(
+        U, s, vt = randomized_svd(
             X,
             n_components,
             n_iter=2,
             power_iteration_normalizer=normalizer,
             random_state=0,
         )
-        A = X - U.dot(np.diag(s).dot(Vt))
+        A = X - U.dot(np.diag(s).dot(vt))
         error_2 = linalg.norm(A, ord="fro")
 
         for i in [5, 10, 50]:
-            U, s, Vt = randomized_svd(
+            U, s, vt = randomized_svd(
                 X,
                 n_components,
                 n_iter=i,
                 power_iteration_normalizer=normalizer,
                 random_state=0,
             )
-            A = X - U.dot(np.diag(s).dot(Vt))
+            A = X - U.dot(np.diag(s).dot(vt))
             error = linalg.norm(A, ord="fro")
             assert 15 > np.abs(error_2 - error)
 
@@ -519,7 +519,13 @@ def test_randomized_svd_sparse_warnings(sparse_container):
         )
     )
     with pytest.warns(sparse.SparseEfficiencyWarning, match=warn_msg):
-        randomized_svd(X, n_components, n_iter=1, power_iteration_normalizer="none")
+        randomized_svd(
+            X,
+            n_components,
+            n_iter=1,
+            power_iteration_normalizer="none",
+            random_state=rng,
+        )
 
 
 def test_svd_flip():
@@ -530,21 +536,21 @@ def test_svd_flip():
     X = rs.randn(n_samples, n_features)
 
     # Check matrix reconstruction
-    U, S, Vt = linalg.svd(X, full_matrices=False)
-    U1, V1 = svd_flip(U, Vt, u_based_decision=False)
+    U, S, vt = linalg.svd(X, full_matrices=False)
+    U1, V1 = svd_flip(U, vt, u_based_decision=False)
     assert_almost_equal(np.dot(U1 * S, V1), X, decimal=6)
 
     # Check transposed matrix reconstruction
     XT = X.T
-    U, S, Vt = linalg.svd(XT, full_matrices=False)
-    U2, V2 = svd_flip(U, Vt, u_based_decision=True)
+    U, S, vt = linalg.svd(XT, full_matrices=False)
+    U2, V2 = svd_flip(U, vt, u_based_decision=True)
     assert_almost_equal(np.dot(U2 * S, V2), XT, decimal=6)
 
     # Check that different flip methods are equivalent under reconstruction
-    U_flip1, V_flip1 = svd_flip(U, Vt, u_based_decision=True)
-    assert_almost_equal(np.dot(U_flip1 * S, V_flip1), XT, decimal=6)
-    U_flip2, V_flip2 = svd_flip(U, Vt, u_based_decision=False)
-    assert_almost_equal(np.dot(U_flip2 * S, V_flip2), XT, decimal=6)
+    u_flip1, v_flip1 = svd_flip(U, vt, u_based_decision=True)
+    assert_almost_equal(np.dot(u_flip1 * S, v_flip1), XT, decimal=6)
+    u_flip2, v_flip2 = svd_flip(U, vt, u_based_decision=False)
+    assert_almost_equal(np.dot(u_flip2 * S, v_flip2), XT, decimal=6)
 
 
 @pytest.mark.parametrize("n_samples, n_features", [(3, 4), (4, 3)])
