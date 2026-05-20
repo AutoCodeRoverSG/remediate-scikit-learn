@@ -294,12 +294,12 @@ def test_get_params():
     [
         (SVC(), True),
         (GridSearchCV(SVC(), {"C": [0.1, 1]}), True),
-        (Pipeline([("svc", SVC())]), True),
-        (Pipeline([("svc_cv", GridSearchCV(SVC(), {"C": [0.1, 1]}))]), True),
+        (Pipeline([("svc", SVC())], memory=None), True),
+        (Pipeline([("svc_cv", GridSearchCV(SVC(), {"C": [0.1, 1]}))], memory=None), True),
         (SVR(), False),
         (GridSearchCV(SVR(), {"C": [0.1, 1]}), False),
-        (Pipeline([("svr", SVR())]), False),
-        (Pipeline([("svr_cv", GridSearchCV(SVR(), {"C": [0.1, 1]}))]), False),
+        (Pipeline([("svr", SVR())], memory=None), False),
+        (Pipeline([("svr_cv", GridSearchCV(SVR(), {"C": [0.1, 1]}))], memory=None), False),
     ],
 )
 def test_is_classifier(estimator, expected_result):
@@ -311,12 +311,12 @@ def test_is_classifier(estimator, expected_result):
     [
         (SVR(), True),
         (GridSearchCV(SVR(), {"C": [0.1, 1]}), True),
-        (Pipeline([("svr", SVR())]), True),
-        (Pipeline([("svr_cv", GridSearchCV(SVR(), {"C": [0.1, 1]}))]), True),
+        (Pipeline([("svr", SVR())], memory=None), True),
+        (Pipeline([("svr_cv", GridSearchCV(SVR(), {"C": [0.1, 1]}))], memory=None), True),
         (SVC(), False),
         (GridSearchCV(SVC(), {"C": [0.1, 1]}), False),
-        (Pipeline([("svc", SVC())]), False),
-        (Pipeline([("svc_cv", GridSearchCV(SVC(), {"C": [0.1, 1]}))]), False),
+        (Pipeline([("svc", SVC())], memory=None), False),
+        (Pipeline([("svc_cv", GridSearchCV(SVC(), {"C": [0.1, 1]}))], memory=None), False),
     ],
 )
 def test_is_regressor(estimator, expected_result):
@@ -328,8 +328,8 @@ def test_is_regressor(estimator, expected_result):
     [
         (KMeans(), True),
         (GridSearchCV(KMeans(), {"n_clusters": [3, 8]}), True),
-        (Pipeline([("km", KMeans())]), True),
-        (Pipeline([("km_cv", GridSearchCV(KMeans(), {"n_clusters": [3, 8]}))]), True),
+        (Pipeline([("km", KMeans())], memory=None), True),
+        (Pipeline([("km_cv", GridSearchCV(KMeans(), {"n_clusters": [3, 8]}))], memory=None), True),
         (SVC(), False),
         (GridSearchCV(SVC(), {"C": [0.1, 1]}), False),
         (Pipeline([("svc", SVC())]), False),

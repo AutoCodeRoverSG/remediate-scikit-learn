@@ -43,7 +43,7 @@ from sklearn.utils.validation import (
 )
 
 
-def clone(estimator, *, safe=True):
+def clone(estimator: object, *, safe=True):
     """Construct a new unfitted estimator with the same parameters.
 
     Clone does a deep copy of the model in an estimator
