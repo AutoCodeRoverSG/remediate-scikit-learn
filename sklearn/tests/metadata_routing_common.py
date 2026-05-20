@@ -205,6 +205,8 @@ class NonConsumingClassifier(ClassifierMixin, BaseEstimator):
 
     def partial_fit(self, X, y, classes=None):
         """Partial fit accepting X, y, and classes for API compatibility."""
+        # X, y, and classes are intentionally not used in this non-consuming
+        # classifier, which is used for testing metadata routing.
         return self
 
     def decision_function(self, X):
@@ -220,7 +222,8 @@ class NonConsumingClassifier(ClassifierMixin, BaseEstimator):
         # dummy probabilities to support predict_proba
         y_proba = np.empty(shape=(len(X), len(self.classes_)), dtype=np.float32)
         # each row sums up to 1.0:
-        y_proba[:] = np.random.dirichlet(alpha=np.ones(len(self.classes_)), size=len(X))
+        rng = np.random.default_rng(seed=42)
+        y_proba[:] = rng.dirichlet(alpha=np.ones(len(self.classes_)), size=len(X))
         return y_proba
 
     def predict_log_proba(self, X):
@@ -232,11 +235,13 @@ class NonConsumingRegressor(RegressorMixin, BaseEstimator):
     """A classifier which accepts no metadata on any method."""
 
     def fit(self, X, y):
+        # X and y are part of the estimator interface but not used here.
         # X and y are required by the estimator interface but intentionally unused
         return self
 
     def partial_fit(self, X, y):
-        # X and y are required by the estimator interface but intentionally unused
+        # X and y are not used here as this is a non-consuming regressor,
+        # but are required to conform to the API.
         return self
 
     def predict(self, X):
@@ -324,6 +329,8 @@ class ConsumingClassifier(ClassifierMixin, BaseEstimator):
         return y_score
 
     def score(self, X, y, sample_weight="default", metadata="default"):
+        # X and y are not used here but are required for API compatibility
+        # with ClassifierMixin.score
         record_metadata_not_default(
             self, sample_weight=sample_weight, metadata=metadata
         )
