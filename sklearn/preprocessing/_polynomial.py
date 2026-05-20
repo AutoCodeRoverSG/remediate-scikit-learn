@@ -560,18 +560,18 @@ class PolynomialFeatures(TransformerMixin, BaseEstimator):
                 index = new_index
 
             if self._min_degree > 1:
-                n_xp, n_Xout = self._n_out_full, self.n_output_features_
+                n_xp, n_xout = self._n_out_full, self.n_output_features_
                 if self.include_bias:
                     Xout = xp.empty(
-                        shape=(n_samples, n_Xout),
+                        shape=(n_samples, n_xout),
                         dtype=XP.dtype,
                         device=device_,
                         **order_kwargs,
                     )
                     Xout[:, 0] = 1
-                    Xout[:, 1:] = XP[:, n_xp - n_Xout + 1 :]
+                    Xout[:, 1:] = XP[:, n_xp - n_xout + 1 :]
                 else:
-                    Xout = xp.asarray(XP[:, n_xp - n_Xout :], copy=True)
+                    Xout = xp.asarray(XP[:, n_xp - n_xout :], copy=True)
                 XP = Xout
         return _align_api_if_sparse(XP)
 
