@@ -39,9 +39,9 @@ def _no_op(x):
 def test_dot(dtype):
     dot = _dot_memview[_numpy_to_cython(dtype)]
 
-    rng = np.random.RandomState(0)
-    x = rng.random_sample(10).astype(dtype, copy=False)
-    y = rng.random_sample(10).astype(dtype, copy=False)
+    rng = np.random.default_rng(0)
+    x = rng.random(10).astype(dtype, copy=False)
+    y = rng.random(10).astype(dtype, copy=False)
 
     expected = x.dot(y)
     actual = dot(x, y)
@@ -53,8 +53,8 @@ def test_dot(dtype):
 def test_asum(dtype):
     asum = _asum_memview[_numpy_to_cython(dtype)]
 
-    rng = np.random.RandomState(0)
-    x = rng.random_sample(10).astype(dtype, copy=False)
+    rng = np.random.default_rng(0)
+    x = rng.random(10).astype(dtype, copy=False)
 
     expected = np.abs(x).sum()
     actual = asum(x)
@@ -66,9 +66,9 @@ def test_asum(dtype):
 def test_axpy(dtype):
     axpy = _axpy_memview[_numpy_to_cython(dtype)]
 
-    rng = np.random.RandomState(0)
-    x = rng.random_sample(10).astype(dtype, copy=False)
-    y = rng.random_sample(10).astype(dtype, copy=False)
+    rng = np.random.default_rng(0)
+    x = rng.random(10).astype(dtype, copy=False)
+    y = rng.random(10).astype(dtype, copy=False)
     alpha = 2.5
 
     expected = alpha * x + y
@@ -81,8 +81,8 @@ def test_axpy(dtype):
 def test_nrm2(dtype):
     nrm2 = _nrm2_memview[_numpy_to_cython(dtype)]
 
-    rng = np.random.RandomState(0)
-    x = rng.random_sample(10).astype(dtype, copy=False)
+    rng = np.random.default_rng(0)
+    x = rng.random(10).astype(dtype, copy=False)
 
     expected = np.linalg.norm(x)
     actual = nrm2(x)
@@ -164,7 +164,7 @@ def test_rot(dtype):
 
 @pytest.mark.parametrize("dtype", [np.float32, np.float64])
 @pytest.mark.parametrize(
-    "opA, transA",
+    "op_a, trans_a",
     [(_no_op, BLAS_Trans.NoTrans), (np.transpose, BLAS_Trans.Trans)],
     ids=["NoTrans", "Trans"],
 )
@@ -173,19 +173,19 @@ def test_rot(dtype):
     [BLAS_Order.RowMajor, BLAS_Order.ColMajor],
     ids=["RowMajor", "ColMajor"],
 )
-def test_gemv(dtype, opA, transA, order):
+def test_gemv(dtype, op_a, trans_a, order):
     gemv = _gemv_memview[_numpy_to_cython(dtype)]
 
     rng = np.random.RandomState(0)
     A = np.asarray(
-        opA(rng.random_sample((20, 10)).astype(dtype, copy=False)), order=ORDER[order]
+        op_a(rng.random_sample((20, 10)).astype(dtype, copy=False)), order=ORDER[order]
     )
     x = rng.random_sample(10).astype(dtype, copy=False)
     y = rng.random_sample(20).astype(dtype, copy=False)
     alpha, beta = 2.5, -0.5
 
-    expected = alpha * opA(A).dot(x) + beta * y
-    gemv(transA, alpha, A, x, beta, y)
+    expected = alpha * op_a(A).dot(x) + beta * y
+    gemv(trans_a, alpha, A, x, beta, y)
 
     assert_allclose(y, expected, rtol=RTOL[dtype])
 
@@ -215,12 +215,12 @@ def test_ger(dtype, order):
 
 @pytest.mark.parametrize("dtype", [np.float32, np.float64])
 @pytest.mark.parametrize(
-    "opB, transB",
+    "op_b, trans_b",
     [(_no_op, BLAS_Trans.NoTrans), (np.transpose, BLAS_Trans.Trans)],
     ids=["NoTrans", "Trans"],
 )
 @pytest.mark.parametrize(
-    "opA, transA",
+    "op_a, trans_a",
     [(_no_op, BLAS_Trans.NoTrans), (np.transpose, BLAS_Trans.Trans)],
     ids=["NoTrans", "Trans"],
 )
@@ -229,22 +229,22 @@ def test_ger(dtype, order):
     [BLAS_Order.RowMajor, BLAS_Order.ColMajor],
     ids=["BLAS_Order.RowMajor", "BLAS_Order.ColMajor"],
 )
-def test_gemm(dtype, opA, transA, opB, transB, order):
+def test_gemm(dtype, op_a, trans_a, op_b, trans_b, order):
     gemm = _gemm_memview[_numpy_to_cython(dtype)]
 
     rng = np.random.RandomState(0)
     A = np.asarray(
-        opA(rng.random_sample((30, 10)).astype(dtype, copy=False)), order=ORDER[order]
+        op_a(rng.random_sample((30, 10)).astype(dtype, copy=False)), order=ORDER[order]
     )
     B = np.asarray(
-        opB(rng.random_sample((10, 20)).astype(dtype, copy=False)), order=ORDER[order]
+        op_b(rng.random_sample((10, 20)).astype(dtype, copy=False)), order=ORDER[order]
     )
     C = np.asarray(
         rng.random_sample((30, 20)).astype(dtype, copy=False), order=ORDER[order]
     )
     alpha, beta = 2.5, -0.5
 
-    expected = alpha * opA(A).dot(opB(B)) + beta * C
-    gemm(transA, transB, alpha, A, B, beta, C)
+    expected = alpha * op_a(A).dot(op_b(B)) + beta * C
+    gemm(trans_a, trans_b, alpha, A, B, beta, C)
 
     assert_allclose(C, expected, rtol=RTOL[dtype])
