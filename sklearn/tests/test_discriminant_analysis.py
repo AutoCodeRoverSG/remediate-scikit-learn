@@ -705,7 +705,7 @@ def test_qda_regularization(global_random_seed, solver):
         clf.fit(X2, y6)
 
     with pytest.raises(AttributeError):
-        y_pred = clf.predict(X2)
+        clf.predict(X2)
 
     # Adding a little regularization fixes the fit time error.
     if solver == "svd":
