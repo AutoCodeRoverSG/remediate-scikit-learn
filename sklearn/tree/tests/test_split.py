@@ -122,25 +122,25 @@ def make_simple_dataset(
     n_classes,
     rng,
 ):
-    X_dense = rng.random((n, d))
-    y = rng.random(n) + X_dense.sum(axis=1)
+    x_dense = rng.random((n, d))
+    y = rng.random(n) + x_dense.sum(axis=1)
     w = rng.integers(0, 5, size=n) if rng.uniform() < 0.5 else rng.random(n)
 
     with_duplicates = rng.integers(2) == 0
     if with_duplicates:
-        X_dense = X_dense.round(1 if n < 50 else 2)
+        x_dense = x_dense.round(1 if n < 50 else 2)
     if with_nans:
         nan_density = rng.uniform(0.05, 0.8)
-        mask = rng.random(X_dense.shape) < nan_density
-        X_dense[mask] = np.nan
+        mask = rng.random(x_dense.shape) < nan_density
+        x_dense[mask] = np.nan
     if is_sparse:
         density = rng.uniform(0.05, 0.99)
-        X_dense -= 0.5
-        mask = rng.random(X_dense.shape) > density
-        X_dense[mask] = 0
-        X = csc_array(X_dense)
+        x_dense -= 0.5
+        mask = rng.random(x_dense.shape) > density
+        x_dense[mask] = 0
+        X = csc_array(x_dense)
     else:
-        X = X_dense
+        X = x_dense
 
     if is_clf:
         q = np.linspace(0, 1, num=n_classes + 1)[1:-1]
@@ -148,12 +148,12 @@ def make_simple_dataset(
 
     # Trees cast X to float32 internally; match that dtype here to avoid
     # routing/impurity mismatches from rounding with `<=`.
-    return X_dense.astype("float32"), X, y, w
+    return x_dense.astype("float32"), X, y, w
 
 
 @pytest.mark.filterwarnings("ignore:.*friedman_mse.*:FutureWarning")
 @pytest.mark.parametrize(
-    "Tree, criterion",
+    "tree_cls, criterion",
     [
         *product(REG_TREES.values(), REG_CRITERIONS),
         *product(CLF_TREES.values(), CLF_CRITERIONS),
@@ -164,7 +164,7 @@ def make_simple_dataset(
     [(False, False), (True, False), (False, True)],
     ids=["dense-without_missing", "sparse-without_missing", "dense-with_missing"],
 )
-def test_split_impurity(Tree, criterion, sparse, missing_values, global_random_seed):
+def test_split_impurity(tree_cls, criterion, sparse, missing_values, global_random_seed):
     is_clf = criterion in CLF_CRITERIONS
 
     rng = np.random.default_rng(global_random_seed)
@@ -174,13 +174,13 @@ def test_split_impurity(Tree, criterion, sparse, missing_values, global_random_s
     for it, n in enumerate(ns):
         d = rng.integers(1, 4)
         n_classes = rng.integers(2, 5)  # only used for classification
-        X_dense, X, y, w = make_simple_dataset(
+        x_dense, X, y, w = make_simple_dataset(
             n, d, missing_values, sparse, is_clf, n_classes, rng
         )
 
         naive_splitter = NaiveSplitter(criterion, n_classes)
 
-        tree = Tree(
+        tree = tree_cls(
             criterion=criterion,
             max_depth=1,
             random_state=global_random_seed,
@@ -198,10 +198,10 @@ def test_split_impurity(Tree, criterion, sparse, missing_values, global_random_s
         if tree.tree_.node_count == 1:
             # if no splits was made assert that either:
             assert (
-                "Extra" in Tree.__name__
+                "Extra" in tree_cls.__name__
                 or root_impurity < 1e-12  # root impurity is 0
                 # or no valid split can be made:
-                or naive_splitter.best_split_naive(X_dense, y, w)[0] == np.inf
+                or naive_splitter.best_split_naive(x_dense, y, w)[0] == np.inf
             )
             continue
 
@@ -211,14 +211,14 @@ def test_split_impurity(Tree, criterion, sparse, missing_values, global_random_s
             "threshold": tree.tree_.threshold[0],
             "missing_left": bool(tree.tree_.missing_go_to_left[0]),
         }
-        nodes = naive_splitter.compute_split_nodes(X_dense, y, w, **actual_split)
+        nodes = naive_splitter.compute_split_nodes(x_dense, y, w, **actual_split)
         (left_val, left_impurity), (right_val, right_impurity) = nodes
         assert_allclose(left_impurity, actual_impurity[1], atol=1e-12)
         assert_allclose(right_impurity, actual_impurity[2], atol=1e-12)
         assert_allclose(left_val, actual_value[1], atol=1e-12)
         assert_allclose(right_val, actual_value[2], atol=1e-12)
 
-        if "Extra" in Tree.__name__:
+        if "Extra" in tree_cls.__name__:
             # The remainder of the test checks for optimality of the found split.
             # However, randomized trees are not guaranteed to find an optimal split
             # but only a "better-than-nothing" split.
@@ -230,7 +230,7 @@ def test_split_impurity(Tree, criterion, sparse, missing_values, global_random_s
         # with the same optimal impurity, so the assertion is made on the impurity
         # value: the split value is only displayed to help debugging in case
         # of assertion failure.
-        best_impurity, best_split = naive_splitter.best_split_naive(X_dense, y, w)
+        best_impurity, best_split = naive_splitter.best_split_naive(x_dense, y, w)
         actual_split_impurity = actual_impurity[1:].sum()
         assert np.isclose(best_impurity, actual_split_impurity), (
             best_split,
