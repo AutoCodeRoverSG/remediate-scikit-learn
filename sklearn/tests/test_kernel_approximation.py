@@ -36,9 +36,9 @@ from sklearn.utils._testing import (
 from sklearn.utils.fixes import CSR_CONTAINERS
 
 # generate data
-rng = np.random.RandomState(0)
-X = rng.random_sample(size=(300, 50))
-Y = rng.random_sample(size=(300, 50))
+rng = np.random.default_rng(0)
+X = rng.random(size=(300, 50))
+Y = rng.random(size=(300, 50))
 X /= X.sum(axis=1)[:, np.newaxis]
 Y /= Y.sum(axis=1)[:, np.newaxis]
 
@@ -66,9 +66,9 @@ def test_polynomial_count_sketch(gamma, degree, coef0, n_components):
         degree=degree,
         random_state=42,
     )
-    X_trans = ps_transform.fit_transform(X)
-    Y_trans = ps_transform.transform(Y)
-    kernel_approx = np.dot(X_trans, Y_trans.T)
+    x_trans = ps_transform.fit_transform(X)
+    y_trans = ps_transform.transform(Y)
+    kernel_approx = np.dot(x_trans, y_trans.T)
 
     error = kernel - kernel_approx
     assert np.abs(np.mean(error)) <= 0.05  # close to unbiased
@@ -88,17 +88,17 @@ def test_polynomial_count_sketch_dense_sparse(gamma, degree, coef0, csr_containe
     ps_dense = PolynomialCountSketch(
         n_components=500, gamma=gamma, degree=degree, coef0=coef0, random_state=42
     )
-    Xt_dense = ps_dense.fit_transform(X)
-    Yt_dense = ps_dense.transform(Y)
+    xt_dense = ps_dense.fit_transform(X)
+    yt_dense = ps_dense.transform(Y)
 
     ps_sparse = PolynomialCountSketch(
         n_components=500, gamma=gamma, degree=degree, coef0=coef0, random_state=42
     )
-    Xt_sparse = ps_sparse.fit_transform(csr_container(X))
-    Yt_sparse = ps_sparse.transform(csr_container(Y))
+    xt_sparse = ps_sparse.fit_transform(csr_container(X))
+    yt_sparse = ps_sparse.transform(csr_container(Y))
 
-    assert_allclose(Xt_dense, Xt_sparse)
-    assert_allclose(Yt_dense, Yt_sparse)
+    assert_allclose(xt_dense, xt_sparse)
+    assert_allclose(yt_dense, yt_sparse)
 
 
 def _linear_kernel(x, y):
@@ -121,18 +121,18 @@ def test_additive_chi2_sampler(csr_container):
 
     # approximate kernel mapping
     transform = AdditiveChi2Sampler(sample_steps=3)
-    X_trans = transform.fit_transform(X)
-    Y_trans = transform.transform(Y)
+    x_trans = transform.fit_transform(X)
+    y_trans = transform.transform(Y)
 
-    kernel_approx = np.dot(X_trans, Y_trans.T)
+    kernel_approx = np.dot(x_trans, y_trans.T)
 
     assert_array_almost_equal(kernel, kernel_approx, 1)
 
-    X_sp_trans = transform.fit_transform(csr_container(X))
-    Y_sp_trans = transform.transform(csr_container(Y))
+    x_sp_trans = transform.fit_transform(csr_container(X))
+    y_sp_trans = transform.transform(csr_container(Y))
 
-    assert_array_equal(X_trans, X_sp_trans.toarray())
-    assert_array_equal(Y_trans, Y_sp_trans.toarray())
+    assert_array_equal(x_trans, x_sp_trans.toarray())
+    assert_array_equal(y_trans, y_sp_trans.toarray())
 
     # test error is raised on negative input
     Y_neg = Y.copy()
@@ -494,7 +494,7 @@ def test_nystroem_component_indices():
     Non-regression test for:
     https://github.com/scikit-learn/scikit-learn/issues/20474
     """
-    X, _ = make_classification(n_samples=100, n_features=20)
+    X, _ = make_classification(n_samples=100, n_features=20, random_state=0)
     feature_map_nystroem = Nystroem(
         n_components=10,
         random_state=0,
