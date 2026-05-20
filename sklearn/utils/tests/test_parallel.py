@@ -87,6 +87,7 @@ def test_dispatch_config_parallel(n_jobs):
             dropper,
             TransformerRequiredDataFrame(),
             RandomForestClassifier(n_estimators=5, n_jobs=n_jobs),
+            memory=None,
         ),
         param_grid,
         cv=5,

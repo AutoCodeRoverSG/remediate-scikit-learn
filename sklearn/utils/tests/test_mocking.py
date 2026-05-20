@@ -69,7 +69,7 @@ def test_check_x_on_predict_success(iris, pred_func):
 @pytest.mark.parametrize(
     "pred_func", ["predict", "predict_proba", "decision_function", "score"]
 )
-def test_check_X_on_predict_fail(iris, pred_func):
+def test_check_x_on_predict_fail(iris, pred_func):
     X, y = iris
     clf = CheckingClassifier(check_x=_success, random_state=0).fit(X, y)
     clf.set_params(check_x=_fail)

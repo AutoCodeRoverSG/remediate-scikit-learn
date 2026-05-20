@@ -60,7 +60,7 @@ def test_transform_returns_sparse(sparse_interface, result_type):
 )
 def test_function_returns_sparse(sparse_interface, result_type):
     with sklearn.config_context(sparse_interface=sparse_interface):
-        X, y = sklearn.datasets.make_regression(n_features=2, random_state=0)
+        X, _ = sklearn.datasets.make_regression(n_features=2, random_state=0)
         X = sklearn.manifold._locally_linear.barycenter_kneighbors_graph(X, 1)
         assert isinstance(X, result_type)
 

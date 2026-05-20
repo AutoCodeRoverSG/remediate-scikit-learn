@@ -30,7 +30,7 @@ def test_get_deps_info():
 def test_show_versions(capsys):
     with ignore_warnings():
         show_versions()
-        out, err = capsys.readouterr()
+        out, _ = capsys.readouterr()
 
     assert "python" in out
     assert "numpy" in out
