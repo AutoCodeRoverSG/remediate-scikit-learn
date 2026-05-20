@@ -29,7 +29,7 @@ TREE_BASED_REGRESSOR_CLASSES = TREE_REGRESSOR_CLASSES + [
 ]
 
 
-@pytest.mark.parametrize("TreeClassifier", TREE_BASED_CLASSIFIER_CLASSES)
+@pytest.mark.parametrize("tree_classifier", TREE_BASED_CLASSIFIER_CLASSES)
 @pytest.mark.parametrize(
     "sparse_splitter, with_missing",
     [
@@ -42,7 +42,7 @@ TREE_BASED_REGRESSOR_CLASSES = TREE_REGRESSOR_CLASSES + [
 @pytest.mark.parametrize("depth_first_builder", (True, False))
 @pytest.mark.parametrize("csc_container", CSC_CONTAINERS)
 def test_monotonic_constraints_classifications(
-    TreeClassifier,
+    tree_classifier,
     sparse_splitter,
     depth_first_builder,
     with_missing,
@@ -62,20 +62,20 @@ def test_monotonic_constraints_classifications(
     X_train, y_train = X[:n_samples_train], y[:n_samples_train]
     X_test, _ = X[n_samples_train:], y[n_samples_train:]
 
-    X_test_0incr, X_test_0decr = np.copy(X_test), np.copy(X_test)
-    X_test_1incr, X_test_1decr = np.copy(X_test), np.copy(X_test)
-    X_test_0incr[:, 0] += 10
-    X_test_0decr[:, 0] -= 10
-    X_test_1incr[:, 1] += 10
-    X_test_1decr[:, 1] -= 10
+    x_test_0incr, x_test_0decr = np.copy(X_test), np.copy(X_test)
+    x_test_1incr, x_test_1decr = np.copy(X_test), np.copy(X_test)
+    x_test_0incr[:, 0] += 10
+    x_test_0decr[:, 0] -= 10
+    x_test_1incr[:, 1] += 10
+    x_test_1decr[:, 1] -= 10
     monotonic_cst = np.zeros(X.shape[1])
     monotonic_cst[0] = 1
     monotonic_cst[1] = -1
 
     if depth_first_builder:
-        est = TreeClassifier(max_depth=None, monotonic_cst=monotonic_cst)
+        est = tree_classifier(max_depth=None, monotonic_cst=monotonic_cst)
     else:
-        est = TreeClassifier(
+        est = tree_classifier(
             max_depth=None,
             monotonic_cst=monotonic_cst,
             max_leaf_nodes=n_samples_train,
@@ -99,15 +99,15 @@ def test_monotonic_constraints_classifications(
     assert_allclose(proba_test.sum(axis=1), 1.0)
 
     # Monotonic increase constraint, it applies to the positive class
-    assert np.all(est.predict_proba(X_test_0incr)[:, 1] >= proba_test[:, 1])
-    assert np.all(est.predict_proba(X_test_0decr)[:, 1] <= proba_test[:, 1])
+    assert np.all(est.predict_proba(x_test_0incr)[:, 1] >= proba_test[:, 1])
+    assert np.all(est.predict_proba(x_test_0decr)[:, 1] <= proba_test[:, 1])
 
     # Monotonic decrease constraint, it applies to the positive class
-    assert np.all(est.predict_proba(X_test_1incr)[:, 1] <= proba_test[:, 1])
-    assert np.all(est.predict_proba(X_test_1decr)[:, 1] >= proba_test[:, 1])
+    assert np.all(est.predict_proba(x_test_1incr)[:, 1] <= proba_test[:, 1])
+    assert np.all(est.predict_proba(x_test_1decr)[:, 1] >= proba_test[:, 1])
 
 
-@pytest.mark.parametrize("TreeRegressor", TREE_BASED_REGRESSOR_CLASSES)
+@pytest.mark.parametrize("tree_regressor", TREE_BASED_REGRESSOR_CLASSES)
 @pytest.mark.parametrize(
     "sparse_splitter, with_missing",
     [
@@ -121,7 +121,7 @@ def test_monotonic_constraints_classifications(
 @pytest.mark.parametrize("criterion", ("absolute_error", "squared_error"))
 @pytest.mark.parametrize("csc_container", CSC_CONTAINERS)
 def test_monotonic_constraints_regressions(
-    TreeRegressor,
+    tree_regressor,
     sparse_splitter,
     depth_first_builder,
     with_missing,
@@ -143,22 +143,22 @@ def test_monotonic_constraints_regressions(
     X_train = X[train]
     y_train = y[train]
     X_test = np.copy(X[test])
-    X_test_incr = np.copy(X_test)
-    X_test_decr = np.copy(X_test)
-    X_test_incr[:, 0] += 10
-    X_test_decr[:, 1] += 10
+    x_test_incr = np.copy(X_test)
+    x_test_decr = np.copy(X_test)
+    x_test_incr[:, 0] += 10
+    x_test_decr[:, 1] += 10
     monotonic_cst = np.zeros(X.shape[1])
     monotonic_cst[0] = 1
     monotonic_cst[1] = -1
 
     if depth_first_builder:
-        est = TreeRegressor(
+        est = tree_regressor(
             max_depth=None,
             monotonic_cst=monotonic_cst,
             criterion=criterion,
         )
     else:
-        est = TreeRegressor(
+        est = tree_regressor(
             max_depth=8,
             monotonic_cst=monotonic_cst,
             criterion=criterion,
@@ -177,18 +177,18 @@ def test_monotonic_constraints_regressions(
     est.fit(X_train, y_train)
     y = est.predict(X_test)
     # Monotonic increase constraint
-    y_incr = est.predict(X_test_incr)
+    y_incr = est.predict(x_test_incr)
     # y_incr should always be greater than y
     assert np.all(y_incr >= y)
 
     # Monotonic decrease constraint
-    y_decr = est.predict(X_test_decr)
+    y_decr = est.predict(x_test_decr)
     # y_decr should always be lower than y
     assert np.all(y_decr <= y)
 
 
-@pytest.mark.parametrize("TreeClassifier", TREE_BASED_CLASSIFIER_CLASSES)
-def test_multiclass_raises(TreeClassifier):
+@pytest.mark.parametrize("tree_classifier", TREE_BASED_CLASSIFIER_CLASSES)
+def test_multiclass_raises(tree_classifier):
     X, y = make_classification(
         n_samples=100, n_features=5, n_classes=3, n_informative=3, random_state=0
     )
@@ -196,19 +196,19 @@ def test_multiclass_raises(TreeClassifier):
     monotonic_cst = np.zeros(X.shape[1])
     monotonic_cst[0] = -1
     monotonic_cst[1] = 1
-    est = TreeClassifier(max_depth=None, monotonic_cst=monotonic_cst, random_state=0)
+    est = tree_classifier(max_depth=None, monotonic_cst=monotonic_cst, random_state=0)
 
     msg = "Monotonicity constraints are not supported with multiclass classification"
     with pytest.raises(ValueError, match=msg):
         est.fit(X, y)
 
 
-@pytest.mark.parametrize("TreeClassifier", TREE_BASED_CLASSIFIER_CLASSES)
-def test_multiple_output_raises(TreeClassifier):
+@pytest.mark.parametrize("tree_classifier", TREE_BASED_CLASSIFIER_CLASSES)
+def test_multiple_output_raises(tree_classifier):
     X = [[1, 2, 3, 4, 5], [6, 7, 8, 9, 10]]
     y = [[1, 0, 1, 0, 1], [1, 0, 1, 0, 1]]
 
-    est = TreeClassifier(
+    est = tree_classifier(
         max_depth=None, monotonic_cst=np.array([-1, 1]), random_state=0
     )
     msg = "Monotonicity constraints are not supported with multiple output"
