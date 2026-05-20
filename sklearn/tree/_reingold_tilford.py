@@ -58,9 +58,9 @@ class DrawTree:
 
 def buchheim(tree):
     dt = first_walk(DrawTree(tree))
-    min = second_walk(dt)
-    if min < 0:
-        third_walk(dt, -min)
+    min_coord = second_walk(dt)
+    if min_coord < 0:
+        third_walk(dt, -min_coord)
     return dt
 
 
@@ -134,7 +134,7 @@ def apportion(v, default_ancestor, distance):
 
 def move_subtree(wl, wr, shift):
     subtrees = wr.number - wl.number
-    # print(wl.tree, "is conflicted with", wr.tree, 'moving', subtrees,
+    
     # 'shift', shift)
     # print wl, wr, wr.number, wl.number, shift, subtrees, shift/subtrees
     wr.change -= shift / subtrees
@@ -165,17 +165,17 @@ def ancestor(vil, v, default_ancestor):
         return default_ancestor
 
 
-def second_walk(v, m=0, depth=0, min=None):
+def second_walk(v, m=0, depth=0, min_x=None):
     v.x += m
     v.y = depth
 
-    if min is None or v.x < min:
-        min = v.x
+    if min_x is None or v.x < min_x:
+        min_x = v.x
 
     for w in v.children:
-        min = second_walk(w, m + v.mod, depth + 1, min)
+        min_x = second_walk(w, m + v.mod, depth + 1, min_x)
 
-    return min
+    return min_x
 
 
 class Tree:
