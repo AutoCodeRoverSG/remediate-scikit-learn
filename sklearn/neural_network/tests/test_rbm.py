@@ -107,9 +107,8 @@ def test_fit_gibbs(csc_container):
 
     # Gibbs on the RBM hidden layer should be able to recreate [[0], [1]]
     # from the same input
-    rng = np.random.RandomState(42)
     X = np.array([[0.0], [1.0]])
-    rbm1 = BernoulliRBM(n_components=2, batch_size=2, n_iter=42, random_state=rng)
+    rbm1 = BernoulliRBM(n_components=2, batch_size=2, n_iter=42, random_state=42)
     # you need that much iters
     rbm1.fit(X)
     assert_almost_equal(
@@ -119,9 +118,8 @@ def test_fit_gibbs(csc_container):
 
     # Gibbs on the RBM hidden layer should be able to recreate [[0], [1]] from
     # the same input even when the input is sparse, and test against non-sparse
-    rng = np.random.RandomState(42)
     X = csc_container([[0.0], [1.0]])
-    rbm2 = BernoulliRBM(n_components=2, batch_size=2, n_iter=42, random_state=rng)
+    rbm2 = BernoulliRBM(n_components=2, batch_size=2, n_iter=42, random_state=42)
     rbm2.fit(X)
     assert_almost_equal(
         rbm2.components_, np.array([[0.02649814], [0.02009084]]), decimal=4
@@ -147,9 +145,8 @@ def test_score_samples(lil_containers):
     # Test score_samples (pseudo-likelihood) method.
     # Assert that pseudo-likelihood is computed without clipping.
     # See Fabian's blog, http://bit.ly/1iYefRk
-    rng = np.random.RandomState(42)
     X = np.vstack([np.zeros(1000), np.ones(1000)])
-    rbm1 = BernoulliRBM(n_components=10, batch_size=2, n_iter=10, random_state=rng)
+    rbm1 = BernoulliRBM(n_components=10, batch_size=2, n_iter=10, random_state=42)
     rbm1.fit(X)
     assert (rbm1.score_samples(X) < -300).all()
 

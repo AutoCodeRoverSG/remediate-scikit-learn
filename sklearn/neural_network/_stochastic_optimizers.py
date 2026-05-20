@@ -39,8 +39,8 @@ class BaseOptimizer:
             model. So length should be aligned with params
         """
         updates = self._get_updates(grads)
-        for param, update in zip((p for p in params), updates):
-            param += update
+        for param, update in zip(params, updates):
+            np.add(param, update, out=param)
 
     def iteration_ends(self, time_step):
         """Perform update to learning rate and potentially other states at the
