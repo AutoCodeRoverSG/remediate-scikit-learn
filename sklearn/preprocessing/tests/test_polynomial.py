@@ -852,17 +852,17 @@ def test_polynomial_features_csr_X(
 ):
     rng = np.random.RandomState(global_random_seed)
     X = rng.randint(0, 2, (100, 2))
-    X_csr = csr_container(X)
+    x_csr = csr_container(X)
 
     est = PolynomialFeatures(
         deg, include_bias=include_bias, interaction_only=interaction_only
     )
-    Xt_csr = est.fit_transform(X_csr.astype(dtype))
-    Xt_dense = est.fit_transform(X.astype(dtype, copy=False))
+    xt_csr = est.fit_transform(x_csr.astype(dtype))
+    xt_dense = est.fit_transform(X.astype(dtype, copy=False))
 
-    assert sparse.issparse(Xt_csr) and Xt_csr.format == "csr"
-    assert Xt_csr.dtype == Xt_dense.dtype
-    assert_array_almost_equal(Xt_csr.toarray(), Xt_dense)
+    assert sparse.issparse(xt_csr) and xt_csr.format == "csr"
+    assert xt_csr.dtype == xt_dense.dtype
+    assert_array_almost_equal(xt_csr.toarray(), xt_dense)
 
 
 @pytest.mark.parametrize("n_features", [1, 4, 5])
@@ -910,18 +910,18 @@ def test_num_combinations(
 def test_polynomial_features_csr_X_floats(
     deg, include_bias, interaction_only, dtype, csr_container, global_random_seed
 ):
-    X_csr = csr_container(sparse_random(1000, 10, 0.5, random_state=global_random_seed))
-    X = X_csr.toarray()
+    x_csr = csr_container(sparse_random(1000, 10, 0.5, random_state=global_random_seed))
+    x = x_csr.toarray()
 
     est = PolynomialFeatures(
         deg, include_bias=include_bias, interaction_only=interaction_only
     )
-    Xt_csr = est.fit_transform(X_csr.astype(dtype))
-    Xt_dense = est.fit_transform(X.astype(dtype))
+    xt_csr = est.fit_transform(x_csr.astype(dtype))
+    xt_dense = est.fit_transform(x.astype(dtype))
 
-    assert sparse.issparse(Xt_csr) and Xt_csr.format == "csr"
-    assert Xt_csr.dtype == Xt_dense.dtype
-    assert_array_almost_equal(Xt_csr.toarray(), Xt_dense)
+    assert sparse.issparse(xt_csr) and xt_csr.format == "csr"
+    assert xt_csr.dtype == xt_dense.dtype
+    assert_array_almost_equal(xt_csr.toarray(), xt_dense)
 
 
 @pytest.mark.parametrize(
@@ -945,17 +945,17 @@ def test_polynomial_features_csr_X_floats(
 def test_polynomial_features_csr_X_zero_row(
     zero_row_index, deg, interaction_only, csr_container, global_random_seed
 ):
-    X_csr = csr_container(sparse_random(3, 10, 1.0, random_state=global_random_seed))
-    X_csr[zero_row_index, :] = 0.0
-    X = X_csr.toarray()
+    x_csr = csr_container(sparse_random(3, 10, 1.0, random_state=global_random_seed))
+    x_csr[zero_row_index, :] = 0.0
+    X = x_csr.toarray()
 
     est = PolynomialFeatures(deg, include_bias=False, interaction_only=interaction_only)
-    Xt_csr = est.fit_transform(X_csr)
-    Xt_dense = est.fit_transform(X)
+    xt_csr = est.fit_transform(x_csr)
+    xt_dense = est.fit_transform(X)
 
-    assert sparse.issparse(Xt_csr) and Xt_csr.format == "csr"
-    assert Xt_csr.dtype == Xt_dense.dtype
-    assert_array_almost_equal(Xt_csr.toarray(), Xt_dense)
+    assert sparse.issparse(xt_csr) and xt_csr.format == "csr"
+    assert xt_csr.dtype == xt_dense.dtype
+    assert_array_almost_equal(xt_csr.toarray(), xt_dense)
 
 
 # This degree should always be one more than the highest degree supported by
