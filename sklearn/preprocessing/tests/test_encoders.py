@@ -637,7 +637,7 @@ def test_ordinal_encoder(X):
 
 
 @pytest.mark.parametrize(
-    "X, X2, cats, cat_dtype",
+    "X, x2, cats, cat_dtype",
     [
         (
             np.array([["a", "b"]], dtype=object).T,
@@ -660,7 +660,7 @@ def test_ordinal_encoder(X):
     ],
     ids=["object", "numeric", "object-string-cat"],
 )
-def test_ordinal_encoder_specified_categories(X, X2, cats, cat_dtype):
+def test_ordinal_encoder_specified_categories(X, x2, cats, cat_dtype):
     enc = OrdinalEncoder(categories=cats)
     exp = np.array([[0.0], [1.0]])
     assert_array_equal(enc.fit_transform(X), exp)
@@ -674,52 +674,52 @@ def test_ordinal_encoder_specified_categories(X, X2, cats, cat_dtype):
     # raise when fitting
     enc = OrdinalEncoder(categories=cats)
     with pytest.raises(ValueError, match="Found unknown categories"):
-        enc.fit(X2)
+        enc.fit(x2)
 
 
 def test_ordinal_encoder_inverse():
     X = [["abc", 2, 55], ["def", 1, 55]]
     enc = OrdinalEncoder()
-    X_tr = enc.fit_transform(X)
+    x_tr = enc.fit_transform(X)
     exp = np.array(X, dtype=object)
-    assert_array_equal(enc.inverse_transform(X_tr), exp)
+    assert_array_equal(enc.inverse_transform(x_tr), exp)
 
     # incorrect shape raises
-    X_tr = np.array([[0, 1, 1, 2], [1, 0, 1, 0]])
+    x_tr = np.array([[0, 1, 1, 2], [1, 0, 1, 0]])
     msg = re.escape("Shape of the passed X data is not correct")
     with pytest.raises(ValueError, match=msg):
-        enc.inverse_transform(X_tr)
+        enc.inverse_transform(x_tr)
 
 
 def test_ordinal_encoder_handle_unknowns_string():
     enc = OrdinalEncoder(handle_unknown="use_encoded_value", unknown_value=-2)
-    X_fit = np.array([["a", "x"], ["b", "y"], ["c", "z"]], dtype=object)
-    X_trans = np.array([["c", "xy"], ["bla", "y"], ["a", "x"]], dtype=object)
-    enc.fit(X_fit)
+    x_fit = np.array([["a", "x"], ["b", "y"], ["c", "z"]], dtype=object)
+    x_trans = np.array([["c", "xy"], ["bla", "y"], ["a", "x"]], dtype=object)
+    enc.fit(x_fit)
 
-    X_trans_enc = enc.transform(X_trans)
+    x_trans_enc = enc.transform(x_trans)
     exp = np.array([[2, -2], [-2, 1], [0, 0]], dtype="int64")
-    assert_array_equal(X_trans_enc, exp)
+    assert_array_equal(x_trans_enc, exp)
 
-    X_trans_inv = enc.inverse_transform(X_trans_enc)
+    x_trans_inv = enc.inverse_transform(x_trans_enc)
     inv_exp = np.array([["c", None], [None, "y"], ["a", "x"]], dtype=object)
-    assert_array_equal(X_trans_inv, inv_exp)
+    assert_array_equal(x_trans_inv, inv_exp)
 
 
 @pytest.mark.parametrize("dtype", [float, int])
 def test_ordinal_encoder_handle_unknowns_numeric(dtype):
     enc = OrdinalEncoder(handle_unknown="use_encoded_value", unknown_value=-999)
-    X_fit = np.array([[1, 7], [2, 8], [3, 9]], dtype=dtype)
-    X_trans = np.array([[3, 12], [23, 8], [1, 7]], dtype=dtype)
-    enc.fit(X_fit)
+    x_fit = np.array([[1, 7], [2, 8], [3, 9]], dtype=dtype)
+    x_trans = np.array([[3, 12], [23, 8], [1, 7]], dtype=dtype)
+    enc.fit(x_fit)
 
-    X_trans_enc = enc.transform(X_trans)
+    x_trans_enc = enc.transform(x_trans)
     exp = np.array([[2, -999], [-999, 1], [0, 0]], dtype="int64")
-    assert_array_equal(X_trans_enc, exp)
+    assert_array_equal(x_trans_enc, exp)
 
-    X_trans_inv = enc.inverse_transform(X_trans_enc)
+    x_trans_inv = enc.inverse_transform(x_trans_enc)
     inv_exp = np.array([[3, None], [None, 8], [1, 7]], dtype=object)
-    assert_array_equal(X_trans_inv, inv_exp)
+    assert_array_equal(x_trans_inv, inv_exp)
 
 
 def test_ordinal_encoder_handle_unknowns_nan():
