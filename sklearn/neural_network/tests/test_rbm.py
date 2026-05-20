@@ -43,7 +43,7 @@ def test_partial_fit():
     n_batches = int(np.ceil(float(n_samples) / rbm.batch_size))
     batch_slices = np.array_split(X, n_batches)
 
-    for i in range(7):
+    for _ in range(7):
         for batch in batch_slices:
             rbm.partial_fit(batch)
 
@@ -56,10 +56,10 @@ def test_transform():
     rbm1 = BernoulliRBM(n_components=16, batch_size=5, n_iter=5, random_state=42)
     rbm1.fit(X)
 
-    Xt1 = rbm1.transform(X)
-    Xt2 = rbm1._mean_hiddens(X)
+    xt1 = rbm1.transform(X)
+    xt2 = rbm1._mean_hiddens(X)
 
-    assert_array_equal(Xt1, Xt2)
+    assert_array_equal(xt1, xt2)
 
 
 @pytest.mark.parametrize("csr_container", CSR_CONTAINERS)
@@ -71,7 +71,7 @@ def test_small_sparse(csr_container):
 
 @pytest.mark.parametrize("sparse_container", CSC_CONTAINERS + CSR_CONTAINERS)
 def test_small_sparse_partial_fit(sparse_container):
-    X_sparse = sparse_container(Xdigits[:100])
+    x_sparse = sparse_container(Xdigits[:100])
     X = Xdigits[:100].copy()
 
     rbm1 = BernoulliRBM(
@@ -81,7 +81,7 @@ def test_small_sparse_partial_fit(sparse_container):
         n_components=64, learning_rate=0.1, batch_size=10, random_state=9
     )
 
-    rbm1.partial_fit(X_sparse)
+    rbm1.partial_fit(x_sparse)
     rbm2.partial_fit(X)
 
     assert_almost_equal(
@@ -96,7 +96,7 @@ def test_sample_hiddens():
     rbm1.fit(X)
 
     h = rbm1._mean_hiddens(X[0])
-    hs = np.mean([rbm1._sample_hiddens(X[0], rng) for i in range(100)], 0)
+    hs = np.mean([rbm1._sample_hiddens(X[0], rng) for _ in range(100)], 0)
 
     assert_almost_equal(h, hs, decimal=1)
 
@@ -136,10 +136,10 @@ def test_gibbs_smoke():
     X = Xdigits
     rbm1 = BernoulliRBM(n_components=42, batch_size=40, n_iter=20, random_state=42)
     rbm1.fit(X)
-    X_sampled = rbm1.gibbs(X)
-    assert_all_finite(X_sampled)
-    X_sampled2 = rbm1.gibbs(X)
-    assert np.all((X_sampled != X_sampled2).max(axis=1))
+    x_sampled = rbm1.gibbs(X)
+    assert_all_finite(x_sampled)
+    x_sampled2 = rbm1.gibbs(X)
+    assert np.all((x_sampled != x_sampled2).max(axis=1))
 
 
 @pytest.mark.parametrize("lil_containers", LIL_CONTAINERS)
@@ -202,11 +202,11 @@ def test_sparse_and_verbose(csc_container, capsys):
 def test_transformer_dtypes_casting(dtype_in, dtype_out):
     X = Xdigits[:100].astype(dtype_in)
     rbm = BernoulliRBM(n_components=16, batch_size=5, n_iter=5, random_state=42)
-    Xt = rbm.fit_transform(X)
+    x_trans = rbm.fit_transform(X)
 
     # dtype_in and dtype_out should be consistent
-    assert Xt.dtype == dtype_out, "transform dtype: {} - original dtype: {}".format(
-        Xt.dtype, X.dtype
+    assert x_trans.dtype == dtype_out, "transform dtype: {} - original dtype: {}".format(
+        x_trans.dtype, X.dtype
     )
 
 
@@ -214,15 +214,15 @@ def test_convergence_dtype_consistency():
     # float 64 transformer
     X_64 = Xdigits[:100].astype(np.float64)
     rbm_64 = BernoulliRBM(n_components=16, batch_size=5, n_iter=5, random_state=42)
-    Xt_64 = rbm_64.fit_transform(X_64)
+    xt_64 = rbm_64.fit_transform(X_64)
 
     # float 32 transformer
     X_32 = Xdigits[:100].astype(np.float32)
     rbm_32 = BernoulliRBM(n_components=16, batch_size=5, n_iter=5, random_state=42)
-    Xt_32 = rbm_32.fit_transform(X_32)
+    xt_32 = rbm_32.fit_transform(X_32)
 
     # results and attributes should be close enough in 32 bit and 64 bit
-    assert_allclose(Xt_64, Xt_32, rtol=1e-06, atol=0)
+    assert_allclose(xt_64, xt_32, rtol=1e-06, atol=0)
     assert_allclose(
         rbm_64.intercept_hidden_, rbm_32.intercept_hidden_, rtol=1e-06, atol=0
     )
