@@ -78,7 +78,7 @@ def test_np_log():
 def test_kw_arg():
     X = np.linspace(0, 1, num=10).reshape((5, 2))
 
-    F = FunctionTransformer(np.around, kw_args=dict(decimals=3))
+    F = FunctionTransformer(np.around, kw_args={"decimals": 3})
 
     # Test that rounding is correct
     assert_array_equal(F.transform(X), np.around(X, decimals=3))
@@ -87,7 +87,7 @@ def test_kw_arg():
 def test_kw_arg_update():
     X = np.linspace(0, 1, num=10).reshape((5, 2))
 
-    F = FunctionTransformer(np.around, kw_args=dict(decimals=3))
+    F = FunctionTransformer(np.around, kw_args={"decimals": 3})
 
     F.kw_args["decimals"] = 1
 
@@ -98,9 +98,9 @@ def test_kw_arg_update():
 def test_kw_arg_reset():
     X = np.linspace(0, 1, num=10).reshape((5, 2))
 
-    F = FunctionTransformer(np.around, kw_args=dict(decimals=3))
+    F = FunctionTransformer(np.around, kw_args={'decimals': 3})
 
-    F.kw_args = dict(decimals=1)
+    F.kw_args = {'decimals': 1}
 
     # Test that rounding is correct
     assert_array_equal(F.transform(X), np.around(X, decimals=1))
@@ -113,7 +113,7 @@ def test_inverse_transform():
     F = FunctionTransformer(
         func=np.sqrt,
         inverse_func=np.around,
-        inv_kw_args=dict(decimals=3),
+        inv_kw_args={"decimals": 3},
     )
     assert_array_equal(
         F.inverse_transform(F.transform(X)),
@@ -152,9 +152,9 @@ def test_check_inverse(sparse_container):
     )
     with warnings.catch_warnings():
         warnings.simplefilter("error", UserWarning)
-        Xt = trans.fit_transform(X)
+        x_trans = trans.fit_transform(X)
 
-    assert_allclose_dense_sparse(X, trans.inverse_transform(Xt))
+    assert_allclose_dense_sparse(X, trans.inverse_transform(x_trans))
 
 
 def test_check_inverse_func_or_inverse_not_provided():
@@ -178,21 +178,21 @@ def test_check_inverse_func_or_inverse_not_provided():
 
 def test_function_transformer_frame():
     pd = pytest.importorskip("pandas")
-    X_df = pd.DataFrame(np.random.randn(100, 10))
+    x_df = pd.DataFrame(np.random.randn(100, 10))
     transformer = FunctionTransformer()
-    X_df_trans = transformer.fit_transform(X_df)
-    assert hasattr(X_df_trans, "loc")
+    x_df_trans = transformer.fit_transform(x_df)
+    assert hasattr(x_df_trans, "loc")
 
 
-@pytest.mark.parametrize("X_type", ["array", "series"])
-def test_function_transformer_raise_error_with_mixed_dtype(X_type):
+@pytest.mark.parametrize("x_type", ["array", "series"])
+def test_function_transformer_raise_error_with_mixed_dtype(x_type):
     """Check that `FunctionTransformer.check_inverse` raises error on mixed dtype."""
     mapping = {"one": 1, "two": 2, "three": 3, 5: "five", 6: "six"}
     inverse_mapping = {value: key for key, value in mapping.items()}
     dtype = "object"
 
     data = ["one", "two", "three", "one", "one", 5, 6]
-    data = _convert_container(data, X_type, column_names=["value"], dtype=dtype)
+    data = _convert_container(data, x_type, column_names=["value"], dtype=dtype)
 
     def func(X):
         return np.array([mapping[X[i]] for i in range(X.size)], dtype=object)
@@ -200,7 +200,7 @@ def test_function_transformer_raise_error_with_mixed_dtype(X_type):
     def inverse_func(X):
         return _convert_container(
             [inverse_mapping[x] for x in X],
-            X_type,
+            x_type,
             column_names=["value"],
             dtype=dtype,
         )
@@ -369,7 +369,7 @@ def test_function_transformer_feature_names_out_uses_estimator():
     transformer = FunctionTransformer(
         func=add_n_random_features,
         feature_names_out=feature_names_out,
-        kw_args=dict(n=3),
+        kw_args={"n": 3},
         validate=True,
     )
     pd = pytest.importorskip("pandas")
