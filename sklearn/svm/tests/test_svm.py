@@ -694,7 +694,7 @@ def test_auto_weight():
 
     iris = get_iris_dataset(42)
     X, y = iris.data[:, :2], iris.target + 1
-    unbalanced = np.delete(np.arange(y.size), np.where(y > 2)[0][::2])
+    unbalanced = np.delete(np.arange(y.size), np.nonzero(y > 2)[0][::2])
 
     classes = np.unique(y[unbalanced])
     class_weights = compute_class_weight("balanced", classes=classes, y=y[unbalanced])
@@ -758,11 +758,11 @@ def test_bad_input(lil_container, global_random_seed):
 
 def test_svc_nonfinite_params(global_random_seed):
     # Check SVC throws ValueError when dealing with non-finite parameter values
-    rng = np.random.RandomState(global_random_seed)
+    rng = np.random.default_rng(global_random_seed)
     n_samples = 10
     fmax = np.finfo(np.float64).max
     X = fmax * rng.uniform(size=(n_samples, 2))
-    y = rng.randint(0, 2, size=n_samples)
+    y = rng.integers(0, 2, size=n_samples)
 
     clf = svm.SVC()
     msg = "The dual coefficients or intercepts are not finite"
@@ -898,7 +898,7 @@ def test_linearsvc_fit_sampleweight(global_random_seed):
     # check that fit(X)  = fit([X1, X2, X3],sample_weight = [n1, n2, n3]) where
     # X = X1 repeated n1 times, X2 repeated n2 times and so forth
 
-    random_weight = np.random.RandomState(global_random_seed).randint(0, 10, n_samples)
+    random_weight = np.random.default_rng(global_random_seed).integers(0, 10, n_samples)
     lsvc_unflat = svm.LinearSVC(
         random_state=global_random_seed, tol=1e-12, max_iter=1000
     ).fit(X, Y, sample_weight=random_weight)
@@ -1143,9 +1143,9 @@ def test_linear_svm_convergence_warnings(global_random_seed):
 def test_svr_coef_sign(global_random_seed):
     # Test that SVR(kernel="linear") has coef_ with the right sign.
     # Non-regression test for #2933.
-    rng = np.random.RandomState(global_random_seed)
-    X = rng.randn(10, 3)
-    y = rng.randn(10)
+    rng = np.random.default_rng(global_random_seed)
+    X = rng.standard_normal((10, 3))
+    y = rng.standard_normal(10)
 
     for svr in [
         svm.SVR(kernel="linear"),
@@ -1163,7 +1163,7 @@ def test_lsvc_intercept_scaling_zero():
 
     lsvc = svm.LinearSVC(fit_intercept=False)
     lsvc.fit(X, Y)
-    assert lsvc.intercept_ == 0.0
+    assert lsvc.intercept_ == pytest.approx(0.0)
 
 
 # TODO(1.11): remove test entirely.
@@ -1501,7 +1501,7 @@ def test_dual_auto_edge_cases():
     [(svm.SVC, make_classification), (svm.SVR, make_regression)],
 )
 @pytest.mark.parametrize("c_inf", [np.inf, float("inf")])
-def test_svm_with_infinite_C(estimator_cls, make_dataset, c_inf, global_random_seed):
+def test_svm_with_infinite_c(estimator_cls, make_dataset, c_inf, global_random_seed):
     """Check that we can pass `C=inf` that is equivalent to a very large C value.
 
     Non-regression test for
@@ -1526,7 +1526,7 @@ def test_probability_raises_futurewarning(estimator_class, name, probability):
 
 
 @pytest.mark.parametrize("est", [svm.SVC, svm.NuSVC])
-def test_svc_nusvc_probA_probB_deprecated(est):
+def test_svc_nusvc_prob_a_prob_b_deprecated(est):
     """Test that accessing probA_ and probB_ raises FutureWarning for SVC and NuSVC."""
     X, y = make_classification(n_samples=50, n_informative=5, random_state=0)
     est = est().fit(X, y)
