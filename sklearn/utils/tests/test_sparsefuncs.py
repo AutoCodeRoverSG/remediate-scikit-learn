@@ -423,7 +423,7 @@ def test_incr_mean_variance_axis_dim_mismatch(sparse_constructor):
     last_var = np.zeros_like(last_mean)
     last_n = np.zeros(last_mean.shape, dtype=np.int64)
 
-    kwargs = dict(last_mean=last_mean, last_var=last_var, last_n=last_n)
+    kwargs = {"last_mean": last_mean, "last_var": last_var, "last_n": last_n}
     mean0, var0, _ = incr_mean_variance_axis(X, axis=0, **kwargs)
     assert_allclose(np.mean(X.toarray(), axis=0), mean0)
     assert_allclose(np.var(X.toarray(), axis=0), var0)
@@ -433,13 +433,13 @@ def test_incr_mean_variance_axis_dim_mismatch(sparse_constructor):
         incr_mean_variance_axis(X, axis=1, **kwargs)
 
     # test inconsistent shapes of last_mean, last_var, last_n
-    kwargs = dict(last_mean=last_mean[:-1], last_var=last_var, last_n=last_n)
+    kwargs = {"last_mean": last_mean[:-1], "last_var": last_var, "last_n": last_n}
     with pytest.raises(ValueError):
         incr_mean_variance_axis(X, axis=0, **kwargs)
 
 
 @pytest.mark.parametrize(
-    "X1, X2",
+    "x1, x2",
     [
         (
             _sparse_random_array((5, 2), density=0.8, format="csr", rng=0),
@@ -458,23 +458,23 @@ def test_incr_mean_variance_axis_dim_mismatch(sparse_constructor):
     ],
 )
 @pytest.mark.parametrize("csr_container", CSR_CONTAINERS)
-def test_incr_mean_variance_axis_equivalence_mean_variance(X1, X2, csr_container):
+def test_incr_mean_variance_axis_equivalence_mean_variance(x1, x2, csr_container):
     # non-regression test for:
     # https://github.com/scikit-learn/scikit-learn/issues/16448
     # check that computing the incremental mean and variance is equivalent to
     # computing the mean and variance on the stacked dataset.
-    X1 = csr_container(X1)
-    X2 = csr_container(X2)
+    x1 = csr_container(x1)
+    x2 = csr_container(x2)
     axis = 0
-    last_mean, last_var = np.zeros(X1.shape[1]), np.zeros(X1.shape[1])
-    last_n = np.zeros(X1.shape[1], dtype=np.int64)
+    last_mean, last_var = np.zeros(x1.shape[1]), np.zeros(x1.shape[1])
+    last_n = np.zeros(x1.shape[1], dtype=np.int64)
     updated_mean, updated_var, updated_n = incr_mean_variance_axis(
-        X1, axis=axis, last_mean=last_mean, last_var=last_var, last_n=last_n
+        x1, axis=axis, last_mean=last_mean, last_var=last_var, last_n=last_n
     )
     updated_mean, updated_var, updated_n = incr_mean_variance_axis(
-        X2, axis=axis, last_mean=updated_mean, last_var=updated_var, last_n=updated_n
+        x2, axis=axis, last_mean=updated_mean, last_var=updated_var, last_n=updated_n
     )
-    X = sp.vstack([X1, X2])
+    X = sp.vstack([x1, x2])
     assert_allclose(updated_mean, np.nanmean(X.toarray(), axis=axis))
     assert_allclose(updated_var, np.nanvar(X.toarray(), axis=axis))
     assert_allclose(updated_n, np.count_nonzero(~np.isnan(X.toarray()), axis=0))
@@ -522,7 +522,7 @@ def test_incr_mean_variance_axis_ignore_nan(axis, sparse_constructor):
         np.array([[170, 170, 170, 170], [430, 430, 430, 430], [300, 300, 300, 300]])
     )
 
-    X_nan = sparse_constructor(
+    x_nan = sparse_constructor(
         np.array(
             [
                 [170, np.nan, 170, 170],
@@ -537,27 +537,27 @@ def test_incr_mean_variance_axis_ignore_nan(axis, sparse_constructor):
     # enough.
     if axis:
         X = X.T
-        X_nan = X_nan.T
+        x_nan = x_nan.T
 
     # take a copy of the old statistics since they are modified in place.
-    X_means, X_vars, X_sample_count = incr_mean_variance_axis(
+    x_means, x_vars, x_sample_count = incr_mean_variance_axis(
         X,
         axis=axis,
         last_mean=old_means.copy(),
         last_var=old_variances.copy(),
         last_n=old_sample_count.copy(),
     )
-    X_nan_means, X_nan_vars, X_nan_sample_count = incr_mean_variance_axis(
-        X_nan,
+    x_nan_means, x_nan_vars, x_nan_sample_count = incr_mean_variance_axis(
+        x_nan,
         axis=axis,
         last_mean=old_means.copy(),
         last_var=old_variances.copy(),
         last_n=old_sample_count.copy(),
     )
 
-    assert_allclose(X_nan_means, X_means)
-    assert_allclose(X_nan_vars, X_vars)
-    assert_allclose(X_nan_sample_count, X_sample_count)
+    assert_allclose(x_nan_means, x_means)
+    assert_allclose(x_nan_vars, x_vars)
+    assert_allclose(x_nan_sample_count, x_sample_count)
 
 
 @pytest.mark.parametrize("csr_container", CSR_CONTAINERS)
