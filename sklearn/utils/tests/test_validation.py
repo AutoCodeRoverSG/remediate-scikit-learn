@@ -96,14 +96,17 @@ def test_make_rng():
     assert check_random_state(None) is np.random.mtrand._rand
     assert check_random_state(np.random) is np.random.mtrand._rand
 
-    rng_42 = np.random.RandomState(42)
-    assert check_random_state(42).randint(100) == rng_42.randint(100)
+    rng_42 = np.random.default_rng(42)
+    assert check_random_state(42).integers(100) == rng_42.integers(100)
 
     rng_42 = np.random.RandomState(42)
     assert check_random_state(rng_42) is rng_42
 
-    rng_42 = np.random.RandomState(42)
-    assert check_random_state(43).randint(100) != rng_42.randint(100)
+    gen_42 = np.random.default_rng(42)
+    assert check_random_state(gen_42) is gen_42
+
+    rng_42 = np.random.default_rng(42)
+    assert check_random_state(43).integers(100) != rng_42.integers(100)
 
     with pytest.raises(ValueError):
         check_random_state("some invalid seed")
