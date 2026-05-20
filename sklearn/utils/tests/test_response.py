@@ -355,7 +355,7 @@ def test_get_response_values_with_response_list():
 )
 def test_get_response_values_multilabel_indicator(response_method):
     X, Y = make_multilabel_classification(random_state=0)
-    estimator = ClassifierChain(LogisticRegression()).fit(X, Y)
+    estimator = ClassifierChain(LogisticRegression(), random_state=0).fit(X, Y)
 
     y_pred, pos_label = _get_response_values(
         estimator, X, response_method=response_method
@@ -403,10 +403,10 @@ def test_response_values_type_of_target_on_classes_no_warning():
         (LogisticRegression(), "predict", "multiclass", (10,)),
         (LogisticRegression(), "predict_proba", "multiclass", (10, 4)),
         (LogisticRegression(), "decision_function", "multiclass", (10, 4)),
-        (ClassifierChain(LogisticRegression()), "predict", "multilabel", (10, 2)),
-        (ClassifierChain(LogisticRegression()), "predict_proba", "multilabel", (10, 2)),
+        (ClassifierChain(LogisticRegression(random_state=0)), "predict", "multilabel", (10, 2)),
+        (ClassifierChain(LogisticRegression(random_state=0)), "predict_proba", "multilabel", (10, 2)),
         (
-            ClassifierChain(LogisticRegression()),
+            ClassifierChain(LogisticRegression(random_state=0)),
             "decision_function",
             "multilabel",
             (10, 2),

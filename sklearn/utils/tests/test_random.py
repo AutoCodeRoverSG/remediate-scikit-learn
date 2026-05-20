@@ -22,7 +22,7 @@ def test_sample_without_replacement_algorithms():
     for m in methods:
 
         def sample_without_replacement_method(
-            n_population, n_samples, random_state=None
+            n_population, n_samples, random_state=None, m=m
         ):
             return sample_without_replacement(
                 n_population, n_samples, method=m, random_state=random_state
@@ -92,7 +92,7 @@ def check_sample_int_distribution(sample_without_replacement):
         n_expected = comb(n_population, n_samples, exact=True)
 
         output = {}
-        for i in range(n_trials):
+        for _ in range(n_trials):
             output[frozenset(sample_without_replacement(n_population, n_samples))] = (
                 None
             )
@@ -111,7 +111,7 @@ def test_random_choice_csc(n_samples=10000, random_state=24):
     classes = [np.array([0, 1]), np.array([0, 1, 2])]
     class_probabilities = [np.array([0.5, 0.5]), np.array([0.6, 0.1, 0.3])]
 
-    got = _random_choice_csc(n_samples, classes, class_probabilities, random_state)
+    got = _random_choice_csc(n_samples, classes, class_probabilities, random_state=random_state)
     assert sp.issparse(got)
 
     for k in range(len(classes)):
@@ -135,7 +135,7 @@ def test_random_choice_csc(n_samples=10000, random_state=24):
     classes = [np.array([0, 1]), np.array([0, 1, 2])]
     class_probabilities = [np.array([0.0, 1.0]), np.array([0.0, 1.0, 0.0])]
 
-    got = _random_choice_csc(n_samples, classes, class_probabilities, random_state)
+    got = _random_choice_csc(n_samples, classes, class_probabilities, random_state=random_state)
     assert sp.issparse(got)
 
     for k in range(len(classes)):
@@ -166,25 +166,25 @@ def test_random_choice_csc_errors():
     classes = [np.array([0, 1]), np.array([0, 1, 2, 3])]
     class_probabilities = [np.array([0.5, 0.5]), np.array([0.6, 0.1, 0.3])]
     with pytest.raises(ValueError):
-        _random_choice_csc(4, classes, class_probabilities, 1)
+        _random_choice_csc(4, classes, class_probabilities, random_state=1)
 
     # the class dtype is not supported
     classes = [np.array(["a", "1"]), np.array(["z", "1", "2"])]
     class_probabilities = [np.array([0.5, 0.5]), np.array([0.6, 0.1, 0.3])]
     with pytest.raises(ValueError):
-        _random_choice_csc(4, classes, class_probabilities, 1)
+        _random_choice_csc(4, classes, class_probabilities, random_state=1)
 
     # the class dtype is not supported
     classes = [np.array([4.2, 0.1]), np.array([0.1, 0.2, 9.4])]
     class_probabilities = [np.array([0.5, 0.5]), np.array([0.6, 0.1, 0.3])]
     with pytest.raises(ValueError):
-        _random_choice_csc(4, classes, class_probabilities, 1)
+        _random_choice_csc(4, classes, class_probabilities, random_state=1)
 
     # Given probabilities don't sum to 1
     classes = [np.array([0, 1]), np.array([0, 1, 2])]
     class_probabilities = [np.array([0.5, 0.6]), np.array([0.6, 0.1, 0.3])]
     with pytest.raises(ValueError):
-        _random_choice_csc(4, classes, class_probabilities, 1)
+        _random_choice_csc(4, classes, class_probabilities, random_state=1)
 
 
 def test_our_rand_r():
