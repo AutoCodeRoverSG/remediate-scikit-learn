@@ -1420,14 +1420,14 @@ def test_sparse_input_reg_trees(tree_type, dataset):
 @pytest.mark.parametrize("dataset", ["sparse-pos", "sparse-neg", "sparse-mix", "zeros"])
 @pytest.mark.parametrize("csc_container", CSC_CONTAINERS)
 def test_sparse_parameters(tree_type, dataset, csc_container):
-    TreeEstimator = ALL_TREES[tree_type]
+    tree_estimator = ALL_TREES[tree_type]
     X = DATASETS[dataset]["X"]
-    X_sparse = csc_container(X)
+    x_sparse = csc_container(X)
     y = DATASETS[dataset]["y"]
 
     # Check max_features
-    d = TreeEstimator(random_state=0, max_features=1, max_depth=2).fit(X, y)
-    s = TreeEstimator(random_state=0, max_features=1, max_depth=2).fit(X_sparse, y)
+    d = tree_estimator(random_state=0, max_features=1, max_depth=2).fit(X, y)
+    s = tree_estimator(random_state=0, max_features=1, max_depth=2).fit(x_sparse, y)
     assert_tree_equal(
         d.tree_,
         s.tree_,
@@ -1436,9 +1436,9 @@ def test_sparse_parameters(tree_type, dataset, csc_container):
     assert_array_almost_equal(s.predict(X), d.predict(X))
 
     # Check min_samples_split
-    d = TreeEstimator(random_state=0, max_features=1, min_samples_split=10).fit(X, y)
-    s = TreeEstimator(random_state=0, max_features=1, min_samples_split=10).fit(
-        X_sparse, y
+    d = tree_estimator(random_state=0, max_features=1, min_samples_split=10).fit(X, y)
+    s = tree_estimator(random_state=0, max_features=1, min_samples_split=10).fit(
+        x_sparse, y
     )
     assert_tree_equal(
         d.tree_,
@@ -1448,9 +1448,9 @@ def test_sparse_parameters(tree_type, dataset, csc_container):
     assert_array_almost_equal(s.predict(X), d.predict(X))
 
     # Check min_samples_leaf
-    d = TreeEstimator(random_state=0, min_samples_leaf=X_sparse.shape[0] // 2).fit(X, y)
-    s = TreeEstimator(random_state=0, min_samples_leaf=X_sparse.shape[0] // 2).fit(
-        X_sparse, y
+    d = tree_estimator(random_state=0, min_samples_leaf=x_sparse.shape[0] // 2).fit(X, y)
+    s = tree_estimator(random_state=0, min_samples_leaf=x_sparse.shape[0] // 2).fit(
+        x_sparse, y
     )
     assert_tree_equal(
         d.tree_,
@@ -1460,8 +1460,8 @@ def test_sparse_parameters(tree_type, dataset, csc_container):
     assert_array_almost_equal(s.predict(X), d.predict(X))
 
     # Check best-first search
-    d = TreeEstimator(random_state=0, max_leaf_nodes=3).fit(X, y)
-    s = TreeEstimator(random_state=0, max_leaf_nodes=3).fit(X_sparse, y)
+    d = tree_estimator(random_state=0, max_leaf_nodes=3).fit(X, y)
+    s = tree_estimator(random_state=0, max_leaf_nodes=3).fit(x_sparse, y)
     assert_tree_equal(
         d.tree_,
         s.tree_,
@@ -1482,13 +1482,13 @@ def test_sparse_parameters(tree_type, dataset, csc_container):
 @pytest.mark.parametrize("dataset", ["sparse-pos", "sparse-neg", "sparse-mix", "zeros"])
 @pytest.mark.parametrize("csc_container", CSC_CONTAINERS)
 def test_sparse_criteria(tree_type, dataset, csc_container, criterion):
-    TreeEstimator = ALL_TREES[tree_type]
+    tree_estimator = ALL_TREES[tree_type]
     X = DATASETS[dataset]["X"]
-    X_sparse = csc_container(X)
+    x_sparse = csc_container(X)
     y = DATASETS[dataset]["y"]
 
-    d = TreeEstimator(random_state=0, max_depth=3, criterion=criterion).fit(X, y)
-    s = TreeEstimator(random_state=0, max_depth=3, criterion=criterion).fit(X_sparse, y)
+    d = tree_estimator(random_state=0, max_depth=3, criterion=criterion).fit(X, y)
+    s = tree_estimator(random_state=0, max_depth=3, criterion=criterion).fit(x_sparse, y)
 
     assert_tree_equal(
         d.tree_,
@@ -1503,7 +1503,7 @@ def test_sparse_criteria(tree_type, dataset, csc_container, criterion):
     "csc_container,csr_container", zip(CSC_CONTAINERS, CSR_CONTAINERS)
 )
 def test_explicit_sparse_zeros(tree_type, csc_container, csr_container):
-    TreeEstimator = ALL_TREES[tree_type]
+    tree_estimator = ALL_TREES[tree_type]
     max_depth = 3
     n_features = 10
 
@@ -1518,7 +1518,7 @@ def test_explicit_sparse_zeros(tree_type, csc_container, csr_container):
     data = []
     offset = 0
     indptr = [offset]
-    for i in range(n_features):
+    for _ in range(n_features):
         n_nonzero_i = random_state.binomial(n_samples, 0.5)
         indices_i = random_state.permutation(samples)[:n_nonzero_i]
         indices.append(indices_i)
@@ -1530,51 +1530,51 @@ def test_explicit_sparse_zeros(tree_type, csc_container, csr_container):
     indices = np.concatenate(indices).astype(np.int32)
     indptr = np.array(indptr, dtype=np.int32)
     data = np.array(np.concatenate(data), dtype=np.float32)
-    X_sparse = csc_container((data, indices, indptr), shape=(n_samples, n_features))
-    X = X_sparse.toarray()
-    X_sparse_test = csr_container(
+    x_sparse = csc_container((data, indices, indptr), shape=(n_samples, n_features))
+    x_dense = x_sparse.toarray()
+    x_sparse_test = csr_container(
         (data, indices, indptr), shape=(n_samples, n_features)
     )
-    X_test = X_sparse_test.toarray()
+    x_test = x_sparse_test.toarray()
     y = random_state.randint(0, 3, size=(n_samples,))
 
     # Ensure that X_sparse_test owns its data, indices and indptr array
-    X_sparse_test = X_sparse_test.copy()
+    x_sparse_test = x_sparse_test.copy()
 
     # Ensure that we have explicit zeros
-    assert (X_sparse.data == 0.0).sum() > 0
-    assert (X_sparse_test.data == 0.0).sum() > 0
+    assert (x_sparse.data == 0.0).sum() > 0
+    assert (x_sparse_test.data == 0.0).sum() > 0
 
     # Perform the comparison
-    d = TreeEstimator(random_state=0, max_depth=max_depth).fit(X, y)
-    s = TreeEstimator(random_state=0, max_depth=max_depth).fit(X_sparse, y)
+    d = tree_estimator(random_state=0, max_depth=max_depth).fit(x_dense, y)
+    s = tree_estimator(random_state=0, max_depth=max_depth).fit(x_sparse, y)
 
     assert_tree_equal(
         d.tree_,
         s.tree_,
-        "{0} with dense and sparse format gave different trees".format(tree),
+        "{0} with dense and sparse format gave different trees".format(tree_type),
     )
 
-    Xs = (X_test, X_sparse_test)
-    for X1, X2 in product(Xs, Xs):
-        assert_array_almost_equal(s.tree_.apply(X1), d.tree_.apply(X2))
-        assert_array_almost_equal(s.apply(X1), d.apply(X2))
-        assert_array_almost_equal(s.apply(X1), s.tree_.apply(X1))
+    xs = (x_test, x_sparse_test)
+    for x1, x2 in product(xs, xs):
+        assert_array_almost_equal(s.tree_.apply(x1), d.tree_.apply(x2))
+        assert_array_almost_equal(s.apply(x1), d.apply(x2))
+        assert_array_almost_equal(s.apply(x1), s.tree_.apply(x1))
 
         assert_array_almost_equal(
-            s.tree_.decision_path(X1).toarray(), d.tree_.decision_path(X2).toarray()
+            s.tree_.decision_path(x1).toarray(), d.tree_.decision_path(x2).toarray()
         )
         assert_array_almost_equal(
-            s.decision_path(X1).toarray(), d.decision_path(X2).toarray()
+            s.decision_path(x1).toarray(), d.decision_path(x2).toarray()
         )
         assert_array_almost_equal(
-            s.decision_path(X1).toarray(), s.tree_.decision_path(X1).toarray()
+            s.decision_path(x1).toarray(), s.tree_.decision_path(x1).toarray()
         )
 
-        assert_array_almost_equal(s.predict(X1), d.predict(X2))
+        assert_array_almost_equal(s.predict(x1), d.predict(x2))
 
-        if tree in CLF_TREES:
-            assert_array_almost_equal(s.predict_proba(X1), d.predict_proba(X2))
+        if tree_type in CLF_TREES:
+            assert_array_almost_equal(s.predict_proba(x1), d.predict_proba(x2))
 
 
 def check_raise_error_on_1d_input(name):
