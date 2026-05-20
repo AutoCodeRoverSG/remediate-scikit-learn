@@ -41,7 +41,7 @@ T2 = np.array([[-1, -1, -1], [1, 1, 1], [2, 2, 2]])
 true_result2 = [1, 2, 3]
 
 iris = datasets.load_iris()
-rng = np.random.RandomState(0)
+rng = np.random.default_rng(0)
 perm = rng.permutation(iris.target.size)
 iris.data = iris.data[perm]
 iris.target = iris.target[perm]
@@ -470,10 +470,10 @@ def test_sparse_svc_clone_with_callable_kernel(lil_container):
     a = svm.SVC(C=1, kernel=lambda x, y: x @ y.T, probability=True, random_state=0)
     b = base.clone(a)
 
-    X_sp = lil_container(X)
-    b.fit(X_sp, Y)
-    pred = b.predict(X_sp)
-    b.predict_proba(X_sp)
+    x_sp = lil_container(X)
+    b.fit(x_sp, Y)
+    pred = b.predict(x_sp)
+    b.predict_proba(x_sp)
 
     dense_svm = svm.SVC(
         C=1, kernel=lambda x, y: np.dot(x, y.T), probability=True, random_state=0
