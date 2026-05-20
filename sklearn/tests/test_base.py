@@ -332,8 +332,8 @@ def test_is_regressor(estimator, expected_result):
         (Pipeline([("km_cv", GridSearchCV(KMeans(), {"n_clusters": [3, 8]}))], memory=None), True),
         (SVC(), False),
         (GridSearchCV(SVC(), {"C": [0.1, 1]}), False),
-        (Pipeline([("svc", SVC())]), False),
-        (Pipeline([("svc_cv", GridSearchCV(SVC(), {"C": [0.1, 1]}))]), False),
+        (Pipeline([("svc", SVC())], memory=None), False),
+        (Pipeline([("svc_cv", GridSearchCV(SVC(), {"C": [0.1, 1]}))], memory=None), False),
     ],
 )
 def test_is_clusterer(estimator, expected_result):
@@ -342,7 +342,7 @@ def test_is_clusterer(estimator, expected_result):
 
 def test_set_params():
     # test nested estimator parameter setting
-    clf = Pipeline([("svc", SVC())])
+    clf = Pipeline([("svc", SVC())], memory=None)
 
     # non-existing parameter in svc
     with pytest.raises(ValueError):
@@ -371,7 +371,7 @@ def test_set_params_passes_all_parameters():
 
     expected_kwargs = {"max_depth": 5, "min_samples_leaf": 2}
     for est in [
-        Pipeline([("estimator", TestDecisionTree())]),
+        Pipeline([("estimator", TestDecisionTree())], memory=None),
         GridSearchCV(TestDecisionTree(), {}),
     ]:
         est.set_params(estimator__max_depth=5, estimator__min_samples_leaf=2)
@@ -481,12 +481,12 @@ def test_clone_protocol():
     assert_array_equal(frozen_pca.get_feature_names_out(), pca.get_feature_names_out())
 
     # Fitting on a new data does not alter `components_`
-    X_new = np.asarray([[-1, 2], [3, 4], [1, 2]])
-    frozen_pca.fit(X_new)
+    x_new = np.asarray([[-1, 2], [3, 4], [1, 2]])
+    frozen_pca.fit(x_new)
     assert_allclose(frozen_pca.components_, components)
 
     # `fit_transform` does not alter state
-    frozen_pca.fit_transform(X_new)
+    frozen_pca.fit_transform(x_new)
     assert_allclose(frozen_pca.components_, components)
 
     # Cloning estimator is a no-op
@@ -740,8 +740,8 @@ def test_feature_names_in():
     """Check that feature_name_in are recorded by `_validate_data`"""
     pd = pytest.importorskip("pandas")
     iris = datasets.load_iris()
-    X_np = iris.data
-    df = pd.DataFrame(X_np, columns=iris.feature_names)
+    x_np = iris.data
+    df = pd.DataFrame(x_np, columns=iris.feature_names)
 
     class NoOpTransformer(TransformerMixin, BaseEstimator):
         def fit(self, X, y=None):
@@ -757,12 +757,12 @@ def test_feature_names_in():
     assert_array_equal(trans.feature_names_in_, df.columns)
 
     # fit again but on ndarray does not keep the previous feature names (see #21383)
-    trans.fit(X_np)
+    trans.fit(x_np)
     assert not hasattr(trans, "feature_names_in_")
 
     trans.fit(df)
     msg = "The feature names should match those that were passed"
-    df_bad = pd.DataFrame(X_np, columns=iris.feature_names[::-1])
+    df_bad = pd.DataFrame(x_np, columns=iris.feature_names[::-1])
     with pytest.raises(ValueError, match=msg):
         trans.transform(df_bad)
 
@@ -772,16 +772,16 @@ def test_feature_names_in():
         "fitted with feature names"
     )
     with pytest.warns(UserWarning, match=msg):
-        trans.transform(X_np)
+        trans.transform(x_np)
 
     # warns when fitted on an ndarray and transforming dataframe
     msg = "X has feature names, but NoOpTransformer was fitted without feature names"
-    trans = NoOpTransformer().fit(X_np)
+    trans = NoOpTransformer().fit(x_np)
     with pytest.warns(UserWarning, match=msg):
         trans.transform(df)
 
     # fit on dataframe with all integer feature names works without warning
-    df_int_names = pd.DataFrame(X_np)
+    df_int_names = pd.DataFrame(x_np)
     trans = NoOpTransformer()
     with warnings.catch_warnings():
         warnings.simplefilter("error", UserWarning)
@@ -789,14 +789,14 @@ def test_feature_names_in():
 
     # fit on dataframe with no feature names or all integer feature names
     # -> do not warn on transform
-    Xs = [X_np, df_int_names]
-    for X in Xs:
+    inputs = [x_np, df_int_names]
+    for X in inputs:
         with warnings.catch_warnings():
             warnings.simplefilter("error", UserWarning)
             trans.transform(X)
 
     # fit on dataframe with feature names that are mixed raises an error:
-    df_mixed = pd.DataFrame(X_np, columns=["a", "b", 1, 2])
+    df_mixed = pd.DataFrame(x_np, columns=["a", "b", 1, 2])
     trans = NoOpTransformer()
     msg = re.escape(
         "Feature names are only supported if all input features have string names, "
@@ -826,12 +826,12 @@ def test_validate_data_skip_check_array():
         pass
 
     no_op = NoOpTransformer()
-    X_np_out = validate_data(no_op, df, skip_check_array=False)
-    assert isinstance(X_np_out, np.ndarray)
-    assert_allclose(X_np_out, df.to_numpy())
+    x_np_out = validate_data(no_op, df, skip_check_array=False)
+    assert isinstance(x_np_out, np.ndarray)
+    assert_allclose(x_np_out, df.to_numpy())
 
-    X_df_out = validate_data(no_op, df, skip_check_array=True)
-    assert X_df_out is df
+    x_df_out = validate_data(no_op, df, skip_check_array=True)
+    assert x_df_out is df
 
     y_np_out = validate_data(no_op, y=y, skip_check_array=False)
     assert isinstance(y_np_out, np.ndarray)
@@ -840,14 +840,14 @@ def test_validate_data_skip_check_array():
     y_series_out = validate_data(no_op, y=y, skip_check_array=True)
     assert y_series_out is y
 
-    X_np_out, y_np_out = validate_data(no_op, df, y, skip_check_array=False)
-    assert isinstance(X_np_out, np.ndarray)
-    assert_allclose(X_np_out, df.to_numpy())
+    x_np_out, y_np_out = validate_data(no_op, df, y, skip_check_array=False)
+    assert isinstance(x_np_out, np.ndarray)
+    assert_allclose(x_np_out, df.to_numpy())
     assert isinstance(y_np_out, np.ndarray)
     assert_allclose(y_np_out, y.to_numpy())
 
-    X_df_out, y_series_out = validate_data(no_op, df, y, skip_check_array=True)
-    assert X_df_out is df
+    x_df_out, y_series_out = validate_data(no_op, df, y, skip_check_array=True)
+    assert x_df_out is df
     assert y_series_out is y
 
     msg = "Validation should be done on X, y or both."
@@ -938,12 +938,12 @@ def test_feature_names_in_on_dataframes(constructor_name, minversion):
     no_op = NoOpTransformer()
     no_op.fit(df)
     assert_array_equal(no_op.feature_names_in_, columns)
-    X_out = no_op.transform(df)
+    x_out = no_op.transform(df)
 
     if constructor_name != "pyarrow":
         # pyarrow does not work with `np.asarray`
         # https://github.com/apache/arrow/issues/34886
-        assert_allclose(df, X_out)
+        assert_allclose(df, x_out)
 
     bad_names = ["a", "b", "c"]
     df_bad = _convert_container(data, constructor_name, column_names=bad_names)
