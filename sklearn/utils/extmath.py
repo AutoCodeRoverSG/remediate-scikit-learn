@@ -607,12 +607,12 @@ def _randomized_svd(
 
     # compute the SVD on the thin matrix: (k + p) wide
     if is_array_api_compliant:
-        Uhat, s, Vt = xp.linalg.svd(B, full_matrices=False)
+        Uhat, s, vt = xp.linalg.svd(B, full_matrices=False)
     else:
         # When array_api_dispatch is disabled, rely on scipy.linalg
         # instead of numpy.linalg to avoid introducing a behavior change w.r.t.
         # previous versions of scikit-learn.
-        Uhat, s, Vt = linalg.svd(
+        Uhat, s, vt = linalg.svd(
             B, full_matrices=False, lapack_driver=svd_lapack_driver
         )
     del B
@@ -620,21 +620,21 @@ def _randomized_svd(
 
     if flip_sign:
         if not transpose:
-            U, Vt = svd_flip(U, Vt)
+            U, vt = svd_flip(U, vt)
         else:
             # In case of transpose u_based_decision=false
             # to actually flip based on u and not v.
-            U, Vt = svd_flip(U, Vt, u_based_decision=False)
+            U, vt = svd_flip(U, vt, u_based_decision=False)
 
     if transpose:
         # transpose back the results according to the input convention
-        return Vt[:n_components, :].T, s[:n_components], U[:, :n_components].T
+        return vt[:n_components, :].T, s[:n_components], U[:, :n_components].T
     else:
-        return U[:, :n_components], s[:n_components], Vt[:n_components, :]
+        return U[:, :n_components], s[:n_components], vt[:n_components, :]
 
 
 def _randomized_eigsh(
-    M,
+    m_matrix,
     n_components,
     *,
     n_oversamples=10,
@@ -759,8 +759,8 @@ def _randomized_eigsh(
     elif selection == "module":
         # Note: no need for deterministic U and Vt (flip_sign=True),
         # as we only use the dot product UVt afterwards
-        U, S, Vt = randomized_svd(
-            M,
+        u, s, vt = randomized_svd(
+            m_matrix,
             n_components=n_components,
             n_oversamples=n_oversamples,
             n_iter=n_iter,
@@ -769,8 +769,8 @@ def _randomized_eigsh(
             random_state=random_state,
         )
 
-        eigvecs = U[:, :n_components]
-        eigvals = S[:n_components]
+        eigvecs = u[:, :n_components]
+        eigvals = s[:n_components]
 
         # Conversion of Singular values into Eigenvalues:
         # For any eigenvalue t, the corresponding singular value is |t|.
@@ -778,8 +778,8 @@ def _randomized_eigsh(
         # value will be -t, and the left (U) and right (V) singular vectors
         # will have opposite signs.
         # Fastest way: see <https://stackoverflow.com/a/61974002/7262247>
-        diag_VtU = np.einsum("ji,ij->j", Vt[:n_components, :], U[:, :n_components])
-        signs = np.sign(diag_VtU)
+        diag_vtu = np.einsum("ji,ij->j", vt[:n_components, :], u[:, :n_components])
+        signs = np.sign(diag_vtu)
         eigvals = eigvals * signs
 
     else:  # pragma: no cover
@@ -916,7 +916,7 @@ def cartesian(arrays, out=None):
         out = np.empty_like(ix, dtype=dtype)
 
     for n, arr in enumerate(arrays):
-        out[:, n] = arrays[n][ix[:, n]]
+        out[:, n] = arr[ix[:, n]]
 
     return out
 
@@ -1006,7 +1006,7 @@ def softmax(X, copy=True):
     out : ndarray of shape (M, N)
         Softmax function evaluated at every point in x.
     """
-    xp, is_array_api_compliant = get_namespace(X)
+    xp, _ = get_namespace(X)
     if copy:
         X = xp.asarray(X, copy=True)
     max_prob = xp.reshape(xp.max(X, axis=1), (-1, 1))
@@ -1173,16 +1173,16 @@ def _incremental_mean_and_var(
     # old = stats until now
     # new = the current increment
     # updated = the aggregated stats
-    xp, _, X_device = get_namespace_and_device(X)
-    max_float_dtype = _max_precision_float_dtype(xp, device=X_device)
+    xp, _, x_device = get_namespace_and_device(X)
+    max_float_dtype = _max_precision_float_dtype(xp, device=x_device)
     # Promoting int -> float is not guaranteed by the array-api, so we cast manually.
     # (Also, last_sample_count may be a python scalar)
     last_sample_count = xp.asarray(
-        last_sample_count, dtype=max_float_dtype, device=X_device
+        last_sample_count, dtype=max_float_dtype, device=x_device
     )
     last_sum = last_mean * last_sample_count
-    X_nan_mask = xp.isnan(X)
-    if xp.any(X_nan_mask):
+    x_nan_mask = xp.isnan(X)
+    if xp.any(x_nan_mask):
         sum_op = _nansum
     else:
         sum_op = xp.sum
@@ -1192,18 +1192,18 @@ def _incremental_mean_and_var(
         new_sum = _safe_accumulator_op(
             xp.matmul,
             sample_weight,
-            xp.where(X_nan_mask, 0, X),
+            xp.where(x_nan_mask, 0, X),
         )
         new_sample_count = _safe_accumulator_op(
             xp.sum,
-            sample_weight[:, None] * xp.astype(~X_nan_mask, sample_weight.dtype),
+            sample_weight[:, None] * xp.astype(~x_nan_mask, sample_weight.dtype),
             axis=0,
         )
     else:
         new_sum = _safe_accumulator_op(sum_op, X, axis=0)
         n_samples = X.shape[0]
         new_sample_count = n_samples - _safe_accumulator_op(
-            sum_op, xp.astype(X_nan_mask, X.dtype), axis=0
+            sum_op, xp.astype(x_nan_mask, X.dtype), axis=0
         )
 
     updated_sample_count = last_sample_count + new_sample_count
@@ -1221,13 +1221,13 @@ def _incremental_mean_and_var(
             correction = _safe_accumulator_op(
                 xp.matmul,
                 sample_weight,
-                xp.where(X_nan_mask, 0, temp),
+                xp.where(x_nan_mask, 0, temp),
             )
             temp **= 2
             new_unnormalized_variance = _safe_accumulator_op(
                 xp.matmul,
                 sample_weight,
-                xp.where(X_nan_mask, 0, temp),
+                xp.where(x_nan_mask, 0, temp),
             )
         else:
             correction = _safe_accumulator_op(sum_op, temp, axis=0)
@@ -1468,7 +1468,7 @@ def _approximate_mode(class_counts, n_draws, rng):
         # add according to remainder, but break ties
         # randomly to avoid biases
         for value in values:
-            (inds,) = np.where(remainder == value)
+            (inds,) = np.nonzero(remainder == value)
             # if we need_to_add less than what's in inds
             # we draw randomly from them.
             # if we need to add more, we add them all and
