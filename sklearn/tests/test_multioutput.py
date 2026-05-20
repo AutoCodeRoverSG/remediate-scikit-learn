@@ -530,17 +530,17 @@ def test_classifier_chain_fit_and_predict_with_linear_svc(chain_method):
 @pytest.mark.parametrize("csr_container", CSR_CONTAINERS)
 def test_classifier_chain_fit_and_predict_with_sparse_data(csr_container):
     # Fit classifier chain with sparse data
-    X, Y = generate_multilabel_dataset_with_correlations()
+    X, y = generate_multilabel_dataset_with_correlations()
     x_sparse = csr_container(X)
 
     classifier_chain = ClassifierChain(
         LogisticRegression(random_state=0), random_state=0
-    ).fit(x_sparse, Y)
+    ).fit(x_sparse, y)
     y_pred_sparse = classifier_chain.predict(x_sparse)
 
     classifier_chain = ClassifierChain(
         LogisticRegression(random_state=0), random_state=0
-    ).fit(X, Y)
+    ).fit(X, y)
     y_pred_dense = classifier_chain.predict(X)
 
     assert_array_equal(y_pred_sparse, y_pred_dense)
@@ -601,8 +601,8 @@ def test_regressor_chain_fit_and_predict():
     X, Y = generate_multilabel_dataset_with_correlations()
     chain = RegressorChain(Ridge())
     chain.fit(X, Y)
-    Y_pred = chain.predict(X)
-    assert Y_pred.shape == Y.shape
+    y_pred = chain.predict(X)
+    assert y_pred.shape == Y.shape
     assert [c.coef_.size for c in chain.estimators_] == list(
         range(X.shape[1], X.shape[1] + Y.shape[1])
     )
@@ -612,21 +612,24 @@ def test_regressor_chain_fit_and_predict():
 def test_base_chain_fit_and_predict_with_sparse_data_and_cv(csr_container):
     # Fit base chain with sparse data cross_val_predict
     X, Y = generate_multilabel_dataset_with_correlations()
-    X_sparse = csr_container(X)
+    x_sparse = csr_container(X)
     base_chains = [
-        ClassifierChain(LogisticRegression(), cv=3),
+        ClassifierChain(LogisticRegression(random_state=0), cv=3),
         RegressorChain(Ridge(), cv=3),
     ]
     for chain in base_chains:
-        chain.fit(X_sparse, Y)
-        Y_pred = chain.predict(X_sparse)
-        assert Y_pred.shape == Y.shape
+        chain.fit(x_sparse, Y)
+        y_pred = chain.predict(x_sparse)
+        assert y_pred.shape == Y.shape
 
 
 def test_base_chain_random_order():
     # Fit base chain with random order
     X, Y = generate_multilabel_dataset_with_correlations()
-    for chain in [ClassifierChain(LogisticRegression()), RegressorChain(Ridge())]:
+    for chain in [
+        ClassifierChain(LogisticRegression(random_state=42)),
+        RegressorChain(Ridge(random_state=42)),
+    ]:
         chain_random = clone(chain).set_params(order="random", random_state=42)
         chain_random.fit(X, Y)
         chain_fixed = clone(chain).set_params(order=chain_random.order_)
@@ -657,29 +660,31 @@ def test_base_chain_crossval_fit_and_predict(chain_type, chain_method):
     X, Y = generate_multilabel_dataset_with_correlations()
 
     if chain_type == "classifier":
-        chain = ClassifierChain(LogisticRegression(), chain_method=chain_method)
+        chain = ClassifierChain(
+            LogisticRegression(random_state=0), chain_method=chain_method
+        )
     else:
         chain = RegressorChain(Ridge())
     chain.fit(X, Y)
     chain_cv = clone(chain).set_params(cv=3)
     chain_cv.fit(X, Y)
-    Y_pred_cv = chain_cv.predict(X)
-    Y_pred = chain.predict(X)
+    y_pred_cv = chain_cv.predict(X)
+    y_pred = chain.predict(X)
 
-    assert Y_pred_cv.shape == Y_pred.shape
-    assert not np.all(Y_pred == Y_pred_cv)
+    assert y_pred_cv.shape == y_pred.shape
+    assert not np.all(y_pred == y_pred_cv)
     if isinstance(chain, ClassifierChain):
-        assert jaccard_score(Y, Y_pred_cv, average="samples") > 0.4
+        assert jaccard_score(Y, y_pred_cv, average="samples") > 0.4
     else:
-        assert mean_squared_error(Y, Y_pred_cv) < 0.25
+        assert mean_squared_error(Y, y_pred_cv) < 0.25
 
 
 @pytest.mark.parametrize(
     "estimator",
     [
-        RandomForestClassifier(n_estimators=2),
-        MultiOutputClassifier(RandomForestClassifier(n_estimators=2)),
-        ClassifierChain(RandomForestClassifier(n_estimators=2)),
+        RandomForestClassifier(n_estimators=2, random_state=42),
+        MultiOutputClassifier(RandomForestClassifier(n_estimators=2, random_state=42)),
+        ClassifierChain(RandomForestClassifier(n_estimators=2, random_state=42)),
     ],
 )
 def test_multi_output_classes_(estimator):
