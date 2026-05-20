@@ -1469,7 +1469,7 @@ def test_kneighbors_graph():
         ],
     )
 
-    # n_neighbors = 3
+    
     A = neighbors.kneighbors_graph(X, 3, mode="connectivity", include_self=True)
     assert_allclose(A.toarray(), [[1, 1, 1], [1, 1, 1], [1, 1, 1]])
 
@@ -1480,8 +1480,8 @@ def test_kneighbors_graph():
 def test_kneighbors_graph_sparse(n_neighbors, mode, csr_container, seed=36):
     # Test kneighbors_graph to build the k-Nearest Neighbor graph
     # for sparse input.
-    rng = np.random.RandomState(seed)
-    X = rng.randn(10, 10)
+    rng = np.random.default_rng(seed)
+    X = rng.standard_normal((10, 10))
     x_csr = csr_container(X)
 
     assert_allclose(
@@ -1509,8 +1509,8 @@ def test_radius_neighbors_graph():
 def test_radius_neighbors_graph_sparse(n_neighbors, mode, csr_container, seed=36):
     # Test radius_neighbors_graph to build the Nearest Neighbor graph
     # for sparse input.
-    rng = np.random.RandomState(seed)
-    X = rng.randn(10, 10)
+    rng = np.random.default_rng(seed)
+    X = rng.standard_normal((10, 10))
     x_csr = csr_container(X)
 
     assert_allclose(
@@ -1658,14 +1658,14 @@ def test_neighbors_metrics(
     n_query_pts=2,
     n_neighbors=5,
 ):
-    rng = np.random.RandomState(global_random_seed)
+    rng = np.random.default_rng(global_random_seed)
 
     metric = _parse_metric(metric, global_dtype)
 
     # Test computing the neighbors for various metrics
     algorithms = ["brute", "ball_tree", "kd_tree"]
-    X_train = rng.rand(n_samples, n_features).astype(global_dtype, copy=False)
-    X_test = rng.rand(n_query_pts, n_features).astype(global_dtype, copy=False)
+    X_train = rng.random((n_samples, n_features)).astype(global_dtype, copy=False)
+    X_test = rng.random((n_query_pts, n_features)).astype(global_dtype, copy=False)
 
     metric_params_list = _generate_test_params_for(metric, n_features)
 
@@ -1743,10 +1743,10 @@ def test_kneighbors_brute_backend(
     n_query_pts=5,
     n_neighbors=5,
 ):
-    rng = np.random.RandomState(global_random_seed)
+    rng = np.random.default_rng(global_random_seed)
     # Both backend for the 'brute' algorithm of kneighbors must give identical results.
-    X_train = rng.rand(n_samples, n_features).astype(global_dtype, copy=False)
-    X_test = rng.rand(n_query_pts, n_features).astype(global_dtype, copy=False)
+    X_train = rng.random((n_samples, n_features)).astype(global_dtype, copy=False)
+    X_test = rng.random((n_query_pts, n_features)).astype(global_dtype, copy=False)
 
     # Haversine distance only accepts 2D data
     if metric == "haversine":
@@ -1793,7 +1793,7 @@ def test_callable_metric():
     def custom_metric(x1, x2):
         return np.sqrt(np.sum(x1**2 + x2**2))
 
-    X = np.random.RandomState(42).rand(20, 2)
+    X = np.random.default_rng(42).random((20, 2))
     nbrs1 = neighbors.NearestNeighbors(
         n_neighbors=3, algorithm="auto", metric=custom_metric
     )
@@ -1868,9 +1868,9 @@ def test_metric_params_interface():
 
 @pytest.mark.parametrize("csr_container", CSR_CONTAINERS)
 def test_predict_sparse_ball_kd_tree(csr_container):
-    rng = np.random.RandomState(0)
-    X = rng.rand(5, 5)
-    y = rng.randint(0, 2, 5)
+    rng = np.random.default_rng(0)
+    X = rng.random((5, 5))
+    y = rng.integers(0, 2, 5)
     nbrs1 = neighbors.KNeighborsClassifier(1, algorithm="kd_tree")
     nbrs2 = neighbors.KNeighborsRegressor(1, algorithm="ball_tree")
     for model in [nbrs1, nbrs2]:
@@ -1880,8 +1880,8 @@ def test_predict_sparse_ball_kd_tree(csr_container):
 
 
 def test_non_euclidean_kneighbors():
-    rng = np.random.RandomState(0)
-    X = rng.rand(5, 5)
+    rng = np.random.default_rng(0)
+    X = rng.random((5, 5))
 
     # Find a reasonable radius.
     dist_array = pairwise_distances(X).flatten()
@@ -1951,7 +1951,7 @@ def test_k_and_radius_neighbors_train_is_not_query():
 
 
 @pytest.mark.parametrize("algorithm", ALGORITHMS)
-def test_k_and_radius_neighbors_X_None(algorithm):
+def test_k_and_radius_neighbors_x_none(algorithm):
     # Test kneighbors et.al when query is None
     nn = neighbors.NearestNeighbors(n_neighbors=1, algorithm=algorithm)
 
@@ -2161,7 +2161,7 @@ def test_pairwise_boolean_distance():
     # Non-regression test for #4523
     # 'brute': uses scipy.spatial.distance through pairwise_distances
     # 'ball_tree': uses sklearn.neighbors._dist_metrics
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
     X = rng.uniform(size=(6, 5))
     NN = neighbors.NearestNeighbors
 
