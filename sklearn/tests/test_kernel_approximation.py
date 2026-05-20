@@ -391,7 +391,7 @@ def test_nystroem_approximation_array_api(
 
 
 def test_nystroem_default_parameters():
-    rnd = np.random.RandomState(42)
+    rnd = np.random.default_rng(42)
     X = rnd.uniform(size=(10, 4))
 
     # rbf kernel should behave as gamma=None by default
@@ -412,8 +412,8 @@ def test_nystroem_default_parameters():
 
 def test_nystroem_singular_kernel():
     # test that nystroem works with singular kernel matrix
-    rng = np.random.RandomState(0)
-    X = rng.rand(10, 20)
+    rng = np.random.default_rng(0)
+    X = rng.random((10, 20))
     X = np.vstack([X] * 2)  # duplicate samples
 
     gamma = 100
@@ -428,8 +428,8 @@ def test_nystroem_singular_kernel():
 
 def test_nystroem_poly_kernel_params():
     # Non-regression: Nystroem should pass other parameters beside gamma.
-    rnd = np.random.RandomState(37)
-    X = rnd.uniform(size=(10, 4))
+    rng = np.random.default_rng(37)
+    X = rng.uniform(size=(10, 4))
 
     K = polynomial_kernel(X, degree=3.1, coef0=0.1)
     nystroem = Nystroem(
@@ -437,7 +437,7 @@ def test_nystroem_poly_kernel_params():
         n_components=X.shape[0],
         degree=3.1,
         coef0=0.1,
-        random_state=rnd,
+        random_state=37,
     )
     x_transformed = nystroem.fit_transform(X)
     assert_array_almost_equal(np.dot(x_transformed, x_transformed.T), K)
@@ -445,7 +445,7 @@ def test_nystroem_poly_kernel_params():
 
 def test_nystroem_callable():
     # Test Nystroem on a callable.
-    rnd = np.random.RandomState(42)
+    rnd = np.random.default_rng(42)
     n_samples = 10
     X = rnd.uniform(size=(n_samples, 4))
 
