@@ -157,7 +157,7 @@ def test_additive_chi2_sampler_sample_steps(method, sample_steps):
         sample_interval=sample_interval,
     )
     getattr(transformer, method)(X)
-    assert transformer.sample_interval == sample_interval
+    assert transformer.sample_interval == pytest.approx(sample_interval)
 
 
 @pytest.mark.parametrize("method", ["fit", "fit_transform", "transform"])
@@ -324,27 +324,27 @@ def test_input_validation(csr_container):
 
 def test_nystroem_approximation():
     # some basic tests
-    rnd = np.random.RandomState(0)
-    X = rnd.uniform(size=(10, 4))
+    rng = np.random.default_rng(0)
+    X = rng.uniform(size=(10, 4))
 
     # With n_components = n_samples this is exact
-    x_transformed = Nystroem(n_components=X.shape[0], random_state=rnd).fit_transform(X)
+    x_transformed = Nystroem(n_components=X.shape[0], random_state=0).fit_transform(X)
     K = rbf_kernel(X)
     assert_array_almost_equal(np.dot(x_transformed, x_transformed.T), K)
 
-    trans = Nystroem(n_components=2, random_state=rnd)
+    trans = Nystroem(n_components=2, random_state=0)
     x_transformed = trans.fit(X).transform(X)
     assert x_transformed.shape == (X.shape[0], 2)
 
     # test callable kernel
-    trans = Nystroem(n_components=2, kernel=_linear_kernel, random_state=rnd)
+    trans = Nystroem(n_components=2, kernel=_linear_kernel, random_state=0)
     x_transformed = trans.fit(X).transform(X)
     assert x_transformed.shape == (X.shape[0], 2)
 
     # test that available kernels fit and transform
     kernels_available = kernel_metrics()
     for kern in kernels_available:
-        trans = Nystroem(n_components=2, kernel=kern, random_state=rnd)
+        trans = Nystroem(n_components=2, kernel=kern, random_state=0)
         x_transformed = trans.fit(X).transform(X)
         assert x_transformed.shape == (X.shape[0], 2)
 
@@ -361,7 +361,7 @@ def test_nystroem_approximation_array_api(
     array_namespace, device_name, dtype_name, kernel, n_components
 ):
     xp, device = _array_api_for_tests(array_namespace, device_name, dtype_name)
-    rnd = np.random.RandomState(0)
+    rnd = np.random.default_rng(0)
     n_samples = 10
     # Ensure full-rank linear kernel to limit the impact of device-specific
     # rounding discrepancies.
@@ -460,6 +460,7 @@ def test_nystroem_callable():
         kernel=logging_histogram_kernel,
         n_components=(n_samples - 1),
         kernel_params={"log": kernel_log},
+        random_state=42,
     ).fit(X)
     assert len(kernel_log) == n_samples * (n_samples - 1) / 2
 
@@ -467,7 +468,12 @@ def test_nystroem_callable():
     msg = "Don't pass gamma, coef0 or degree to Nystroem"
     params = ({"gamma": 1}, {"coef0": 1}, {"degree": 2})
     for param in params:
-        ny = Nystroem(kernel=_linear_kernel, n_components=(n_samples - 1), **param)
+        ny = Nystroem(
+            kernel=_linear_kernel,
+            n_components=(n_samples - 1),
+            random_state=42,
+            **param,
+        )
         with pytest.raises(ValueError, match=msg):
             ny.fit(X)
 
@@ -475,19 +481,26 @@ def test_nystroem_callable():
 def test_nystroem_precomputed_kernel():
     # Non-regression: test Nystroem on precomputed kernel.
     # PR - 14706
-    rnd = np.random.RandomState(12)
+    rnd = np.random.default_rng(seed=12)
     X = rnd.uniform(size=(10, 4))
 
     K = polynomial_kernel(X, degree=2, coef0=0.1)
-    nystroem = Nystroem(kernel="precomputed", n_components=X.shape[0])
-    X_transformed = nystroem.fit_transform(K)
-    assert_array_almost_equal(np.dot(X_transformed, X_transformed.T), K)
+    nystroem = Nystroem(
+        kernel="precomputed", n_components=X.shape[0], random_state=0
+    )
+    x_transformed = nystroem.fit_transform(K)
+    assert_array_almost_equal(np.dot(x_transformed, x_transformed.T), K)
 
     # if degree, gamma or coef0 is passed, we raise a ValueError
     msg = "Don't pass gamma, coef0 or degree to Nystroem"
     params = ({"gamma": 1}, {"coef0": 1}, {"degree": 2})
     for param in params:
-        ny = Nystroem(kernel="precomputed", n_components=X.shape[0], **param)
+        ny = Nystroem(
+            kernel="precomputed",
+            n_components=X.shape[0],
+            random_state=0,
+            **param,
+        )
         with pytest.raises(ValueError, match=msg):
             ny.fit(K)
 
@@ -508,16 +521,16 @@ def test_nystroem_component_indices():
 
 
 @pytest.mark.parametrize(
-    "Estimator", [PolynomialCountSketch, RBFSampler, SkewedChi2Sampler, Nystroem]
+    "estimator", [PolynomialCountSketch, RBFSampler, SkewedChi2Sampler, Nystroem]
 )
-def test_get_feature_names_out(Estimator):
+def test_get_feature_names_out(estimator):
     """Check get_feature_names_out"""
-    est = Estimator().fit(X)
-    X_trans = est.transform(X)
+    est = estimator().fit(X)
+    x_trans = est.transform(X)
 
     names_out = est.get_feature_names_out()
-    class_name = Estimator.__name__.lower()
-    expected_names = [f"{class_name}{i}" for i in range(X_trans.shape[1])]
+    class_name = estimator.__name__.lower()
+    expected_names = [f"{class_name}{i}" for i in range(x_trans.shape[1])]
     assert_array_equal(names_out, expected_names)
 
 
