@@ -502,7 +502,7 @@ def test_temperature_scaling_input_validation(global_dtype):
     # Check that _TemperatureScaling can handle 2d-array with only 1 feature
     X = np.arange(10).astype(global_dtype)
     x_2d = X.reshape(-1, 1)
-    y = np.random.randint(0, 2, size=X.shape[0])
+    y = np.random.default_rng(42).integers(0, 2, size=X.shape[0])
 
     ts = _TemperatureScaling().fit(X, y)
     ts_2d = _TemperatureScaling().fit(x_2d, y)
@@ -582,7 +582,6 @@ def test_calibration_prob_sum(method, ensemble):
     X, _ = make_classification(n_samples=10, n_features=5, n_classes=2, random_state=42)
     y = [1, 1, 1, 1, 1, 0, 0, 0, 0, 0]
     clf = LinearSVC(C=1.0, random_state=7)
-    # In the first and last fold, test will have 1 class while train will have 2
     clf_prob = CalibratedClassifierCV(
         clf, method=method, cv=KFold(n_splits=3), ensemble=ensemble
     )
@@ -596,7 +595,8 @@ def test_calibration_less_classes(ensemble):
     # split does not contain all classes
     # In 1st split, train is missing class 0
     # In 3rd split, train is missing class 3
-    X = np.random.randn(12, 5)
+    rng = np.random.default_rng(42)
+    X = rng.standard_normal((12, 5))
     y = [0, 0, 0, 1] + [1, 1, 2, 2] + [2, 3, 3, 3]
     clf = DecisionTreeClassifier(random_state=7)
     cal_clf = CalibratedClassifierCV(
@@ -1001,14 +1001,14 @@ def test_calibrated_classifier_cv_double_sample_weights_equivalence(method, ense
 
     # Interlace the data such that a 2-fold cross-validation will be equivalent
     # to using the original dataset with a sample weights of 2
-    X_twice = np.zeros((X.shape[0] * 2, X.shape[1]), dtype=X.dtype)
-    X_twice[::2, :] = X
-    X_twice[1::2, :] = X
+    x_twice = np.zeros((X.shape[0] * 2, X.shape[1]), dtype=X.dtype)
+    x_twice[::2, :] = X
+    x_twice[1::2, :] = X
     y_twice = np.zeros(y.shape[0] * 2, dtype=y.dtype)
     y_twice[::2] = y
     y_twice[1::2] = y
 
-    estimator = LogisticRegression()
+    estimator = LogisticRegression(random_state=42)
     calibrated_clf_without_weights = CalibratedClassifierCV(
         estimator,
         method=method,
@@ -1018,7 +1018,7 @@ def test_calibrated_classifier_cv_double_sample_weights_equivalence(method, ense
     calibrated_clf_with_weights = clone(calibrated_clf_without_weights)
 
     calibrated_clf_with_weights.fit(X, y, sample_weight=sample_weight)
-    calibrated_clf_without_weights.fit(X_twice, y_twice)
+    calibrated_clf_without_weights.fit(x_twice, y_twice)
 
     # Check that the underlying fitted estimators have the same coefficients
     for est_with_weights, est_without_weights in zip(
@@ -1050,7 +1050,7 @@ def test_calibration_with_fit_params(fit_params_type, data):
         "b": _convert_container(y, fit_params_type),
     }
 
-    clf = CheckingClassifier(expected_fit_params=["a", "b"])
+    clf = CheckingClassifier(expected_fit_params=["a", "b"], random_state=42)
     pc_clf = CalibratedClassifierCV(clf)
 
     pc_clf.fit(X, y, **fit_params)
@@ -1255,7 +1255,7 @@ def test_temperature_scaling_array_api_compliance(
     with the array API"""
 
     xp, device = _array_api_for_tests(array_namespace, device_name, dtype_name)
-    X, y = make_classification(
+    x_data, y = make_classification(
         n_samples=1000,
         n_features=10,
         n_informative=10,
@@ -1265,16 +1265,16 @@ def test_temperature_scaling_array_api_compliance(
         class_sep=2.0,
         random_state=42,
     )
-    X_train, X_cal, y_train, y_cal = train_test_split(X, y, random_state=42)
+    x_train, x_cal, y_train, y_cal = train_test_split(x_data, y, random_state=42)
 
-    X_train = X_train.astype(dtype_name)
+    x_train = x_train.astype(dtype_name)
     y_train = y_train.astype(dtype_name)
-    X_train_xp = xp.asarray(X_train, device=device)
+    x_train_xp = xp.asarray(x_train, device=device)
     y_train_xp = xp.asarray(y_train, device=device)
 
-    X_cal = X_cal.astype(dtype_name)
+    x_cal = x_cal.astype(dtype_name)
     y_cal = y_cal.astype(dtype_name)
-    X_cal_xp = xp.asarray(X_cal, device=device)
+    x_cal_xp = xp.asarray(x_cal, device=device)
     y_cal_xp = xp.asarray(y_cal, device=device)
 
     if use_sample_weight:
@@ -1284,31 +1284,31 @@ def test_temperature_scaling_array_api_compliance(
         sample_weight = None
 
     clf_np = LinearDiscriminantAnalysis()
-    clf_np.fit(X_train, y_train)
+    clf_np.fit(x_train, y_train)
     cal_clf_np = CalibratedClassifierCV(
         FrozenEstimator(clf_np), cv=3, method="temperature", ensemble=ensemble
-    ).fit(X_cal, y_cal, sample_weight=sample_weight)
+    ).fit(x_cal, y_cal, sample_weight=sample_weight)
 
     calibrator_np = cal_clf_np.calibrated_classifiers_[0].calibrators[0]
-    pred_np = cal_clf_np.predict(X_train)
+    pred_np = cal_clf_np.predict(x_train)
     with config_context(array_api_dispatch=True):
         clf_xp = LinearDiscriminantAnalysis()
-        clf_xp.fit(X_train_xp, y_train_xp)
+        clf_xp.fit(x_train_xp, y_train_xp)
         cal_clf_xp = CalibratedClassifierCV(
             FrozenEstimator(clf_xp), cv=3, method="temperature", ensemble=ensemble
-        ).fit(X_cal_xp, y_cal_xp, sample_weight=sample_weight)
+        ).fit(x_cal_xp, y_cal_xp, sample_weight=sample_weight)
 
         calibrator_xp = cal_clf_xp.calibrated_classifiers_[0].calibrators[0]
         rtol = 1e-3 if dtype_name == "float32" else 1e-7
         assert get_namespace(calibrator_xp.beta_)[0].__name__ == xp.__name__
-        assert calibrator_xp.beta_.dtype == X_cal_xp.dtype
-        assert array_api_device(calibrator_xp.beta_) == array_api_device(X_cal_xp)
+        assert calibrator_xp.beta_.dtype == x_cal_xp.dtype
+        assert array_api_device(calibrator_xp.beta_) == array_api_device(x_cal_xp)
         assert_allclose(
             move_to(calibrator_xp.beta_, xp=np, device="cpu"),
             calibrator_np.beta_,
             rtol=rtol,
         )
-        pred_xp = cal_clf_xp.predict(X_train_xp)
+        pred_xp = cal_clf_xp.predict(x_train_xp)
         assert_allclose(move_to(pred_xp, xp=np, device="cpu"), pred_np)
 
 
@@ -1344,7 +1344,7 @@ def test_temperature_scaling_array_api_with_str_y_estimator_not_prefit(
     str_mapping = np.asarray(["a", "b", "c", "d", "e"])
     X = X.astype(dtype_name)
     y_str = str_mapping[y]
-    X_xp = xp.asarray(X, device=device)
+    x_xp = xp.asarray(X, device=device)
 
     if use_sample_weight:
         sample_weight = np.ones_like(y)
@@ -1367,17 +1367,17 @@ def test_temperature_scaling_array_api_with_str_y_estimator_not_prefit(
             cv=3,
             method="temperature",
             ensemble=ensemble,
-        ).fit(X_xp, y_str, sample_weight=sample_weight)
+        ).fit(x_xp, y_str, sample_weight=sample_weight)
 
         calibrator_xp = cal_clf_xp.calibrated_classifiers_[0].calibrators[0]
         rtol = 1e-3 if dtype_name == "float32" else 1e-7
         assert get_namespace(calibrator_xp.beta_)[0].__name__ == xp.__name__
-        assert calibrator_xp.beta_.dtype == X_xp.dtype
-        assert array_api_device(calibrator_xp.beta_) == array_api_device(X_xp)
+        assert calibrator_xp.beta_.dtype == x_xp.dtype
+        assert array_api_device(calibrator_xp.beta_) == array_api_device(x_xp)
         assert_allclose(
             move_to(calibrator_xp.beta_, xp=np, device="cpu"),
             calibrator_np.beta_,
             rtol=rtol,
         )
-        pred_xp = cal_clf_xp.predict(X_xp)
+        pred_xp = cal_clf_xp.predict(x_xp)
         assert_array_equal(pred_xp, pred_np)
