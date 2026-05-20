@@ -439,25 +439,25 @@ def test_transform_outside_fit_range(strategy):
     kbd.fit(X)
 
     X2 = np.array([-2, 5])[:, None]
-    X2t = kbd.transform(X2)
-    assert_array_equal(X2t.max(axis=0) + 1, kbd.n_bins_)
-    assert_array_equal(X2t.min(axis=0), [0])
+    x2t = kbd.transform(X2)
+    assert_array_equal(x2t.max(axis=0) + 1, kbd.n_bins_)
+    assert_array_equal(x2t.min(axis=0), [0])
 
 
 def test_overwrite():
     X = np.array([0, 1, 2, 3])[:, None]
-    X_before = X.copy()
+    x_before = X.copy()
 
     est = KBinsDiscretizer(
         n_bins=3, quantile_method="averaged_inverted_cdf", encode="ordinal"
     )
-    Xt = est.fit_transform(X)
-    assert_array_equal(X, X_before)
+    x_trans = est.fit_transform(X)
+    assert_array_equal(X, x_before)
 
-    Xt_before = Xt.copy()
-    Xinv = est.inverse_transform(Xt)
-    assert_array_equal(Xt, Xt_before)
-    assert_array_equal(Xinv, np.array([[0.5], [1.5], [2.5], [2.5]]))
+    x_trans_before = x_trans.copy()
+    x_inv = est.inverse_transform(x_trans)
+    assert_array_equal(x_trans, x_trans_before)
+    assert_array_equal(x_inv, np.array([[0.5], [1.5], [2.5], [2.5]]))
 
 
 @pytest.mark.parametrize(
@@ -482,7 +482,7 @@ def test_redundant_bins(strategy, expected_bin_edges, quantile_method):
 def test_percentile_numeric_stability():
     X = np.array([0.05, 0.05, 0.95]).reshape(-1, 1)
     bin_edges = np.array([0.05, 0.23, 0.41, 0.59, 0.77, 0.95])
-    Xt = np.array([0, 0, 4]).reshape(-1, 1)
+    expected_xt = np.array([0, 0, 4]).reshape(-1, 1)
     kbd = KBinsDiscretizer(
         n_bins=10,
         encode="ordinal",
@@ -497,32 +497,32 @@ def test_percentile_numeric_stability():
         kbd.fit(X)
 
     assert_array_almost_equal(kbd.bin_edges_[0], bin_edges)
-    assert_array_almost_equal(kbd.transform(X), Xt)
+    assert_array_almost_equal(kbd.transform(X), expected_xt)
 
 
 @pytest.mark.parametrize("in_dtype", [np.float16, np.float32, np.float64])
 @pytest.mark.parametrize("out_dtype", [None, np.float32, np.float64])
 @pytest.mark.parametrize("encode", ["ordinal", "onehot", "onehot-dense"])
 def test_consistent_dtype(in_dtype, out_dtype, encode):
-    X_input = np.array(X, dtype=in_dtype)
+    x_input = np.array(X, dtype=in_dtype)
     kbd = KBinsDiscretizer(
         n_bins=3,
         encode=encode,
         quantile_method="averaged_inverted_cdf",
         dtype=out_dtype,
     )
-    kbd.fit(X_input)
+    kbd.fit(x_input)
 
     # test output dtype
     if out_dtype is not None:
         expected_dtype = out_dtype
-    elif out_dtype is None and X_input.dtype == np.float16:
+    elif out_dtype is None and x_input.dtype == np.float16:
         # wrong numeric input dtype are cast in np.float64
         expected_dtype = np.float64
     else:
-        expected_dtype = X_input.dtype
-    Xt = kbd.transform(X_input)
-    assert Xt.dtype == expected_dtype
+        expected_dtype = x_input.dtype
+    x_trans = kbd.transform(x_input)
+    assert x_trans.dtype == expected_dtype
 
 
 @pytest.mark.parametrize("input_dtype", [np.float16, np.float32, np.float64])
@@ -530,7 +530,7 @@ def test_consistent_dtype(in_dtype, out_dtype, encode):
 def test_32_equal_64(input_dtype, encode):
     # TODO this check is redundant with common checks and can be removed
     #  once #16290 is merged
-    X_input = np.array(X, dtype=input_dtype)
+    x_input = np.array(X, dtype=input_dtype)
 
     # 32 bit output
     kbd_32 = KBinsDiscretizer(
@@ -539,8 +539,8 @@ def test_32_equal_64(input_dtype, encode):
         quantile_method="averaged_inverted_cdf",
         dtype=np.float32,
     )
-    kbd_32.fit(X_input)
-    Xt_32 = kbd_32.transform(X_input)
+    kbd_32.fit(x_input)
+    xt_32 = kbd_32.transform(x_input)
 
     # 64 bit output
     kbd_64 = KBinsDiscretizer(
@@ -549,10 +549,10 @@ def test_32_equal_64(input_dtype, encode):
         quantile_method="averaged_inverted_cdf",
         dtype=np.float64,
     )
-    kbd_64.fit(X_input)
-    Xt_64 = kbd_64.transform(X_input)
+    kbd_64.fit(x_input)
+    xt_64 = kbd_64.transform(x_input)
 
-    assert_allclose_dense_sparse(Xt_32, Xt_64)
+    assert_allclose_dense_sparse(xt_32, xt_64)
 
 
 def test_kbinsdiscretizer_subsample_default():
