@@ -83,7 +83,7 @@ REG_TREES = {
     "ExtraTreeRegressor": ExtraTreeRegressor,
 }
 
-ALL_TREES: dict = dict()
+ALL_TREES: dict = {}
 ALL_TREES.update(CLF_TREES)
 ALL_TREES.update(REG_TREES)
 
@@ -244,20 +244,20 @@ def assert_tree_equal(d, s, message):
 
 def test_classification_toy():
     # Check classification on a toy dataset.
-    for name, Tree in CLF_TREES.items():
-        clf = Tree(random_state=0)
+    for name, tree_cls in CLF_TREES.items():
+        clf = tree_cls(random_state=0)
         clf.fit(X, y)
         assert_array_equal(clf.predict(T), true_result, "Failed with {0}".format(name))
 
-        clf = Tree(max_features=1, random_state=1)
+        clf = tree_cls(max_features=1, random_state=1)
         clf.fit(X, y)
         assert_array_equal(clf.predict(T), true_result, "Failed with {0}".format(name))
 
 
 def test_weighted_classification_toy():
     # Check classification on a weighted toy dataset.
-    for name, Tree in CLF_TREES.items():
-        clf = Tree(random_state=0)
+    for name, tree_cls in CLF_TREES.items():
+        clf = tree_cls(random_state=0)
 
         clf.fit(X, y, sample_weight=np.ones(len(X)))
         assert_array_equal(clf.predict(T), true_result, "Failed with {0}".format(name))
@@ -268,9 +268,9 @@ def test_weighted_classification_toy():
 
 # TODO(1.11): remove the deprecated friedman_mse criterion parametrization
 @pytest.mark.filterwarnings("ignore:.*friedman_mse.*:FutureWarning")
-@pytest.mark.parametrize("Tree", REG_TREES.values())
+@pytest.mark.parametrize("tree_cls", REG_TREES.values())
 @pytest.mark.parametrize("criterion", REG_CRITERIONS)
-def test_regression_toy(Tree, criterion):
+def test_regression_toy(tree_cls, criterion):
     # Check regression on a toy dataset.
     if criterion == "poisson":
         # make target positive while not touching the original y and
@@ -282,11 +282,11 @@ def test_regression_toy(Tree, criterion):
         y_train = y
         y_test = true_result
 
-    reg = Tree(criterion=criterion, random_state=1)
+    reg = tree_cls(criterion=criterion, random_state=1)
     reg.fit(X, y_train)
     assert_allclose(reg.predict(T), y_test)
 
-    clf = Tree(criterion=criterion, max_features=1, random_state=1)
+    clf = tree_cls(criterion=criterion, max_features=1, random_state=1)
     clf.fit(X, y_train)
     assert_allclose(reg.predict(T), y_test)
 
@@ -302,27 +302,27 @@ def test_xor():
     X = np.vstack([gridx.ravel(), gridy.ravel()]).T
     y = y.ravel()
 
-    for name, Tree in CLF_TREES.items():
-        clf = Tree(random_state=0)
+    for name, tree in CLF_TREES.items():
+        clf = tree(random_state=0)
         clf.fit(X, y)
         assert clf.score(X, y) == 1.0, "Failed with {0}".format(name)
 
-        clf = Tree(random_state=0, max_features=1)
+        clf = tree(random_state=0, max_features=1)
         clf.fit(X, y)
         assert clf.score(X, y) == 1.0, "Failed with {0}".format(name)
 
 
 def test_iris():
     # Check consistency on dataset iris.
-    for (name, Tree), criterion in product(CLF_TREES.items(), CLF_CRITERIONS):
-        clf = Tree(criterion=criterion, random_state=0)
+    for (name, tree), criterion in product(CLF_TREES.items(), CLF_CRITERIONS):
+        clf = tree(criterion=criterion, random_state=0)
         clf.fit(iris.data, iris.target)
         score = accuracy_score(clf.predict(iris.data), iris.target)
         assert score > 0.9, "Failed with {0}, criterion = {1} and score = {2}".format(
             name, criterion, score
         )
 
-        clf = Tree(criterion=criterion, max_features=2, random_state=0)
+        clf = tree(criterion=criterion, max_features=2, random_state=0)
         clf.fit(iris.data, iris.target)
         score = accuracy_score(clf.predict(iris.data), iris.target)
         assert score > 0.5, "Failed with {0}, criterion = {1} and score = {2}".format(
@@ -332,12 +332,12 @@ def test_iris():
 
 # TODO(1.11): remove the deprecated friedman_mse criterion parametrization
 @pytest.mark.filterwarnings("ignore:.*friedman_mse.*:FutureWarning")
-@pytest.mark.parametrize("name, Tree", REG_TREES.items())
+@pytest.mark.parametrize("name, tree", REG_TREES.items())
 @pytest.mark.parametrize("criterion", REG_CRITERIONS)
-def test_diabetes_overfit(name, Tree, criterion):
+def test_diabetes_overfit(name, tree, criterion):
     # check consistency of overfitted trees on the diabetes dataset
     # since the trees will overfit, we expect an MSE of 0
-    reg = Tree(criterion=criterion, random_state=0)
+    reg = tree(criterion=criterion, random_state=0)
     reg.fit(diabetes.data, diabetes.target)
     score = mean_squared_error(diabetes.target, reg.predict(diabetes.data))
     assert score == pytest.approx(0), (
@@ -347,7 +347,7 @@ def test_diabetes_overfit(name, Tree, criterion):
 
 # TODO(1.11): remove the deprecated friedman_mse criterion parametrization
 @pytest.mark.filterwarnings("ignore:.*friedman_mse.*:FutureWarning")
-@pytest.mark.parametrize("Tree", REG_TREES.values())
+@pytest.mark.parametrize("tree", REG_TREES.values())
 @pytest.mark.parametrize(
     "criterion, metric",
     [
@@ -357,14 +357,14 @@ def test_diabetes_overfit(name, Tree, criterion):
         ("poisson", mean_poisson_deviance),
     ],
 )
-def test_diabetes_underfit(Tree, criterion, metric, global_random_seed):
+def test_diabetes_underfit(tree, criterion, metric, global_random_seed):
     # check consistency of trees when the depth and the number of features are
     # limited
-    kwargs = dict(criterion=criterion, max_features=6, random_state=global_random_seed)
+    kwargs = {"criterion": criterion, "max_features": 6, "random_state": global_random_seed}
     X, y = diabetes.data, diabetes.target
-    loss1 = metric(y, Tree(**kwargs, max_depth=1).fit(X, y).predict(X))
-    loss4 = metric(y, Tree(**kwargs, max_depth=4).fit(X, y).predict(X))
-    loss7 = metric(y, Tree(**kwargs, max_depth=7).fit(X, y).predict(X))
+    loss1 = metric(y, tree(**kwargs, max_depth=1).fit(X, y).predict(X))
+    loss4 = metric(y, tree(**kwargs, max_depth=4).fit(X, y).predict(X))
+    loss7 = metric(y, tree(**kwargs, max_depth=7).fit(X, y).predict(X))
     # less depth => higher error
     # diabetes.data.shape[0] > 2^7 so it can't overfit to get a 0 error
     assert 0 < loss7 < loss4 < loss1, (loss7, loss4, loss1)
@@ -373,8 +373,8 @@ def test_diabetes_underfit(Tree, criterion, metric, global_random_seed):
 def test_probability():
     # Predict probabilities using DecisionTreeClassifier.
 
-    for name, Tree in CLF_TREES.items():
-        clf = Tree(max_depth=1, max_features=1, random_state=42)
+    for name, tree_cls in CLF_TREES.items():
+        clf = tree_cls(max_depth=1, max_features=1, random_state=42)
         clf.fit(iris.data, iris.target)
 
         prob_predict = clf.predict_proba(iris.data)
