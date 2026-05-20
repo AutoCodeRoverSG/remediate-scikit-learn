@@ -432,7 +432,6 @@ class PolynomialFeatures(TransformerMixin, BaseEstimator):
         )
 
         n_samples, n_features = X.shape
-        max_int32 = xp.iinfo(xp.int32).max
         if sparse.issparse(X) and X.format == "csr":
             if self._max_degree > 3:
                 return self.transform(X.tocsc()).tocsr()
@@ -561,7 +560,7 @@ class PolynomialFeatures(TransformerMixin, BaseEstimator):
                 index = new_index
 
             if self._min_degree > 1:
-                n_XP, n_Xout = self._n_out_full, self.n_output_features_
+                n_xp, n_Xout = self._n_out_full, self.n_output_features_
                 if self.include_bias:
                     Xout = xp.empty(
                         shape=(n_samples, n_Xout),
@@ -570,9 +569,9 @@ class PolynomialFeatures(TransformerMixin, BaseEstimator):
                         **order_kwargs,
                     )
                     Xout[:, 0] = 1
-                    Xout[:, 1:] = XP[:, n_XP - n_Xout + 1 :]
+                    Xout[:, 1:] = XP[:, n_xp - n_Xout + 1 :]
                 else:
-                    Xout = xp.asarray(XP[:, n_XP - n_Xout :], copy=True)
+                    Xout = xp.asarray(XP[:, n_xp - n_Xout :], copy=True)
                 XP = Xout
         return _align_api_if_sparse(XP)
 
