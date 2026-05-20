@@ -426,12 +426,12 @@ def test_multiple_features_quick(to_pandas, smooth, target_type):
         X_train = x_ordinal
 
     # manually compute encoding for fit_transform
-    expected_X_fit_transform = np.empty_like(x_ordinal, dtype=np.float64)
+    expected_x_fit_transform = np.empty_like(x_ordinal, dtype=np.float64)
     for f_idx, cats in enumerate(categories):
         for train_idx, test_idx in cv.split(x_ordinal, y_integer):
             X_, y_ = x_ordinal[train_idx, f_idx], y_integer[train_idx]
             current_encoding = _encode_target(X_, y_, len(cats), smooth)
-            expected_X_fit_transform[test_idx, f_idx] = current_encoding[
+            expected_x_fit_transform[test_idx, f_idx] = current_encoding[
                 x_ordinal[test_idx, f_idx]
             ]
 
@@ -443,7 +443,7 @@ def test_multiple_features_quick(to_pandas, smooth, target_type):
         )
         expected_encodings.append(current_encoding)
 
-    expected_X_test_transform = np.array(
+    expected_x_test_transform = np.array(
         [
             [expected_encodings[0][0], expected_encodings[1][1]],
             [y_mean, expected_encodings[1][0]],
@@ -453,15 +453,15 @@ def test_multiple_features_quick(to_pandas, smooth, target_type):
     )
 
     enc = TargetEncoder(smooth=smooth, cv=cv)
-    X_fit_transform = enc.fit_transform(X_train, y_train)
-    assert_allclose(X_fit_transform, expected_X_fit_transform)
+    x_fit_transform = enc.fit_transform(X_train, y_train)
+    assert_allclose(x_fit_transform, expected_x_fit_transform)
 
     assert len(enc.encodings_) == 2
     for i in range(2):
         assert_allclose(enc.encodings_[i], expected_encodings[i])
 
-    X_test_transform = enc.transform(X_test)
-    assert_allclose(X_test_transform, expected_X_test_transform)
+    x_test_transform = enc.transform(X_test)
+    assert_allclose(x_test_transform, expected_x_test_transform)
 
 
 @pytest.mark.parametrize(
@@ -484,14 +484,14 @@ def test_constant_target_and_feature(y, y_mean, smooth):
     else:
         cv = StratifiedKFold(n_splits=2, random_state=0, shuffle=True)
     enc = TargetEncoder(cv=cv, smooth=smooth)
-    X_trans = enc.fit_transform(X, y)
-    assert_allclose(X_trans, np.repeat([[y_mean]], n_samples, axis=0))
+    x_trans = enc.fit_transform(X, y)
+    assert_allclose(x_trans, np.repeat([[y_mean]], n_samples, axis=0))
     assert enc.encodings_[0][0] == pytest.approx(y_mean)
     assert enc.target_mean_ == pytest.approx(y_mean)
 
     X_test = np.array([[1], [0]])
-    X_test_trans = enc.transform(X_test)
-    assert_allclose(X_test_trans, np.repeat([[y_mean]], 2, axis=0))
+    x_test_trans = enc.transform(X_test)
+    assert_allclose(x_test_trans, np.repeat([[y_mean]], 2, axis=0))
 
 
 def test_fit_transform_not_associated_with_y_if_ordinal_categorical_is_not(
@@ -511,12 +511,12 @@ def test_fit_transform_not_associated_with_y_if_ordinal_categorical_is_not(
     target_encoder = TargetEncoder(
         cv=KFold(n_splits=2, random_state=global_random_seed, shuffle=True)
     )
-    X_encoded_train_shuffled = target_encoder.fit_transform(X_train, y_train)
+    x_encoded_train_shuffled = target_encoder.fit_transform(X_train, y_train)
 
     target_encoder = TargetEncoder(
         cv=KFold(n_splits=2, shuffle=False, random_state=global_random_seed)
     )
-    X_encoded_train_no_shuffled = target_encoder.fit_transform(X_train, y_train)
+    x_encoded_train_no_shuffled = target_encoder.fit_transform(X_train, y_train)
 
     # Check that no information about y_train has leaked into X_train:
     regressor = RandomForestRegressor(
@@ -534,7 +534,7 @@ def test_fit_transform_not_associated_with_y_if_ordinal_categorical_is_not(
     cv = ShuffleSplit(n_splits=50, random_state=global_random_seed)
     assert cross_val_score(regressor, X_train, y_train, cv=cv).mean() < 0.1
     assert (
-        cross_val_score(regressor, X_encoded_train_shuffled, y_train, cv=cv).mean()
+        cross_val_score(regressor, x_encoded_train_shuffled, y_train, cv=cv).mean()
         < 0.1
     )
 
@@ -542,7 +542,7 @@ def test_fit_transform_not_associated_with_y_if_ordinal_categorical_is_not(
     # the per-fold y_train.mean() priors: shrinkage is no longer effective in this
     # case and would no longer be able to prevent downstream over-fitting.
     assert (
-        cross_val_score(regressor, X_encoded_train_no_shuffled, y_train, cv=cv).mean()
+        cross_val_score(regressor, x_encoded_train_no_shuffled, y_train, cv=cv).mean()
         > 0.5
     )
 
@@ -553,15 +553,15 @@ def test_smooth_zero():
     y = np.array([2.1, 4.3, 1.2, 3.1, 1.0, 9.0, 10.3, 14.2, 13.3, 15.0])
 
     enc = TargetEncoder(smooth=0.0, cv=KFold(n_splits=2, shuffle=False, random_state=0))
-    X_trans = enc.fit_transform(X, y)
+    x_trans = enc.fit_transform(X, y)
 
     # With cv = 2, category 0 does not exist in the second half, thus
     # it will be encoded as the mean of the second half
-    assert_allclose(X_trans[0], np.mean(y[5:]))
+    assert_allclose(x_trans[0], np.mean(y[5:]))
 
     # category 1 does not exist in the first half, thus it will be encoded as
     # the mean of the first half
-    assert_allclose(X_trans[-1], np.mean(y[:5]))
+    assert_allclose(x_trans[-1], np.mean(y[:5]))
 
 
 @pytest.mark.parametrize("smooth", [0.0, 1e3, "auto"])
@@ -579,7 +579,7 @@ def test_invariance_of_encoding_under_label_permutation(smooth, global_random_se
         n_bins=n_categories, quantile_method="averaged_inverted_cdf", encode="ordinal"
     ).fit_transform(y.reshape(-1, 1))
 
-    X_train, X_test, y_train, y_test = train_test_split(
+    X_train, X_test, y_train, _ = train_test_split(
         X, y, random_state=global_random_seed
     )
 
