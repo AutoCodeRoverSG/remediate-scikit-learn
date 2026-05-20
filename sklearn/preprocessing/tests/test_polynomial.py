@@ -578,8 +578,7 @@ def test_spline_transformer_handles_all_nans(extrapolation, sparse_output):
     """Test that SplineTransformer encodes missing values to zeros even for
     all-nan-features."""
 
-    X = np.array([[1, 1], [2, 2], [3, 3], [4, 5], [4, 4]])
-    X_nan_full_column = np.array([[np.nan, np.nan], [np.nan, 1]])
+    x_nan_full_column = np.array([[np.nan, np.nan], [np.nan, 1]])
 
     spline = SplineTransformer(
         degree=2,
@@ -588,10 +587,10 @@ def test_spline_transformer_handles_all_nans(extrapolation, sparse_output):
         extrapolation=extrapolation,
         sparse_output=sparse_output,
     )
-    spline.fit(X_nan_full_column)
+    spline.fit(x_nan_full_column)
 
-    all_missing_column_encoded = spline.transform(X_nan_full_column)
-    nan_mask = _get_mask(X_nan_full_column, np.nan)
+    all_missing_column_encoded = spline.transform(x_nan_full_column)
+    nan_mask = _get_mask(x_nan_full_column, np.nan)
     encoded_nan_mask = np.repeat(nan_mask, spline.bsplines_[0].c.shape[1], axis=1)
     assert (all_missing_column_encoded[encoded_nan_mask] == 0).all()
 
@@ -633,24 +632,24 @@ def single_feature_degree3():
         ((2, 3), False, True, []),
     ],
 )
-@pytest.mark.parametrize("X_container", [None] + CSR_CONTAINERS + CSC_CONTAINERS)
+@pytest.mark.parametrize("x_container", [None] + CSR_CONTAINERS + CSC_CONTAINERS)
 def test_polynomial_features_one_feature(
     single_feature_degree3,
     degree,
     include_bias,
     interaction_only,
     indices,
-    X_container,
+    x_container,
 ):
     """Test PolynomialFeatures on single feature up to degree 3."""
     X, P = single_feature_degree3
-    if X_container is not None:
-        X = X_container(X)
+    if x_container is not None:
+        X = x_container(X)
     tf = PolynomialFeatures(
         degree=degree, include_bias=include_bias, interaction_only=interaction_only
     ).fit(X)
     out = tf.transform(X)
-    if X_container is not None:
+    if x_container is not None:
         out = out.toarray()
     assert_allclose(out, P[:, indices])
     if tf.n_output_features_ > 0:
@@ -704,24 +703,24 @@ def two_features_degree3():
         ((3, 3), False, True, []),  # would need 3 input features
     ],
 )
-@pytest.mark.parametrize("X_container", [None] + CSR_CONTAINERS + CSC_CONTAINERS)
+@pytest.mark.parametrize("x_container", [None] + CSR_CONTAINERS + CSC_CONTAINERS)
 def test_polynomial_features_two_features(
     two_features_degree3,
     degree,
     include_bias,
     interaction_only,
     indices,
-    X_container,
+    x_container,
 ):
     """Test PolynomialFeatures on 2 features up to degree 3."""
     X, P = two_features_degree3
-    if X_container is not None:
-        X = X_container(X)
+    if x_container is not None:
+        X = x_container(X)
     tf = PolynomialFeatures(
         degree=degree, include_bias=include_bias, interaction_only=interaction_only
     ).fit(X)
     out = tf.transform(X)
-    if X_container is not None:
+    if x_container is not None:
         out = out.toarray()
     assert_allclose(out, P[:, indices])
     if tf.n_output_features_ > 0:
@@ -823,17 +822,17 @@ def test_polynomial_features_csc_X(
 ):
     rng = np.random.RandomState(global_random_seed)
     X = rng.randint(0, 2, (100, 2))
-    X_csc = csc_container(X)
+    x_csc = csc_container(X)
 
     est = PolynomialFeatures(
         deg, include_bias=include_bias, interaction_only=interaction_only
     )
-    Xt_csc = est.fit_transform(X_csc.astype(dtype))
-    Xt_dense = est.fit_transform(X.astype(dtype))
+    xt_csc = est.fit_transform(x_csc.astype(dtype))
+    xt_dense = est.fit_transform(X.astype(dtype))
 
-    assert sparse.issparse(Xt_csc) and Xt_csc.format == "csc"
-    assert Xt_csc.dtype == Xt_dense.dtype
-    assert_array_almost_equal(Xt_csc.toarray(), Xt_dense)
+    assert sparse.issparse(xt_csc) and xt_csc.format == "csc"
+    assert xt_csc.dtype == xt_dense.dtype
+    assert_array_almost_equal(xt_csc.toarray(), xt_dense)
 
 
 @pytest.mark.parametrize(
