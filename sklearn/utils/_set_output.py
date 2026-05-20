@@ -39,7 +39,7 @@ def get_columns(columns):
 class ContainerAdapterProtocol(Protocol):
     container_lib: str
 
-    def create_container(self, X_output, X_original, columns, inplace=False):
+    def create_container(self, x_output, x_original, columns, inplace=False):
         """Create container from `X_output` with additional metadata.
 
         Parameters
@@ -98,7 +98,7 @@ class ContainerAdapterProtocol(Protocol):
             Container with new names.
         """
 
-    def hstack(self, Xs, feature_names=None):
+    def hstack(self, containers, feature_names=None):
         """Stack containers horizontally (column-wise).
 
         Parameters
@@ -120,29 +120,29 @@ class ContainerAdapterProtocol(Protocol):
 class PandasAdapter:
     container_lib = "pandas"
 
-    def create_container(self, X_output, X_original, columns, inplace=True):
+    def create_container(self, x_output, x_original, columns, inplace=True):
         pd = check_library_installed("pandas")
         columns = get_columns(columns)
 
-        if not inplace or not isinstance(X_output, pd.DataFrame):
+        if not inplace or not isinstance(x_output, pd.DataFrame):
             # In all these cases, we need to create a new DataFrame
 
             # Unfortunately, we cannot use `getattr(container, "index")`
             # because `list` exposes an `index` attribute.
-            if isinstance(X_output, pd.DataFrame):
-                index = X_output.index
-            elif isinstance(X_original, (pd.DataFrame, pd.Series)):
-                index = X_original.index
+            if isinstance(x_output, pd.DataFrame):
+                index = x_output.index
+            elif isinstance(x_original, (pd.DataFrame, pd.Series)):
+                index = x_original.index
             else:
                 index = None
 
             # We don't pass columns here because it would intend columns selection
             # instead of renaming.
-            X_output = pd.DataFrame(X_output, index=index, copy=not inplace)
+            x_output = pd.DataFrame(x_output, index=index, copy=not inplace)
 
         if columns is not None:
-            return self.rename_columns(X_output, columns)
-        return X_output
+            return self.rename_columns(x_output, columns)
+        return x_output
 
     def is_supported_container(self, X):
         pd = check_library_installed("pandas")
@@ -154,9 +154,9 @@ class PandasAdapter:
         X.columns = columns
         return X
 
-    def hstack(self, Xs, feature_names=None):
+    def hstack(self, containers, feature_names=None):
         pd = check_library_installed("pandas")
-        result = pd.concat(Xs, axis=1)
+        result = pd.concat(containers, axis=1)
         if feature_names is not None:
             self.rename_columns(result, feature_names)
         return result
@@ -165,18 +165,18 @@ class PandasAdapter:
 class PolarsAdapter:
     container_lib = "polars"
 
-    def create_container(self, X_output, X_original, columns, inplace=True):
+    def create_container(self, x_output, _x_original, columns, inplace=True):
         pl = check_library_installed("polars")
         columns = get_columns(columns)
         columns = columns.tolist() if isinstance(columns, np.ndarray) else columns
 
-        if not inplace or not isinstance(X_output, pl.DataFrame):
+        if not inplace or not isinstance(x_output, pl.DataFrame):
             # In all these cases, we need to create a new DataFrame
-            return pl.DataFrame(X_output, schema=columns, orient="row")
+            return pl.DataFrame(x_output, schema=columns, orient="row")
 
         if columns is not None:
-            return self.rename_columns(X_output, columns)
-        return X_output
+            return self.rename_columns(x_output, columns)
+        return x_output
 
     def is_supported_container(self, X):
         pl = check_library_installed("polars")
@@ -188,17 +188,17 @@ class PolarsAdapter:
         X.columns = columns
         return X
 
-    def hstack(self, Xs, feature_names=None):
+    def hstack(self, containers, feature_names=None):
         pl = check_library_installed("polars")
         if feature_names is not None:
             # Rename columns in each X before concat to avoid duplicates
             start = 0
-            for X in Xs:
+            for X in containers:
                 n_features = X.shape[1]
                 names = feature_names[start : start + n_features]
                 self.rename_columns(X, names)
                 start += n_features
-        return pl.concat(Xs, how="horizontal")
+        return pl.concat(containers, how="horizontal")
 
 
 class ContainerAdaptersManager:
