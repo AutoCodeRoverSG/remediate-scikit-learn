@@ -179,12 +179,12 @@ def test_rot(dtype):
 def test_gemv(dtype, op_a, trans_a, order):
     gemv = _gemv_memview[_numpy_to_cython(dtype)]
 
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
     A = np.asarray(
-        op_a(rng.random_sample((20, 10)).astype(dtype, copy=False)), order=ORDER[order]
+        op_a(rng.random((20, 10)).astype(dtype, copy=False)), order=ORDER[order]
     )
-    x = rng.random_sample(10).astype(dtype, copy=False)
-    y = rng.random_sample(20).astype(dtype, copy=False)
+    x = rng.random(10).astype(dtype, copy=False)
+    y = rng.random(20).astype(dtype, copy=False)
     alpha, beta = 2.5, -0.5
 
     expected = alpha * op_a(A).dot(x) + beta * y
@@ -202,11 +202,11 @@ def test_gemv(dtype, op_a, trans_a, order):
 def test_ger(dtype, order):
     ger = _ger_memview[_numpy_to_cython(dtype)]
 
-    rng = np.random.RandomState(0)
-    x = rng.random_sample(10).astype(dtype, copy=False)
-    y = rng.random_sample(20).astype(dtype, copy=False)
+    rng = np.random.default_rng(0)
+    x = rng.random(10).astype(dtype, copy=False)
+    y = rng.random(20).astype(dtype, copy=False)
     A = np.asarray(
-        rng.random_sample((10, 20)).astype(dtype, copy=False), order=ORDER[order]
+        rng.random((10, 20)).astype(dtype, copy=False), order=ORDER[order]
     )
     alpha = 2.5
 
@@ -235,15 +235,15 @@ def test_ger(dtype, order):
 def test_gemm(dtype, op_a, trans_a, op_b, trans_b, order):
     gemm = _gemm_memview[_numpy_to_cython(dtype)]
 
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
     A = np.asarray(
-        op_a(rng.random_sample((30, 10)).astype(dtype, copy=False)), order=ORDER[order]
+        op_a(rng.random((30, 10)).astype(dtype, copy=False)), order=ORDER[order]
     )
     B = np.asarray(
-        op_b(rng.random_sample((10, 20)).astype(dtype, copy=False)), order=ORDER[order]
+        op_b(rng.random((10, 20)).astype(dtype, copy=False)), order=ORDER[order]
     )
     C = np.asarray(
-        rng.random_sample((30, 20)).astype(dtype, copy=False), order=ORDER[order]
+        rng.random((30, 20)).astype(dtype, copy=False), order=ORDER[order]
     )
     alpha, beta = 2.5, -0.5
 
