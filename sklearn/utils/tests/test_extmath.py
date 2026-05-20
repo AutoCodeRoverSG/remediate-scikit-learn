@@ -64,8 +64,8 @@ from sklearn.utils.fixes import (
     COO_CONTAINERS + CSC_CONTAINERS + CSR_CONTAINERS + LIL_CONTAINERS,
 )
 def test_density(sparse_container):
-    rng = np.random.RandomState(0)
-    X = rng.randint(10, size=(10, 5))
+    rng = np.random.default_rng(0)
+    X = rng.integers(10, size=(10, 5))
     X[1, 2] = 0
     X[5, 3] = 0
 
@@ -74,8 +74,8 @@ def test_density(sparse_container):
 
 def test_uniform_weights():
     # with uniform weights, results should be identical to stats.mode
-    rng = np.random.RandomState(0)
-    x = rng.randint(10, size=(10, 5))
+    rng = np.random.default_rng(0)
+    x = rng.integers(10, size=(10, 5))
     weights = np.ones(x.shape)
 
     for axis in (None, 0, 1):
@@ -91,9 +91,9 @@ def test_random_weights():
     # with a score that is easily reproduced
     mode_result = 6
 
-    rng = np.random.RandomState(0)
-    x = rng.randint(mode_result, size=(100, 10))
-    w = rng.random_sample(x.shape)
+    rng = np.random.default_rng(0)
+    x = rng.integers(mode_result, size=(100, 10))
+    w = rng.random(x.shape)
 
     x[:, :5] = mode_result
     w[:, :5] += 1
@@ -126,16 +126,16 @@ def test_randomized_svd_low_rank_all_dtypes(dtype):
     assert X.shape == (n_samples, n_features)
 
     # compute the singular values of X using the slow exact method
-    U, s, Vt = linalg.svd(X, full_matrices=False)
+    U, s, vt = linalg.svd(X, full_matrices=False)
 
     # Convert the singular values to the specific dtype
     U = U.astype(dtype, copy=False)
     s = s.astype(dtype, copy=False)
-    Vt = Vt.astype(dtype, copy=False)
+    vt = vt.astype(dtype, copy=False)
 
     for normalizer in ["auto", "LU", "QR"]:  # 'none' would not be stable
         # compute the singular values of X using the fast approximate method
-        Ua, sa, Va = randomized_svd(
+        ua, sa, va = randomized_svd(
             X, k, power_iteration_normalizer=normalizer, random_state=0
         )
 
@@ -143,17 +143,17 @@ def test_randomized_svd_low_rank_all_dtypes(dtype):
         # same bit size (f32 is not upcast to f64)
         # But if the input dtype is int, the output dtype is float64
         if dtype.kind == "f":
-            assert Ua.dtype == dtype
+            assert ua.dtype == dtype
             assert sa.dtype == dtype
-            assert Va.dtype == dtype
+            assert va.dtype == dtype
         else:
-            assert Ua.dtype == np.float64
+            assert ua.dtype == np.float64
             assert sa.dtype == np.float64
-            assert Va.dtype == np.float64
+            assert va.dtype == np.float64
 
-        assert Ua.shape == (n_samples, k)
+        assert ua.shape == (n_samples, k)
         assert sa.shape == (k,)
-        assert Va.shape == (k, n_features)
+        assert va.shape == (k, n_features)
 
         # ensure that the singular values of both methods are equal up to the
         # real rank of the matrix
@@ -161,7 +161,7 @@ def test_randomized_svd_low_rank_all_dtypes(dtype):
 
         # check the singular vectors too (while not checking the sign)
         assert_almost_equal(
-            np.dot(U[:, :k], Vt[:k, :]), np.dot(Ua, Va), decimal=decimal
+            np.dot(U[:, :k], vt[:k, :]), np.dot(ua, va), decimal=decimal
         )
 
         # check the sparse matrix representation
@@ -169,17 +169,17 @@ def test_randomized_svd_low_rank_all_dtypes(dtype):
             X = csr_container(X)
 
             # compute the singular values of X using the fast approximate method
-            Ua, sa, Va = randomized_svd(
+            ua, sa, va = randomized_svd(
                 X, k, power_iteration_normalizer=normalizer, random_state=0
             )
             if dtype.kind == "f":
-                assert Ua.dtype == dtype
+                assert ua.dtype == dtype
                 assert sa.dtype == dtype
-                assert Va.dtype == dtype
+                assert va.dtype == dtype
             else:
-                assert Ua.dtype.kind == "f"
+                assert ua.dtype.kind == "f"
                 assert sa.dtype.kind == "f"
-                assert Va.dtype.kind == "f"
+                assert va.dtype.kind == "f"
 
             assert_almost_equal(s[:rank], sa[:rank], decimal=decimal)
 
@@ -188,14 +188,16 @@ def test_randomized_svd_low_rank_all_dtypes(dtype):
 def test_randomized_eigsh(dtype):
     """Test that `_randomized_eigsh` returns the appropriate components"""
 
-    rng = np.random.RandomState(42)
+    rng = np.random.default_rng(42)
     X = np.diag(np.array([1.0, -2.0, 0.0, 3.0], dtype=dtype))
     # random rotation that preserves the eigenvalues of X
     rand_rot = np.linalg.qr(rng.normal(size=X.shape))[0]
     X = rand_rot @ X @ rand_rot.T
 
     # with 'module' selection method, the negative eigenvalue shows up
-    eigvals, eigvecs = _randomized_eigsh(X, n_components=2, selection="module")
+    eigvals, eigvecs = _randomized_eigsh(
+        X, n_components=2, selection="module", random_state=42
+    )
     # eigenvalues
     assert eigvals.shape == (2,)
     assert_array_almost_equal(eigvals, [3.0, -2.0])  # negative eigenvalue here
@@ -204,7 +206,7 @@ def test_randomized_eigsh(dtype):
 
     # with 'value' selection method, the negative eigenvalue does not show up
     with pytest.raises(NotImplementedError):
-        _randomized_eigsh(X, n_components=2, selection="value")
+        _randomized_eigsh(X, n_components=2, selection="value", random_state=42)
 
 
 @pytest.mark.parametrize("k", (10, 50, 100, 199, 200))
@@ -300,12 +302,12 @@ def test_randomized_eigsh_reconst_low_rank(n, rank):
     assert rank < n
 
     # create a low rank PSD
-    rng = np.random.RandomState(69)
-    X = rng.randn(n, rank)
+    rng = np.random.default_rng(69)
+    X = rng.standard_normal((n, rank))
     A = X @ X.T
 
     # approximate A with the "right" number of components
-    S, V = _randomized_eigsh(A, n_components=rank, random_state=rng)
+    S, V = _randomized_eigsh(A, n_components=rank, random_state=42)
     # orthonormality checks
     assert_array_almost_equal(np.linalg.norm(V, axis=0), np.ones(S.shape))
     assert_array_almost_equal(V.T @ V, np.diag(np.ones(S.shape)))
