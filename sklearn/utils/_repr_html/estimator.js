@@ -9,7 +9,7 @@ function copyToClipboard(text, element) {
     const fullParamName = paramPrefix ? `${paramPrefix}${text}` : text;
 
     const originalStyle = element.style;
-    const computedStyle = window.getComputedStyle(element);
+    const computedStyle = globalThis.getComputedStyle(element);
     const originalWidth = computedStyle.width;
     const originalHTML = element.innerHTML.replace('Copied!', '');
 
@@ -41,7 +41,7 @@ document.querySelectorAll('.copy-paste-icon').forEach(function(element) {
     const paramPrefix = toggleableContent ? toggleableContent.dataset.paramPrefix : '';
 
     const parent = element.parentElement;
-    if (!parent || !parent.nextElementSibling) {
+    if (!parent?.nextElementSibling) {
         console.warn('Expected copy-paste icon is missing from the DOM structure');
         return;
     }
@@ -61,8 +61,8 @@ document.querySelectorAll('.copy-paste-icon').forEach(function(element) {
  * @returns {boolean} Always returns `false` so callers can prevent the default click behavior.
  */
 function copyFeatureNamesToClipboard(element) {
-    var detailsElem = element.closest('.features').querySelector('details');
-    var wasOpen = detailsElem.open;
+    const detailsElem = element.closest('.features').querySelector('details');
+    const wasOpen = detailsElem.open;
     detailsElem.open = true;
     var content = element.closest('.features').querySelector('tbody')
                   .innerText.trim();
@@ -130,13 +130,13 @@ function detectTheme(element) {
     }
 
     // Guess based on a parent element's color
-    const color = window.getComputedStyle(element.parentNode, null).getPropertyValue('color');
-    const match = color.match(/^rgb\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)\s*$/i);
+    const color = globalThis.getComputedStyle(element.parentNode, null).getPropertyValue('color');
+    const match = /^rgb\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)\s*$/i.exec(color);
     if (match) {
         const [r, g, b] = [
-            parseFloat(match[1]),
-            parseFloat(match[2]),
-            parseFloat(match[3])
+            Number.parseFloat(match[1]),
+            Number.parseFloat(match[2]),
+            Number.parseFloat(match[3])
         ];
 
         // https://en.wikipedia.org/wiki/HSL_and_HSV#Lightness
@@ -154,7 +154,7 @@ function detectTheme(element) {
     }
 
     // Fallback to system preference
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    return globalThis.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 }
 
 
