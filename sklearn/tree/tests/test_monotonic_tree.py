@@ -216,26 +216,26 @@ def test_multiple_output_raises(tree_classifier):
         est.fit(X, y)
 
 
-@pytest.mark.parametrize("TreeClassifier", TREE_BASED_CLASSIFIER_CLASSES)
-def test_bad_monotonic_cst_raises(TreeClassifier):
+@pytest.mark.parametrize("tree_classifier", TREE_BASED_CLASSIFIER_CLASSES)
+def test_bad_monotonic_cst_raises(tree_classifier):
     X = [[1, 2], [3, 4], [5, 6], [7, 8], [9, 10]]
     y = [1, 0, 1, 0, 1]
 
     msg = "monotonic_cst has shape 3 but the input data X has 2 features."
-    est = TreeClassifier(
+    est = tree_classifier(
         max_depth=None, monotonic_cst=np.array([-1, 1, 0]), random_state=0
     )
     with pytest.raises(ValueError, match=msg):
         est.fit(X, y)
 
     msg = "monotonic_cst must be None or an array-like of -1, 0 or 1."
-    est = TreeClassifier(
+    est = tree_classifier(
         max_depth=None, monotonic_cst=np.array([-2, 2]), random_state=0
     )
     with pytest.raises(ValueError, match=msg):
         est.fit(X, y)
 
-    est = TreeClassifier(
+    est = tree_classifier(
         max_depth=None, monotonic_cst=np.array([-1, 0.8]), random_state=0
     )
     with pytest.raises(ValueError, match=msg + "(.*)0.8]"):
