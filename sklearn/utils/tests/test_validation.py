@@ -144,7 +144,7 @@ def test_as_float_array():
     matrices = [
         sp.csc_matrix(np.arange(5)).toarray(),
         sp.csc_array([np.arange(5)]).toarray(),
-        _sparse_random_matrix(10, 10, density=0.10).toarray(),
+        _sparse_random_matrix(10, 10, density=0.10, random_state=0).toarray(),
     ]
     for M in matrices:
         N = as_float_array(M, copy=True)
@@ -159,8 +159,8 @@ def test_as_float_array_nan(X):
     X = X.copy()
     X[5, 0] = np.nan
     X[6, 1] = np.nan
-    X_converted = as_float_array(X, ensure_all_finite="allow-nan")
-    assert_allclose_dense_sparse(X_converted, X)
+    x_converted = as_float_array(X, ensure_all_finite="allow-nan")
+    assert_allclose_dense_sparse(x_converted, X)
 
 
 def test_np_matrix():
@@ -215,8 +215,8 @@ def test_ordering():
 def test_check_array_ensure_all_finite_valid(value, ensure_all_finite, retype):
     X = retype(np.arange(4).reshape(2, 2).astype(float))
     X[0, 0] = value
-    X_checked = check_array(X, ensure_all_finite=ensure_all_finite, accept_sparse=True)
-    assert_allclose_dense_sparse(X, X_checked)
+    x_checked = check_array(X, ensure_all_finite=ensure_all_finite, accept_sparse=True)
+    assert_allclose_dense_sparse(X, x_checked)
 
 
 @pytest.mark.parametrize(
@@ -298,11 +298,11 @@ def test_check_array_links_to_imputer_doc_only_for_X(input_name, retype):
 def test_check_array_ensure_all_finite_object():
     X = np.array([["a", "b", np.nan]], dtype=object).T
 
-    X_checked = check_array(X, dtype=None, ensure_all_finite="allow-nan")
-    assert X is X_checked
+    x_checked = check_array(X, dtype=None, ensure_all_finite="allow-nan")
+    assert X is x_checked
 
-    X_checked = check_array(X, dtype=None, ensure_all_finite=False)
-    assert X is X_checked
+    x_checked = check_array(X, dtype=None, ensure_all_finite=False)
+    assert X is x_checked
 
     with pytest.raises(ValueError, match="Input contains NaN"):
         check_array(X, dtype=None, ensure_all_finite=True)
@@ -356,13 +356,13 @@ def test_check_array():
     # accept_sparse == False
     # raise error on sparse inputs
     X = [[1, 2], [3, 4]]
-    X_csr = sp.csr_array(X)
+    x_csr = sp.csr_array(X)
     with pytest.raises(TypeError):
-        check_array(X_csr)
+        check_array(x_csr)
 
     # ensure_2d=False
-    X_array = check_array([0, 1, 2], ensure_2d=False)
-    assert X_array.ndim == 1
+    x_array = check_array([0, 1, 2], ensure_2d=False)
+    assert x_array.ndim == 1
     # ensure_2d=True with 1d array
     with pytest.raises(ValueError, match="Expected 2D array, got 1D array instead"):
         check_array([0, 1, 2], ensure_2d=True)
@@ -380,22 +380,22 @@ def test_check_array():
                 check_array(sparse_row, accept_sparse=True, ensure_2d=True)
 
     # don't allow ndim > 3
-    X_ndim = np.arange(8).reshape(2, 2, 2)
+    x_ndim = np.arange(8).reshape(2, 2, 2)
     with pytest.raises(ValueError):
-        check_array(X_ndim)
-    check_array(X_ndim, allow_nd=True)  # doesn't raise
+        check_array(x_ndim)
+    check_array(x_ndim, allow_nd=True)  # doesn't raise
 
     # dtype and order enforcement.
     X_C = np.arange(4).reshape(2, 2).copy("C")
     X_F = X_C.copy("F")
-    X_int = X_C.astype(int)
-    X_float = X_C.astype(float)
-    Xs = [X_C, X_F, X_int, X_float]
+    x_int = X_C.astype(int)
+    x_float = X_C.astype(float)
+    xs = [X_C, X_F, x_int, x_float]
     dtypes = [np.int32, int, float, np.float32, None, bool, object]
     orders = ["C", "F", None]
     copys = [True, False]
 
-    for X, dtype, order, copy in product(Xs, dtypes, orders, copys):
+    for X, dtype, order, copy in product(xs, dtypes, orders, copys):
         X_checked = check_array(X, dtype=dtype, order=order, copy=copy)
         if dtype is not None:
             assert X_checked.dtype == dtype
@@ -421,8 +421,8 @@ def test_check_array():
     # allowed sparse != None
 
     # try different type of sparse format
-    Xs = []
-    Xs.extend(
+    xs = []
+    xs.extend(
         [
             sparse_container(X_C)
             for sparse_container in CSR_CONTAINERS
@@ -431,14 +431,14 @@ def test_check_array():
             + DOK_CONTAINERS
         ]
     )
-    Xs.extend([Xs[0].astype(np.int64), Xs[0].astype(np.float64)])
+    xs.extend([xs[0].astype(np.int64), xs[0].astype(np.float64)])
 
     accept_sparses = [["csr", "coo"], ["coo", "dok"]]
     # scipy sparse matrices do not support the object dtype so
     # this dtype is skipped in this loop
     non_object_dtypes = [dt for dt in dtypes if dt is not object]
     for X, dtype, accept_sparse, copy in product(
-        Xs, non_object_dtypes, accept_sparses, copys
+        xs, non_object_dtypes, accept_sparses, copys
     ):
         X_checked = check_array(X, dtype=dtype, accept_sparse=accept_sparse, copy=copy)
         if dtype is not None:
@@ -464,8 +464,8 @@ def test_check_array():
     assert isinstance(X_dense, np.ndarray)
     # raise on too deep lists
     with pytest.raises(ValueError):
-        check_array(X_ndim.tolist())
-    check_array(X_ndim.tolist(), allow_nd=True)  # doesn't raise
+        check_array(x_ndim.tolist())
+    check_array(x_ndim.tolist(), allow_nd=True)  # doesn't raise
 
     # convert weird stuff to arrays
     X_no_array = _NotAnArray(X_dense)
