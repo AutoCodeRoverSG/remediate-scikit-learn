@@ -96,7 +96,7 @@ class BaseDecisionTree(MultiOutputMixin, BaseEstimator, metaclass=ABCMeta):
 
     # "check_input" is used for optimisation and isn't something to be passed
     # around in a pipeline.
-    __metadata_request__predict = {"check_input": metadata_routing.UNUSED}
+    _metadata_request__predict = {"check_input": metadata_routing.UNUSED}
 
     _parameter_constraints: dict = {
         "splitter": [StrOptions({"best", "random"})],
@@ -203,7 +203,7 @@ class BaseDecisionTree(MultiOutputMixin, BaseEstimator, metaclass=ABCMeta):
             are no missing values, return None.
         """
         estimator_name = estimator_name or self.__class__.__name__
-        common_kwargs = dict(estimator_name=estimator_name, input_name="X")
+        common_kwargs = {"estimator_name": estimator_name, "input_name": "X"}
 
         if not self._support_missing_values(X):
             assert_all_finite(X, **common_kwargs)
@@ -240,12 +240,12 @@ class BaseDecisionTree(MultiOutputMixin, BaseEstimator, metaclass=ABCMeta):
 
             # _compute_missing_values_in_feature_mask will check for finite values and
             # compute the missing mask if the tree supports missing values
-            check_X_params = dict(
-                dtype=np.float32, accept_sparse="csc", ensure_all_finite=False
-            )
-            check_y_params = dict(ensure_2d=False, dtype=None)
+            check_x_params = {
+                "dtype": np.float32, "accept_sparse": "csc", "ensure_all_finite": False
+            }
+            check_y_params = {"ensure_2d": False, "dtype": None}
             X, y = validate_data(
-                self, X, y, validate_separately=(check_X_params, check_y_params)
+                self, X, y, validate_separately=(check_x_params, check_y_params)
             )
 
             missing_values_in_feature_mask = (
@@ -606,7 +606,7 @@ class BaseDecisionTree(MultiOutputMixin, BaseEstimator, metaclass=ABCMeta):
         """Prune tree using Minimal Cost-Complexity Pruning."""
         check_is_fitted(self)
 
-        if self.ccp_alpha == 0.0:
+        if self.ccp_alpha <= 0.0:
             return
 
         # build pruned tree
@@ -942,8 +942,8 @@ class DecisionTreeClassifier(ClassifierMixin, BaseDecisionTree):
 
     # "check_input" is used for optimisation and isn't something to be passed
     # around in a pipeline.
-    __metadata_request__predict_proba = {"check_input": metadata_routing.UNUSED}
-    __metadata_request__fit = {"check_input": metadata_routing.UNUSED}
+    _metadata_request__predict_proba = {"check_input": metadata_routing.UNUSED}
+    _metadata_request__fit = {"check_input": metadata_routing.UNUSED}
 
     _parameter_constraints: dict = {
         **BaseDecisionTree._parameter_constraints,
@@ -1319,7 +1319,7 @@ class DecisionTreeRegressor(RegressorMixin, BaseDecisionTree):
 
     # "check_input" is used for optimisation and isn't something to be passed
     # around in a pipeline.
-    __metadata_request__fit = {"check_input": metadata_routing.UNUSED}
+    _metadata_request__fit = {"check_input": metadata_routing.UNUSED}
 
     _parameter_constraints: dict = {
         **BaseDecisionTree._parameter_constraints,
