@@ -346,7 +346,7 @@ class MethodMetadataRequest:
     """
 
     def __init__(self, owner, method, requests=None):
-        self._requests = requests or dict()
+        self._requests = requests or {}
         self.owner = owner
         self.method = method
 
@@ -421,11 +421,11 @@ class MethodMetadataRequest:
         names : set of str
             A set of strings with the names of all metadata.
         """
-        return set(
+        return {
             alias if return_alias and not request_is_valid(alias) else prop
             for prop, alias in self._requests.items()
             if not request_is_valid(alias) or alias is not False
-        )
+        }
 
     def _check_warnings(self, *, params):
         """Check whether metadata is passed which is marked as WARN.
@@ -477,7 +477,7 @@ class MethodMetadataRequest:
             passed to the corresponding method.
         """
         self._check_warnings(params=params)
-        unrequested = dict()
+        unrequested = {}
         args = {arg: value for arg, value in params.items() if value is not None}
         res = Bunch()
         for prop, alias in self._requests.items():
@@ -501,7 +501,7 @@ class MethodMetadataRequest:
                 ]
             )
             message = (
-                f"[{', '.join([key for key in unrequested])}] are passed but are not"
+                f"[{', '.join(unrequested)}] are passed but are not"
                 " explicitly set as requested or not requested for"
                 f" {_routing_repr(self.owner)}.{self.method}, which is used within"
                 f" {_routing_repr(parent)}.{caller}. Call `{_routing_repr(self.owner)}"
@@ -742,7 +742,7 @@ class MetadataRequest:
         obj : dict
             A serialized version of the instance in the form of a dictionary.
         """
-        output = dict()
+        output = {}
         for method in SIMPLE_METHODS:
             mmr = getattr(self, method)
             if len(mmr.requests):
@@ -839,7 +839,7 @@ class MethodMapping:
         obj : list
             A serialized version of the instance in the form of a list.
         """
-        result = list()
+        result = []
         for route in self._routes:
             result.append({"caller": route.caller, "callee": route.callee})
         return result
@@ -905,7 +905,7 @@ class MetadataRouter:
     _type = "metadata_router"
 
     def __init__(self, owner):
-        self._route_mappings = dict()
+        self._route_mappings = {}
         # `_self_request` is used if the router is also a consumer.
         # _self_request, (added using `add_self_request()`) is treated
         # differently from the other consumer objects which are stored in

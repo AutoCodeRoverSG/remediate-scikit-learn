@@ -23,17 +23,17 @@ def _get_dense_mask(X, value_to_mask):
 
     if is_scalar_nan(value_to_mask):
         if X.dtype.kind == "f":
-            Xt = np.isnan(X)
+            mask = np.isnan(X)
         elif X.dtype.kind in ("i", "u"):
             # can't have NaNs in integer array.
-            Xt = np.zeros(X.shape, dtype=bool)
+            mask = np.zeros(X.shape, dtype=bool)
         else:
             # np.isnan does not work on object dtypes.
-            Xt = _object_dtype_isnan(X)
+            mask = _object_dtype_isnan(X)
     else:
-        Xt = X == value_to_mask
+        mask = X == value_to_mask
 
-    return Xt
+    return mask
 
 
 def _get_mask(X, value_to_mask):
@@ -58,14 +58,14 @@ def _get_mask(X, value_to_mask):
         # a sparse output
         return _get_dense_mask(X, value_to_mask)
 
-    Xt = _get_dense_mask(X.data, value_to_mask)
+    mask_data = _get_dense_mask(X.data, value_to_mask)
 
     sparse_constructor = sp.csr_array if X.format == "csr" else sp.csc_array
-    Xt_sparse = sparse_constructor(
-        (Xt, X.indices.copy(), X.indptr.copy()), shape=X.shape, dtype=bool
+    mask_sparse = sparse_constructor(
+        (mask_data, X.indices.copy(), X.indptr.copy()), shape=X.shape, dtype=bool
     )
 
-    return _align_api_if_sparse(Xt_sparse)
+    return _align_api_if_sparse(mask_sparse)
 
 
 @validate_params(
