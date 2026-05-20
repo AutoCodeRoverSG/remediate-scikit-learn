@@ -47,7 +47,7 @@ class DelegatorData:
 # are implemented in the meta estimator themselves and are not dependent
 # on the sub estimator are specified in the `skip_methods` parameter.
 DELEGATING_METAESTIMATORS = [
-    DelegatorData("Pipeline", lambda est: Pipeline([("est", est)])),
+    DelegatorData("Pipeline", lambda est: Pipeline([("est", est)], memory=None)),
     DelegatorData(
         "GridSearchCV",
         lambda est: GridSearchCV(est, param_grid={"param": [5]}, cv=2),
@@ -205,10 +205,12 @@ def _get_instance_with_pipeline(meta_estimator, init_params):
     """Given a single meta-estimator instance, generate an instance with a pipeline"""
     if {"estimator", "base_estimator", "regressor"} & init_params:
         if is_regressor(meta_estimator):
-            estimator = make_pipeline(TfidfVectorizer(), Ridge())
+            estimator = make_pipeline(TfidfVectorizer(), Ridge(), memory=None)
             param_grid = {"ridge__alpha": [0.1, 1.0]}
         else:
-            estimator = make_pipeline(TfidfVectorizer(), LogisticRegression())
+            estimator = make_pipeline(
+                TfidfVectorizer(), LogisticRegression(), memory=None
+            )
             param_grid = {"logisticregression__C": [0.1, 1.0]}
 
         if init_params.intersection(
@@ -222,10 +224,12 @@ def _get_instance_with_pipeline(meta_estimator, init_params):
     if "transformer_list" in init_params:
         # FeatureUnion
         transformer_list = [
-            ("trans1", make_pipeline(TfidfVectorizer(), MaxAbsScaler())),
+            ("trans1", make_pipeline(TfidfVectorizer(), MaxAbsScaler(), memory=None)),
             (
                 "trans2",
-                make_pipeline(TfidfVectorizer(), StandardScaler(with_mean=False)),
+                make_pipeline(
+                    TfidfVectorizer(), StandardScaler(with_mean=False), memory=None
+                ),
             ),
         ]
         return type(meta_estimator)(transformer_list)
@@ -234,16 +238,29 @@ def _get_instance_with_pipeline(meta_estimator, init_params):
         # stacking, voting
         if is_regressor(meta_estimator):
             estimator = [
-                ("est1", make_pipeline(TfidfVectorizer(), Ridge(alpha=0.1))),
-                ("est2", make_pipeline(TfidfVectorizer(), Ridge(alpha=1))),
+                (
+                    "est1",
+                    make_pipeline(TfidfVectorizer(), Ridge(alpha=0.1), memory=None),
+                ),
+                (
+                    "est2",
+                    make_pipeline(TfidfVectorizer(), Ridge(alpha=1), memory=None),
+                ),
             ]
         else:
             estimator = [
                 (
                     "est1",
-                    make_pipeline(TfidfVectorizer(), LogisticRegression(C=0.1)),
+                    make_pipeline(
+                        TfidfVectorizer(), LogisticRegression(C=0.1), memory=None
+                    ),
                 ),
-                ("est2", make_pipeline(TfidfVectorizer(), LogisticRegression(C=1))),
+                (
+                    "est2",
+                    make_pipeline(
+                        TfidfVectorizer(), LogisticRegression(C=1), memory=None
+                    ),
+                ),
             ]
         return type(meta_estimator)(estimator)
 
@@ -255,10 +272,10 @@ def _generate_meta_estimator_instances_with_pipeline():
     "base_estimator" or "estimators".
     """
     print("estimators: ", len(all_estimators()))
-    for _, Estimator in sorted(all_estimators()):
-        sig = set(signature(Estimator).parameters)
+    for _, estimator_class in sorted(all_estimators()):
+        sig = set(signature(estimator_class).parameters)
 
-        print("\n", Estimator.__name__, sig)
+        print("\n", estimator_class.__name__, sig)
         if not sig.intersection(
             {
                 "estimator",
@@ -271,7 +288,7 @@ def _generate_meta_estimator_instances_with_pipeline():
             continue
 
         with suppress(SkipTest):
-            for meta_estimator in _construct_instances(Estimator):
+            for meta_estimator in _construct_instances(estimator_class):
                 print(meta_estimator)
                 yield _get_instance_with_pipeline(meta_estimator, sig)
 
