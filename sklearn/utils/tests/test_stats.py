@@ -268,13 +268,13 @@ def test_weighted_percentile_2d(global_random_seed, percentile_rank, average):
         # NumPy scalars input (handled as 0D arrays on array API)
         (np.float32(42), np.int32(1), 50),
         # Random 1D array, constant weights
-        (lambda rng: rng.rand(50), np.ones(50).astype(np.int32), 50),
+        (lambda rng: rng.random(50), np.ones(50).astype(np.int32), 50),
         # Random 2D array and random 1D weights
-        (lambda rng: rng.rand(50, 3), lambda rng: rng.rand(50).astype(np.float32), 75),
+        (lambda rng: rng.random((50, 3)), lambda rng: rng.random(50).astype(np.float32), 75),
         # Random 2D array and random 2D weights
         (
-            lambda rng: rng.rand(20, 3),
-            lambda rng: rng.rand(20, 3).astype(np.float32),
+            lambda rng: rng.random((20, 3)),
+            lambda rng: rng.random((20, 3)).astype(np.float32),
             [25, 75],
         ),
         # zero-weights and `rank_percentile=0` (#20528) (`sample_weight` dtype: int64)
@@ -309,21 +309,21 @@ def test_weighted_percentile_array_api_consistency(
     if percentile == 0 and xp.all(xp.nextafter(zero, one) == zero):
         pytest.xfail(f"xp.nextafter is broken on {device}")
 
-    rng = np.random.RandomState(global_random_seed)
-    X_np = data(rng) if callable(data) else data
+    rng = np.random.default_rng(global_random_seed)
+    x_np = data(rng) if callable(data) else data
     weights_np = weights(rng) if callable(weights) else weights
     # Ensure `data` of correct dtype
-    X_np = X_np.astype(dtype_name)
+    x_np = x_np.astype(dtype_name)
 
-    result_np = _weighted_percentile(X_np, weights_np, percentile)
+    result_np = _weighted_percentile(x_np, weights_np, percentile)
     # Convert to Array API arrays
-    X_xp = xp.asarray(X_np, device=device)
+    x_xp = xp.asarray(x_np, device=device)
     weights_xp = xp.asarray(weights_np, device=device)
 
     with config_context(array_api_dispatch=True):
-        result_xp = _weighted_percentile(X_xp, weights_xp, percentile)
-        assert array_device(result_xp) == array_device(X_xp)
-        assert get_namespace(result_xp)[0] == get_namespace(X_xp)[0]
+        result_xp = _weighted_percentile(x_xp, weights_xp, percentile)
+        assert array_device(result_xp) == array_device(x_xp)
+        assert get_namespace(result_xp)[0] == get_namespace(x_xp)[0]
         result_xp_np = move_to(result_xp, xp=np, device="cpu")
 
     assert result_xp_np.dtype == result_np.dtype
@@ -350,15 +350,15 @@ def test_weighted_percentile_nan_filtered(
     one-dimensional sample_weight.
     """
 
-    rng = np.random.RandomState(global_random_seed)
-    array_with_nans = rng.rand(100, 10)
-    array_with_nans[rng.rand(*array_with_nans.shape) < 0.5] = np.nan
+    rng = np.random.default_rng(global_random_seed)
+    array_with_nans = rng.random((100, 10))
+    array_with_nans[rng.random(array_with_nans.shape) < 0.5] = np.nan
     nan_mask = np.isnan(array_with_nans)
 
     if sample_weight_ndim == 2:
-        sample_weight = rng.randint(1, 6, size=(100, 10))
+        sample_weight = rng.integers(1, 6, size=(100, 10))
     else:
-        sample_weight = rng.randint(1, 6, size=(100,))
+        sample_weight = rng.integers(1, 6, size=(100,))
 
     # Find the weighted percentile on the array with nans:
     results = _weighted_percentile(array_with_nans, sample_weight, 30, average=average)
@@ -434,12 +434,12 @@ def test_weighted_percentile_like_numpy_quantile(
             "np.quantile does not support weights with method='averaged_inverted_cdf'"
         )
 
-    rng = np.random.RandomState(global_random_seed)
-    array = rng.rand(10, 100)
+    rng = np.random.default_rng(global_random_seed)
+    array = rng.random((10, 100))
     if uniform_weight:
-        sample_weight = np.ones_like(array) * rng.randint(1, 6, size=1)
+        sample_weight = np.ones_like(array) * rng.integers(1, 6, size=1)
     else:
-        sample_weight = rng.randint(1, 6, size=(10, 100))
+        sample_weight = rng.integers(1, 6, size=(10, 100))
 
     percentile_weighted_percentile = _weighted_percentile(
         array, sample_weight, percentile, average=average
@@ -473,17 +473,17 @@ def test_weighted_percentile_like_numpy_nanquantile(
             "method='averaged_inverted_cdf'"
         )
 
-    rng = np.random.RandomState(global_random_seed)
-    array_with_nans = rng.rand(10, 100)
-    array_with_nans[rng.rand(*array_with_nans.shape) < 0.5] = np.nan
+    rng = np.random.default_rng(global_random_seed)
+    array_with_nans = rng.random((10, 100))
+    array_with_nans[rng.random(array_with_nans.shape) < 0.5] = np.nan
     if uniform_weight:
-        sample_weight = np.ones_like(array_with_nans) * rng.randint(
+        sample_weight = np.ones_like(array_with_nans) * rng.integers(
             1,
             6,
             size=1,
         )
     else:
-        sample_weight = rng.randint(1, 6, size=(10, 100))
+        sample_weight = rng.integers(1, 6, size=(10, 100))
 
     percentile_weighted_percentile = _weighted_percentile(
         array_with_nans, sample_weight, percentile, average=average
