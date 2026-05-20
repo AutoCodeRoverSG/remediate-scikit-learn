@@ -581,7 +581,7 @@ def test_isotonic_non_regression_inf_slope():
 
 @pytest.mark.parametrize("increasing", [True, False])
 def test_isotonic_thresholds(increasing):
-    rng = np.random.RandomState(42)
+    rng = np.random.default_rng(42)
     n_samples = 30
     X = rng.normal(size=n_samples)
     y = rng.normal(size=n_samples)

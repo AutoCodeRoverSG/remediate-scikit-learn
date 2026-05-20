@@ -87,7 +87,7 @@ def l1_min_c(X, y, *, loss="squared_hinge", fit_intercept=True, intercept_scalin
         )
         den = max(den, abs(np.dot(Y, bias)).max())
 
-    if den == 0.0:
+    if den <= 0.0:
         raise ValueError(
             "Ill-posed l1_min_c calculation: l1 will always "
             "select zero coefficients for this data"

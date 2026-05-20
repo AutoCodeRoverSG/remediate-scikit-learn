@@ -283,7 +283,7 @@ def test_k_best_selects_best():
     max_proba = np.max(pred, axis=1)
 
     most_confident_est = X_train[~has_label][np.argsort(max_proba)[-10:]]
-    added_by_st = X_train[np.where(got_label)].tolist()
+    added_by_st = X_train[np.nonzero(got_label)].tolist()
 
     for row in most_confident_est.tolist():
         assert row in added_by_st

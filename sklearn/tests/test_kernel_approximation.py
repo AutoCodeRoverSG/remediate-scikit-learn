@@ -536,8 +536,8 @@ def test_get_feature_names_out(estimator):
 
 def test_additivechi2sampler_get_feature_names_out():
     """Check get_feature_names_out for AdditiveChi2Sampler."""
-    rng = np.random.RandomState(0)
-    X = rng.random_sample(size=(300, 3))
+    rng = np.random.default_rng(0)
+    X = rng.random(size=(300, 3))
 
     chi2_sampler = AdditiveChi2Sampler(sample_steps=3).fit(X)
     input_names = ["f0", "f1", "f2"]
