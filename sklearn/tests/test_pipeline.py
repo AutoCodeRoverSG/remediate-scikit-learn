@@ -700,15 +700,15 @@ def test_pipeline_transform():
     pipeline = Pipeline([("pca", pca)], memory=None)
 
     # test transform and fit_transform:
-    X_trans = pipeline.fit(X).transform(X)
-    X_trans2 = pipeline.fit_transform(X)
-    X_trans3 = pca.fit_transform(X)
-    assert_array_almost_equal(X_trans, X_trans2)
-    assert_array_almost_equal(X_trans, X_trans3)
+    x_trans = pipeline.fit(X).transform(X)
+    x_trans2 = pipeline.fit_transform(X)
+    x_trans3 = pca.fit_transform(X)
+    assert_array_almost_equal(x_trans, x_trans2)
+    assert_array_almost_equal(x_trans, x_trans3)
 
-    X_back = pipeline.inverse_transform(X_trans)
-    X_back2 = pca.inverse_transform(X_trans)
-    assert_array_almost_equal(X_back, X_back2)
+    x_back = pipeline.inverse_transform(x_trans)
+    x_back2 = pca.inverse_transform(x_trans)
+    assert_array_almost_equal(x_back, x_back2)
 
 
 def test_pipeline_fit_transform():
@@ -716,12 +716,12 @@ def test_pipeline_fit_transform():
     X = iris.data
     y = iris.target
     transf = Transf()
-    pipeline = Pipeline([("mock", transf)])
+    pipeline = Pipeline([("mock", transf)], memory=None)
 
     # test fit_transform:
-    X_trans = pipeline.fit_transform(X, y)
-    X_trans2 = transf.fit(X, y).transform(X)
-    assert_array_almost_equal(X_trans, X_trans2)
+    x_trans = pipeline.fit_transform(X, y)
+    x_trans2 = transf.fit(X, y).transform(X)
+    assert_array_almost_equal(x_trans, x_trans2)
 
 
 @pytest.mark.parametrize(
@@ -758,7 +758,7 @@ def test_pipeline_slice(start, end):
 def test_pipeline_index():
     transf = Transf()
     clf = FitParamT()
-    pipe = Pipeline([("transf", transf), ("clf", clf)])
+    pipe = Pipeline([("transf", transf), ("clf", clf)], memory=None)
     assert pipe[0] == transf
     assert pipe["transf"] == transf
     assert pipe[-1] == clf
@@ -776,7 +776,7 @@ def test_pipeline_index():
 def test_set_pipeline_steps():
     transf1 = Transf()
     transf2 = Transf()
-    pipeline = Pipeline([("mock", transf1)])
+    pipeline = Pipeline([("mock", transf1)], memory=None)
     assert pipeline.named_steps["mock"] is transf1
 
     # Directly setting attr
