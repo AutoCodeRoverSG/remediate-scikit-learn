@@ -165,11 +165,11 @@ def test_multi_target_sample_weight_partial_fit():
 
 def test_multi_target_sample_weights():
     # weighted regressor
-    Xw = [[1, 2, 3], [4, 5, 6]]
+    xw = [[1, 2, 3], [4, 5, 6]]
     yw = [[3.141, 2.718], [2.718, 3.141]]
     w = [2.0, 1.0]
     rgr_w = MultiOutputRegressor(GradientBoostingRegressor(random_state=0))
-    rgr_w.fit(Xw, yw, w)
+    rgr_w.fit(xw, yw, w)
 
     # unweighted, but with repeated samples
     X = [[1, 2, 3], [1, 2, 3], [4, 5, 6]]
@@ -402,12 +402,12 @@ def test_multiclass_multioutput_estimator_predict_proba():
 
 def test_multi_output_classification_sample_weights():
     # weighted classifier
-    Xw = [[1, 2, 3], [4, 5, 6]]
-    yw = [[3, 2], [2, 3]]
+    x_w = [[1, 2, 3], [4, 5, 6]]
+    y_w = [[3, 2], [2, 3]]
     w = np.asarray([2.0, 1.0])
     forest = RandomForestClassifier(n_estimators=10, random_state=1)
     clf_w = MultiOutputClassifier(forest)
-    clf_w.fit(Xw, yw, w)
+    clf_w.fit(x_w, y_w, w)
 
     # unweighted, but with repeated samples
     X = [[1, 2, 3], [1, 2, 3], [4, 5, 6]]
@@ -422,12 +422,12 @@ def test_multi_output_classification_sample_weights():
 
 def test_multi_output_classification_partial_fit_sample_weights():
     # weighted classifier
-    Xw = [[1, 2, 3], [4, 5, 6], [1.5, 2.5, 3.5]]
+    x_w = [[1, 2, 3], [4, 5, 6], [1.5, 2.5, 3.5]]
     yw = [[3, 2], [2, 3], [3, 2]]
     w = np.asarray([2.0, 1.0, 1.0])
     sgd_linear_clf = SGDClassifier(random_state=1, max_iter=20, tol=None)
     clf_w = MultiOutputClassifier(sgd_linear_clf)
-    clf_w.fit(Xw, yw, w)
+    clf_w.fit(x_w, yw, w)
 
     # unweighted, but with repeated samples
     X = [[1, 2, 3], [1, 2, 3], [4, 5, 6], [1.5, 2.5, 3.5]]
@@ -504,8 +504,8 @@ def generate_multilabel_dataset_with_correlations():
         n_samples=1000, n_features=100, n_classes=16, n_informative=10, random_state=0
     )
 
-    Y_multi = np.array([[int(yyy) for yyy in format(yy, "#06b")[2:]] for yy in y])
-    return X, Y_multi
+    y_multi = np.array([[int(yyy) for yyy in format(yy, "#06b")[2:]] for yy in y])
+    return X, y_multi
 
 
 @pytest.mark.parametrize("chain_method", ["predict", "decision_function"])
@@ -513,17 +513,17 @@ def test_classifier_chain_fit_and_predict_with_linear_svc(chain_method):
     # Fit classifier chain and verify predict performance using LinearSVC
     X, Y = generate_multilabel_dataset_with_correlations()
     classifier_chain = ClassifierChain(
-        LinearSVC(),
+        LinearSVC(random_state=0),
         chain_method=chain_method,
     ).fit(X, Y)
 
-    Y_pred = classifier_chain.predict(X)
-    assert Y_pred.shape == Y.shape
+    y_pred = classifier_chain.predict(X)
+    assert y_pred.shape == Y.shape
 
-    Y_decision = classifier_chain.decision_function(X)
+    y_decision = classifier_chain.decision_function(X)
 
-    Y_binary = Y_decision >= 0
-    assert_array_equal(Y_binary, Y_pred)
+    y_binary = y_decision >= 0
+    assert_array_equal(y_binary, y_pred)
     assert not hasattr(classifier_chain, "predict_proba")
 
 
@@ -531,12 +531,14 @@ def test_classifier_chain_fit_and_predict_with_linear_svc(chain_method):
 def test_classifier_chain_fit_and_predict_with_sparse_data(csr_container):
     # Fit classifier chain with sparse data
     X, Y = generate_multilabel_dataset_with_correlations()
-    X_sparse = csr_container(X)
+    x_sparse = csr_container(X)
 
-    classifier_chain = ClassifierChain(LogisticRegression()).fit(X_sparse, Y)
-    Y_pred_sparse = classifier_chain.predict(X_sparse)
+    classifier_chain = ClassifierChain(LogisticRegression(), random_state=0).fit(
+        x_sparse, Y
+    )
+    Y_pred_sparse = classifier_chain.predict(x_sparse)
 
-    classifier_chain = ClassifierChain(LogisticRegression()).fit(X, Y)
+    classifier_chain = ClassifierChain(LogisticRegression(), random_state=0).fit(X, Y)
     Y_pred_dense = classifier_chain.predict(X)
 
     assert_array_equal(Y_pred_sparse, Y_pred_dense)
