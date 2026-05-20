@@ -274,11 +274,11 @@ def test_lda_coefs():
 def test_lda_transform():
     # Test LDA transform.
     clf = LinearDiscriminantAnalysis(solver="svd", n_components=1)
-    X_transformed = clf.fit(X, y).transform(X)
-    assert X_transformed.shape[1] == 1
+    x_transformed = clf.fit(X, y).transform(X)
+    assert x_transformed.shape[1] == 1
     clf = LinearDiscriminantAnalysis(solver="eigen", n_components=1)
-    X_transformed = clf.fit(X, y).transform(X)
-    assert X_transformed.shape[1] == 1
+    x_transformed = clf.fit(X, y).transform(X)
+    assert x_transformed.shape[1] == 1
 
     clf = LinearDiscriminantAnalysis(solver="lsqr", n_components=1)
     clf.fit(X, y)
@@ -294,9 +294,9 @@ def test_lda_explained_variance_ratio():
     # eigen solver is the same as the explained_variance_ratio_ formed
     # by the svd solver
 
-    state = np.random.RandomState(0)
-    X = state.normal(loc=0, scale=100, size=(40, 20))
-    y = state.randint(0, 3, size=(40,))
+    rng = np.random.default_rng(0)
+    X = rng.normal(loc=0, scale=100, size=(40, 20))
+    y = rng.integers(0, 3, size=(40,))
 
     clf_lda_eigen = LinearDiscriminantAnalysis(solver="eigen")
     clf_lda_eigen.fit(X, y)
@@ -361,7 +361,7 @@ def test_lda_orthogonality():
 def test_lda_scaling():
     # Test if classification works correctly with differently scaled features.
     n = 100
-    rng = np.random.RandomState(1234)
+    rng = np.random.default_rng(1234)
     # use uniform distribution of features to make sure there is absolutely no
     # overlap between classes.
     x1 = rng.uniform(-1, 1, (n, 3)) + [-10, 0, 0]
@@ -372,7 +372,9 @@ def test_lda_scaling():
     for solver in ("svd", "lsqr", "eigen"):
         clf = LinearDiscriminantAnalysis(solver=solver)
         # should be able to separate the data perfectly
-        assert clf.fit(x, y).score(x, y) == 1.0, "using covariance: %s" % solver
+        assert clf.fit(x, y).score(x, y) == pytest.approx(1.0), (
+            "using covariance: %s" % solver
+        )
 
 
 def test_lda_store_covariance():
@@ -409,9 +411,9 @@ def test_lda_store_covariance():
 def test_lda_shrinkage(seed):
     # Test that shrunk covariance estimator and shrinkage parameter behave the
     # same
-    rng = np.random.RandomState(seed)
-    X = rng.rand(100, 10)
-    y = rng.randint(3, size=(100))
+    rng = np.random.default_rng(seed)
+    X = rng.random((100, 10))
+    y = rng.integers(3, size=(100))
     c1 = LinearDiscriminantAnalysis(store_covariance=True, shrinkage=0.5, solver="lsqr")
     c2 = LinearDiscriminantAnalysis(
         store_covariance=True,
@@ -431,15 +433,15 @@ def test_lda_ledoitwolf():
     class StandardizedLedoitWolf:
         def fit(self, X):
             sc = StandardScaler()  # standardize features
-            X_sc = sc.fit_transform(X)
-            s = ledoit_wolf(X_sc)[0]
+            x_sc = sc.fit_transform(X)
+            s = ledoit_wolf(x_sc)[0]
             # rescale
             s = sc.scale_[:, np.newaxis] * s * sc.scale_[np.newaxis, :]
             self.covariance_ = s
 
-    rng = np.random.RandomState(0)
-    X = rng.rand(100, 10)
-    y = rng.randint(3, size=(100,))
+    rng = np.random.default_rng(0)
+    X = rng.random((100, 10))
+    y = rng.integers(3, size=(100,))
     c1 = LinearDiscriminantAnalysis(
         store_covariance=True, shrinkage="auto", solver="lsqr"
     )
@@ -578,15 +580,15 @@ def test_qda_ledoitwolf(global_random_seed):
     class StandardizedLedoitWolf:
         def fit(self, X):
             sc = StandardScaler()  # standardize features
-            X_sc = sc.fit_transform(X)
-            s = ledoit_wolf(X_sc)[0]
+            x_sc = sc.fit_transform(X)
+            s = ledoit_wolf(x_sc)[0]
             # rescale
             s = sc.scale_[:, np.newaxis] * s * sc.scale_[np.newaxis, :]
             self.covariance_ = s
 
-    rng = np.random.RandomState(global_random_seed)
-    X = rng.rand(100, 10)
-    y = rng.randint(3, size=(100,))
+    rng = np.random.default_rng(global_random_seed)
+    X = rng.random((100, 10))
+    y = rng.integers(3, size=(100,))
     c1 = QuadraticDiscriminantAnalysis(
         store_covariance=True, shrinkage="auto", solver="eigen"
     )
@@ -744,7 +746,7 @@ def test_qda_regularization(global_random_seed, solver):
 
 
 def test_covariance():
-    x, y = make_blobs(n_samples=100, n_features=5, centers=1, random_state=42)
+    x, _ = make_blobs(n_samples=100, n_features=5, centers=1, random_state=42)
 
     # make features correlated
     x = np.dot(x, np.arange(x.shape[1] ** 2).reshape(x.shape[1], x.shape[1]))
