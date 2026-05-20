@@ -79,14 +79,14 @@ def _fused_types_dataset_factories():
 )
 def test_seq_dataset_basic_iteration(dataset_factory, csr_container):
     NUMBER_OF_RUNS = 5
-    X_csr64 = csr_container(X64)
+    x_csr64 = csr_container(X64)
     dataset = dataset_factory()
     for _ in range(NUMBER_OF_RUNS):
         # next sample
         xi_, yi, swi, idx = dataset._next_py()
         xi = csr_container(xi_, shape=(1, X64.shape[1]))
 
-        assert_csr_equal_values(xi, X_csr64[[idx]])
+        assert_csr_equal_values(xi, x_csr64[[idx]])
         assert yi == y64[idx]
         assert swi == sample_weight64[idx]
 
@@ -94,7 +94,7 @@ def test_seq_dataset_basic_iteration(dataset_factory, csr_container):
         xi_, yi, swi, idx = dataset._random_py()
         xi = csr_container(xi_, shape=(1, X64.shape[1]))
 
-        assert_csr_equal_values(xi, X_csr64[[idx]])
+        assert_csr_equal_values(xi, x_csr64[[idx]])
         assert yi == y64[idx]
         assert swi == sample_weight64[idx]
 
@@ -162,13 +162,13 @@ def test_buffer_dtype_mismatch_error():
         ArrayDataset32(X64, y64, sample_weight64, seed=42)
 
     for csr_container in CSR_CONTAINERS:
-        X_csr32 = csr_container(X32)
-        X_csr64 = csr_container(X64)
+        x_csr32 = csr_container(X32)
+        x_csr64 = csr_container(X64)
         with pytest.raises(ValueError, match="Buffer dtype mismatch"):
             CSRDataset64(
-                X_csr32.data,
-                X_csr32.indptr,
-                X_csr32.indices,
+                x_csr32.data,
+                x_csr32.indptr,
+                x_csr32.indices,
                 y32,
                 sample_weight32,
                 seed=42,
@@ -176,9 +176,9 @@ def test_buffer_dtype_mismatch_error():
 
         with pytest.raises(ValueError, match="Buffer dtype mismatch"):
             CSRDataset32(
-                X_csr64.data,
-                X_csr64.indptr,
-                X_csr64.indices,
+                x_csr64.data,
+                x_csr64.indptr,
+                x_csr64.indices,
                 y64,
                 sample_weight64,
                 seed=42,

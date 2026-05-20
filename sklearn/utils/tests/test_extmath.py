@@ -1070,7 +1070,7 @@ def test_safe_sparse_dot_2d_1d(container):
 
 @pytest.mark.parametrize("dense_output", [True, False])
 def test_safe_sparse_dot_dense_output(dense_output):
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
 
     A = _sparse_random_array((30, 10), density=0.1, rng=rng)
     B = _sparse_random_array((10, 20), density=0.1, rng=rng)
@@ -1109,7 +1109,7 @@ def test_approximate_mode():
 def test_randomized_svd_array_api_compliance(array_namespace, device_name, dtype_name):
     xp, device = _array_api_for_tests(array_namespace, device_name, dtype_name)
 
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
     X = rng.normal(size=(30, 10)).astype(dtype_name)
     x_xp = xp.asarray(X, device=device)
     n_components = 5
@@ -1137,7 +1137,7 @@ def test_randomized_range_finder_array_api_compliance(
 ):
     xp, device = _array_api_for_tests(array_namespace, device_name, dtype_name)
 
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
     X = rng.normal(size=(30, 10)).astype(dtype_name)
     x_xp = xp.asarray(X, device=device)
     size = 5

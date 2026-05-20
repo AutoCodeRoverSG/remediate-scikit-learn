@@ -1,15 +1,16 @@
 """Test fast_dict."""
 
 import numpy as np
+import pytest
 from numpy.testing import assert_allclose, assert_array_equal
 
 from sklearn.utils._fast_dict import IntFloatDict, argmin
 
 
 def test_int_float_dict():
-    rng = np.random.RandomState(0)
-    keys = np.unique(rng.randint(100, size=10).astype(np.intp))
-    values = rng.rand(len(keys))
+    rng = np.random.default_rng(0)
+    keys = np.unique(rng.integers(100, size=10).astype(np.intp))
+    values = rng.random(len(keys))
 
     d = IntFloatDict(keys, values)
     for key, value in zip(keys, values):
@@ -17,11 +18,11 @@ def test_int_float_dict():
     assert len(d) == len(keys)
 
     d.append(120, 3.0)
-    assert d[120] == 3.0
+    assert d[120] == pytest.approx(3.0)
     assert len(d) == len(keys) + 1
     for i in range(2000):
         d.append(i + 1000, 4.0)
-    assert d[1100] == 4.0
+    assert d[1100] == pytest.approx(4.0)
 
 
 def test_int_float_dict_argmin():
