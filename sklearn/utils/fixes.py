@@ -80,12 +80,12 @@ if sp_base_version >= parse_version("1.12.0"):
     _sparse_linalg_cg = scipy.sparse.linalg.cg
 else:
 
-    def _sparse_linalg_cg(A, b, **kwargs):
+    def _sparse_linalg_cg(a, b, **kwargs):
         if "rtol" in kwargs:
             kwargs["tol"] = kwargs.pop("rtol")
         if "atol" not in kwargs:
             kwargs["atol"] = "legacy"
-        return scipy.sparse.linalg.cg(A, b, **kwargs)
+        return scipy.sparse.linalg.cg(a, b, **kwargs)
 
 
 # TODO: Fuse the modern implementations of _sparse_min_max and _sparse_nan_min_max
@@ -454,24 +454,24 @@ else:
 
 # TODO: remove when SciPy 1.15 is minimal supported version
 # fix for casting index arrays
-def _ensure_sparse_index_int32(A):
+def _ensure_sparse_index_int32(array):
     """Safely ensure that index arrays are int32."""
-    if A.format in ("csc", "csr", "bsr"):
-        A.indices, A.indptr = _safely_cast_index_arrays(A)
-    elif A.format == "coo":
-        if hasattr(A, "coords"):
-            A.coords = _safely_cast_index_arrays(A)
-        elif hasattr(A, "indices"):
-            A.indices = _safely_cast_index_arrays(A)
+    if array.format in ("csc", "csr", "bsr"):
+        array.indices, array.indptr = _safely_cast_index_arrays(array)
+    elif array.format == "coo":
+        if hasattr(array, "coords"):
+            array.coords = _safely_cast_index_arrays(array)
+        elif hasattr(array, "indices"):
+            array.indices = _safely_cast_index_arrays(array)
         else:
-            A.row, A.col = _safely_cast_index_arrays(A)
-    elif A.format == "dia":
-        A.offsets = _safely_cast_index_arrays(A)
+            array.row, array.col = _safely_cast_index_arrays(array)
+    elif array.format == "dia":
+        array.offsets = _safely_cast_index_arrays(array)
 
 
 # TODO: remove when SciPy 1.15 is minimal supported version
 #       (based on scipy.sparse._sputils.py function with same name)
-def _safely_cast_index_arrays(A, idx_dtype=np.int32, msg=""):
+def _safely_cast_index_arrays(array, idx_dtype=np.int32, msg=""):
     """Safely cast sparse array indices to `idx_dtype`.
 
     Check the shape of `A` to determine if it is safe to cast its index
@@ -488,45 +488,45 @@ def _safely_cast_index_arrays(A, idx_dtype=np.int32, msg=""):
     """
     max_value = np.iinfo(idx_dtype).max
 
-    if A.format in ("csc", "csr"):
-        if A.indptr[-1] > max_value:
+    if array.format in ("csc", "csr"):
+        if array.indptr[-1] > max_value:
             raise ValueError(f"indptr values too large for {msg}")
         # check shape vs dtype
-        if max(*A.shape) > max_value:
-            if (A.indices > max_value).any():
+        if max(*array.shape) > max_value:
+            if (array.indices > max_value).any():
                 raise ValueError(f"indices values too large for {msg}")
 
-        indices = A.indices.astype(idx_dtype, copy=False)
-        indptr = A.indptr.astype(idx_dtype, copy=False)
+        indices = array.indices.astype(idx_dtype, copy=False)
+        indptr = array.indptr.astype(idx_dtype, copy=False)
         return indices, indptr
 
-    elif A.format == "coo":
-        coords = getattr(A, "coords", None)
+    elif array.format == "coo":
+        coords = getattr(array, "coords", None)
         if coords is None:
-            coords = getattr(A, "indices", None)
+            coords = getattr(array, "indices", None)
             if coords is None:
-                coords = (A.row, A.col)
-        if max(*A.shape) > max_value:
+                coords = (array.row, array.col)
+        if max(*array.shape) > max_value:
             if any((co > max_value).any() for co in coords):
                 raise ValueError(f"coords values too large for {msg}")
         return tuple(co.astype(idx_dtype, copy=False) for co in coords)
 
-    elif A.format == "dia":
-        if max(*A.shape) > max_value:
-            if (A.offsets > max_value).any():
+    elif array.format == "dia":
+        if max(*array.shape) > max_value:
+            if (array.offsets > max_value).any():
                 raise ValueError(f"offsets values too large for {msg}")
-        offsets = A.offsets.astype(idx_dtype, copy=False)
+        offsets = array.offsets.astype(idx_dtype, copy=False)
         return offsets
 
-    elif A.format == "bsr":
-        R, C = A.blocksize
-        if A.indptr[-1] * R > max_value:
+    elif array.format == "bsr":
+        R, C = array.blocksize
+        if array.indptr[-1] * R > max_value:
             raise ValueError("indptr values too large for {msg}")
-        if max(*A.shape) > max_value:
-            if (A.indices * C > max_value).any():
+        if max(*array.shape) > max_value:
+            if (array.indices * C > max_value).any():
                 raise ValueError(f"indices values too large for {msg}")
-        indices = A.indices.astype(idx_dtype, copy=False)
-        indptr = A.indptr.astype(idx_dtype, copy=False)
+        indices = array.indices.astype(idx_dtype, copy=False)
+        indptr = array.indptr.astype(idx_dtype, copy=False)
         return indices, indptr
     # DOK and LIL formats are not associated with index arrays.
 
