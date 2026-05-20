@@ -858,7 +858,7 @@ def test_incremental_mean_and_variance_ignore_nan():
 
     X = np.array([[170, 170, 170, 170], [430, 430, 430, 430], [300, 300, 300, 300]])
 
-    X_nan = np.array(
+    x_nan = np.array(
         [
             [170, np.nan, 170, 170],
             [np.nan, 170, 430, 430],
@@ -867,16 +867,16 @@ def test_incremental_mean_and_variance_ignore_nan():
         ]
     )
 
-    X_means, X_variances, X_count = _incremental_mean_and_var(
+    x_means, x_variances, x_count = _incremental_mean_and_var(
         X, old_means, old_variances, old_sample_count
     )
-    X_nan_means, X_nan_variances, X_nan_count = _incremental_mean_and_var(
-        X_nan, old_means, old_variances, old_sample_count
+    x_nan_means, x_nan_variances, x_nan_count = _incremental_mean_and_var(
+        x_nan, old_means, old_variances, old_sample_count
     )
 
-    assert_allclose(X_nan_means, X_means)
-    assert_allclose(X_nan_variances, X_variances)
-    assert_allclose(X_nan_count, X_count)
+    assert_allclose(x_nan_means, x_means)
+    assert_allclose(x_nan_variances, x_variances)
+    assert_allclose(x_nan_count, x_count)
 
 
 @skip_if_32bit
