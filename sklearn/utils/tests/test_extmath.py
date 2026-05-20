@@ -856,7 +856,9 @@ def test_incremental_mean_and_variance_ignore_nan():
     old_variances = np.array([4225.0, 4225.0, 4225.0, 4225.0])
     old_sample_count = np.array([2, 2, 2, 2], dtype=np.int32)
 
-    X = np.array([[170, 170, 170, 170], [430, 430, 430, 430], [300, 300, 300, 300]])
+    x_array = np.array(
+        [[170, 170, 170, 170], [430, 430, 430, 430], [300, 300, 300, 300]]
+    )
 
     x_nan = np.array(
         [
@@ -868,7 +870,7 @@ def test_incremental_mean_and_variance_ignore_nan():
     )
 
     x_means, x_variances, x_count = _incremental_mean_and_var(
-        X, old_means, old_variances, old_sample_count
+        x_array, old_means, old_variances, old_sample_count
     )
     x_nan_means, x_nan_variances, x_nan_count = _incremental_mean_and_var(
         x_nan, old_means, old_variances, old_sample_count
@@ -883,8 +885,8 @@ def test_incremental_mean_and_variance_ignore_nan():
 def test_incremental_variance_numerical_stability():
     # Test Youngs and Cramer incremental variance formulas.
 
-    def np_var(A):
-        return A.var(axis=0)
+    def np_var(a):
+        return a.var(axis=0)
 
     # Naive one pass variance computation - not numerically stable
     # https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance
@@ -956,7 +958,7 @@ def test_incremental_variance_ddof():
     # Test that degrees of freedom parameter for calculations are correct.
     rng = np.random.RandomState(1999)
     X = rng.randn(50, 10)
-    n_samples, n_features = X.shape
+    n_samples, _ = X.shape
     for batch_size in [11, 20, 37]:
         steps = np.arange(0, X.shape[0], batch_size)
         if steps[-1] != X.shape[0]:
@@ -998,9 +1000,9 @@ def test_vector_sign_flip():
 def test_softmax():
     rng = np.random.RandomState(0)
     X = rng.randn(3, 5)
-    exp_X = np.exp(X)
-    sum_exp_X = np.sum(exp_X, axis=1).reshape((-1, 1))
-    assert_array_almost_equal(softmax(X), exp_X / sum_exp_X)
+    exp_x = np.exp(X)
+    sum_exp_x = np.sum(exp_x, axis=1).reshape((-1, 1))
+    assert_array_almost_equal(softmax(X), exp_x / sum_exp_x)
 
 
 def test_stable_cumsum_deprecation():
@@ -1009,24 +1011,24 @@ def test_stable_cumsum_deprecation():
 
 
 @pytest.mark.parametrize(
-    "A_container",
+    "a_container",
     [np.array, *CSR_CONTAINERS],
     ids=["dense"] + [container.__name__ for container in CSR_CONTAINERS],
 )
 @pytest.mark.parametrize(
-    "B_container",
+    "b_container",
     [np.array, *CSR_CONTAINERS],
     ids=["dense"] + [container.__name__ for container in CSR_CONTAINERS],
 )
-def test_safe_sparse_dot_2d(A_container, B_container):
+def test_safe_sparse_dot_2d(a_container, b_container):
     rng = np.random.RandomState(0)
 
     A = rng.random_sample((30, 10))
     B = rng.random_sample((10, 20))
     expected = np.dot(A, B)
 
-    A = A_container(A)
-    B = B_container(B)
+    A = a_container(A)
+    B = b_container(B)
     actual = safe_sparse_dot(A, B, dense_output=True)
 
     assert_allclose(actual, expected)
@@ -1118,13 +1120,13 @@ def test_randomized_svd_array_api_compliance(array_namespace, device_name, dtype
 
     rng = np.random.RandomState(0)
     X = rng.normal(size=(30, 10)).astype(dtype_name)
-    X_xp = xp.asarray(X, device=device)
+    x_xp = xp.asarray(X, device=device)
     n_components = 5
     atol = 1e-5 if dtype_name == "float32" else 0
 
     with config_context(array_api_dispatch=True):
         u_np, s_np, vt_np = randomized_svd(X, n_components, random_state=0)
-        u_xp, s_xp, vt_xp = randomized_svd(X_xp, n_components, random_state=0)
+        u_xp, s_xp, vt_xp = randomized_svd(x_xp, n_components, random_state=0)
 
         assert get_namespace(u_xp)[0].__name__ == xp.__name__
         assert get_namespace(s_xp)[0].__name__ == xp.__name__
@@ -1146,14 +1148,14 @@ def test_randomized_range_finder_array_api_compliance(
 
     rng = np.random.RandomState(0)
     X = rng.normal(size=(30, 10)).astype(dtype_name)
-    X_xp = xp.asarray(X, device=device)
+    x_xp = xp.asarray(X, device=device)
     size = 5
     n_iter = 10
     atol = 1e-5 if dtype_name == "float32" else 0
 
     with config_context(array_api_dispatch=True):
         Q_np = randomized_range_finder(X, size=size, n_iter=n_iter, random_state=0)
-        Q_xp = randomized_range_finder(X_xp, size=size, n_iter=n_iter, random_state=0)
+        Q_xp = randomized_range_finder(x_xp, size=size, n_iter=n_iter, random_state=0)
 
         assert get_namespace(Q_xp)[0].__name__ == xp.__name__
         assert_allclose(move_to(Q_xp, xp=np, device="cpu"), Q_np, atol=atol)
@@ -1161,15 +1163,15 @@ def test_randomized_range_finder_array_api_compliance(
     max_dtype = _max_precision_float_dtype(xp, device=device)
     # Also test with integer input only once per namespace/device for
     # namespaces that support integer-by-floating matmul.
-    if X_xp.dtype != max_dtype or array_namespace in {"array_api_strict", "torch"}:
+    if x_xp.dtype != max_dtype or array_namespace in {"array_api_strict", "torch"}:
         return
 
     X_int = (X * 10).astype(np.int64)
     atol *= 10
-    X_xp = xp.asarray(X_int, device=device)
+    x_xp = xp.asarray(X_int, device=device)
     with config_context(array_api_dispatch=True):
         Q_np = randomized_range_finder(X_int, size=size, n_iter=n_iter, random_state=0)
-        Q_xp = randomized_range_finder(X_xp, size=size, n_iter=n_iter, random_state=0)
+        Q_xp = randomized_range_finder(x_xp, size=size, n_iter=n_iter, random_state=0)
 
         assert get_namespace(Q_xp)[0].__name__ == xp.__name__
         assert Q_xp.dtype == max_dtype
