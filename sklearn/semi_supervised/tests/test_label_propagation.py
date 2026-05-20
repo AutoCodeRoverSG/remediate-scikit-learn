@@ -43,45 +43,45 @@ LP_ESTIMATORS = [
 ]
 
 
-@pytest.mark.parametrize("Estimator, parameters", ESTIMATORS)
-def test_fit_transduction(global_dtype, Estimator, parameters):
+@pytest.mark.parametrize("estimator, parameters", ESTIMATORS)
+def test_fit_transduction(global_dtype, estimator, parameters):
     samples = np.asarray([[1.0, 0.0], [0.0, 2.0], [1.0, 3.0]], dtype=global_dtype)
     labels = [0, 1, -1]
-    clf = Estimator(**parameters).fit(samples, labels)
+    clf = estimator(**parameters).fit(samples, labels)
     assert clf.transduction_[2] == 1
 
 
-@pytest.mark.parametrize("Estimator, parameters", ESTIMATORS)
-def test_distribution(global_dtype, Estimator, parameters):
+@pytest.mark.parametrize("estimator, parameters", ESTIMATORS)
+def test_distribution(global_dtype, estimator, parameters):
     if parameters["kernel"] == "knn":
         pytest.skip(
             "Unstable test for this configuration: changes in k-NN ordering break it."
         )
     samples = np.asarray([[1.0, 0.0], [0.0, 1.0], [1.0, 1.0]], dtype=global_dtype)
     labels = [0, 1, -1]
-    clf = Estimator(**parameters).fit(samples, labels)
+    clf = estimator(**parameters).fit(samples, labels)
     assert_allclose(clf.label_distributions_[2], [0.5, 0.5], atol=1e-2)
 
 
-@pytest.mark.parametrize("Estimator, parameters", ESTIMATORS)
-def test_predict(global_dtype, Estimator, parameters):
+@pytest.mark.parametrize("estimator, parameters", ESTIMATORS)
+def test_predict(global_dtype, estimator, parameters):
     samples = np.asarray([[1.0, 0.0], [0.0, 2.0], [1.0, 3.0]], dtype=global_dtype)
     labels = [0, 1, -1]
-    clf = Estimator(**parameters).fit(samples, labels)
+    clf = estimator(**parameters).fit(samples, labels)
     assert_array_equal(clf.predict([[0.5, 2.5]]), np.array([1]))
 
 
-@pytest.mark.parametrize("Estimator, parameters", ESTIMATORS)
-def test_predict_proba(global_dtype, Estimator, parameters):
+@pytest.mark.parametrize("estimator, parameters", ESTIMATORS)
+def test_predict_proba(global_dtype, estimator, parameters):
     samples = np.asarray([[1.0, 0.0], [0.0, 1.0], [1.0, 2.5]], dtype=global_dtype)
     labels = [0, 1, -1]
-    clf = Estimator(**parameters).fit(samples, labels)
+    clf = estimator(**parameters).fit(samples, labels)
     assert_allclose(clf.predict_proba([[1.0, 1.0]]), np.array([[0.5, 0.5]]))
 
 
 @pytest.mark.parametrize("alpha", [0.1, 0.3, 0.5, 0.7, 0.9])
-@pytest.mark.parametrize("Estimator, parameters", ESTIMATORS)
-def test_label_spreading_closed_form(global_dtype, Estimator, parameters, alpha):
+@pytest.mark.parametrize("estimator, parameters", ESTIMATORS)
+def test_label_spreading_closed_form(global_dtype, estimator, parameters, alpha):
     n_classes = 2
     X, y = make_classification(n_classes=n_classes, n_samples=200, random_state=0)
     X = X.astype(global_dtype, copy=False)
@@ -119,15 +119,15 @@ def test_label_propagation_closed_form(global_dtype):
     clf = label_propagation.LabelPropagation(max_iter=100, tol=1e-10, gamma=0.1)
     clf.fit(X, y)
     # adopting notation from Zhu et al 2002
-    T_bar = clf._build_graph()
-    Tuu = T_bar[tuple(np.meshgrid(unlabelled_idx, unlabelled_idx, indexing="ij"))]
-    Tul = T_bar[tuple(np.meshgrid(unlabelled_idx, labelled_idx, indexing="ij"))]
+    t_bar = clf._build_graph()
+    t_uu = t_bar[tuple(np.meshgrid(unlabelled_idx, unlabelled_idx, indexing="ij"))]
+    t_ul = t_bar[tuple(np.meshgrid(unlabelled_idx, labelled_idx, indexing="ij"))]
     Y = Y[:, :-1]
-    Y_l = Y[labelled_idx, :]
-    Y_u = np.dot(np.dot(np.linalg.inv(np.eye(Tuu.shape[0]) - Tuu), Tul), Y_l)
+    y_l = Y[labelled_idx, :]
+    y_u = np.dot(np.dot(np.linalg.inv(np.eye(t_uu.shape[0]) - t_uu), t_ul), y_l)
 
     expected = Y.copy()
-    expected[unlabelled_idx, :] = Y_u
+    expected[unlabelled_idx, :] = y_u
     expected /= expected.sum(axis=1)[:, np.newaxis]
 
     assert_allclose(expected, clf.label_distributions_, atol=1e-4)
@@ -136,9 +136,9 @@ def test_label_propagation_closed_form(global_dtype):
 @pytest.mark.parametrize("accepted_sparse_type", SPARSE_TYPES)
 @pytest.mark.parametrize("index_dtype", [np.int32, np.int64])
 @pytest.mark.parametrize("dtype", [np.float32, np.float64])
-@pytest.mark.parametrize("Estimator, parameters", ESTIMATORS)
+@pytest.mark.parametrize("estimator, parameters", ESTIMATORS)
 def test_sparse_input_types(
-    accepted_sparse_type, index_dtype, dtype, Estimator, parameters
+    accepted_sparse_type, index_dtype, dtype, estimator, parameters
 ):
     # This is non-regression test for #17085
     X = _convert_container([[1.0, 0.0], [0.0, 2.0], [1.0, 3.0]], accepted_sparse_type)
@@ -146,13 +146,13 @@ def test_sparse_input_types(
     X.indices = X.indices.astype(index_dtype, copy=False)
     X.indptr = X.indptr.astype(index_dtype, copy=False)
     labels = [0, 1, -1]
-    clf = Estimator(**parameters).fit(X, labels)
+    clf = estimator(**parameters).fit(X, labels)
     assert_array_equal(clf.predict([[0.5, 2.5]]), np.array([1]))
 
 
 @pytest.mark.parametrize("constructor", CONSTRUCTOR_TYPES)
-@pytest.mark.parametrize("Estimator, parameters", LP_ESTIMATORS)
-def test_label_propagation_build_graph_normalized(constructor, Estimator, parameters):
+@pytest.mark.parametrize("estimator, parameters", LP_ESTIMATORS)
+def test_label_propagation_build_graph_normalized(constructor, estimator, parameters):
     # required but unused X and labels values
     X = np.array([[1.0, 0.0], [1.0, 1.0], [1.0, 3.0]])
     labels = [0, 1, -1]
@@ -164,7 +164,7 @@ def test_label_propagation_build_graph_normalized(constructor, Estimator, parame
     def kernel_affinity_matrix(x, y=None):
         return _convert_container(aff_matrix, constructor)
 
-    clf = Estimator(kernel=kernel_affinity_matrix).fit(X, labels)
+    clf = estimator(kernel=kernel_affinity_matrix).fit(X, labels)
     graph = clf._build_graph()
     assert_allclose(graph.sum(axis=1), 1)  # normalized rows
 
