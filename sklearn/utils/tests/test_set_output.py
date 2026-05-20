@@ -309,9 +309,12 @@ def test_get_output_auto_wrap_false():
 def test_auto_wrap_output_keys_errors_with_incorrect_input():
     msg = "auto_wrap_output_keys must be None or a tuple of keys."
     with pytest.raises(ValueError, match=msg):
-
-        class BadEstimator(_SetOutputMixin, auto_wrap_output_keys="bad_parameter"):
-            pass
+        _BadEstimator = type(
+            "BadEstimator",
+            (_SetOutputMixin,),
+            {},
+            auto_wrap_output_keys="bad_parameter",
+        )
 
 
 class AnotherMixin:
@@ -389,23 +392,23 @@ def test_set_output_pandas_keep_index():
 
 
 class EstimatorReturnTuple(_SetOutputMixin):
-    def __init__(self, OutputTuple):
-        self.OutputTuple = OutputTuple
+    def __init__(self, output_tuple):
+        self.output_tuple = output_tuple
 
     def transform(self, X, y=None):
-        return self.OutputTuple(X, 2 * X)
+        return self.output_tuple(X, 2 * X)
 
 
 def test_set_output_named_tuple_out():
     """Check that namedtuples are kept by default."""
     Output = namedtuple("Output", "X, Y")
     X = np.asarray([[1, 2, 3]])
-    est = EstimatorReturnTuple(OutputTuple=Output)
-    X_trans = est.transform(X)
+    est = EstimatorReturnTuple(output_tuple=Output)
+    x_trans = est.transform(X)
 
-    assert isinstance(X_trans, Output)
-    assert_array_equal(X_trans.X, X)
-    assert_array_equal(X_trans.Y, 2 * X)
+    assert isinstance(x_trans, Output)
+    assert_array_equal(x_trans.X, X)
+    assert_array_equal(x_trans.Y, 2 * X)
 
 
 class EstimatorWithListInput(_SetOutputMixin):
@@ -433,9 +436,9 @@ def test_set_output_list_input(dataframe_lib):
     est = EstimatorWithListInput()
     est.set_output(transform=dataframe_lib)
 
-    X_out = est.fit(X).transform(X)
-    assert isinstance(X_out, lib.DataFrame)
-    assert_array_equal(X_out.columns, ["X0", "X1", "X2", "X3"])
+    x_out = est.fit(X).transform(X)
+    assert isinstance(x_out, lib.DataFrame)
+    assert_array_equal(x_out.columns, ["X0", "X1", "X2", "X3"])
 
 
 @pytest.mark.parametrize("name", sorted(ADAPTERS_MANAGER.adapters))

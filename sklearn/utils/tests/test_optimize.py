@@ -15,13 +15,13 @@ from sklearn.utils.optimize import _check_optimize_result, _newton_cg
 def test_newton_cg(global_random_seed):
     # Test that newton_cg gives same result as scipy's fmin_ncg
 
-    rng = np.random.RandomState(global_random_seed)
+    rng = np.random.default_rng(global_random_seed)
     A = rng.normal(size=(10, 10))
     x0 = np.ones(10)
 
     def func(x):
-        Ax = A.dot(x)
-        return 0.5 * (Ax).dot(Ax)
+        ax = A.dot(x)
+        return 0.5 * (ax).dot(ax)
 
     def grad(x):
         return A.T.dot(A.dot(x))

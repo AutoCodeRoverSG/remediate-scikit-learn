@@ -163,15 +163,15 @@ def _safe_split(estimator, X, y, indices, train_indices=None):
         if X.shape[0] != X.shape[1]:
             raise ValueError("X should be a square kernel matrix")
         if train_indices is None:
-            X_subset = X[np.ix_(indices, indices)]
+            x_subset = X[np.ix_(indices, indices)]
         else:
-            X_subset = X[np.ix_(indices, train_indices)]
+            x_subset = X[np.ix_(indices, train_indices)]
     else:
-        X_subset = _safe_indexing(X, indices)
+        x_subset = _safe_indexing(X, indices)
 
     if y is not None:
         y_subset = _safe_indexing(y, indices)
     else:
         y_subset = None
 
-    return X_subset, y_subset
+    return x_subset, y_subset
