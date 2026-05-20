@@ -53,13 +53,13 @@ from sklearn.utils.metadata_routing import (
 )
 from sklearn.utils.validation import check_is_fitted
 
-rng = np.random.RandomState(42)
+rng = np.random.default_rng(42)
 N, M = 100, 4
-X = rng.rand(N, M)
-y = rng.randint(0, 2, size=N)
-my_groups = rng.randint(0, 10, size=N)
-my_weights = rng.rand(N)
-my_other_weights = rng.rand(N)
+X = rng.random((N, M))
+y = rng.integers(0, 2, size=N)
+my_groups = rng.integers(0, 10, size=N)
+my_weights = rng.random(N)
+my_other_weights = rng.random(N)
 
 
 class SimplePipeline(BaseEstimator):
@@ -77,29 +77,29 @@ class SimplePipeline(BaseEstimator):
     def fit(self, X, y, **fit_params):
         self.steps_ = []
         params = process_routing(self, "fit", **fit_params)
-        X_transformed = X
+        x_transformed = X
         for i, step in enumerate(self.steps[:-1]):
             transformer = clone(step).fit(
-                X_transformed, y, **params.get(f"step_{i}").fit
+                x_transformed, y, **params.get(f"step_{i}").fit
             )
             self.steps_.append(transformer)
-            X_transformed = transformer.transform(
-                X_transformed, **params.get(f"step_{i}").transform
+            x_transformed = transformer.transform(
+                x_transformed, **params.get(f"step_{i}").transform
             )
 
         self.steps_.append(
-            clone(self.steps[-1]).fit(X_transformed, y, **params.predictor.fit)
+            clone(self.steps[-1]).fit(x_transformed, y, **params.predictor.fit)
         )
         return self
 
     def predict(self, X, **predict_params):
         check_is_fitted(self)
-        X_transformed = X
+        x_transformed = X
         params = process_routing(self, "predict", **predict_params)
         for i, step in enumerate(self.steps_[:-1]):
-            X_transformed = step.transform(X, **params.get(f"step_{i}").transform)
+            x_transformed = step.transform(X, **params.get(f"step_{i}").transform)
 
-        return self.steps_[-1].predict(X_transformed, **params.predictor.predict)
+        return self.steps_[-1].predict(x_transformed, **params.predictor.predict)
 
     def get_metadata_routing(self):
         router = MetadataRouter(owner=self)
@@ -212,7 +212,7 @@ def test_request_type_is_valid(val, res):
 @config_context(enable_metadata_routing=True)
 def test_default_requests():
     class OddEstimator(BaseEstimator):
-        __metadata_request__fit = {
+        _metadata_request__fit = {
             # set a different default request
             "sample_weight": True
         }  # type: ignore[var-annotated]
@@ -251,19 +251,19 @@ def test_default_request_override():
     """
 
     class Base(BaseEstimator):
-        __metadata_request__split = {"groups": True}
+        _metadata_request__split = {"groups": True}
 
         def split(self, X, y=None):
             pass  # pragma: no cover
 
     class class_1(Base):
-        __metadata_request__split = {"groups": "sample_domain"}
+        _metadata_request__split = {"groups": "sample_domain"}
 
         def split(self, X, y=None):
             pass  # pragma: no cover
 
-    class Class_1(Base):
-        __metadata_request__split = {"groups": "sample_domain"}
+    class Class1(Base):
+        _metadata_request__split = {"groups": "sample_domain"}
 
         def split(self, X, y=None):
             pass  # pragma: no cover
@@ -272,7 +272,7 @@ def test_default_request_override():
         class_1()._get_metadata_request(), {"split": {"groups": "sample_domain"}}
     )
     assert_request_equal(
-        Class_1()._get_metadata_request(), {"split": {"groups": "sample_domain"}}
+        Class1()._get_metadata_request(), {"split": {"groups": "sample_domain"}}
     )
 
 
@@ -538,7 +538,7 @@ def test_get_metadata_routing():
 @config_context(enable_metadata_routing=True)
 def test_setting_default_requests():
     # Test _get_default_requests method
-    test_cases = dict()
+    test_cases = {}
 
     class ExplicitRequest(BaseEstimator):
         # `fit` doesn't accept `props` explicitly, but we want to request it
@@ -576,10 +576,10 @@ def test_setting_default_requests():
 
     test_cases[ImplicitRequestRemoval] = {}
 
-    for Klass, requests in test_cases.items():
-        assert get_routing_for_object(Klass()).fit.requests == requests
-        assert_request_is_empty(Klass().get_metadata_routing(), exclude="fit")
-        Klass().fit(None, None)  # for coverage
+    for klass, requests in test_cases.items():
+        assert get_routing_for_object(klass()).fit.requests == requests
+        assert_request_is_empty(klass().get_metadata_routing(), exclude="fit")
+        klass().fit(None, None)  # for coverage
 
 
 @config_context(enable_metadata_routing=True)
@@ -1115,7 +1115,7 @@ def test_unsetmetadatapassederror_correct_for_composite_methods():
     """Test that UnsetMetadataPassedError raises the correct error message when
     composite metadata request methods are not set in nested cases."""
     consuming_transformer = ConsumingTransformer()
-    pipe = Pipeline([("consuming_transformer", consuming_transformer)])
+    pipe = Pipeline([("consuming_transformer", consuming_transformer)], memory=None)
 
     msg = re.escape(
         "[metadata] are passed but are not explicitly set as requested or not requested"
@@ -1154,7 +1154,8 @@ def test_unbound_set_methods_work():
     # This somehow makes the descriptor method unbound, which results in the `instance`
     # argument being None, and instead `self` being passed as a positional argument
     # to the descriptor method.
-    A.set_fit_request = A.set_fit_request
+    set_fit_request_fn = A.set_fit_request
+    A.set_fit_request = set_fit_request_fn
 
     # This should pass as usual
     A().set_fit_request(sample_weight=True)
