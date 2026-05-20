@@ -228,7 +228,7 @@ def test_function_transformer_support_all_numerical_dataframes_check_inverse_tru
     assert_allclose_dense_sparse(df_out, df + 2)
 
 
-def test_function_transformer_with_dataframe_and_check_inverse_True():
+def test_function_transformer_with_dataframe_and_check_inverse_true():
     """Check error is raised when check_inverse=True.
 
     Non-regression test for gh-25261.
@@ -244,75 +244,78 @@ def test_function_transformer_with_dataframe_and_check_inverse_True():
         transformer.fit(df_mixed)
 
 
+_rng_features = np.random.default_rng(0)
+
+
 @pytest.mark.parametrize(
     "X, feature_names_out, input_features, expected",
     [
         (
             # NumPy inputs, default behavior: generate names
-            np.random.rand(100, 3),
+            _rng_features.random((100, 3)),
             "one-to-one",
             None,
             ("x0", "x1", "x2"),
         ),
         (
             # Pandas input, default behavior: use input feature names
-            {"a": np.random.rand(100), "b": np.random.rand(100)},
+            {"a": _rng_features.random(100), "b": _rng_features.random(100)},
             "one-to-one",
             None,
             ("a", "b"),
         ),
         (
             # NumPy input, feature_names_out=callable
-            np.random.rand(100, 3),
+            _rng_features.random((100, 3)),
             lambda transformer, input_features: ("a", "b"),
             None,
             ("a", "b"),
         ),
         (
             # Pandas input, feature_names_out=callable
-            {"a": np.random.rand(100), "b": np.random.rand(100)},
+            {"a": _rng_features.random(100), "b": _rng_features.random(100)},
             lambda transformer, input_features: ("c", "d", "e"),
             None,
             ("c", "d", "e"),
         ),
         (
             # NumPy input, feature_names_out=callable – default input_features
-            np.random.rand(100, 3),
+            _rng_features.random((100, 3)),
             lambda transformer, input_features: tuple(input_features) + ("a",),
             None,
             ("x0", "x1", "x2", "a"),
         ),
         (
             # Pandas input, feature_names_out=callable – default input_features
-            {"a": np.random.rand(100), "b": np.random.rand(100)},
+            {"a": _rng_features.random(100), "b": _rng_features.random(100)},
             lambda transformer, input_features: tuple(input_features) + ("c",),
             None,
             ("a", "b", "c"),
         ),
         (
             # NumPy input, input_features=list of names
-            np.random.rand(100, 3),
+            _rng_features.random((100, 3)),
             "one-to-one",
             ("a", "b", "c"),
             ("a", "b", "c"),
         ),
         (
             # Pandas input, input_features=list of names
-            {"a": np.random.rand(100), "b": np.random.rand(100)},
+            {"a": _rng_features.random(100), "b": _rng_features.random(100)},
             "one-to-one",
             ("a", "b"),  # must match feature_names_in_
             ("a", "b"),
         ),
         (
             # NumPy input, feature_names_out=callable, input_features=list
-            np.random.rand(100, 3),
+            _rng_features.random((100, 3)),
             lambda transformer, input_features: tuple(input_features) + ("d",),
             ("a", "b", "c"),
             ("a", "b", "c", "d"),
         ),
         (
             # Pandas input, feature_names_out=callable, input_features=list
-            {"a": np.random.rand(100), "b": np.random.rand(100)},
+            {"a": _rng_features.random(100), "b": _rng_features.random(100)},
             lambda transformer, input_features: tuple(input_features) + ("c",),
             ("a", "b"),  # must match feature_names_in_
             ("a", "b", "c"),
