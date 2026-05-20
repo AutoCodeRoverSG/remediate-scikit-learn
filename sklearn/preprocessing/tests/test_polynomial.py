@@ -968,18 +968,18 @@ def test_polynomial_features_csr_X_zero_row(
 def test_polynomial_features_csr_X_degree_4(
     include_bias, interaction_only, csr_container, global_random_seed
 ):
-    X_csr = csr_container(sparse_random(1000, 10, 0.5, random_state=global_random_seed))
-    X = X_csr.toarray()
+    x_csr = csr_container(sparse_random(1000, 10, 0.5, random_state=global_random_seed))
+    X = x_csr.toarray()
 
     est = PolynomialFeatures(
         4, include_bias=include_bias, interaction_only=interaction_only
     )
-    Xt_csr = est.fit_transform(X_csr)
-    Xt_dense = est.fit_transform(X)
+    xt_csr = est.fit_transform(x_csr)
+    xt_dense = est.fit_transform(X)
 
-    assert sparse.issparse(Xt_csr) and Xt_csr.format == "csr"
-    assert Xt_csr.dtype == Xt_dense.dtype
-    assert_array_almost_equal(Xt_csr.toarray(), Xt_dense)
+    assert sparse.issparse(xt_csr) and xt_csr.format == "csr"
+    assert xt_csr.dtype == xt_dense.dtype
+    assert_array_almost_equal(xt_csr.toarray(), xt_dense)
 
 
 @pytest.mark.parametrize(
@@ -1001,18 +1001,18 @@ def test_polynomial_features_csr_X_degree_4(
 def test_polynomial_features_csr_X_dim_edges(
     deg, dim, interaction_only, csr_container, global_random_seed
 ):
-    X_csr = csr_container(
+    x_csr = csr_container(
         sparse_random(1000, dim, 0.5, random_state=global_random_seed)
     )
-    X = X_csr.toarray()
+    x_dense = x_csr.toarray()
 
     est = PolynomialFeatures(deg, interaction_only=interaction_only)
-    Xt_csr = est.fit_transform(X_csr)
-    Xt_dense = est.fit_transform(X)
+    xt_csr = est.fit_transform(x_csr)
+    xt_dense = est.fit_transform(x_dense)
 
-    assert sparse.issparse(Xt_csr) and Xt_csr.format == "csr"
-    assert Xt_csr.dtype == Xt_dense.dtype
-    assert_array_almost_equal(Xt_csr.toarray(), Xt_dense)
+    assert sparse.issparse(xt_csr) and xt_csr.format == "csr"
+    assert xt_csr.dtype == xt_dense.dtype
+    assert_array_almost_equal(xt_csr.toarray(), xt_dense)
 
 
 @pytest.mark.parametrize("interaction_only", [True, False])
@@ -1073,8 +1073,8 @@ def test_csr_polynomial_expansion_index_overflow_non_regression(
         with pytest.raises(ValueError, match=msg):
             pf.fit(X)
         return
-    X_trans = pf.fit_transform(X)
-    row_nonzero, col_nonzero = X_trans.nonzero()
+    x_trans = pf.fit_transform(X)
+    row_nonzero, col_nonzero = x_trans.nonzero()
     n_degree_1_features_out = n_features + include_bias
     max_degree_2_idx = (
         degree_2_calc(n_features, col[int(not interaction_only)], col[1])
@@ -1116,18 +1116,18 @@ def test_csr_polynomial_expansion_index_overflow_non_regression(
     nnz_per_row = int(include_bias) + 3 + 2 * int(not interaction_only)
 
     assert pf.n_output_features_ == max_degree_2_idx + 1
-    assert X_trans.dtype == data_dtype
-    assert X_trans.shape == (n_samples, max_degree_2_idx + 1)
-    assert X_trans.indptr.dtype == X_trans.indices.dtype == np.int64
+    assert x_trans.dtype == data_dtype
+    assert x_trans.shape == (n_samples, max_degree_2_idx + 1)
+    assert x_trans.indptr.dtype == x_trans.indices.dtype == np.int64
     # Ensure that dtype promotion was actually required:
-    assert X_trans.indices.max() > np.iinfo(np.int32).max
+    assert x_trans.indices.max() > np.iinfo(np.int32).max
 
     row_nonzero_target = list(range(n_samples - 2)) if include_bias else []
     row_nonzero_target.extend(
         [n_samples - 2] * nnz_per_row + [n_samples - 1] * nnz_per_row
     )
 
-    assert_allclose(X_trans.data, data_target)
+    assert_allclose(x_trans.data, data_target)
     assert_array_equal(row_nonzero, row_nonzero_target)
     assert_array_equal(col_nonzero, col_nonzero_target)
 
@@ -1198,21 +1198,21 @@ def test_csr_polynomial_expansion_index_overflow(
             pf.fit(X)
         return
 
-    X_trans = pf.fit_transform(X)
+    x_trans = pf.fit_transform(X)
 
     expected_dtype = np.int64 if num_combinations > np.iinfo(np.int32).max else np.int32
     # Terms higher than first degree
     non_bias_terms = 1 + (degree - 1) * int(not interaction_only)
     expected_nnz = int(include_bias) + non_bias_terms
-    assert X_trans.dtype == X.dtype
-    assert X_trans.shape == (1, pf.n_output_features_)
-    assert X_trans.indptr.dtype == X_trans.indices.dtype == expected_dtype
-    assert X_trans.nnz == expected_nnz
+    assert x_trans.dtype == X.dtype
+    assert x_trans.shape == (1, pf.n_output_features_)
+    assert x_trans.indptr.dtype == x_trans.indices.dtype == expected_dtype
+    assert x_trans.nnz == expected_nnz
 
     if include_bias:
-        assert X_trans[0, 0] == pytest.approx(1.0)
+        assert x_trans[0, 0] == pytest.approx(1.0)
     for idx in range(non_bias_terms):
-        assert X_trans[0, expected_indices[idx]] == pytest.approx(1.0)
+        assert x_trans[0, expected_indices[idx]] == pytest.approx(1.0)
 
     offset = interaction_only * n_features
     if degree == 3:
@@ -1266,9 +1266,9 @@ def test_polynomial_features_behaviour_on_zero_degree(sparse_container):
     with pytest.raises(ValueError, match=err_msg):
         poly.fit_transform(X)
 
-    for _X in [X, sparse_container(X)]:
+    for x_input in [X, sparse_container(X)]:
         poly = PolynomialFeatures(degree=0, include_bias=True)
-        output = poly.fit_transform(_X)
+        output = poly.fit_transform(x_input)
         # convert to dense array if needed
         if sparse.issparse(output):
             output = output.toarray()
@@ -1330,9 +1330,9 @@ def test_csr_polynomial_expansion_windows_fail(csr_container):
         with pytest.raises(ValueError, match=msg):
             pf.fit_transform(X)
     else:
-        X_trans = pf.fit_transform(X)
+        x_trans = pf.fit_transform(X)
         for idx in range(3):
-            assert X_trans[0, expected_indices[idx]] == pytest.approx(1.0)
+            assert x_trans[0, expected_indices[idx]] == pytest.approx(1.0)
 
 
 @pytest.mark.parametrize(
