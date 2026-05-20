@@ -537,14 +537,14 @@ def test_svd_flip():
 
     # Check matrix reconstruction
     U, S, vt = linalg.svd(X, full_matrices=False)
-    U1, V1 = svd_flip(U, vt, u_based_decision=False)
-    assert_almost_equal(np.dot(U1 * S, V1), X, decimal=6)
+    u1, v1 = svd_flip(U, vt, u_based_decision=False)
+    assert_almost_equal(np.dot(u1 * S, v1), X, decimal=6)
 
     # Check transposed matrix reconstruction
     XT = X.T
     U, S, vt = linalg.svd(XT, full_matrices=False)
-    U2, V2 = svd_flip(U, vt, u_based_decision=True)
-    assert_almost_equal(np.dot(U2 * S, V2), XT, decimal=6)
+    u2, v2 = svd_flip(U, vt, u_based_decision=True)
+    assert_almost_equal(np.dot(u2 * S, v2), XT, decimal=6)
 
     # Check that different flip methods are equivalent under reconstruction
     u_flip1, v_flip1 = svd_flip(U, vt, u_based_decision=True)
@@ -557,20 +557,20 @@ def test_svd_flip():
 def test_svd_flip_max_abs_cols(n_samples, n_features, global_random_seed):
     rs = np.random.RandomState(global_random_seed)
     X = rs.randn(n_samples, n_features)
-    U, _, Vt = linalg.svd(X, full_matrices=False)
+    U, _, vt = linalg.svd(X, full_matrices=False)
 
-    U1, _ = svd_flip(U, Vt, u_based_decision=True)
-    max_abs_U1_row_idx_for_col = np.argmax(np.abs(U1), axis=0)
-    assert (U1[max_abs_U1_row_idx_for_col, np.arange(U1.shape[1])] >= 0).all()
+    U1, _ = svd_flip(U, vt, u_based_decision=True)
+    max_abs_u1_row_idx_for_col = np.argmax(np.abs(U1), axis=0)
+    assert (U1[max_abs_u1_row_idx_for_col, np.arange(U1.shape[1])] >= 0).all()
 
-    _, V2 = svd_flip(U, Vt, u_based_decision=False)
-    max_abs_V2_col_idx_for_row = np.argmax(np.abs(V2), axis=1)
-    assert (V2[np.arange(V2.shape[0]), max_abs_V2_col_idx_for_row] >= 0).all()
+    _, V2 = svd_flip(U, vt, u_based_decision=False)
+    max_abs_v2_col_idx_for_row = np.argmax(np.abs(V2), axis=1)
+    assert (V2[np.arange(V2.shape[0]), max_abs_v2_col_idx_for_row] >= 0).all()
 
 
 def test_randomized_svd_sign_flip():
     a = np.array([[2.0, 0.0], [0.0, 1.0]])
-    u1, s1, v1 = randomized_svd(a, 2, flip_sign=True, random_state=41)
+    u1, _, v1 = randomized_svd(a, 2, flip_sign=True, random_state=41)
     for seed in range(10):
         u2, s2, v2 = randomized_svd(a, 2, flip_sign=True, random_state=seed)
         assert_almost_equal(u1, u2)
@@ -723,19 +723,19 @@ def test_incremental_weighted_mean_and_variance_array_api(
     sample_weight = rng.rand(X.shape[0]).astype(dtype_name) * mult
     mean, var, _ = _incremental_mean_and_var(X, 0, 0, 0, sample_weight=sample_weight)
 
-    X_xp = xp.asarray(X, device=device)
+    x_xp = xp.asarray(X, device=device)
     sample_weight_xp = xp.asarray(sample_weight, device=device)
 
     with config_context(array_api_dispatch=True):
         mean_xp, var_xp, _ = _incremental_mean_and_var(
-            X_xp, 0, 0, 0, sample_weight=sample_weight_xp
+            x_xp, 0, 0, 0, sample_weight=sample_weight_xp
         )
 
     # The attributes like mean and var are computed and set with respect to the
     # maximum supported float dtype
-    assert array_device(mean_xp) == array_device(X_xp)
+    assert array_device(mean_xp) == array_device(x_xp)
     assert mean_xp.dtype == _max_precision_float_dtype(xp, device=device)
-    assert array_device(var_xp) == array_device(X_xp)
+    assert array_device(var_xp) == array_device(x_xp)
     assert var_xp.dtype == _max_precision_float_dtype(xp, device=device)
 
     mean_xp = move_to(mean_xp, xp=np, device="cpu")
@@ -793,14 +793,14 @@ def test_incremental_weighted_mean_and_variance_ignore_nan(dtype):
     old_means = np.array([535.0, 535.0, 535.0, 535.0])
     old_variances = np.array([4225.0, 4225.0, 4225.0, 4225.0])
     old_weight_sum = np.array([2, 2, 2, 2], dtype=np.int32)
-    sample_weights_X = np.ones(3)
-    sample_weights_X_nan = np.ones(4)
+    sample_weights_x = np.ones(3)
+    sample_weights_x_nan = np.ones(4)
 
     X = np.array(
         [[170, 170, 170, 170], [430, 430, 430, 430], [300, 300, 300, 300]]
     ).astype(dtype)
 
-    X_nan = np.array(
+    x_nan = np.array(
         [
             [170, np.nan, 170, 170],
             [np.nan, 170, 430, 430],
@@ -809,20 +809,20 @@ def test_incremental_weighted_mean_and_variance_ignore_nan(dtype):
         ]
     ).astype(dtype)
 
-    X_means, X_variances, X_count = _incremental_mean_and_var(
-        X, old_means, old_variances, old_weight_sum, sample_weight=sample_weights_X
+    x_means, x_variances, x_count = _incremental_mean_and_var(
+        X, old_means, old_variances, old_weight_sum, sample_weight=sample_weights_x
     )
-    X_nan_means, X_nan_variances, X_nan_count = _incremental_mean_and_var(
-        X_nan,
+    x_nan_means, x_nan_variances, x_nan_count = _incremental_mean_and_var(
+        x_nan,
         old_means,
         old_variances,
         old_weight_sum,
-        sample_weight=sample_weights_X_nan,
+        sample_weight=sample_weights_x_nan,
     )
 
-    assert_allclose(X_nan_means, X_means)
-    assert_allclose(X_nan_variances, X_variances)
-    assert_allclose(X_nan_count, X_count)
+    assert_allclose(x_nan_means, x_means)
+    assert_allclose(x_nan_variances, x_variances)
+    assert_allclose(x_nan_count, x_count)
 
 
 def test_incremental_variance_update_formulas():
