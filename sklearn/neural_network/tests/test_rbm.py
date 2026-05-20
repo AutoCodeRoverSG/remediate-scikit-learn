@@ -90,7 +90,7 @@ def test_small_sparse_partial_fit(sparse_container):
 
 
 def test_sample_hiddens():
-    rng = np.random.RandomState(0)
+    rng = np.random.default_rng(0)
     X = Xdigits[:100]
     rbm1 = BernoulliRBM(n_components=2, batch_size=5, n_iter=5, random_state=42)
     rbm1.fit(X)

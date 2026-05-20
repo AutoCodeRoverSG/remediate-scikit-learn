@@ -44,7 +44,7 @@ __all__ = [
 ]
 
 
-def _create_expansion(X, interaction_only, deg, n_features, cumulative_size=0):
+def _create_expansion(X, interaction_only, deg, n_features):
     """Helper function for creating and appending sparse expansion matrices"""
 
     total_nnz = _calc_total_nnz(X.indptr, interaction_only, deg)
@@ -205,12 +205,12 @@ class PolynomialFeatures(TransformerMixin, BaseEstimator):
     ):
         comb = combinations if interaction_only else combinations_w_r
         start = max(1, min_degree)
-        iter = chain.from_iterable(
+        indices = chain.from_iterable(
             comb(range(n_features), i) for i in range(start, max_degree + 1)
         )
         if include_bias:
-            iter = chain(comb(range(n_features), 0), iter)
-        return iter
+            indices = chain(comb(range(n_features), 0), indices)
+        return indices
 
     @staticmethod
     def _num_combinations(
@@ -280,7 +280,7 @@ class PolynomialFeatures(TransformerMixin, BaseEstimator):
         input_features = _check_feature_names_in(self, input_features)
         feature_names = []
         for row in powers:
-            inds = np.where(row)[0]
+            inds = np.nonzero(row)[0]
             if len(inds):
                 name = " ".join(
                     (
@@ -443,18 +443,15 @@ class PolynomialFeatures(TransformerMixin, BaseEstimator):
             if self._min_degree <= 1 and self._max_degree > 0:
                 to_stack.append(X)
 
-            cumulative_size = sum(mat.shape[1] for mat in to_stack)
             for deg in range(max(2, self._min_degree), self._max_degree + 1):
                 expanded = _create_expansion(
                     X=X,
                     interaction_only=self.interaction_only,
                     deg=deg,
                     n_features=n_features,
-                    cumulative_size=cumulative_size,
                 )
                 if expanded is not None:
                     to_stack.append(expanded)
-                    cumulative_size += expanded.shape[1]
             if len(to_stack) == 0:
                 # edge case: deal with empty matrix
                 XP = sparse.csr_array((n_samples, 0), dtype=X.dtype)
@@ -562,17 +559,17 @@ class PolynomialFeatures(TransformerMixin, BaseEstimator):
             if self._min_degree > 1:
                 n_xp, n_xout = self._n_out_full, self.n_output_features_
                 if self.include_bias:
-                    Xout = xp.empty(
+                    x_out = xp.empty(
                         shape=(n_samples, n_xout),
                         dtype=XP.dtype,
                         device=device_,
                         **order_kwargs,
                     )
-                    Xout[:, 0] = 1
-                    Xout[:, 1:] = XP[:, n_xp - n_xout + 1 :]
+                    x_out[:, 0] = 1
+                    x_out[:, 1:] = XP[:, n_xp - n_xout + 1 :]
                 else:
-                    Xout = xp.asarray(XP[:, n_xp - n_xout :], copy=True)
-                XP = Xout
+                    x_out = xp.asarray(XP[:, n_xp - n_xout :], copy=True)
+                XP = x_out
         return _align_api_if_sparse(XP)
 
     def __sklearn_tags__(self):
@@ -1065,7 +1062,7 @@ class SplineTransformer(TransformerMixin, BaseEstimator):
 
                     # Note: self.bsplines_[0].extrapolate is True for extrapolation in
                     # ["periodic", "continue"]
-                    XBS_sparse = BSpline.design_matrix(
+                    xbs_sparse = BSpline.design_matrix(
                         x, spl.t, spl.k, self.bsplines_[0].extrapolate
                     )
 
@@ -1074,13 +1071,13 @@ class SplineTransformer(TransformerMixin, BaseEstimator):
                         # degree spline basis function to the first degree ones and
                         # then drop the last ones.
                         # Note: See comment about SparseEfficiencyWarning below.
-                        XBS_sparse = XBS_sparse.tolil()
-                        XBS_sparse[:, :degree] += XBS_sparse[:, -degree:]
-                        XBS_sparse = XBS_sparse[:, :-degree]
+                        xbs_sparse = xbs_sparse.tolil()
+                        xbs_sparse[:, :degree] += xbs_sparse[:, -degree:]
+                        xbs_sparse = xbs_sparse[:, :-degree]
 
                     if nan_row_indices.shape[0] > 0:
                         # Note: See comment about SparseEfficiencyWarning below.
-                        XBS = XBS_sparse.tolil()
+                        XBS = xbs_sparse.tolil()
 
                 else:
                     XBS[
@@ -1095,7 +1092,7 @@ class SplineTransformer(TransformerMixin, BaseEstimator):
                             nan_row_indices, output_feature_idx : output_feature_idx + 1
                         ] = 0
                     if self.sparse_output:
-                        XBS_sparse = XBS
+                        xbs_sparse = XBS
 
             else:  # extrapolation in ("constant", "linear")
                 xmin, xmax = spl.t[degree], spl.t[-degree - 1]
@@ -1115,13 +1112,13 @@ class SplineTransformer(TransformerMixin, BaseEstimator):
                     # BSpline.design_matrix. Those transformed will be
                     # reassigned later when handling with extrapolation.
                     x[outside_range_mask] = xmin
-                    XBS_sparse = BSpline.design_matrix(x, spl.t, spl.k)
+                    xbs_sparse = BSpline.design_matrix(x, spl.t, spl.k)
                     # Note: Without converting to lil_matrix we would get:
                     # scipy.sparse._base.SparseEfficiencyWarning: Changing the sparsity
                     # structure of CSC is expensive. LIL is more efficient.
                     if np.any(outside_range_mask):
-                        XBS_sparse = XBS_sparse.tolil()
-                        XBS_sparse[outside_range_mask, :] = 0
+                        xbs_sparse = xbs_sparse.tolil()
+                        xbs_sparse[outside_range_mask, :] = 0
 
                 else:
                     XBS[
@@ -1137,8 +1134,8 @@ class SplineTransformer(TransformerMixin, BaseEstimator):
                     # Early convert to CSR as the sparsity structure of this
                     # block should not change anymore. This is needed to be able
                     # to safely assume that `.data` is a 1D array.
-                    XBS_sparse = XBS_sparse.tocsr()
-                    has_nan_output_values = np.any(np.isnan(XBS_sparse.data))
+                    xbs_sparse = xbs_sparse.tocsr()
+                    has_nan_output_values = np.any(np.isnan(xbs_sparse.data))
                 else:
                     output_features = slice(
                         feature_idx * n_splines, (feature_idx + 1) * n_splines
@@ -1160,8 +1157,8 @@ class SplineTransformer(TransformerMixin, BaseEstimator):
                 if np.any(below_xmin_mask):
                     if self.sparse_output:
                         # Note: See comment about SparseEfficiencyWarning above.
-                        XBS_sparse = XBS_sparse.tolil()
-                        XBS_sparse[below_xmin_mask, :degree] = f_min[:degree]
+                        xbs_sparse = xbs_sparse.tolil()
+                        xbs_sparse[below_xmin_mask, :degree] = f_min[:degree]
 
                     else:
                         XBS[
@@ -1175,8 +1172,8 @@ class SplineTransformer(TransformerMixin, BaseEstimator):
                 if np.any(above_xmax_mask):
                     if self.sparse_output:
                         # Note: See comment about SparseEfficiencyWarning above.
-                        XBS_sparse = XBS_sparse.tolil()
-                        XBS_sparse[above_xmax_mask, -degree:] = f_max[-degree:]
+                        xbs_sparse = xbs_sparse.tolil()
+                        xbs_sparse[above_xmax_mask, -degree:] = f_max[-degree:]
                     else:
                         XBS[
                             above_xmax_mask,
@@ -1208,8 +1205,8 @@ class SplineTransformer(TransformerMixin, BaseEstimator):
                         )
                         if self.sparse_output:
                             # Note: See comment about SparseEfficiencyWarning above.
-                            XBS_sparse = XBS_sparse.tolil()
-                            XBS_sparse[below_xmin_mask, j] = linear_extr
+                            xbs_sparse = xbs_sparse.tolil()
+                            xbs_sparse[below_xmin_mask, j] = linear_extr
                         else:
                             XBS[below_xmin_mask, feature_idx * n_splines + j] = (
                                 linear_extr
@@ -1224,8 +1221,8 @@ class SplineTransformer(TransformerMixin, BaseEstimator):
                         )
                         if self.sparse_output:
                             # Note: See comment about SparseEfficiencyWarning above.
-                            XBS_sparse = XBS_sparse.tolil()
-                            XBS_sparse[above_xmax_mask, k : k + 1] = linear_extr[
+                            xbs_sparse = xbs_sparse.tolil()
+                            xbs_sparse[above_xmax_mask, k : k + 1] = linear_extr[
                                 :, None
                             ]
                         else:
@@ -1234,8 +1231,8 @@ class SplineTransformer(TransformerMixin, BaseEstimator):
                             )
 
             if self.sparse_output:
-                XBS_sparse = XBS_sparse.tocsr()
-                output_list.append(XBS_sparse)
+                xbs_sparse = xbs_sparse.tocsr()
+                output_list.append(xbs_sparse)
 
         if self.sparse_output:
             XBS = sparse.hstack(output_list, format="csr")
