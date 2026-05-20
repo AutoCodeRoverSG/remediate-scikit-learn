@@ -1048,20 +1048,20 @@ class OneHotEncoder(_BaseEncoder):
                 "infrequent_if_exist",
             }
             handle_unknown = self.handle_unknown
-        X_int, X_mask = self._transform(
+        x_int, x_mask = self._transform(
             X,
             handle_unknown=handle_unknown,
             ensure_all_finite="allow-nan",
             warn_on_unknown=warn_on_unknown,
         )
 
-        n_samples, n_features = X_int.shape
+        n_samples, _ = x_int.shape
 
         if self._drop_idx_after_grouping is not None:
             to_drop = self._drop_idx_after_grouping.copy()
             # We remove all the dropped categories from mask, and decrement all
             # categories that occur after them to avoid an empty column.
-            keep_cells = X_int != to_drop
+            keep_cells = x_int != to_drop
             for i, cats in enumerate(self.categories_):
                 # drop='if_binary' but feature isn't binary
                 if to_drop[i] is None:
@@ -1069,16 +1069,16 @@ class OneHotEncoder(_BaseEncoder):
                     to_drop[i] = len(cats)
 
             to_drop = to_drop.reshape(1, -1)
-            X_int[X_int > to_drop] -= 1
-            X_mask &= keep_cells
+            x_int[x_int > to_drop] -= 1
+            x_mask &= keep_cells
 
-        mask = X_mask.ravel()
+        mask = x_mask.ravel()
         feature_indices = np.cumsum([0] + self._n_features_outs)
-        indices = (X_int + feature_indices[:-1]).ravel()[mask]
+        indices = (x_int + feature_indices[:-1]).ravel()[mask]
 
         indptr = np.empty(n_samples + 1, dtype=int)
         indptr[0] = 0
-        np.sum(X_mask, axis=1, out=indptr[1:], dtype=indptr.dtype)
+        np.sum(x_mask, axis=1, out=indptr[1:], dtype=indptr.dtype)
         np.cumsum(indptr[1:], out=indptr[1:])
         data = np.ones(indptr[-1])
 
@@ -1138,7 +1138,7 @@ class OneHotEncoder(_BaseEncoder):
 
         # create resulting array of appropriate dtype
         dt = np.result_type(*[cat.dtype for cat in transformed_features])
-        X_tr = np.empty((n_samples, n_features), dtype=dt)
+        x_tr = np.empty((n_samples, n_features), dtype=dt)
 
         j = 0
         found_unknown = {}
@@ -1158,13 +1158,13 @@ class OneHotEncoder(_BaseEncoder):
             # category. In this case we just fill the column with this
             # unique category value.
             if n_categories == 0:
-                X_tr[:, i] = self.categories_[i][self._drop_idx_after_grouping[i]]
+                x_tr[:, i] = self.categories_[i][self._drop_idx_after_grouping[i]]
                 j += n_categories
                 continue
             sub = X[:, j : j + n_categories]
             # for sparse X argmax returns 2D matrix, ensure 1D array
             labels = np.asarray(sub.argmax(axis=1)).flatten()
-            X_tr[:, i] = cats_wo_dropped[labels]
+            x_tr[:, i] = cats_wo_dropped[labels]
 
             if self.handle_unknown == "ignore" or (
                 self.handle_unknown in ("infrequent_if_exist", "warn")
@@ -1181,7 +1181,7 @@ class OneHotEncoder(_BaseEncoder):
                     ):
                         found_unknown[i] = unknown
                     else:
-                        X_tr[unknown, i] = self.categories_[i][
+                        x_tr[unknown, i] = self.categories_[i][
                             self._drop_idx_after_grouping[i]
                         ]
             else:
@@ -1197,20 +1197,20 @@ class OneHotEncoder(_BaseEncoder):
                     # we can safely assume that all of the nulls in each column
                     # are the dropped value
                     drop_idx = self._drop_idx_after_grouping[i]
-                    X_tr[dropped, i] = transformed_features[i][drop_idx]
+                    x_tr[dropped, i] = transformed_features[i][drop_idx]
 
             j += n_categories
 
         # if ignored are found: potentially need to upcast result to
         # insert None values
         if found_unknown:
-            if X_tr.dtype != object:
-                X_tr = X_tr.astype(object)
+            if x_tr.dtype != object:
+                x_tr = x_tr.astype(object)
 
             for idx, mask in found_unknown.items():
-                X_tr[mask, idx] = None
+                x_tr[mask, idx] = None
 
-        return X_tr
+        return x_tr
 
     def get_feature_names_out(self, input_features=None):
         """Get output feature names for transformation.
@@ -1596,22 +1596,22 @@ class OrdinalEncoder(OneToOneFeatureMixin, _BaseEncoder):
             Transformed input.
         """
         check_is_fitted(self, "categories_")
-        X_int, X_mask = self._transform(
+        x_int, x_mask = self._transform(
             X,
             handle_unknown=self.handle_unknown,
             ensure_all_finite="allow-nan",
             ignore_category_indices=self._missing_indices,
         )
-        X_trans = X_int.astype(self.dtype, copy=False)
+        x_trans = x_int.astype(self.dtype, copy=False)
 
         for cat_idx, missing_idx in self._missing_indices.items():
-            X_missing_mask = X_int[:, cat_idx] == missing_idx
-            X_trans[X_missing_mask, cat_idx] = self.encoded_missing_value
+            x_missing_mask = x_int[:, cat_idx] == missing_idx
+            x_trans[x_missing_mask, cat_idx] = self.encoded_missing_value
 
         # create separate category for unknown values
         if self.handle_unknown == "use_encoded_value":
-            X_trans[~X_mask] = self.unknown_value
-        return X_trans
+            x_trans[~x_mask] = self.unknown_value
+        return x_trans
 
     def inverse_transform(self, X):
         """
@@ -1642,7 +1642,7 @@ class OrdinalEncoder(OneToOneFeatureMixin, _BaseEncoder):
 
         # create resulting array of appropriate dtype
         dt = np.result_type(*[cat.dtype for cat in self.categories_])
-        X_tr = np.empty((n_samples, n_features), dtype=dt)
+        x_tr = np.empty((n_samples, n_features), dtype=dt)
 
         found_unknown = {}
         infrequent_masks = {}
@@ -1683,18 +1683,18 @@ class OrdinalEncoder(OneToOneFeatureMixin, _BaseEncoder):
                     rows_to_update = known_labels
 
             labels_int = labels[rows_to_update].astype("int64", copy=False)
-            X_tr[rows_to_update, i] = categories[labels_int]
+            x_tr[rows_to_update, i] = categories[labels_int]
 
         if found_unknown or infrequent_masks:
-            X_tr = X_tr.astype(object, copy=False)
+            x_tr = x_tr.astype(object, copy=False)
 
         # insert None values for unknown values
         if found_unknown:
             for idx, mask in found_unknown.items():
-                X_tr[mask, idx] = None
+                x_tr[mask, idx] = None
 
         if infrequent_masks:
             for idx, mask in infrequent_masks.items():
-                X_tr[mask, idx] = "infrequent_sklearn"
+                x_tr[mask, idx] = "infrequent_sklearn"
 
-        return X_tr
+        return x_tr
