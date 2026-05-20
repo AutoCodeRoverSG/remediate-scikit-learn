@@ -2309,7 +2309,7 @@ def test_add_dummy_feature_sparse(sparse_container):
 
 def test_fit_cold_start():
     X = iris.data
-    X_2d = X[:, :2]
+    x_2d = X[:, :2]
 
     # Scalers that have a partial_fit method
     scalers = [
@@ -2322,7 +2322,7 @@ def test_fit_cold_start():
         scaler.fit_transform(X)
         # with a different shape, this may break the scaler unless the internal
         # state is reset
-        scaler.fit_transform(X_2d)
+        scaler.fit_transform(x_2d)
 
 
 @pytest.mark.parametrize("method", ["box-cox", "yeo-johnson"])
@@ -2343,8 +2343,8 @@ def test_power_transformer_inverse(method, standardize, X):
     # inverse transform
     X = np.abs(X) if method == "box-cox" else X
     pt = PowerTransformer(method=method, standardize=standardize)
-    X_trans = pt.fit_transform(X)
-    assert_almost_equal(X, pt.inverse_transform(X_trans))
+    x_trans = pt.fit_transform(X)
+    assert_almost_equal(X, pt.inverse_transform(x_trans))
 
 
 def test_power_transformer_1d():
@@ -2353,18 +2353,18 @@ def test_power_transformer_1d():
     for standardize in [True, False]:
         pt = PowerTransformer(method="box-cox", standardize=standardize)
 
-        X_trans = pt.fit_transform(X)
-        X_trans_func = power_transform(X, method="box-cox", standardize=standardize)
+        x_trans = pt.fit_transform(X)
+        x_trans_func = power_transform(X, method="box-cox", standardize=standardize)
 
-        X_expected, lambda_expected = stats.boxcox(X.flatten())
+        x_expected, lambda_expected = stats.boxcox(X.flatten())
 
         if standardize:
-            X_expected = scale(X_expected)
+            x_expected = scale(x_expected)
 
-        assert_almost_equal(X_expected.reshape(-1, 1), X_trans)
-        assert_almost_equal(X_expected.reshape(-1, 1), X_trans_func)
+        assert_almost_equal(x_expected.reshape(-1, 1), x_trans)
+        assert_almost_equal(x_expected.reshape(-1, 1), x_trans_func)
 
-        assert_almost_equal(X, pt.inverse_transform(X_trans))
+        assert_almost_equal(X, pt.inverse_transform(x_trans))
         assert_almost_equal(lambda_expected, pt.lambdas_[0])
 
         assert len(pt.lambdas_) == X.shape[1]
@@ -2377,22 +2377,22 @@ def test_power_transformer_2d():
     for standardize in [True, False]:
         pt = PowerTransformer(method="box-cox", standardize=standardize)
 
-        X_trans_class = pt.fit_transform(X)
-        X_trans_func = power_transform(X, method="box-cox", standardize=standardize)
+        x_trans_class = pt.fit_transform(X)
+        x_trans_func = power_transform(X, method="box-cox", standardize=standardize)
 
-        for X_trans in [X_trans_class, X_trans_func]:
-            for j in range(X_trans.shape[1]):
-                X_expected, lmbda = stats.boxcox(X[:, j].flatten())
+        for x_trans in [x_trans_class, x_trans_func]:
+            for j in range(x_trans.shape[1]):
+                x_expected, lmbda = stats.boxcox(X[:, j].flatten())
 
                 if standardize:
-                    X_expected = scale(X_expected)
+                    x_expected = scale(x_expected)
 
-                assert_almost_equal(X_trans[:, j], X_expected)
+                assert_almost_equal(x_trans[:, j], x_expected)
                 assert_almost_equal(lmbda, pt.lambdas_[j])
 
             # Test inverse transformation
-            X_inv = pt.inverse_transform(X_trans)
-            assert_array_almost_equal(X_inv, X)
+            x_inv = pt.inverse_transform(x_trans)
+            assert_array_almost_equal(x_inv, X)
 
         assert len(pt.lambdas_) == X.shape[1]
         assert isinstance(pt.lambdas_, np.ndarray)
