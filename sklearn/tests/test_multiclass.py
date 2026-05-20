@@ -499,15 +499,15 @@ def test_ovr_gridsearch():
     c_values = [0.1, 0.5, 0.8]
     cv = GridSearchCV(ovr, {"estimator__C": c_values})
     cv.fit(iris.data, iris.target)
-    best_C = cv.best_estimator_.estimators_[0].C
-    assert best_C in c_values
+    best_c = cv.best_estimator_.estimators_[0].C
+    assert best_c in c_values
 
 
 def test_ovr_pipeline():
     # Test with pipeline of length one
     # This test is needed because the multiclass estimators may fail to detect
     # the presence of predict_proba or decision_function.
-    clf = Pipeline([("tree", DecisionTreeClassifier())])
+    clf = Pipeline([("tree", DecisionTreeClassifier())], memory=None)
     ovr_pipe = OneVsRestClassifier(clf)
     ovr_pipe.fit(iris.data, iris.target)
     ovr = OneVsRestClassifier(DecisionTreeClassifier())
@@ -634,7 +634,7 @@ def test_ovo_decision_function():
         # binary classifiers.
         # Therefore, sorting predictions based on votes would yield
         # mostly tied predictions:
-        assert set(votes[:, class_idx]).issubset(set([0.0, 1.0, 2.0]))
+        assert set(votes[:, class_idx]).issubset({0.0, 1.0, 2.0})
 
         # The OVO decision function on the other hand is able to resolve
         # most of the ties on this data as it combines both the vote counts
@@ -647,11 +647,11 @@ def test_ovo_decision_function():
 
 def test_ovo_gridsearch():
     ovo = OneVsOneClassifier(LinearSVC(random_state=0))
-    Cs = [0.1, 0.5, 0.8]
-    cv = GridSearchCV(ovo, {"estimator__C": Cs})
+    cs = [0.1, 0.5, 0.8]
+    cv = GridSearchCV(ovo, {"estimator__C": cs})
     cv.fit(iris.data, iris.target)
-    best_C = cv.best_estimator_.estimators_[0].C
-    assert best_C in Cs
+    best_c = cv.best_estimator_.estimators_[0].C
+    assert best_c in cs
 
 
 def test_ovo_ties():
@@ -724,7 +724,7 @@ def test_ovo_float_y():
 
 
 def test_ecoc_exceptions():
-    ecoc = OutputCodeClassifier(LinearSVC(random_state=0))
+    ecoc = OutputCodeClassifier(LinearSVC(random_state=0), random_state=0)
     with pytest.raises(NotFittedError):
         ecoc.predict([])
 
@@ -743,11 +743,11 @@ def test_ecoc_fit_predict():
 
 def test_ecoc_gridsearch():
     ecoc = OutputCodeClassifier(LinearSVC(random_state=0), random_state=0)
-    Cs = [0.1, 0.5, 0.8]
-    cv = GridSearchCV(ecoc, {"estimator__C": Cs})
+    c_values = [0.1, 0.5, 0.8]
+    cv = GridSearchCV(ecoc, {"estimator__C": c_values})
     cv.fit(iris.data, iris.target)
-    best_C = cv.best_estimator_.estimators_[0].C
-    assert best_C in Cs
+    best_c = cv.best_estimator_.estimators_[0].C
+    assert best_c in c_values
 
 
 def test_ecoc_float_y():
@@ -755,7 +755,7 @@ def test_ecoc_float_y():
     X = iris.data
     y = iris.data[:, 0]
 
-    ovo = OutputCodeClassifier(LinearSVC())
+    ovo = OutputCodeClassifier(LinearSVC(), random_state=0)
     msg = "Unknown label type"
     with pytest.raises(ValueError, match=msg):
         ovo.fit(X, y)
@@ -766,7 +766,7 @@ def test_ecoc_delegate_sparse_base_estimator(csc_container):
     # Non-regression test for
     # https://github.com/scikit-learn/scikit-learn/issues/17218
     X, y = iris.data, iris.target
-    X_sp = csc_container(X)
+    x_sp = csc_container(X)
 
     # create an estimator that does not support sparse input
     base_estimator = CheckingClassifier(
@@ -776,15 +776,15 @@ def test_ecoc_delegate_sparse_base_estimator(csc_container):
     ecoc = OutputCodeClassifier(base_estimator, random_state=0)
 
     with pytest.raises(TypeError, match="Sparse data was passed"):
-        ecoc.fit(X_sp, y)
+        ecoc.fit(x_sp, y)
 
     ecoc.fit(X, y)
     with pytest.raises(TypeError, match="Sparse data was passed"):
-        ecoc.predict(X_sp)
+        ecoc.predict(x_sp)
 
     # smoke test to check when sparse input should be supported
     ecoc = OutputCodeClassifier(LinearSVC(random_state=0))
-    ecoc.fit(X_sp, y).predict(X_sp)
+    ecoc.fit(x_sp, y).predict(x_sp)
     assert len(ecoc.estimators_) == 4
 
 
