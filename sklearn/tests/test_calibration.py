@@ -623,8 +623,8 @@ def test_calibration_less_classes(ensemble):
 @pytest.mark.parametrize(
     "X",
     [
-        np.random.RandomState(42).randn(15, 5, 2),
-        np.random.RandomState(42).randn(15, 5, 2, 6),
+        np.random.default_rng(42).standard_normal((15, 5, 2)),
+        np.random.default_rng(42).standard_normal((15, 5, 2, 6)),
     ],
 )
 def test_calibration_accepts_ndarray(X):
@@ -783,7 +783,7 @@ def test_calibration_display_compute(pyplot, iris_data_binary, n_bins, strategy)
     import matplotlib as mpl
 
     assert isinstance(viz.line_, mpl.lines.Line2D)
-    assert viz.line_.get_alpha() == 0.8
+    assert viz.line_.get_alpha() == pytest.approx(0.8)
     assert isinstance(viz.ax_, mpl.axes.Axes)
     assert isinstance(viz.figure_, mpl.figure.Figure)
 
@@ -901,9 +901,9 @@ def test_calibration_display_ref_line(pyplot, iris_data_binary):
 @pytest.mark.parametrize("dtype_y_str", [str, object])
 def test_calibration_curve_pos_label_error_str(dtype_y_str):
     """Check error message when a `pos_label` is not specified with `str` targets."""
-    rng = np.random.RandomState(42)
+    rng = np.random.default_rng(42)
     y1 = np.array(["spam"] * 3 + ["eggs"] * 2, dtype=dtype_y_str)
-    y2 = rng.randint(0, 2, size=y1.size)
+    y2 = rng.integers(0, 2, size=y1.size)
 
     err_msg = (
         "y_true takes value in {'eggs', 'spam'} and pos_label is not "
@@ -1155,13 +1155,13 @@ def test_calibrated_classifier_cv_works_with_large_confidence_scores(
 
 
 def test_sigmoid_calibration_max_abs_prediction_threshold(global_random_seed):
-    random_state = np.random.RandomState(seed=global_random_seed)
+    rng = np.random.default_rng(seed=global_random_seed)
     n = 100
-    y = random_state.randint(0, 2, size=n)
+    y = rng.integers(0, 2, size=n)
 
     # Check that for small enough predictions ranging from -2 to 2, the
     # threshold value has no impact on the outcome
-    predictions_small = random_state.uniform(low=-2, high=2, size=100)
+    predictions_small = rng.uniform(low=-2, high=2, size=100)
 
     # Using a threshold lower than the maximum absolute value of the
     # predictions enables internal re-scaling by max(abs(predictions_small)).
@@ -1236,7 +1236,7 @@ def test_error_less_class_samples_than_folds():
 
     non-regression test for issue #28841.
     """
-    X = np.random.normal(size=(20, 3))
+    X = np.random.default_rng(42).normal(size=(20, 3))
     y = ["a"] * 10 + ["b"] * 10
 
     CalibratedClassifierCV(cv=3).fit(X, y)
