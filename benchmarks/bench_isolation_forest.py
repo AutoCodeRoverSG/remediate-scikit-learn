@@ -48,9 +48,6 @@ def print_outlier_ratio(y):
 random_state = 1
 fig_roc, ax_roc = plt.subplots(1, 1, figsize=(8, 5))
 
-# Set this to true for plotting score histograms for each dataset:
-with_decision_function_histograms = False
-
 # datasets available = ['http', 'smtp', 'SA', 'SF', 'shuttle', 'forestcover']
 datasets = ["http", "smtp", "SA", "SF", "shuttle", "forestcover"]
 
@@ -132,15 +129,6 @@ for dat in datasets:
     scoring = -model.decision_function(X_test)  # the lower, the more abnormal
 
     print("--- Preparing the plot elements...")
-    if with_decision_function_histograms:
-        fig, ax = plt.subplots(3, sharex=True, sharey=True)
-        bins = np.linspace(-0.5, 0.5, 200)
-        ax[0].hist(scoring, bins, color="black")
-        ax[0].set_title("Decision function for %s dataset" % dat)
-        ax[1].hist(scoring[y_test == 0], bins, color="b", label="normal data")
-        ax[1].legend(loc=LEGEND_LOC)
-        ax[2].hist(scoring[y_test == 1], bins, color="r", label="outliers")
-        ax[2].legend(loc=LEGEND_LOC)
 
     # Show ROC Curves
     predict_time = time() - tstart
