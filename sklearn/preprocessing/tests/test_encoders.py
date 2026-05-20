@@ -2086,13 +2086,13 @@ def test_predefined_categories_dtype():
 def test_ordinal_encoder_missing_unknown_encoding_max():
     """Check missing value or unknown encoding can equal the cardinality."""
     X = np.array([["dog"], ["cat"], [np.nan]], dtype=object)
-    X_trans = OrdinalEncoder(encoded_missing_value=2).fit_transform(X)
-    assert_allclose(X_trans, [[1], [0], [2]])
+    x_trans = OrdinalEncoder(encoded_missing_value=2).fit_transform(X)
+    assert_allclose(x_trans, [[1], [0], [2]])
 
     enc = OrdinalEncoder(handle_unknown="use_encoded_value", unknown_value=2).fit(X)
     X_test = np.array([["snake"]])
-    X_trans = enc.transform(X_test)
-    assert_allclose(X_trans, [[2]])
+    x_trans = enc.transform(X_test)
+    assert_allclose(x_trans, [[2]])
 
 
 def test_drop_idx_infrequent_categories():
@@ -2156,10 +2156,10 @@ def test_ordinal_encoder_infrequent_three_levels(kwargs):
     X_test = [["a"], ["b"], ["c"], ["d"], ["z"]]
     expected_trans = [[2], [0], [1], [2], [-1]]
 
-    X_trans = ordinal.transform(X_test)
-    assert_allclose(X_trans, expected_trans)
+    x_trans = ordinal.transform(X_test)
+    assert_allclose(x_trans, expected_trans)
 
-    X_inverse = ordinal.inverse_transform(X_trans)
+    x_inverse = ordinal.inverse_transform(x_trans)
     expected_inverse = [
         ["infrequent_sklearn"],
         ["b"],
@@ -2167,7 +2167,7 @@ def test_ordinal_encoder_infrequent_three_levels(kwargs):
         ["infrequent_sklearn"],
         [None],
     ]
-    assert_array_equal(X_inverse, expected_inverse)
+    assert_array_equal(x_inverse, expected_inverse)
 
 
 def test_ordinal_encoder_infrequent_three_levels_user_cats():
@@ -2192,10 +2192,10 @@ def test_ordinal_encoder_infrequent_three_levels_user_cats():
     X_test = [["a"], ["b"], ["c"], ["d"], ["z"]]
     expected_trans = [[2], [1], [0], [2], [-1]]
 
-    X_trans = ordinal.transform(X_test)
-    assert_allclose(X_trans, expected_trans)
+    x_trans = ordinal.transform(X_test)
+    assert_allclose(x_trans, expected_trans)
 
-    X_inverse = ordinal.inverse_transform(X_trans)
+    x_inverse = ordinal.inverse_transform(x_trans)
     expected_inverse = [
         ["infrequent_sklearn"],
         ["b"],
@@ -2203,7 +2203,7 @@ def test_ordinal_encoder_infrequent_three_levels_user_cats():
         ["infrequent_sklearn"],
         [None],
     ]
-    assert_array_equal(X_inverse, expected_inverse)
+    assert_array_equal(x_inverse, expected_inverse)
 
 
 def test_ordinal_encoder_infrequent_mixed():
@@ -2219,12 +2219,12 @@ def test_ordinal_encoder_infrequent_mixed():
     X_test = [[3, 0], [1, 1]]
     expected_trans = [[1, 0], [2, 1]]
 
-    X_trans = ordinal.transform(X_test)
-    assert_allclose(X_trans, expected_trans)
+    x_trans = ordinal.transform(X_test)
+    assert_allclose(x_trans, expected_trans)
 
-    X_inverse = ordinal.inverse_transform(X_trans)
+    x_inverse = ordinal.inverse_transform(x_trans)
     expected_inverse = np.array([[3, 0], ["infrequent_sklearn", 1]], dtype=object)
-    assert_array_equal(X_inverse, expected_inverse)
+    assert_array_equal(x_inverse, expected_inverse)
 
 
 def test_ordinal_encoder_infrequent_multiple_categories_dtypes():
@@ -2271,8 +2271,8 @@ def test_ordinal_encoder_infrequent_multiple_categories_dtypes():
     )
     expected_trans = [[2, 2, 0], [2, 2, 2], [1, 1, 2], [0, 0, 1]]
 
-    X_trans = ordinal.transform(X_test)
-    assert_allclose(X_trans, expected_trans)
+    x_trans = ordinal.transform(X_test)
+    assert_allclose(x_trans, expected_trans)
 
 
 def test_ordinal_encoder_infrequent_custom_mapping():
@@ -2292,8 +2292,8 @@ def test_ordinal_encoder_infrequent_custom_mapping():
     X_test = np.array([["a"], ["b"], ["c"], ["d"], ["e"], [np.nan]], dtype=object)
     expected_trans = [[1], [0], [1], [1], [2], [3]]
 
-    X_trans = ordinal.transform(X_test)
-    assert_allclose(X_trans, expected_trans)
+    x_trans = ordinal.transform(X_test)
+    assert_allclose(x_trans, expected_trans)
 
 
 @pytest.mark.parametrize(
@@ -2352,8 +2352,8 @@ def test_ordinal_encoder_missing_appears_frequent():
     ordinal = OrdinalEncoder(max_categories=3).fit(X)
 
     X_test = np.array([["snake", "cat", "dog", np.nan]], dtype=object).T
-    X_trans = ordinal.transform(X_test)
-    assert_allclose(X_trans, [[2], [0], [1], [np.nan]])
+    x_trans = ordinal.transform(X_test)
+    assert_allclose(x_trans, [[2], [0], [1], [np.nan]])
 
 
 def test_ordinal_encoder_missing_appears_infrequent():
