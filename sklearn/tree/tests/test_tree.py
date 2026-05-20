@@ -1156,19 +1156,19 @@ def test_sample_weight_invalid():
 @pytest.mark.parametrize("name", CLF_TREES)
 def test_class_weights(name):
     # Test that class_weights resemble sample_weights behavior.
-    TreeClassifier = CLF_TREES[name]
+    tree_classifier = CLF_TREES[name]
 
     # Iris is balanced, so no effect expected for using 'balanced' weights
-    clf1 = TreeClassifier(random_state=0)
+    clf1 = tree_classifier(random_state=0)
     clf1.fit(iris.data, iris.target)
-    clf2 = TreeClassifier(class_weight="balanced", random_state=0)
+    clf2 = tree_classifier(class_weight="balanced", random_state=0)
     clf2.fit(iris.data, iris.target)
     assert_almost_equal(clf1.feature_importances_, clf2.feature_importances_)
 
     # Make a multi-output problem with three copies of Iris
     iris_multi = np.vstack((iris.target, iris.target, iris.target)).T
     # Create user-defined weights that should balance over the outputs
-    clf3 = TreeClassifier(
+    clf3 = tree_classifier(
         class_weight=[
             {0: 2.0, 1: 2.0, 2: 1.0},
             {0: 2.0, 1: 1.0, 2: 2.0},
@@ -1179,7 +1179,7 @@ def test_class_weights(name):
     clf3.fit(iris.data, iris_multi)
     assert_almost_equal(clf2.feature_importances_, clf3.feature_importances_)
     # Check against multi-output "auto" which should also have no effect
-    clf4 = TreeClassifier(class_weight="balanced", random_state=0)
+    clf4 = tree_classifier(class_weight="balanced", random_state=0)
     clf4.fit(iris.data, iris_multi)
     assert_almost_equal(clf3.feature_importances_, clf4.feature_importances_)
 
@@ -1187,16 +1187,16 @@ def test_class_weights(name):
     sample_weight = np.ones(iris.target.shape)
     sample_weight[iris.target == 1] *= 100
     class_weight = {0: 1.0, 1: 100.0, 2: 1.0}
-    clf1 = TreeClassifier(random_state=0)
+    clf1 = tree_classifier(random_state=0)
     clf1.fit(iris.data, iris.target, sample_weight)
-    clf2 = TreeClassifier(class_weight=class_weight, random_state=0)
+    clf2 = tree_classifier(class_weight=class_weight, random_state=0)
     clf2.fit(iris.data, iris.target)
     assert_almost_equal(clf1.feature_importances_, clf2.feature_importances_)
 
     # Check that sample_weight and class_weight are multiplicative
-    clf1 = TreeClassifier(random_state=0)
+    clf1 = tree_classifier(random_state=0)
     clf1.fit(iris.data, iris.target, sample_weight**2)
-    clf2 = TreeClassifier(class_weight=class_weight, random_state=0)
+    clf2 = tree_classifier(class_weight=class_weight, random_state=0)
     clf2.fit(iris.data, iris.target, sample_weight)
     assert_almost_equal(clf1.feature_importances_, clf2.feature_importances_)
 
@@ -1204,11 +1204,11 @@ def test_class_weights(name):
 @pytest.mark.parametrize("name", CLF_TREES)
 def test_class_weight_errors(name):
     # Test if class_weight raises errors and warnings when expected.
-    TreeClassifier = CLF_TREES[name]
+    tree_classifier = CLF_TREES[name]
     _y = np.vstack((y, np.array(y) * 2)).T
 
     # Incorrect length list for multi-output
-    clf = TreeClassifier(class_weight=[{-1: 0.5, 1: 1.0}], random_state=0)
+    clf = tree_classifier(class_weight=[{-1: 0.5, 1: 1.0}], random_state=0)
     err_msg = "number of elements in class_weight should match number of outputs."
     with pytest.raises(ValueError, match=err_msg):
         clf.fit(X, _y)
@@ -1218,8 +1218,8 @@ def test_max_leaf_nodes():
     # Test greedy trees with max_depth + 1 leaves.
     X, y = datasets.make_hastie_10_2(n_samples=100, random_state=1)
     k = 4
-    for name, TreeEstimator in ALL_TREES.items():
-        est = TreeEstimator(max_depth=None, max_leaf_nodes=k + 1).fit(X, y)
+    for name, tree_estimator in ALL_TREES.items():
+        est = tree_estimator(max_depth=None, max_leaf_nodes=k + 1).fit(X, y)
         assert est.get_n_leaves() == k + 1
 
 
@@ -1227,8 +1227,8 @@ def test_max_leaf_nodes_max_depth():
     # Test precedence of max_leaf_nodes over max_depth.
     X, y = datasets.make_hastie_10_2(n_samples=100, random_state=1)
     k = 4
-    for name, TreeEstimator in ALL_TREES.items():
-        est = TreeEstimator(max_depth=1, max_leaf_nodes=k).fit(X, y)
+    for name, tree_estimator in ALL_TREES.items():
+        est = tree_estimator(max_depth=1, max_leaf_nodes=k).fit(X, y)
         assert est.get_depth() == 1
 
 
@@ -1254,8 +1254,8 @@ def test_only_constant_features():
     random_state = check_random_state(0)
     X = np.zeros((10, 20))
     y = random_state.randint(0, 2, (10,))
-    for name, TreeEstimator in ALL_TREES.items():
-        est = TreeEstimator(random_state=0)
+    for name, tree_estimator in ALL_TREES.items():
+        est = tree_estimator(random_state=0)
         est.fit(X, y)
         assert est.tree_.max_depth == 0
 
@@ -1286,10 +1286,10 @@ def test_behaviour_constant_feature_after_splits():
         np.vstack(([[0, 0, 0, 0, 0, 1, 2, 4, 5, 6, 7]], np.zeros((4, 11))))
     )
     y = [0, 0, 0, 1, 1, 2, 2, 2, 3, 3, 3]
-    for name, TreeEstimator in ALL_TREES.items():
+    for name, tree_estimator in ALL_TREES.items():
         # do not check extra random trees
         if "ExtraTree" not in name:
-            est = TreeEstimator(random_state=0, max_features=1)
+            est = tree_estimator(random_state=0, max_features=1)
             est.fit(X, y)
             assert est.tree_.max_depth == 2
             assert est.tree_.node_count == 5
@@ -1299,14 +1299,14 @@ def test_with_only_one_non_constant_features():
     X = np.hstack([np.array([[1.0], [1.0], [0.0], [0.0]]), np.zeros((4, 1000))])
 
     y = np.array([0.0, 1.0, 0.0, 1.0])
-    for name, TreeEstimator in CLF_TREES.items():
-        est = TreeEstimator(random_state=0, max_features=1)
+    for name, tree_estimator in CLF_TREES.items():
+        est = tree_estimator(random_state=0, max_features=1)
         est.fit(X, y)
         assert est.tree_.max_depth == 1
         assert_array_equal(est.predict_proba(X), np.full((4, 2), 0.5))
 
-    for name, TreeEstimator in REG_TREES.items():
-        est = TreeEstimator(random_state=0, max_features=1)
+    for name, tree_estimator in REG_TREES.items():
+        est = tree_estimator(random_state=0, max_features=1)
         est.fit(X, y)
         assert est.tree_.max_depth == 1
         assert_array_equal(est.predict(X), np.full((4,), 0.5))
@@ -1349,7 +1349,7 @@ def test_huge_allocations():
 
 
 def check_sparse_input(tree, dataset, max_depth=None):
-    TreeEstimator = ALL_TREES[tree]
+    tree_estimator = ALL_TREES[tree]
     X = DATASETS[dataset]["X"]
     y = DATASETS[dataset]["y"]
 
@@ -1360,11 +1360,11 @@ def check_sparse_input(tree, dataset, max_depth=None):
         y = y[:n_samples]
 
     for sparse_container in COO_CONTAINERS + CSC_CONTAINERS + CSR_CONTAINERS:
-        X_sparse = sparse_container(X)
+        x_sparse = sparse_container(X)
 
         # Check the default (depth first search)
-        d = TreeEstimator(random_state=0, max_depth=max_depth).fit(X, y)
-        s = TreeEstimator(random_state=0, max_depth=max_depth).fit(X_sparse, y)
+        d = tree_estimator(random_state=0, max_depth=max_depth).fit(X, y)
+        s = tree_estimator(random_state=0, max_depth=max_depth).fit(x_sparse, y)
 
         assert_tree_equal(
             d.tree_,
@@ -1378,14 +1378,14 @@ def check_sparse_input(tree, dataset, max_depth=None):
             y_log_proba = d.predict_log_proba(X)
 
         for sparse_container_test in COO_CONTAINERS + CSR_CONTAINERS + CSC_CONTAINERS:
-            X_sparse_test = sparse_container_test(X_sparse, dtype=np.float32)
+            x_sparse_test = sparse_container_test(x_sparse, dtype=np.float32)
 
-            assert_array_almost_equal(s.predict(X_sparse_test), y_pred)
+            assert_array_almost_equal(s.predict(x_sparse_test), y_pred)
 
             if tree in CLF_TREES:
-                assert_array_almost_equal(s.predict_proba(X_sparse_test), y_proba)
+                assert_array_almost_equal(s.predict_proba(x_sparse_test), y_proba)
                 assert_array_almost_equal(
-                    s.predict_log_proba(X_sparse_test), y_log_proba
+                    s.predict_log_proba(x_sparse_test), y_log_proba
                 )
 
 
