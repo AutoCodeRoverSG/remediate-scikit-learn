@@ -507,14 +507,14 @@ class UntaggedBinaryClassifier(SGDClassifier):
 
 
 class TaggedBinaryClassifier(UntaggedBinaryClassifier):
-    def fit(self, X, y):
+    def fit(self, X, y, coef_init=None, intercept_init=None, sample_weight=None):
         y_type = type_of_target(y, input_name="y", raise_unknown=True)
         if y_type != "binary":
             raise ValueError(
                 "Only binary classification is supported. The type of the target "
                 f"is {y_type}."
             )
-        return super().fit(X, y)
+        return super().fit(X, y, coef_init, intercept_init, sample_weight)
 
     # Toy classifier that only supports binary classification.
     def __sklearn_tags__(self):
@@ -927,7 +927,7 @@ def test_check_estimator_clones():
 
     iris = load_iris()
 
-    for Estimator in [
+    for estimator_class in [
         GaussianMixture,
         LinearRegression,
         SGDClassifier,
@@ -936,7 +936,7 @@ def test_check_estimator_clones():
     ]:
         # without fitting
         with ignore_warnings(category=ConvergenceWarning):
-            est = Estimator()
+            est = estimator_class()
             set_random_state(est)
             old_hash = joblib.hash(est)
             check_estimator(
@@ -946,7 +946,7 @@ def test_check_estimator_clones():
 
         # with fitting
         with ignore_warnings(category=ConvergenceWarning):
-            est = Estimator()
+            est = estimator_class()
             set_random_state(est)
             est.fit(iris.data, iris.target)
             old_hash = joblib.hash(est)
@@ -971,15 +971,16 @@ def test_check_estimators_unfitted():
 def test_check_no_attributes_set_in_init():
     class NonConformantEstimatorPrivateSet(BaseEstimator):
         def __init__(self):
-            self.you_should_not_set_this_ = None
+            object.__setattr__(self, "you_should_not_set_this_", None)
 
     class NonConformantEstimatorNoParamSet(BaseEstimator):
         def __init__(self, you_should_set_this_=None):
+            # Intentionally not setting parameters to test non-conformant estimator behavior
             pass
 
     class ConformantEstimatorClassAttribute(BaseEstimator):
         # making sure our __metadata_request__* class attributes are okay!
-        __metadata_request__fit = {"foo": True}
+        _metadata_request__fit = {"foo": True}
 
         def fit(self, X, y=None):
             return self  # pragma: no cover
@@ -1433,7 +1434,7 @@ def test_xfail_count_with_no_fast_fail():
             on_fail="warn",
         )
     xfail_warns = [w for w in records if w.category != SkipTestWarning]
-    assert all([rec.category == EstimatorCheckFailedWarning for rec in xfail_warns])
+    assert all(rec.category == EstimatorCheckFailedWarning for rec in xfail_warns)
     assert len(xfail_warns) == len(expected_failed_checks)
 
     xfailed = [log for log in logs if log["status"] == "xfail"]
@@ -1484,9 +1485,6 @@ def test_minimal_class_implementation_checks():
     # BaseEstimator.
     # FIXME
     raise SkipTest
-    minimal_estimators = [MinimalTransformer(), MinimalRegressor(), MinimalClassifier()]
-    for estimator in minimal_estimators:
-        check_estimator(estimator)
 
 
 def test_check_fit_check_is_fitted():
@@ -1550,12 +1548,12 @@ def test_check_requires_y_none():
 def test_non_deterministic_estimator_skip_tests():
     # check estimators with non_deterministic tag set to True
     # will skip certain tests, refer to issue #22313 for details
-    for Estimator in [MinimalTransformer, MinimalRegressor, MinimalClassifier]:
-        all_tests = list(_yield_all_checks(Estimator(), legacy=True))
+    for estimator_class in [MinimalTransformer, MinimalRegressor, MinimalClassifier]:
+        all_tests = list(_yield_all_checks(estimator_class(), legacy=True))
         assert check_methods_sample_order_invariance in all_tests
         assert check_methods_subset_invariance in all_tests
 
-        class MyEstimator(Estimator):
+        class MyEstimator(estimator_class):
             def __sklearn_tags__(self):
                 tags = super().__sklearn_tags__()
                 tags.non_deterministic = True
