@@ -26,7 +26,7 @@ from sklearn.utils.fixes import parse_version
 from sklearn.utils.multiclass import type_of_target
 
 
-def _encode_target(X_ordinal, y_numeric, n_categories, smooth):
+def _encode_target(x_ordinal, y_numeric, n_categories, smooth):
     """Simple Python implementation of target encoding."""
     cur_encodings = np.zeros(n_categories, dtype=np.float64)
     y_mean = np.mean(y_numeric)
@@ -34,7 +34,7 @@ def _encode_target(X_ordinal, y_numeric, n_categories, smooth):
     if smooth == "auto":
         y_variance = np.var(y_numeric)
         for c in range(n_categories):
-            y_subset = y_numeric[X_ordinal == c]
+            y_subset = y_numeric[x_ordinal == c]
             n_i = y_subset.shape[0]
 
             if n_i == 0:
@@ -49,7 +49,7 @@ def _encode_target(X_ordinal, y_numeric, n_categories, smooth):
         return cur_encodings
     else:  # float
         for c in range(n_categories):
-            y_subset = y_numeric[X_ordinal == c]
+            y_subset = y_numeric[x_ordinal == c]
             current_sum = np.sum(y_subset) + y_mean * smooth
             current_cnt = y_subset.shape[0] + smooth
             cur_encodings[c] = current_sum / current_cnt
@@ -76,23 +76,23 @@ def test_encoding(categories, unknown_value, global_random_seed, smooth, target_
     """
 
     n_categories = 3
-    X_train_int_array = np.array([[0] * 20 + [1] * 30 + [2] * 40], dtype=np.int64).T
-    X_test_int_array = np.array([[0, 1, 2]], dtype=np.int64).T
-    n_samples = X_train_int_array.shape[0]
+    x_train_int_array = np.array([[0] * 20 + [1] * 30 + [2] * 40], dtype=np.int64).T
+    x_test_int_array = np.array([[0, 1, 2]], dtype=np.int64).T
+    n_samples = x_train_int_array.shape[0]
 
     if categories == "auto":
-        X_train = X_train_int_array
-        X_test = X_test_int_array
+        x_train = x_train_int_array
+        x_test = x_test_int_array
     else:
-        X_train = categories[0][X_train_int_array]
-        X_test = categories[0][X_test_int_array]
+        x_train = categories[0][x_train_int_array]
+        x_test = categories[0][x_test_int_array]
 
-    X_test = np.concatenate((X_test, [[unknown_value]]))
+    x_test = np.concatenate((x_test, [[unknown_value]]))
 
-    data_rng = np.random.RandomState(global_random_seed)
+    data_rng = np.random.default_rng(global_random_seed)
     n_splits = 3
     if target_type == "binary":
-        y_numeric = data_rng.randint(low=0, high=2, size=n_samples)
+        y_numeric = data_rng.integers(low=0, high=2, size=n_samples)
         target_names = np.array(["cat", "dog"], dtype=object)
         y_train = target_names[y_numeric]
 
@@ -102,8 +102,8 @@ def test_encoding(categories, unknown_value, global_random_seed, smooth, target_
         y_train = y_numeric
 
     shuffled_idx = data_rng.permutation(n_samples)
-    X_train_int_array = X_train_int_array[shuffled_idx]
-    X_train = X_train[shuffled_idx]
+    x_train_int_array = x_train_int_array[shuffled_idx]
+    x_train = x_train[shuffled_idx]
     y_train = y_train[shuffled_idx]
     y_numeric = y_numeric[shuffled_idx]
 
@@ -117,13 +117,13 @@ def test_encoding(categories, unknown_value, global_random_seed, smooth, target_
 
     # Compute the expected values using our reference Python implementation of
     # target encoding:
-    expected_X_fit_transform = np.empty_like(X_train_int_array, dtype=np.float64)
+    expected_x_fit_transform = np.empty_like(x_train_int_array, dtype=np.float64)
 
-    for train_idx, test_idx in cv.split(X_train_int_array, y_train):
-        X_, y_ = X_train_int_array[train_idx, 0], y_numeric[train_idx]
-        cur_encodings = _encode_target(X_, y_, n_categories, smooth)
-        expected_X_fit_transform[test_idx, 0] = cur_encodings[
-            X_train_int_array[test_idx, 0]
+    for train_idx, test_idx in cv.split(x_train_int_array, y_train):
+        x_, y_ = x_train_int_array[train_idx, 0], y_numeric[train_idx]
+        cur_encodings = _encode_target(x_, y_, n_categories, smooth)
+        expected_x_fit_transform[test_idx, 0] = cur_encodings[
+            x_train_int_array[test_idx, 0]
         ]
 
     # Check that we can obtain the same encodings by calling `fit_transform` on
@@ -134,10 +134,10 @@ def test_encoding(categories, unknown_value, global_random_seed, smooth, target_
         cv=cv,
     )
 
-    X_fit_transform = target_encoder.fit_transform(X_train, y_train)
+    x_fit_transform = target_encoder.fit_transform(x_train, y_train)
 
     assert target_encoder.target_type_ == target_type
-    assert_allclose(X_fit_transform, expected_X_fit_transform)
+    assert_allclose(x_fit_transform, expected_x_fit_transform)
     assert len(target_encoder.encodings_) == 1
     if target_type == "binary":
         assert_array_equal(target_encoder.classes_, target_names)
@@ -147,19 +147,19 @@ def test_encoding(categories, unknown_value, global_random_seed, smooth, target_
     # compute encodings for all data to validate `transform`
     y_mean = np.mean(y_numeric)
     expected_encodings = _encode_target(
-        X_train_int_array[:, 0], y_numeric, n_categories, smooth
+        x_train_int_array[:, 0], y_numeric, n_categories, smooth
     )
     assert_allclose(target_encoder.encodings_[0], expected_encodings)
     assert target_encoder.target_mean_ == pytest.approx(y_mean)
 
     # Transform on test data, the last value is unknown so it is encoded as the target
     # mean
-    expected_X_test_transform = np.concatenate(
+    expected_x_test_transform = np.concatenate(
         (expected_encodings, np.array([y_mean]))
     ).reshape(-1, 1)
 
-    X_test_transform = target_encoder.transform(X_test)
-    assert_allclose(X_test_transform, expected_X_test_transform)
+    x_test_transform = target_encoder.transform(x_test)
+    assert_allclose(x_test_transform, expected_x_test_transform)
 
 
 @pytest.mark.parametrize(
@@ -177,20 +177,20 @@ def test_encoding_multiclass(
     global_random_seed, categories, unknown_values, target_labels, smooth
 ):
     """Check encoding for multiclass targets."""
-    rng = np.random.RandomState(global_random_seed)
+    rng = np.random.default_rng(global_random_seed)
 
     n_samples = 80
     n_features = 2
-    feat_1_int = np.array(rng.randint(low=0, high=2, size=n_samples))
-    feat_2_int = np.array(rng.randint(low=0, high=3, size=n_samples))
+    feat_1_int = np.array(rng.integers(low=0, high=2, size=n_samples))
+    feat_2_int = np.array(rng.integers(low=0, high=3, size=n_samples))
     feat_1 = categories[0][feat_1_int]
     feat_2 = categories[0][feat_2_int]
     X_train = np.column_stack((feat_1, feat_2))
-    X_train_int = np.column_stack((feat_1_int, feat_2_int))
+    x_train_int = np.column_stack((feat_1_int, feat_2_int))
     categories_ = [[0, 1], [0, 1, 2]]
 
     n_classes = 3
-    y_train_int = np.array(rng.randint(low=0, high=n_classes, size=n_samples))
+    y_train_int = np.array(rng.integers(low=0, high=n_classes, size=n_samples))
     y_train = target_labels[y_train_int]
     y_train_enc = LabelBinarizer().fit_transform(y_train)
 
@@ -201,21 +201,21 @@ def test_encoding_multiclass(
 
     # Manually compute encodings for cv splits to validate `fit_transform`
     expected_X_fit_transform = np.empty(
-        (X_train_int.shape[0], X_train_int.shape[1] * n_classes),
+        (x_train_int.shape[0], x_train_int.shape[1] * n_classes),
         dtype=np.float64,
     )
     for f_idx, cats in enumerate(categories_):
         for c_idx in range(n_classes):
             for train_idx, test_idx in cv.split(X_train, y_train):
                 y_class = y_train_enc[:, c_idx]
-                X_, y_ = X_train_int[train_idx, f_idx], y_class[train_idx]
+                X_, y_ = x_train_int[train_idx, f_idx], y_class[train_idx]
                 current_encoding = _encode_target(X_, y_, len(cats), smooth)
                 # f_idx:   0, 0, 0, 1, 1, 1
                 # c_idx:   0, 1, 2, 0, 1, 2
                 # exp_idx: 0, 1, 2, 3, 4, 5
                 exp_idx = c_idx + (f_idx * n_classes)
                 expected_X_fit_transform[test_idx, exp_idx] = current_encoding[
-                    X_train_int[test_idx, f_idx]
+                    x_train_int[test_idx, f_idx]
                 ]
 
     target_encoder = TargetEncoder(
@@ -233,7 +233,7 @@ def test_encoding_multiclass(
         for c_idx in range(n_classes):
             y_class = y_train_enc[:, c_idx]
             current_encoding = _encode_target(
-                X_train_int[:, f_idx], y_class, len(cats), smooth
+                x_train_int[:, f_idx], y_class, len(cats), smooth
             )
             expected_encodings.append(current_encoding)
 
@@ -513,12 +513,17 @@ def test_fit_transform_not_associated_with_y_if_ordinal_categorical_is_not(
     )
     X_encoded_train_shuffled = target_encoder.fit_transform(X_train, y_train)
 
-    target_encoder = TargetEncoder(cv=KFold(n_splits=2, shuffle=False))
+    target_encoder = TargetEncoder(
+        cv=KFold(n_splits=2, shuffle=False, random_state=global_random_seed)
+    )
     X_encoded_train_no_shuffled = target_encoder.fit_transform(X_train, y_train)
 
     # Check that no information about y_train has leaked into X_train:
     regressor = RandomForestRegressor(
-        n_estimators=10, min_samples_leaf=20, random_state=global_random_seed
+        n_estimators=10,
+        min_samples_leaf=20,
+        max_features=1.0,
+        random_state=global_random_seed,
     )
 
     # It's impossible to learn a good predictive model on the training set when
@@ -547,7 +552,7 @@ def test_smooth_zero():
     X = np.array([[0, 0, 0, 0, 0, 1, 1, 1, 1, 1]]).T
     y = np.array([2.1, 4.3, 1.2, 3.1, 1.0, 9.0, 10.3, 14.2, 13.3, 15.0])
 
-    enc = TargetEncoder(smooth=0.0, cv=KFold(n_splits=2, shuffle=False))
+    enc = TargetEncoder(smooth=0.0, cv=KFold(n_splits=2, shuffle=False, random_state=0))
     X_trans = enc.fit_transform(X, y)
 
     # With cv = 2, category 0 does not exist in the second half, thus
@@ -749,7 +754,9 @@ def test_target_encoder_raises_cv_overlap(global_random_seed):
     """
     X, y = make_regression(n_samples=100, n_features=3, random_state=0)
 
-    non_overlapping_iterable = KFold().split(X, y)
+    non_overlapping_iterable = KFold(
+        shuffle=True, random_state=global_random_seed
+    ).split(X, y)
     encoder = TargetEncoder(cv=non_overlapping_iterable)
     encoder.fit_transform(X, y)
 
