@@ -402,8 +402,8 @@ def test_arrayrepr():
     X = np.arange(10000)[:, np.newaxis]
     y = np.arange(10000)
 
-    for name, Tree in REG_TREES.items():
-        reg = Tree(max_depth=None, random_state=0)
+    for name, tree in REG_TREES.items():
+        reg = tree(max_depth=None, random_state=0)
         reg.fit(X, y)
 
 
@@ -412,13 +412,13 @@ def test_pure_set():
     X = [[-2, -1], [-1, -1], [-1, -2], [1, 1], [1, 2], [2, 1]]
     y = [1, 1, 1, 1, 1, 1]
 
-    for name, TreeClassifier in CLF_TREES.items():
-        clf = TreeClassifier(random_state=0)
+    for name, tree_classifier in CLF_TREES.items():
+        clf = tree_classifier(random_state=0)
         clf.fit(X, y)
         assert_array_equal(clf.predict(X), y, err_msg="Failed with {0}".format(name))
 
-    for name, TreeRegressor in REG_TREES.items():
-        reg = TreeRegressor(random_state=0)
+    for name, tree_regressor in REG_TREES.items():
+        reg = tree_regressor(random_state=0)
         reg.fit(X, y)
         assert_almost_equal(reg.predict(X), y, err_msg="Failed with {0}".format(name))
 
@@ -440,8 +440,8 @@ def test_numerical_stability():
     y = np.array([1.0, 0.70209277, 0.53896582, 0.0, 0.90914464, 0.48026916, 0.49622521])
 
     with np.errstate(all="raise"):
-        for name, Tree in REG_TREES.items():
-            reg = Tree(random_state=0)
+        for name, tree_cls in REG_TREES.items():
+            reg = tree_cls(random_state=0)
             reg.fit(X, y)
             reg.fit(X, -y)
             reg.fit(-X, y)
@@ -460,8 +460,8 @@ def test_importances():
         random_state=0,
     )
 
-    for name, Tree in CLF_TREES.items():
-        clf = Tree(random_state=0)
+    for name, tree_cls in CLF_TREES.items():
+        clf = tree_cls(random_state=0)
 
         clf.fit(X, y)
         importances = clf.feature_importances_
@@ -518,45 +518,45 @@ def test_importances_gini_equal_squared_error():
 
 def test_max_features():
     # Check max_features.
-    for name, TreeEstimator in ALL_TREES.items():
-        est = TreeEstimator(max_features="sqrt")
+    for name, tree_estimator in ALL_TREES.items():
+        est = tree_estimator(max_features="sqrt")
         est.fit(iris.data, iris.target)
         assert est.max_features_ == int(np.sqrt(iris.data.shape[1]))
 
-        est = TreeEstimator(max_features="log2")
+        est = tree_estimator(max_features="log2")
         est.fit(iris.data, iris.target)
         assert est.max_features_ == int(np.log2(iris.data.shape[1]))
 
-        est = TreeEstimator(max_features=1)
+        est = tree_estimator(max_features=1)
         est.fit(iris.data, iris.target)
         assert est.max_features_ == 1
 
-        est = TreeEstimator(max_features=3)
+        est = tree_estimator(max_features=3)
         est.fit(iris.data, iris.target)
         assert est.max_features_ == 3
 
-        est = TreeEstimator(max_features=0.01)
+        est = tree_estimator(max_features=0.01)
         est.fit(iris.data, iris.target)
         assert est.max_features_ == 1
 
-        est = TreeEstimator(max_features=0.5)
+        est = tree_estimator(max_features=0.5)
         est.fit(iris.data, iris.target)
         assert est.max_features_ == int(0.5 * iris.data.shape[1])
 
-        est = TreeEstimator(max_features=1.0)
+        est = tree_estimator(max_features=1.0)
         est.fit(iris.data, iris.target)
         assert est.max_features_ == iris.data.shape[1]
 
-        est = TreeEstimator(max_features=None)
+        est = tree_estimator(max_features=None)
         est.fit(iris.data, iris.target)
         assert est.max_features_ == iris.data.shape[1]
 
 
 def test_error():
     # Test that it gives proper exception on deficient input.
-    for name, TreeEstimator in CLF_TREES.items():
+    for name, tree_estimator in CLF_TREES.items():
         # predict before fit
-        est = TreeEstimator()
+        est = tree_estimator()
         with pytest.raises(NotFittedError):
             est.predict_proba(X)
 
@@ -566,19 +566,19 @@ def test_error():
             est.predict_proba(X2)
 
         # Wrong dimensions
-        est = TreeEstimator()
+        est = tree_estimator()
         y2 = y[:-1]
         with pytest.raises(ValueError):
             est.fit(X, y2)
 
         # Test with arrays that are non-contiguous.
-        Xf = np.asfortranarray(X)
-        est = TreeEstimator()
-        est.fit(Xf, y)
+        x_f = np.asfortranarray(X)
+        est = tree_estimator()
+        est.fit(x_f, y)
         assert_almost_equal(est.predict(T), true_result)
 
         # predict before fitting
-        est = TreeEstimator()
+        est = tree_estimator()
         with pytest.raises(NotFittedError):
             est.predict(T)
 
@@ -589,24 +589,24 @@ def test_error():
             est.predict(t[:, 1:])
 
         # wrong sample shape
-        Xt = np.array(X).T
+        x_t = np.array(X).T
 
-        est = TreeEstimator()
-        est.fit(np.dot(X, Xt), y)
+        est = tree_estimator()
+        est.fit(np.dot(X, x_t), y)
         with pytest.raises(ValueError):
             est.predict(X)
         with pytest.raises(ValueError):
             est.apply(X)
 
-        clf = TreeEstimator()
+        clf = tree_estimator()
         clf.fit(X, y)
         with pytest.raises(ValueError):
-            clf.predict(Xt)
+            clf.predict(x_t)
         with pytest.raises(ValueError):
-            clf.apply(Xt)
+            clf.apply(x_t)
 
         # apply before fitting
-        est = TreeEstimator()
+        est = tree_estimator()
         with pytest.raises(NotFittedError):
             est.apply(T)
 
@@ -626,10 +626,10 @@ def test_min_samples_split():
     # test both DepthFirstTreeBuilder and BestFirstTreeBuilder
     # by setting max_leaf_nodes
     for max_leaf_nodes, name in product((None, 1000), ALL_TREES.keys()):
-        TreeEstimator = ALL_TREES[name]
+        tree_estimator = ALL_TREES[name]
 
         # test for integer parameter
-        est = TreeEstimator(
+        est = tree_estimator(
             min_samples_split=10, max_leaf_nodes=max_leaf_nodes, random_state=0
         )
         est.fit(X, y)
@@ -639,7 +639,7 @@ def test_min_samples_split():
         assert np.min(node_samples) > 9, "Failed with {0}".format(name)
 
         # test for float parameter
-        est = TreeEstimator(
+        est = tree_estimator(
             min_samples_split=0.2, max_leaf_nodes=max_leaf_nodes, random_state=0
         )
         est.fit(X, y)
