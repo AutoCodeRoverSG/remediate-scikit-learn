@@ -115,8 +115,7 @@ def test_metaestimator_delegation():
 
         @hides
         def transform(self, X, *args, **kwargs):
-            self._check_fit()
-            return X
+            return self.inverse_transform(X, *args, **kwargs)
 
         @hides
         def predict(self, X, *args, **kwargs):
@@ -125,18 +124,15 @@ def test_metaestimator_delegation():
 
         @hides
         def predict_proba(self, X, *args, **kwargs):
-            self._check_fit()
-            return np.ones(X.shape[0])
+            return self.predict(X, *args, **kwargs)
 
         @hides
         def predict_log_proba(self, X, *args, **kwargs):
-            self._check_fit()
-            return np.ones(X.shape[0])
+            return self.predict(X, *args, **kwargs)
 
         @hides
         def decision_function(self, X, *args, **kwargs):
-            self._check_fit()
-            return np.ones(X.shape[0])
+            return self.predict(X, *args, **kwargs)
 
         @hides
         def score(self, X, y, *args, **kwargs):
@@ -333,8 +329,8 @@ def test_meta_estimators_delegate_data_validation(estimator):
 
     # clone to avoid side effects and ensure thread-safe test execution.
     estimator = clone(estimator)
-    rng = np.random.RandomState(0)
-    set_random_state(estimator)
+    rng = np.random.default_rng(0)
+    set_random_state(estimator, 0)
 
     n_samples = 30
     X = rng.choice(np.array(["aa", "bb", "cc"], dtype=object), size=n_samples)
@@ -342,7 +338,7 @@ def test_meta_estimators_delegate_data_validation(estimator):
     if is_regressor(estimator):
         y = rng.normal(size=n_samples)
     else:
-        y = rng.randint(3, size=n_samples)
+        y = rng.integers(3, size=n_samples)
 
     # We convert to lists to make sure it works on array-like
     X = _enforce_estimator_tags_X(estimator, X).tolist()
