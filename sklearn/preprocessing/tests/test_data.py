@@ -290,8 +290,8 @@ def test_standard_scaler_dtype(add_sample_weight, sparse_container):
             with_mean = False
 
         scaler = StandardScaler(with_mean=with_mean)
-        X_scaled = scaler.fit(X, sample_weight=sample_weight).transform(X)
-        assert X.dtype == X_scaled.dtype
+        x_scaled = scaler.fit(X, sample_weight=sample_weight).transform(X)
+        assert X.dtype == x_scaled.dtype
         assert scaler.mean_.dtype == np.float64
         assert scaler.scale_.dtype == np.float64
 
@@ -318,12 +318,12 @@ def test_standard_scaler_constant_features(
     n_samples = 100
     n_features = 1
     if add_sample_weight:
-        fit_params = dict(sample_weight=rng.uniform(size=n_samples) * 2)
+        fit_params = {"sample_weight": rng.uniform(size=n_samples) * 2}
     else:
         fit_params = {}
-    X_array = np.full(shape=(n_samples, n_features), fill_value=constant, dtype=dtype)
-    X = X_array if sparse_container is None else sparse_container(X_array)
-    X_scaled = scaler.fit(X, **fit_params).transform(X)
+    x_array = np.full(shape=(n_samples, n_features), fill_value=constant, dtype=dtype)
+    X = x_array if sparse_container is None else sparse_container(x_array)
+    x_scaled = scaler.fit(X, **fit_params).transform(X)
 
     if isinstance(scaler, StandardScaler):
         # The variance info should be close to zero for constant features.
@@ -332,14 +332,14 @@ def test_standard_scaler_constant_features(
     # Constant features should not be scaled (scale of 1.):
     assert_allclose(scaler.scale_, np.ones(X.shape[1]))
 
-    assert X_scaled is not X  # make sure we make a copy
-    assert_allclose_dense_sparse(X_scaled, X)
+    assert x_scaled is not X  # make sure we make a copy
+    assert_allclose_dense_sparse(x_scaled, X)
 
     if isinstance(scaler, StandardScaler) and not add_sample_weight:
         # Also check consistency with the standard scale function.
-        X_scaled_2 = scale(X, with_mean=scaler.with_mean)
-        assert X_scaled_2 is not X  # make sure we did a copy
-        assert_allclose_dense_sparse(X_scaled_2, X)
+        x_scaled_2 = scale(X, with_mean=scaler.with_mean)
+        assert x_scaled_2 is not X  # make sure we did a copy
+        assert_allclose_dense_sparse(x_scaled_2, X)
 
 
 @pytest.mark.parametrize("n_samples", [10, 100, 10_000])
@@ -360,9 +360,9 @@ def test_standard_scaler_near_constant_features(
     # Make a dataset of known var = scales**2 and mean = average
     X[: n_samples // 2, :] = average + scales
     X[n_samples // 2 :, :] = average - scales
-    X_array = X if sparse_container is None else sparse_container(X)
+    x_array = X if sparse_container is None else sparse_container(X)
 
-    scaler = StandardScaler(with_mean=False).fit(X_array)
+    scaler = StandardScaler(with_mean=False).fit(x_array)
 
     # StandardScaler uses float64 accumulators even if the data has a float32
     # dtype.
@@ -398,13 +398,13 @@ def test_standard_scaler_near_constant_features(
 
 def test_scale_1d():
     # 1-d inputs
-    X_list = [1.0, 3.0, 5.0, 0.0]
-    X_arr = np.array(X_list)
+    x_list = [1.0, 3.0, 5.0, 0.0]
+    x_arr = np.array(x_list)
 
-    for X in [X_list, X_arr]:
-        X_scaled = scale(X)
-        assert_array_almost_equal(X_scaled.mean(), 0.0)
-        assert_array_almost_equal(X_scaled.std(), 1.0)
+    for X in [x_list, x_arr]:
+        x_scaled = scale(X)
+        assert_array_almost_equal(x_scaled.mean(), 0.0)
+        assert_array_almost_equal(x_scaled.std(), 1.0)
         assert_array_equal(scale(X, with_mean=False, with_std=False), X)
 
 
@@ -456,47 +456,47 @@ def test_scaler_2d_arrays():
     X[:, 0] = 0.0  # first feature is always of zero
 
     scaler = StandardScaler()
-    X_scaled = scaler.fit(X).transform(X, copy=True)
-    assert not np.any(np.isnan(X_scaled))
+    x_scaled = scaler.fit(X).transform(X, copy=True)
+    assert not np.any(np.isnan(x_scaled))
     assert scaler.n_samples_seen_ == n_samples
 
-    assert_array_almost_equal(X_scaled.mean(axis=0), n_features * [0.0])
-    assert_array_almost_equal(X_scaled.std(axis=0), [0.0, 1.0, 1.0, 1.0, 1.0])
+    assert_array_almost_equal(x_scaled.mean(axis=0), n_features * [0.0])
+    assert_array_almost_equal(x_scaled.std(axis=0), [0.0, 1.0, 1.0, 1.0, 1.0])
     # Check that X has been copied
-    assert X_scaled is not X
+    assert x_scaled is not X
 
     # check inverse transform
-    X_scaled_back = scaler.inverse_transform(X_scaled)
-    assert X_scaled_back is not X
-    assert X_scaled_back is not X_scaled
-    assert_array_almost_equal(X_scaled_back, X)
+    x_scaled_back = scaler.inverse_transform(x_scaled)
+    assert x_scaled_back is not X
+    assert x_scaled_back is not x_scaled
+    assert_array_almost_equal(x_scaled_back, X)
 
-    X_scaled = scale(X, axis=1, with_std=False)
-    assert not np.any(np.isnan(X_scaled))
-    assert_array_almost_equal(X_scaled.mean(axis=1), n_samples * [0.0])
-    X_scaled = scale(X, axis=1, with_std=True)
-    assert not np.any(np.isnan(X_scaled))
-    assert_array_almost_equal(X_scaled.mean(axis=1), n_samples * [0.0])
-    assert_array_almost_equal(X_scaled.std(axis=1), n_samples * [1.0])
+    x_scaled = scale(X, axis=1, with_std=False)
+    assert not np.any(np.isnan(x_scaled))
+    assert_array_almost_equal(x_scaled.mean(axis=1), n_samples * [0.0])
+    x_scaled = scale(X, axis=1, with_std=True)
+    assert not np.any(np.isnan(x_scaled))
+    assert_array_almost_equal(x_scaled.mean(axis=1), n_samples * [0.0])
+    assert_array_almost_equal(x_scaled.std(axis=1), n_samples * [1.0])
     # Check that the data hasn't been modified
-    assert X_scaled is not X
+    assert x_scaled is not X
 
-    X_scaled = scaler.fit(X).transform(X, copy=False)
-    assert not np.any(np.isnan(X_scaled))
-    assert_array_almost_equal(X_scaled.mean(axis=0), n_features * [0.0])
-    assert_array_almost_equal(X_scaled.std(axis=0), [0.0, 1.0, 1.0, 1.0, 1.0])
+    x_scaled = scaler.fit(X).transform(X, copy=False)
+    assert not np.any(np.isnan(x_scaled))
+    assert_array_almost_equal(x_scaled.mean(axis=0), n_features * [0.0])
+    assert_array_almost_equal(x_scaled.std(axis=0), [0.0, 1.0, 1.0, 1.0, 1.0])
     # Check that X has not been copied
-    assert X_scaled is X
+    assert x_scaled is X
 
     X = rng.randn(4, 5)
     X[:, 0] = 1.0  # first feature is a constant, non zero feature
     scaler = StandardScaler()
-    X_scaled = scaler.fit(X).transform(X, copy=True)
-    assert not np.any(np.isnan(X_scaled))
-    assert_array_almost_equal(X_scaled.mean(axis=0), n_features * [0.0])
-    assert_array_almost_equal(X_scaled.std(axis=0), [0.0, 1.0, 1.0, 1.0, 1.0])
+    x_scaled = scaler.fit(X).transform(X, copy=True)
+    assert not np.any(np.isnan(x_scaled))
+    assert_array_almost_equal(x_scaled.mean(axis=0), n_features * [0.0])
+    assert_array_almost_equal(x_scaled.std(axis=0), [0.0, 1.0, 1.0, 1.0, 1.0])
     # Check that X has not been copied
-    assert X_scaled is not X
+    assert x_scaled is not X
 
 
 def test_scaler_float16_overflow():
