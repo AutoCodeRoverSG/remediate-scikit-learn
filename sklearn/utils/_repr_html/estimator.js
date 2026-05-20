@@ -107,8 +107,8 @@ function detectTheme(element) {
     const body = document.querySelector('body');
 
     // Check VSCode theme
-    const themeKindAttr = body.getAttribute('data-vscode-theme-kind');
-    const themeNameAttr = body.getAttribute('data-vscode-theme-name');
+    const themeKindAttr = body.dataset.vscodeThemeKind;
+    const themeNameAttr = body.dataset.vscodeThemeName;
 
     if (themeKindAttr && themeNameAttr) {
         const themeKind = themeKindAttr.toLowerCase();
@@ -123,9 +123,9 @@ function detectTheme(element) {
     }
 
     // Check Jupyter theme
-    if (body.getAttribute('data-jp-theme-light') === 'false') {
+    if (body.dataset.jpThemeLight === 'false') {
         return 'dark';
-    } else if (body.getAttribute('data-jp-theme-light') === 'true') {
+    } else if (body.dataset.jpThemeLight === 'true') {
         return 'light';
     }
 

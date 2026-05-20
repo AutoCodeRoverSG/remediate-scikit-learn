@@ -99,7 +99,8 @@ def test_get_visual_block_pipeline():
             ("do_nothing", "passthrough"),
             ("do_nothing_more", None),
             ("classifier", LogisticRegression()),
-        ]
+        ],
+        memory=None,
     )
     est_html_info = _get_visual_block(pipe)
     assert est_html_info.kind == "serial"
@@ -147,8 +148,6 @@ def test_get_visual_block_column_transformer():
 
 
 def test_get_visual_block_transformed_target_regressor():
-    X = np.array([[0], [1], [2], [3], [4]])
-    y = np.array([1.0, 7.3, 54.5, 403.5])
     tt = TransformedTargetRegressor(func=np.log, inverse_func=np.exp)
     est_html_info = _get_visual_block(tt)
     assert est_html_info.kind == "serial"
@@ -163,7 +162,7 @@ def test_estimator_html_repr_an_empty_pipeline():
     Non-regression test for:
     https://github.com/scikit-learn/scikit-learn/issues/30197
     """
-    empty_pipeline = Pipeline([])
+    empty_pipeline = Pipeline([], memory=None)
     estimator_html_repr(empty_pipeline)
 
 
@@ -209,7 +208,8 @@ def test_estimator_html_repr_pipeline():
     )
 
     pipe = Pipeline(
-        [("preprocessor", preprocess), ("feat_u", feat_u), ("classifier", clf)]
+        [("preprocessor", preprocess), ("feat_u", feat_u), ("classifier", clf)],
+        memory=None,
     )
     html_output = estimator_html_repr(pipe)
 
@@ -371,7 +371,9 @@ def test_fallback_exists():
 
 def test_show_arrow_pipeline():
     """Show arrow in pipeline for top level in pipeline"""
-    pipe = Pipeline([("scale", StandardScaler()), ("log_Reg", LogisticRegression())])
+    pipe = Pipeline(
+        [("scale", StandardScaler()), ("log_Reg", LogisticRegression())], memory=None
+    )
 
     html_output = estimator_html_repr(pipe)
     assert (
@@ -423,10 +425,11 @@ def test_estimator_html_repr_unfitted_vs_fitted():
     "estimator",
     [
         LogisticRegression(),
-        make_pipeline(StandardScaler(), LogisticRegression()),
+        make_pipeline(StandardScaler(), LogisticRegression(), memory=None),
         make_pipeline(
             make_column_transformer((StandardScaler(), slice(0, 3))),
             LogisticRegression(),
+            memory=None,
         ),
     ],
 )
