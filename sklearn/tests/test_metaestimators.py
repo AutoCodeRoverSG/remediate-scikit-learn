@@ -330,7 +330,7 @@ def test_meta_estimators_delegate_data_validation(estimator):
     # clone to avoid side effects and ensure thread-safe test execution.
     estimator = clone(estimator)
     rng = np.random.default_rng(0)
-    set_random_state(estimator, 0)
+    set_random_state(estimator, random_state=0)
 
     n_samples = 30
     X = rng.choice(np.array(["aa", "bb", "cc"], dtype=object), size=n_samples)

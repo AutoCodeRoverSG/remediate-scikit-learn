@@ -310,7 +310,8 @@ class ConsumingClassifier(ClassifierMixin, BaseEstimator):
         )
         y_proba = np.empty(shape=(len(X), len(self.classes_)), dtype=np.float32)
         # each row sums up to 1.0:
-        y_proba[:] = np.random.dirichlet(alpha=np.ones(len(self.classes_)), size=len(X))
+        rng = np.random.default_rng(seed=42)
+        y_proba[:] = rng.dirichlet(alpha=np.ones(len(self.classes_)), size=len(X))
         return y_proba
 
     def predict_log_proba(self, X, sample_weight="default", metadata="default"):

@@ -211,13 +211,13 @@ class BaseLabelPropagation(ClassifierMixin, BaseEstimator, metaclass=ABCMeta):
         """
         check_is_fitted(self)
 
-        X_2d = validate_data(
+        x_2d = validate_data(
             self,
             X,
             accept_sparse=["csc", "csr", "coo", "dok", "bsr", "lil", "dia"],
             reset=False,
         )
-        weight_matrices = self._get_kernel(self.X_, X_2d)
+        weight_matrices = self._get_kernel(self.X_, x_2d)
         if self.kernel == "knn":
             probabilities = np.array(
                 [

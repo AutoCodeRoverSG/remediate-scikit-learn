@@ -5,7 +5,7 @@
 
 
 try:
-    from sklearn import *  # noqa: F403
+    import sklearn  # noqa: F403
 
     _top_import_error = None
 except Exception as e:

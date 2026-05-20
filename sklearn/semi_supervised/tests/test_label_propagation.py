@@ -213,17 +213,17 @@ def test_convergence_warning():
 
 
 @pytest.mark.parametrize(
-    "LabelPropagationCls",
+    "label_propagation_cls",
     [label_propagation.LabelSpreading, label_propagation.LabelPropagation],
 )
-def test_label_propagation_non_zero_normalizer(LabelPropagationCls):
+def test_label_propagation_non_zero_normalizer(label_propagation_cls):
     # check that we don't divide by zero in case of null normalizer
     # non-regression test for
     # https://github.com/scikit-learn/scikit-learn/pull/15946
     # https://github.com/scikit-learn/scikit-learn/issues/9292
     X = np.array([[100.0, 100.0], [100.0, 100.0], [0.0, 0.0], [0.0, 0.0]])
     y = np.array([0, 1, -1, -1])
-    mdl = LabelPropagationCls(kernel="knn", max_iter=100, n_neighbors=1)
+    mdl = label_propagation_cls(kernel="knn", max_iter=100, n_neighbors=1)
     with warnings.catch_warnings():
         warnings.simplefilter("error", RuntimeWarning)
         mdl.fit(X, y)
