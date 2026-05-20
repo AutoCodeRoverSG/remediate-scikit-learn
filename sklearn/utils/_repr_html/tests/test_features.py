@@ -15,7 +15,7 @@ ct = ColumnTransformer([("norm1", Normalizer(), [0, 1])], remainder="passthrough
 ct2 = FeatureUnion(
     [("pca", PCA(n_components=1)), ("svd", TruncatedSVD(n_components=2))]
 )
-rng = np.random.RandomState(42)
+rng = np.random.default_rng(42)
 
 
 def test_n_features_not_fitted():
@@ -26,12 +26,12 @@ def test_n_features_not_fitted():
     assert "<div class='features fitted'>" not in out
 
 
-def test_with_MinimalTransformer():
+def test_with_minimal_transformer():
     """Test works with MinimalTransformer in a pipeline
     (doesn't inherit from BaseEstimator)"""
     X, y = np.array([[0, 1], [1, 1]]), np.array([[0, 1]])
 
-    model = Pipeline([("transformer", MinimalTransformer())])
+    model = Pipeline([("transformer", MinimalTransformer())], memory=None)
     model.fit(X, y)
     out = estimator_html_repr(model)
     assert "MinimalTransformer" in out
@@ -97,9 +97,11 @@ def test_features_html_with_pipeline():
     """Test works with MinimalTransformer in a pipeline and scaler
     to test number of features."""
 
-    pipe = Pipeline([("minimal", MinimalTransformer()), ("scaler", StandardScaler())])
+    pipe = Pipeline(
+        [("minimal", MinimalTransformer()), ("scaler", StandardScaler())], memory=None
+    )
 
-    X = rng.randn(10, 3)
+    X = rng.standard_normal((10, 3))
     pipe.fit(X)
     html = estimator_html_repr(pipe)
     assert "3 features" in html
