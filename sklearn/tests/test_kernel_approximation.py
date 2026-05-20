@@ -246,7 +246,7 @@ def test_rbf_sampler():
 def test_rbf_sampler_fitted_attributes_dtype(global_dtype):
     """Check that the fitted attributes are stored accordingly to the
     data type of X."""
-    rbf = RBFSampler()
+    rbf = RBFSampler(random_state=0)
 
     X = np.array([[1, 2], [3, 4], [5, 6]], dtype=global_dtype)
 
@@ -273,7 +273,7 @@ def test_rbf_sampler_dtype_equivalence():
 def test_rbf_sampler_gamma_scale():
     """Check the inner value computed when `gamma='scale'`."""
     X, y = [[0.0], [1.0]], [0, 1]
-    rbf = RBFSampler(gamma="scale")
+    rbf = RBFSampler(gamma="scale", random_state=42)
     rbf.fit(X, y)
     assert rbf._gamma == pytest.approx(4)
 
@@ -281,7 +281,7 @@ def test_rbf_sampler_gamma_scale():
 def test_skewed_chi2_sampler_fitted_attributes_dtype(global_dtype):
     """Check that the fitted attributes are stored accordingly to the
     data type of X."""
-    skewed_chi2_sampler = SkewedChi2Sampler()
+    skewed_chi2_sampler = SkewedChi2Sampler(random_state=42)
 
     X = np.array([[1, 2], [3, 4], [5, 6]], dtype=global_dtype)
 
@@ -315,11 +315,11 @@ def test_input_validation(csr_container):
     # No assertions; the old versions would simply crash
     X = [[1, 2], [3, 4], [5, 6]]
     AdditiveChi2Sampler().fit(X).transform(X)
-    SkewedChi2Sampler().fit(X).transform(X)
-    RBFSampler().fit(X).transform(X)
+    SkewedChi2Sampler(random_state=42).fit(X).transform(X)
+    RBFSampler(random_state=42).fit(X).transform(X)
 
     X = csr_container(X)
-    RBFSampler().fit(X).transform(X)
+    RBFSampler(random_state=42).fit(X).transform(X)
 
 
 def test_nystroem_approximation():
@@ -328,25 +328,25 @@ def test_nystroem_approximation():
     X = rnd.uniform(size=(10, 4))
 
     # With n_components = n_samples this is exact
-    X_transformed = Nystroem(n_components=X.shape[0]).fit_transform(X)
+    x_transformed = Nystroem(n_components=X.shape[0], random_state=rnd).fit_transform(X)
     K = rbf_kernel(X)
-    assert_array_almost_equal(np.dot(X_transformed, X_transformed.T), K)
+    assert_array_almost_equal(np.dot(x_transformed, x_transformed.T), K)
 
     trans = Nystroem(n_components=2, random_state=rnd)
-    X_transformed = trans.fit(X).transform(X)
-    assert X_transformed.shape == (X.shape[0], 2)
+    x_transformed = trans.fit(X).transform(X)
+    assert x_transformed.shape == (X.shape[0], 2)
 
     # test callable kernel
     trans = Nystroem(n_components=2, kernel=_linear_kernel, random_state=rnd)
-    X_transformed = trans.fit(X).transform(X)
-    assert X_transformed.shape == (X.shape[0], 2)
+    x_transformed = trans.fit(X).transform(X)
+    assert x_transformed.shape == (X.shape[0], 2)
 
     # test that available kernels fit and transform
     kernels_available = kernel_metrics()
     for kern in kernels_available:
         trans = Nystroem(n_components=2, kernel=kern, random_state=rnd)
-        X_transformed = trans.fit(X).transform(X)
-        assert X_transformed.shape == (X.shape[0], 2)
+        x_transformed = trans.fit(X).transform(X)
+        assert x_transformed.shape == (X.shape[0], 2)
 
 
 @pytest.mark.parametrize(
@@ -366,28 +366,28 @@ def test_nystroem_approximation_array_api(
     # Ensure full-rank linear kernel to limit the impact of device-specific
     # rounding discrepancies.
     n_features = 2 * n_samples
-    X_np = rnd.uniform(size=(n_samples, n_features)).astype(dtype_name)
+    x_np = rnd.uniform(size=(n_samples, n_features)).astype(dtype_name)
     if kernel == "precomputed":
-        X_np = rbf_kernel(X_np[:n_components])
+        x_np = rbf_kernel(x_np[:n_components])
 
-    X_xp = xp.asarray(X_np, device=device)
+    x_xp = xp.asarray(x_np, device=device)
 
     nystroem = Nystroem(n_components=n_components, kernel=kernel, random_state=0)
-    X_np_transformed = nystroem.fit_transform(X_np)
+    x_np_transformed = nystroem.fit_transform(x_np)
 
     with config_context(array_api_dispatch=True):
-        X_xp_transformed = nystroem.fit_transform(X_xp)
-        X_xp_transformed_np = move_to(X_xp_transformed, xp=np, device="cpu")
+        x_xp_transformed = nystroem.fit_transform(x_xp)
+        x_xp_transformed_np = move_to(x_xp_transformed, xp=np, device="cpu")
 
         for attribute_name in ["components_", "normalization_"]:
             xp_attr, _, device_attr = get_namespace_and_device(
                 getattr(nystroem, attribute_name)
             )
             assert xp_attr is xp
-            assert device_attr == array_device(X_xp)
+            assert device_attr == array_device(x_xp)
 
     atol = _atol_for_type(dtype_name)
-    assert_allclose(X_np_transformed, X_xp_transformed_np, atol=atol)
+    assert_allclose(x_np_transformed, x_xp_transformed_np, atol=atol)
 
 
 def test_nystroem_default_parameters():
