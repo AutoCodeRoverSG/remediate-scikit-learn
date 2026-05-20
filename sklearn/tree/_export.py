@@ -420,33 +420,13 @@ class _DOTTreeExporter(_BaseTreeExporter):
     def __init__(
         self,
         out_file=SENTINEL,
-        max_depth=None,
-        feature_names=None,
-        class_names=None,
-        label="all",
-        filled=False,
         leaves_parallel=False,
-        impurity=True,
-        node_ids=False,
-        proportion=False,
-        rotate=False,
-        rounded=False,
         special_characters=False,
-        precision=3,
         fontname="helvetica",
+        rotate=False,
+        **kwargs,
     ):
-        super().__init__(
-            max_depth=max_depth,
-            feature_names=feature_names,
-            class_names=class_names,
-            label=label,
-            filled=filled,
-            impurity=impurity,
-            node_ids=node_ids,
-            proportion=proportion,
-            rounded=rounded,
-            precision=precision,
-        )
+        super().__init__(**kwargs)
         self.leaves_parallel = leaves_parallel
         self.out_file = out_file
         self.special_characters = special_characters
@@ -489,7 +469,7 @@ class _DOTTreeExporter(_BaseTreeExporter):
         if self.leaves_parallel:
             for rank in sorted(self.ranks):
                 self.out_file.write(
-                    "{rank=same ; " + "; ".join(r for r in self.ranks[rank]) + "} ;\n"
+                    "{rank=same ; " + "; ".join(self.ranks[rank]) + "} ;\n"
                 )
         self.out_file.write("}")
 
@@ -629,11 +609,11 @@ class _MPLTreeExporter(_BaseTreeExporter):
         self.colors = {"bounds": None}
 
         self.characters = ["#", "[", "]", "<=", "\n", "", ""]
-        self.bbox_args = dict()
+        self.bbox_args = {}
         if self.rounded:
             self.bbox_args["boxstyle"] = "round"
 
-        self.arrow_args = dict(arrowstyle="<-")
+        self.arrow_args = {"arrowstyle": "<-"}
 
     def _make_tree(self, node_id, et, criterion, depth=0):
         # traverses _tree.Tree recursively, builds intermediate
@@ -709,21 +689,21 @@ class _MPLTreeExporter(_BaseTreeExporter):
         import matplotlib.pyplot as plt
 
         # kwargs for annotations without a bounding box
-        common_kwargs = dict(
-            zorder=100 - 10 * depth,
-            xycoords="axes fraction",
-        )
+        common_kwargs = {
+            "zorder": 100 - 10 * depth,
+            "xycoords": "axes fraction",
+        }
         if self.fontsize is not None:
             common_kwargs["fontsize"] = self.fontsize
 
         # kwargs for annotations with a bounding box
-        kwargs = dict(
-            ha="center",
-            va="center",
-            bbox=self.bbox_args.copy(),
-            arrowprops=self.arrow_args.copy(),
+        kwargs = {
+            "ha": "center",
+            "va": "center",
+            "bbox": self.bbox_args.copy(),
+            "arrowprops": self.arrow_args.copy(),
             **common_kwargs,
-        )
+        }
         kwargs["arrowprops"]["edgecolor"] = plt.rcParams["text.color"]
 
         # offset things by .5 to center them in plot
@@ -780,15 +760,11 @@ class _MPLTreeExporter(_BaseTreeExporter):
         "class_names": ["array-like", "boolean", None],
         "label": [StrOptions({"all", "root", "none"})],
         "filled": ["boolean"],
-        "leaves_parallel": ["boolean"],
         "impurity": ["boolean"],
         "node_ids": ["boolean"],
         "proportion": ["boolean"],
-        "rotate": ["boolean"],
         "rounded": ["boolean"],
-        "special_characters": ["boolean"],
         "precision": [Interval(Integral, 0, None, closed="left"), None],
-        "fontname": [str],
     },
     prefer_skip_nested_validation=True,
 )
@@ -801,15 +777,12 @@ def export_graphviz(
     class_names=None,
     label="all",
     filled=False,
-    leaves_parallel=False,
     impurity=True,
     node_ids=False,
     proportion=False,
-    rotate=False,
     rounded=False,
-    special_characters=False,
     precision=3,
-    fontname="helvetica",
+    **kwargs,
 ):
     """Export a decision tree in DOT format.
 
@@ -910,6 +883,16 @@ def export_graphviz(
     >>> tree.export_graphviz(clf)
     'digraph Tree {...
     """
+    leaves_parallel = kwargs.pop("leaves_parallel", False)
+    rotate = kwargs.pop("rotate", False)
+    special_characters = kwargs.pop("special_characters", False)
+    fontname = kwargs.pop("fontname", "helvetica")
+    if kwargs:
+        raise TypeError(
+            "export_graphviz() got unexpected keyword argument(s): "
+            + ", ".join(sorted(kwargs.keys()))
+        )
+
     if feature_names is not None:
         if any((not isinstance(name, str) for name in feature_names)):
             raise ValueError("All feature names must be strings.")
@@ -1129,7 +1112,6 @@ def export_text(
                     for v in value
                 ]
                 val = "[" + "".join(val)[:-2] + "]"
-                weighted_n_node_samples
             val += " class: " + str(class_name)
         else:
             val = ["{1:.{0}f}, ".format(decimals, v) for v in value]
