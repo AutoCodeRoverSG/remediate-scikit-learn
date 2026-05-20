@@ -2228,16 +2228,16 @@ def test_kernelcenterer_non_linear_kernel():
     phi_X_test_center = scaler.transform(phi_X_test)
 
     # create the different kernel
-    K = phi_X @ phi_X.T
-    K_test = phi_X_test @ phi_X.T
-    K_center = phi_X_center @ phi_X_center.T
-    K_test_center = phi_X_test_center @ phi_X_center.T
+    k_gram = phi_X @ phi_X.T
+    k_test = phi_X_test @ phi_X.T
+    k_center = phi_X_center @ phi_X_center.T
+    k_test_center = phi_X_test_center @ phi_X_center.T
 
     kernel_centerer = KernelCenterer()
-    kernel_centerer.fit(K)
+    kernel_centerer.fit(k_gram)
 
-    assert_allclose(kernel_centerer.transform(K), K_center)
-    assert_allclose(kernel_centerer.transform(K_test), K_test_center)
+    assert_allclose(kernel_centerer.transform(k_gram), k_center)
+    assert_allclose(kernel_centerer.transform(k_test), k_test_center)
 
     # check the results coherence with the method proposed in:
     # B. Schölkopf, A. Smola, and K.R. Müller,
@@ -2246,17 +2246,19 @@ def test_kernelcenterer_non_linear_kernel():
 
     # K_centered = (I - 1_M) K (I - 1_M)
     #            =  K - 1_M K - K 1_M + 1_M K 1_M
-    ones_M = np.ones_like(K) / K.shape[0]
-    K_centered = K - ones_M @ K - K @ ones_M + ones_M @ K @ ones_M
-    assert_allclose(kernel_centerer.transform(K), K_centered)
+    ones_m = np.ones_like(k_gram) / k_gram.shape[0]
+    k_centered = (
+        k_gram - ones_m @ k_gram - k_gram @ ones_m + ones_m @ k_gram @ ones_m
+    )
+    assert_allclose(kernel_centerer.transform(k_gram), k_centered)
 
     # K_test_centered = (K_test - 1'_M K)(I - 1_M)
     #                 = K_test - 1'_M K - K_test 1_M + 1'_M K 1_M
-    ones_prime_M = np.ones_like(K_test) / K.shape[0]
-    K_test_centered = (
-        K_test - ones_prime_M @ K - K_test @ ones_M + ones_prime_M @ K @ ones_M
+    ones_prime_m = np.ones_like(k_test) / k_gram.shape[0]
+    k_test_centered = (
+        k_test - ones_prime_m @ k_gram - k_test @ ones_m + ones_prime_m @ k_gram @ ones_m
     )
-    assert_allclose(kernel_centerer.transform(K_test), K_test_centered)
+    assert_allclose(kernel_centerer.transform(k_test), k_test_centered)
 
 
 def test_cv_pipeline_precomputed():
@@ -2267,7 +2269,7 @@ def test_cv_pipeline_precomputed():
     y_true = np.ones((4,))
     K = X.dot(X.T)
     kcent = KernelCenterer()
-    pipeline = Pipeline([("kernel_centerer", kcent), ("svr", SVR())])
+    pipeline = Pipeline([("kernel_centerer", kcent), ("svr", SVR())], memory=None)
 
     # did the pipeline set the pairwise attribute?
     assert pipeline.__sklearn_tags__().input_tags.pairwise
@@ -2283,9 +2285,9 @@ def test_fit_transform():
     rng = np.random.RandomState(0)
     X = rng.random_sample((5, 4))
     for obj in (StandardScaler(), Normalizer(), Binarizer()):
-        X_transformed = obj.fit(X).transform(X)
-        X_transformed2 = obj.fit_transform(X)
-        assert_array_equal(X_transformed, X_transformed2)
+        x_transformed = obj.fit(X).transform(X)
+        x_transformed2 = obj.fit_transform(X)
+        assert_array_equal(x_transformed, x_transformed2)
 
 
 def test_add_dummy_feature():
