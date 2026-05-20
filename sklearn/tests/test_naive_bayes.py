@@ -236,37 +236,37 @@ def test_gnb_naive_bayes_scale_invariance():
     assert_array_equal(labels[1], labels[2])
 
 
-@pytest.mark.parametrize("DiscreteNaiveBayes", DISCRETE_NAIVE_BAYES_CLASSES)
-def test_discretenb_prior(DiscreteNaiveBayes, global_random_seed):
+@pytest.mark.parametrize("discrete_naive_bayes", DISCRETE_NAIVE_BAYES_CLASSES)
+def test_discretenb_prior(discrete_naive_bayes, global_random_seed):
     # Test whether class priors are properly set.
     X2, y2 = get_random_integer_x_three_classes_y(global_random_seed)
-    clf = DiscreteNaiveBayes().fit(X2, y2)
+    clf = discrete_naive_bayes().fit(X2, y2)
     assert_array_almost_equal(
         np.log(np.array([2, 2, 2]) / 6.0), clf.class_log_prior_, 8
     )
 
 
-@pytest.mark.parametrize("DiscreteNaiveBayes", DISCRETE_NAIVE_BAYES_CLASSES)
-def test_discretenb_partial_fit(DiscreteNaiveBayes):
-    clf1 = DiscreteNaiveBayes()
+@pytest.mark.parametrize("discrete_naive_bayes", DISCRETE_NAIVE_BAYES_CLASSES)
+def test_discretenb_partial_fit(discrete_naive_bayes):
+    clf1 = discrete_naive_bayes()
     clf1.fit([[0, 1], [1, 0], [1, 1]], [0, 1, 1])
 
-    clf2 = DiscreteNaiveBayes()
+    clf2 = discrete_naive_bayes()
     clf2.partial_fit([[0, 1], [1, 0], [1, 1]], [0, 1, 1], classes=[0, 1])
     assert_array_equal(clf1.class_count_, clf2.class_count_)
-    if DiscreteNaiveBayes is CategoricalNB:
+    if discrete_naive_bayes is CategoricalNB:
         for i in range(len(clf1.category_count_)):
             assert_array_equal(clf1.category_count_[i], clf2.category_count_[i])
     else:
         assert_array_equal(clf1.feature_count_, clf2.feature_count_)
 
-    clf3 = DiscreteNaiveBayes()
+    clf3 = discrete_naive_bayes()
     # all categories have to appear in the first partial fit
     clf3.partial_fit([[0, 1]], [0], classes=[0, 1])
     clf3.partial_fit([[1, 0]], [1])
     clf3.partial_fit([[1, 1]], [1])
     assert_array_equal(clf1.class_count_, clf3.class_count_)
-    if DiscreteNaiveBayes is CategoricalNB:
+    if discrete_naive_bayes is CategoricalNB:
         # the categories for each feature of CategoricalNB are mapped to an
         # index chronologically with each call of partial fit and therefore
         # the category_count matrices cannot be compared for equality
@@ -296,18 +296,18 @@ def test_discretenb_partial_fit(DiscreteNaiveBayes):
         assert_array_equal(clf1.feature_count_, clf3.feature_count_)
 
 
-@pytest.mark.parametrize("NaiveBayes", ALL_NAIVE_BAYES_CLASSES)
-def test_NB_partial_fit_no_first_classes(NaiveBayes, global_random_seed):
+@pytest.mark.parametrize("naive_bayes", ALL_NAIVE_BAYES_CLASSES)
+def test_NB_partial_fit_no_first_classes(naive_bayes, global_random_seed):
     # classes is required for first call to partial fit
     X2, y2 = get_random_integer_x_three_classes_y(global_random_seed)
 
     with pytest.raises(
         ValueError, match="classes must be passed on the first call to partial_fit."
     ):
-        NaiveBayes().partial_fit(X2, y2)
+        naive_bayes().partial_fit(X2, y2)
 
     # check consistency of consecutive classes values
-    clf = NaiveBayes()
+    clf = naive_bayes()
     clf.partial_fit(X2, y2, classes=np.unique(y2))
     with pytest.raises(
         ValueError, match="is not the same as on last call to partial_fit"
@@ -320,15 +320,15 @@ def test_discretenb_predict_proba():
 
     # The 100s below distinguish Bernoulli from multinomial.
     # FIXME: write a test to show this.
-    X_bernoulli = [[1, 100, 0], [0, 1, 0], [0, 100, 1]]
-    X_multinomial = [[0, 1], [1, 3], [4, 0]]
+    x_bernoulli = [[1, 100, 0], [0, 1, 0], [0, 100, 1]]
+    x_multinomial = [[0, 1], [1, 3], [4, 0]]
 
     # test binary case (1-d output)
     y = [0, 0, 2]  # 2 is regression test for binary case, 02e673
-    for DiscreteNaiveBayes, X in zip(
-        [BernoulliNB, MultinomialNB], [X_bernoulli, X_multinomial]
+    for discrete_naive_bayes, X in zip(
+        [BernoulliNB, MultinomialNB], [x_bernoulli, x_multinomial]
     ):
-        clf = DiscreteNaiveBayes().fit(X, y)
+        clf = discrete_naive_bayes().fit(X, y)
         assert clf.predict(X[-1:]) == 2
         assert clf.predict_proba([X[0]]).shape == (1, 2)
         assert_array_almost_equal(
@@ -337,10 +337,10 @@ def test_discretenb_predict_proba():
 
     # test multiclass case (2-d output, must sum to one)
     y = [0, 1, 2]
-    for DiscreteNaiveBayes, X in zip(
-        [BernoulliNB, MultinomialNB], [X_bernoulli, X_multinomial]
+    for discrete_naive_bayes, X in zip(
+        [BernoulliNB, MultinomialNB], [x_bernoulli, x_multinomial]
     ):
-        clf = DiscreteNaiveBayes().fit(X, y)
+        clf = discrete_naive_bayes().fit(X, y)
         assert clf.predict_proba(X[0:1]).shape == (1, 3)
         assert clf.predict_proba(X[:2]).shape == (2, 3)
         assert_almost_equal(np.sum(clf.predict_proba([X[1]])), 1)
@@ -348,23 +348,23 @@ def test_discretenb_predict_proba():
         assert_almost_equal(np.sum(np.exp(clf.class_log_prior_)), 1)
 
 
-@pytest.mark.parametrize("DiscreteNaiveBayes", DISCRETE_NAIVE_BAYES_CLASSES)
-def test_discretenb_uniform_prior(DiscreteNaiveBayes):
+@pytest.mark.parametrize("discrete_naive_bayes", DISCRETE_NAIVE_BAYES_CLASSES)
+def test_discretenb_uniform_prior(discrete_naive_bayes):
     # Test whether discrete NB classes fit a uniform prior
     # when fit_prior=False and class_prior=None
 
-    clf = DiscreteNaiveBayes()
+    clf = discrete_naive_bayes()
     clf.set_params(fit_prior=False)
     clf.fit([[0], [0], [1]], [0, 0, 1])
     prior = np.exp(clf.class_log_prior_)
     assert_array_almost_equal(prior, np.array([0.5, 0.5]))
 
 
-@pytest.mark.parametrize("DiscreteNaiveBayes", DISCRETE_NAIVE_BAYES_CLASSES)
-def test_discretenb_provide_prior(DiscreteNaiveBayes):
+@pytest.mark.parametrize("discrete_naive_bayes", DISCRETE_NAIVE_BAYES_CLASSES)
+def test_discretenb_provide_prior(discrete_naive_bayes):
     # Test whether discrete NB classes use provided prior
 
-    clf = DiscreteNaiveBayes(class_prior=[0.5, 0.5])
+    clf = discrete_naive_bayes(class_prior=[0.5, 0.5])
     clf.fit([[0], [0], [1]], [0, 0, 1])
     prior = np.exp(clf.class_log_prior_)
     assert_array_almost_equal(prior, np.array([0.5, 0.5]))
@@ -379,8 +379,8 @@ def test_discretenb_provide_prior(DiscreteNaiveBayes):
         clf.partial_fit([[0], [1]], [0, 1], classes=[0, 1, 1])
 
 
-@pytest.mark.parametrize("DiscreteNaiveBayes", DISCRETE_NAIVE_BAYES_CLASSES)
-def test_discretenb_provide_prior_with_partial_fit(DiscreteNaiveBayes):
+@pytest.mark.parametrize("discrete_naive_bayes", DISCRETE_NAIVE_BAYES_CLASSES)
+def test_discretenb_provide_prior_with_partial_fit(discrete_naive_bayes):
     # Test whether discrete NB classes use provided prior
     # when using partial_fit
 
@@ -390,9 +390,9 @@ def test_discretenb_provide_prior_with_partial_fit(DiscreteNaiveBayes):
     )
 
     for prior in [None, [0.3, 0.3, 0.4]]:
-        clf_full = DiscreteNaiveBayes(class_prior=prior)
+        clf_full = discrete_naive_bayes(class_prior=prior)
         clf_full.fit(iris.data, iris.target)
-        clf_partial = DiscreteNaiveBayes(class_prior=prior)
+        clf_partial = discrete_naive_bayes(class_prior=prior)
         clf_partial.partial_fit(iris_data1, iris_target1, classes=[0, 1, 2])
         clf_partial.partial_fit(iris_data2, iris_target2)
         assert_array_almost_equal(
@@ -400,8 +400,8 @@ def test_discretenb_provide_prior_with_partial_fit(DiscreteNaiveBayes):
         )
 
 
-@pytest.mark.parametrize("DiscreteNaiveBayes", DISCRETE_NAIVE_BAYES_CLASSES)
-def test_discretenb_sample_weight_multiclass(DiscreteNaiveBayes):
+@pytest.mark.parametrize("discrete_naive_bayes", DISCRETE_NAIVE_BAYES_CLASSES)
+def test_discretenb_sample_weight_multiclass(discrete_naive_bayes):
     # check shape consistency for number of samples at fit time
     X = [
         [0, 0, 1],
@@ -412,11 +412,11 @@ def test_discretenb_sample_weight_multiclass(DiscreteNaiveBayes):
     y = [0, 0, 1, 2]
     sample_weight = np.array([1, 1, 2, 2], dtype=np.float64)
     sample_weight /= sample_weight.sum()
-    clf = DiscreteNaiveBayes().fit(X, y, sample_weight=sample_weight)
+    clf = discrete_naive_bayes().fit(X, y, sample_weight=sample_weight)
     assert_array_equal(clf.predict(X), [0, 1, 1, 2])
 
     # Check sample weight using the partial_fit method
-    clf = DiscreteNaiveBayes()
+    clf = discrete_naive_bayes()
     clf.partial_fit(X[:2], y[:2], classes=[0, 1, 2], sample_weight=sample_weight[:2])
     clf.partial_fit(X[2:3], y[2:3], sample_weight=sample_weight[2:3])
     clf.partial_fit(X[3:], y[3:], sample_weight=sample_weight[3:])
