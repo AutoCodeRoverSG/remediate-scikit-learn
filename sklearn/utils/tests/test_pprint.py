@@ -16,7 +16,7 @@ from sklearn.utils._pprint import _EstimatorPrettyPrinter
 class LogisticRegression(BaseEstimator):
     def __init__(
         self,
-        C=1.0,
+        c=1.0,
         l1_ratio=0,
         dual=False,
         tol=1e-4,
@@ -31,7 +31,7 @@ class LogisticRegression(BaseEstimator):
         warm_start=False,
         n_jobs=None,
     ):
-        self.C = C
+        self.c = c
         self.l1_ratio = l1_ratio
         self.dual = dual
         self.tol = tol
@@ -145,7 +145,7 @@ class Pipeline(BaseEstimator):
 class SVC(BaseEstimator):
     def __init__(
         self,
-        C=1.0,
+        c=1.0,
         kernel="rbf",
         degree=3,
         gamma="auto_deprecated",
@@ -165,7 +165,7 @@ class SVC(BaseEstimator):
         self.gamma = gamma
         self.coef0 = coef0
         self.tol = tol
-        self.C = C
+        self.c = c
         self.shrinking = shrinking
         self.probability = probability
         self.cache_size = cache_size
@@ -243,11 +243,11 @@ class SimpleImputer(BaseEstimator):
 @config_context(print_changed_only=False)
 def test_basic():
     # Basic pprint test
-    lr = LogisticRegression()
+    lr = LogisticRegression(random_state=0)
     expected = """
-LogisticRegression(C=1.0, class_weight=None, dual=False, fit_intercept=True,
+LogisticRegression(c=1.0, class_weight=None, dual=False, fit_intercept=True,
                    intercept_scaling=1, l1_ratio=0, max_iter=100,
-                   multi_class='warn', n_jobs=None, random_state=None,
+                   multi_class='warn', n_jobs=None, random_state=0,
                    solver='warn', tol=0.0001, verbose=0, warm_start=False)"""
 
     expected = expected[1:]  # remove first \n
@@ -256,17 +256,18 @@ LogisticRegression(C=1.0, class_weight=None, dual=False, fit_intercept=True,
 
 def test_changed_only():
     # Make sure the changed_only param is correctly used when True (default)
-    lr = LogisticRegression(C=99)
-    expected = """LogisticRegression(C=99)"""
+    lr = LogisticRegression(c=99, random_state=0)
+    expected = """LogisticRegression(c=99, random_state=0)"""
     assert lr.__repr__() == expected
 
     # Check with a repr that doesn't fit on a single line
     lr = LogisticRegression(
-        C=99, class_weight=0.4, fit_intercept=False, tol=1234, verbose=True
+        c=99, class_weight=0.4, fit_intercept=False, random_state=0, tol=1234,
+        verbose=True,
     )
     expected = """
-LogisticRegression(C=99, class_weight=0.4, fit_intercept=False, tol=1234,
-                   verbose=True)"""
+LogisticRegression(c=99, class_weight=0.4, fit_intercept=False, random_state=0,
+                   tol=1234, verbose=True)"""
     expected = expected[1:]  # remove first \n
     assert lr.__repr__() == expected
 
@@ -292,17 +293,17 @@ LogisticRegression(C=99, class_weight=0.4, fit_intercept=False, tol=1234,
 @config_context(print_changed_only=False)
 def test_pipeline():
     # Render a pipeline object
-    pipeline = make_pipeline(StandardScaler(), LogisticRegression(C=999))
+    pipeline = make_pipeline(StandardScaler(), LogisticRegression(c=999, random_state=0), memory=None)
     expected = """
 Pipeline(memory=None,
          steps=[('standardscaler',
                  StandardScaler(copy=True, with_mean=True, with_std=True)),
                 ('logisticregression',
-                 LogisticRegression(C=999, class_weight=None, dual=False,
+                 LogisticRegression(c=999, class_weight=None, dual=False,
                                     fit_intercept=True, intercept_scaling=1,
                                     l1_ratio=0, max_iter=100,
                                     multi_class='warn', n_jobs=None,
-                                    random_state=None, solver='warn',
+                                    random_state=0, solver='warn',
                                     tol=0.0001, verbose=0, warm_start=False))],
          transform_input=None, verbose=False)"""
 
@@ -313,9 +314,9 @@ Pipeline(memory=None,
 @config_context(print_changed_only=False)
 def test_deeply_nested():
     # Render a deeply nested estimator
-    rfe = RFE(RFE(RFE(RFE(RFE(RFE(RFE(LogisticRegression())))))))
+    rfe = RFE(RFE(RFE(RFE(RFE(RFE(RFE(LogisticRegression(random_state=0))))))))
     expected = """
-RFE(estimator=RFE(estimator=RFE(estimator=RFE(estimator=RFE(estimator=RFE(estimator=RFE(estimator=LogisticRegression(C=1.0,
+RFE(estimator=RFE(estimator=RFE(estimator=RFE(estimator=RFE(estimator=RFE(estimator=RFE(estimator=LogisticRegression(c=1.0,
                                                                                                                      class_weight=None,
                                                                                                                      dual=False,
                                                                                                                      fit_intercept=True,
@@ -324,7 +325,7 @@ RFE(estimator=RFE(estimator=RFE(estimator=RFE(estimator=RFE(estimator=RFE(estima
                                                                                                                      max_iter=100,
                                                                                                                      multi_class='warn',
                                                                                                                      n_jobs=None,
-                                                                                                                     random_state=None,
+                                                                                                                     random_state=0,
                                                                                                                      solver='warn',
                                                                                                                      tol=0.0001,
                                                                                                                      verbose=0,
@@ -361,7 +362,7 @@ def test_print_estimator_max_depth(print_changed_only, expected):
     with config_context(print_changed_only=print_changed_only):
         pp = _EstimatorPrettyPrinter(depth=1)
 
-        rfe = RFE(RFE(RFE(RFE(RFE(LogisticRegression())))))
+        rfe = RFE(RFE(RFE(RFE(RFE(LogisticRegression(random_state=0))))))
         assert pp.pformat(rfe) == expected
 
 
@@ -372,14 +373,14 @@ def test_gridsearch():
         {"kernel": ["rbf"], "gamma": [1e-3, 1e-4], "C": [1, 10, 100, 1000]},
         {"kernel": ["linear"], "C": [1, 10, 100, 1000]},
     ]
-    gs = GridSearchCV(SVC(), param_grid, cv=5)
+    gs = GridSearchCV(SVC(random_state=0), param_grid, cv=5)
 
     expected = """
 GridSearchCV(cv=5, error_score='raise-deprecating',
-             estimator=SVC(C=1.0, cache_size=200, class_weight=None, coef0=0.0,
+             estimator=SVC(c=1.0, cache_size=200, class_weight=None, coef0=0.0,
                            decision_function_shape='ovr', degree=3,
                            gamma='auto_deprecated', kernel='rbf', max_iter=-1,
-                           probability=False, random_state=None, shrinking=True,
+                           probability=False, random_state=0, shrinking=True,
                            tol=0.001, verbose=False),
              iid='warn', n_jobs=None,
              param_grid=[{'C': [1, 10, 100, 1000], 'gamma': [0.001, 0.0001],
@@ -423,7 +424,7 @@ GridSearchCV(cv=3, error_score='raise-deprecating',
                                             svd_solver='auto', tol=0.0,
                                             whiten=False)),
                                        ('classify',
-                                        SVC(C=1.0, cache_size=200,
+                                        SVC(c=1.0, cache_size=200,
                                             class_weight=None, coef0=0.0,
                                             decision_function_shape='ovr',
                                             degree=3, gamma='auto_deprecated',
@@ -514,7 +515,7 @@ CountVectorizer(analyzer='word', binary=False, decode_error='strict',
     gs = GridSearchCV(SVC(), param_grid)
     expected = """
 GridSearchCV(cv='warn', error_score='raise-deprecating',
-             estimator=SVC(C=1.0, cache_size=200, class_weight=None, coef0=0.0,
+             estimator=SVC(c=1.0, cache_size=200, class_weight=None, coef0=0.0,
                            decision_function_shape='ovr', degree=3,
                            gamma='auto_deprecated', kernel='rbf', max_iter=-1,
                            probability=False, random_state=None, shrinking=True,
@@ -534,7 +535,7 @@ GridSearchCV(cv='warn', error_score='raise-deprecating',
     gs = GridSearchCV(SVC(), param_grid)
     expected = """
 GridSearchCV(cv='warn', error_score='raise-deprecating',
-             estimator=SVC(C=1.0, cache_size=200, class_weight=None, coef0=0.0,
+             estimator=SVC(c=1.0, cache_size=200, class_weight=None, coef0=0.0,
                            decision_function_shape='ovr', degree=3,
                            gamma='auto_deprecated', kernel='rbf', max_iter=-1,
                            probability=False, random_state=None, shrinking=True,
@@ -560,7 +561,7 @@ def test_bruteforce_ellipsis():
     # test when the left and right side of the ellipsis aren't on the same
     # line.
     expected = """
-LogisticRegression(C=1.0, class_weight=None, dual=False, fit_intercept=True,
+LogisticRegression(c=1.0, class_weight=None, dual=False, fit_intercept=True,
                    in...
                    multi_class='warn', n_jobs=None, random_state=None,
                    solver='warn', tol=0.0001, verbose=0, warm_start=False)"""
@@ -590,7 +591,7 @@ Lo...
     # right side of the ellispsis are on different lines. In this case we
     # want to expend the whole line of the right side
     expected = """
-LogisticRegression(C=1.0, class_weight=None, dual=False, fit_intercept=True,
+LogisticRegression(c=1.0, class_weight=None, dual=False, fit_intercept=True,
                    intercept_scaling=1, l1_ratio=0,...00,
                    multi_class='warn', n_jobs=None, random_state=None,
                    solver='warn', tol=0.0001, verbose=0, warm_start=False)"""
@@ -602,7 +603,7 @@ LogisticRegression(C=1.0, class_weight=None, dual=False, fit_intercept=True,
     # want to expend the whole line of the right side, just add the ellispsis
     # between the 2 sides.
     expected = """
-LogisticRegression(C=1.0, class_weight=None, dual=False, fit_intercept=True,
+LogisticRegression(c=1.0, class_weight=None, dual=False, fit_intercept=True,
                    intercept_scaling=1, l1_ratio=0, max...r=100,
                    multi_class='warn', n_jobs=None, random_state=None,
                    solver='warn', tol=0.0001, verbose=0, warm_start=False)"""
@@ -613,7 +614,7 @@ LogisticRegression(C=1.0, class_weight=None, dual=False, fit_intercept=True,
     # right side of the ellispsis are on the same line, but adding the ellipsis
     # would actually make the repr longer. So we don't add the ellipsis.
     expected = """
-LogisticRegression(C=1.0, class_weight=None, dual=False, fit_intercept=True,
+LogisticRegression(c=1.0, class_weight=None, dual=False, fit_intercept=True,
                    intercept_scaling=1, l1_ratio=0, max_iter=100,
                    multi_class='warn', n_jobs=None, random_state=None,
                    solver='warn', tol=0.0001, verbose=0, warm_start=False)"""
