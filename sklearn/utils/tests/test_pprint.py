@@ -96,9 +96,10 @@ class GridSearchCV(BaseEstimator):
         self.return_train_score = return_train_score
 
 
-class CountVectorizer(BaseEstimator):
+class _VectorizerMixin(BaseEstimator):
     def __init__(
         self,
+        *,
         input="content",
         encoding="utf-8",
         decode_error="strict",
@@ -110,12 +111,6 @@ class CountVectorizer(BaseEstimator):
         token_pattern=r"(?u)\b\w\w+\b",
         ngram_range=(1, 1),
         analyzer="word",
-        max_df=1.0,
-        min_df=1,
-        max_features=None,
-        vocabulary=None,
-        binary=False,
-        dtype=np.int64,
     ):
         self.input = input
         self.encoding = encoding
@@ -127,10 +122,25 @@ class CountVectorizer(BaseEstimator):
         self.lowercase = lowercase
         self.token_pattern = token_pattern
         self.stop_words = stop_words
+        self.ngram_range = ngram_range
+
+
+class CountVectorizer(_VectorizerMixin):
+    def __init__(
+        self,
+        *,
+        max_df=1.0,
+        min_df=1,
+        max_features=None,
+        vocabulary=None,
+        binary=False,
+        dtype=np.int64,
+        **kwargs,
+    ):
+        super().__init__(**kwargs)
         self.max_df = max_df
         self.min_df = min_df
         self.max_features = max_features
-        self.ngram_range = ngram_range
         self.vocabulary = vocabulary
         self.binary = binary
         self.dtype = dtype
@@ -149,7 +159,6 @@ class SVC(BaseEstimator):
         kernel="rbf",
         degree=3,
         gamma="auto_deprecated",
-        coef0=0.0,
         shrinking=True,
         probability=False,
         tol=1e-3,
@@ -163,7 +172,6 @@ class SVC(BaseEstimator):
         self.kernel = kernel
         self.degree = degree
         self.gamma = gamma
-        self.coef0 = coef0
         self.tol = tol
         self.c = c
         self.shrinking = shrinking
@@ -281,13 +289,14 @@ LogisticRegression(c=99, class_weight=0.4, fit_intercept=False, random_state=0,
     assert imputer.__repr__() == expected
 
     # make sure array parameters don't throw error (see #13583)
-    repr(
+    result = repr(
         LogisticRegressionCV(
             Cs=np.array([0.1, 1]),
             use_legacy_attributes=False,
             scoring="neg_log_loss",  # TODO(1.11): remove because it is default now
         )
     )
+    assert isinstance(result, str)
 
 
 @config_context(print_changed_only=False)
@@ -377,7 +386,7 @@ def test_gridsearch():
 
     expected = """
 GridSearchCV(cv=5, error_score='raise-deprecating',
-             estimator=SVC(c=1.0, cache_size=200, class_weight=None, coef0=0.0,
+             estimator=SVC(c=1.0, cache_size=200, class_weight=None,
                            decision_function_shape='ovr', degree=3,
                            gamma='auto_deprecated', kernel='rbf', max_iter=-1,
                            probability=False, random_state=0, shrinking=True,
@@ -425,7 +434,7 @@ GridSearchCV(cv=3, error_score='raise-deprecating',
                                             whiten=False)),
                                        ('classify',
                                         SVC(c=1.0, cache_size=200,
-                                            class_weight=None, coef0=0.0,
+                                            class_weight=None,
                                             decision_function_shape='ovr',
                                             degree=3, gamma='auto_deprecated',
                                             kernel='rbf', max_iter=-1,
@@ -515,7 +524,7 @@ CountVectorizer(analyzer='word', binary=False, decode_error='strict',
     gs = GridSearchCV(SVC(), param_grid)
     expected = """
 GridSearchCV(cv='warn', error_score='raise-deprecating',
-             estimator=SVC(c=1.0, cache_size=200, class_weight=None, coef0=0.0,
+             estimator=SVC(c=1.0, cache_size=200, class_weight=None,
                            decision_function_shape='ovr', degree=3,
                            gamma='auto_deprecated', kernel='rbf', max_iter=-1,
                            probability=False, random_state=None, shrinking=True,
@@ -535,7 +544,7 @@ GridSearchCV(cv='warn', error_score='raise-deprecating',
     gs = GridSearchCV(SVC(), param_grid)
     expected = """
 GridSearchCV(cv='warn', error_score='raise-deprecating',
-             estimator=SVC(c=1.0, cache_size=200, class_weight=None, coef0=0.0,
+             estimator=SVC(c=1.0, cache_size=200, class_weight=None,
                            decision_function_shape='ovr', degree=3,
                            gamma='auto_deprecated', kernel='rbf', max_iter=-1,
                            probability=False, random_state=None, shrinking=True,
@@ -689,12 +698,12 @@ def test_complexity_print_changed_only():
         make_pipeline(DummyEstimator(DummyEstimator()), DummyEstimator(), "passthrough")
     )
     with config_context(print_changed_only=False):
-        repr(estimator)
+        _ = repr(estimator)
         nb_repr_print_changed_only_false = DummyEstimator.nb_times_repr_called
 
     DummyEstimator.nb_times_repr_called = 0
     with config_context(print_changed_only=True):
-        repr(estimator)
+        _ = repr(estimator)
         nb_repr_print_changed_only_true = DummyEstimator.nb_times_repr_called
 
     assert nb_repr_print_changed_only_false == nb_repr_print_changed_only_true
