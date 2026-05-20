@@ -342,7 +342,7 @@ def test_function_transformer_get_feature_names_out(
 
 def test_function_transformer_get_feature_names_out_without_validation():
     transformer = FunctionTransformer(feature_names_out="one-to-one", validate=False)
-    X = np.random.rand(100, 2)
+    X = np.random.default_rng(0).random((100, 2))
     transformer.fit_transform(X)
 
     names = transformer.get_feature_names_out(("a", "b"))
@@ -351,9 +351,9 @@ def test_function_transformer_get_feature_names_out_without_validation():
     assert_array_equal(names, ("a", "b"))
 
 
-def test_function_transformer_feature_names_out_is_None():
+def test_function_transformer_feature_names_out_is_none():
     transformer = FunctionTransformer()
-    X = np.random.rand(100, 2)
+    X = np.random.default_rng(0).random((100, 2))
     transformer.fit_transform(X)
 
     msg = "This 'FunctionTransformer' has no attribute 'get_feature_names_out'"
@@ -362,8 +362,10 @@ def test_function_transformer_feature_names_out_is_None():
 
 
 def test_function_transformer_feature_names_out_uses_estimator():
+    rng = np.random.default_rng(0)
+
     def add_n_random_features(X, n):
-        return np.concatenate([X, np.random.rand(len(X), n)], axis=1)
+        return np.concatenate([X, rng.random((len(X), n))], axis=1)
 
     def feature_names_out(transformer, input_features):
         n = transformer.kw_args["n"]
@@ -376,7 +378,7 @@ def test_function_transformer_feature_names_out_uses_estimator():
         validate=True,
     )
     pd = pytest.importorskip("pandas")
-    df = pd.DataFrame({"a": np.random.rand(100), "b": np.random.rand(100)})
+    df = pd.DataFrame({"a": rng.random(100), "b": rng.random(100)})
     transformer.fit_transform(df)
     names = transformer.get_feature_names_out()
 
