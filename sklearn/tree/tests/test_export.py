@@ -8,7 +8,7 @@ from textwrap import dedent
 
 import numpy as np
 import pytest
-from numpy.random import RandomState
+from numpy.random import default_rng
 
 from sklearn.base import is_classifier
 from sklearn.exceptions import NotFittedError
@@ -311,6 +311,8 @@ def test_graphviz_toy():
         "}"
     )
 
+    assert contents1 == contents2
+
 
 @pytest.mark.parametrize("constructor", [list, np.array])
 def test_graphviz_feature_class_names_array_support(constructor):
@@ -408,23 +410,23 @@ def test_criterion_in_gradient_boosting_graphviz(criterion):
     dot_data = StringIO()
 
     is_reg = criterion in REG_CRITERIONS
-    Tree = DecisionTreeRegressor if is_reg else DecisionTreeClassifier
-    clf = Tree(random_state=0, criterion=criterion)
+    tree_cls = DecisionTreeRegressor if is_reg else DecisionTreeClassifier
+    clf = tree_cls(random_state=0, criterion=criterion)
     # positive values for poisson criterion:
     y_ = [yi + 2 for yi in y] if is_reg else y
     clf.fit(X, y_)
     export_graphviz(clf, out_file=dot_data)
 
-    for finding in finditer(r"\[.*?samples.*?\]", dot_data.getvalue()):
+    for finding in finditer(r"\[[^\]]*samples[^\]]*\]", dot_data.getvalue()):
         assert criterion in finding.group()
 
 
 def test_precision():
-    rng_reg = RandomState(2)
-    rng_clf = RandomState(8)
+    rng_reg = default_rng(2)
+    rng_clf = default_rng(8)
     for X, y, clf in zip(
-        (rng_reg.random_sample((5, 2)), rng_clf.random_sample((1000, 4))),
-        (rng_reg.random_sample((5,)), rng_clf.randint(2, size=(1000,))),
+        (rng_reg.random((5, 2)), rng_clf.random((1000, 4))),
+        (rng_reg.random((5,)), rng_clf.integers(2, size=(1000,))),
         (
             DecisionTreeRegressor(random_state=0, max_depth=1),
             DecisionTreeClassifier(max_depth=1, random_state=0),
@@ -513,10 +515,10 @@ def test_export_text():
     ).lstrip()
     assert export_text(clf, spacing=1) == expected_report
 
-    X_l = [[-2, -1], [-1, -1], [-1, -2], [1, 1], [1, 2], [2, 1], [-1, 1]]
+    x_l = [[-2, -1], [-1, -1], [-1, -2], [1, 1], [1, 2], [2, 1], [-1, 1]]
     y_l = [-1, -1, -1, 1, 1, 1, 2]
     clf = DecisionTreeClassifier(max_depth=4, random_state=0)
-    clf.fit(X_l, y_l)
+    clf.fit(x_l, y_l)
     expected_report = dedent(
         """
     |--- feature_1 <= 0.00
@@ -527,11 +529,11 @@ def test_export_text():
     ).lstrip()
     assert export_text(clf, max_depth=0) == expected_report
 
-    X_mo = [[-2, -1], [-1, -1], [-1, -2], [1, 1], [1, 2], [2, 1]]
+    x_mo = [[-2, -1], [-1, -1], [-1, -2], [1, 1], [1, 2], [2, 1]]
     y_mo = [[-1, -1], [-1, -1], [-1, -1], [1, 1], [1, 1], [1, 1]]
 
     reg = DecisionTreeRegressor(max_depth=2, random_state=0)
-    reg.fit(X_mo, y_mo)
+    reg.fit(x_mo, y_mo)
 
     expected_report = dedent(
         """
@@ -544,9 +546,9 @@ def test_export_text():
     assert export_text(reg, decimals=1) == expected_report
     assert export_text(reg, decimals=1, show_weights=True) == expected_report
 
-    X_single = [[-2], [-1], [-1], [1], [1], [2]]
+    x_single = [[-2], [-1], [-1], [1], [1], [2]]
     reg = DecisionTreeRegressor(max_depth=2, random_state=0)
-    reg.fit(X_single, y_mo)
+    reg.fit(x_single, y_mo)
 
     expected_report = dedent(
         """
