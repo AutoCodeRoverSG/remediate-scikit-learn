@@ -954,12 +954,12 @@ def test_pipeline_ducktyping():
 def test_make_pipeline():
     t1 = Transf()
     t2 = Transf()
-    pipe = make_pipeline(t1, t2)
+    pipe = make_pipeline(t1, t2, memory=None)
     assert isinstance(pipe, Pipeline)
     assert pipe.steps[0][0] == "transf-1"
     assert pipe.steps[1][0] == "transf-2"
 
-    pipe = make_pipeline(t1, t2, FitParamT())
+    pipe = make_pipeline(t1, t2, FitParamT(), memory=None)
     assert isinstance(pipe, Pipeline)
     assert pipe.steps[0][0] == "transf-1"
     assert pipe.steps[1][0] == "transf-2"
@@ -969,13 +969,13 @@ def test_make_pipeline():
 @pytest.mark.parametrize(
     "pipeline, check_estimator_type",
     [
-        (make_pipeline(StandardScaler(), LogisticRegression()), is_classifier),
-        (make_pipeline(StandardScaler(), LinearRegression()), is_regressor),
+        (make_pipeline(StandardScaler(), LogisticRegression(), memory=None), is_classifier),
+        (make_pipeline(StandardScaler(), LinearRegression(), memory=None), is_regressor),
         (
-            make_pipeline(StandardScaler()),
+            make_pipeline(StandardScaler(), memory=None),
             lambda est: get_tags(est).estimator_type is None,
         ),
-        (Pipeline([]), lambda est: get_tags(est).estimator_type is None),
+        (Pipeline([], memory=None), lambda est: get_tags(est).estimator_type is None),
     ],
 )
 def test_pipeline_estimator_type(pipeline, check_estimator_type):
@@ -995,7 +995,7 @@ def test_sklearn_tags_with_empty_pipeline():
     Non-regression test as part of:
     https://github.com/scikit-learn/scikit-learn/issues/30197
     """
-    empty_pipeline = Pipeline(steps=[])
+    empty_pipeline = Pipeline(steps=[], memory=None)
     be = BaseEstimator()
 
     expected_tags = be.__sklearn_tags__()
@@ -1013,26 +1013,26 @@ def test_feature_union_weights():
         [("pca", pca), ("select", select)], transformer_weights={"pca": 10}
     )
     fs.fit(X, y)
-    X_transformed = fs.transform(X)
+    x_transformed = fs.transform(X)
     # test using fit_transform
     fs = FeatureUnion(
         [("pca", pca), ("select", select)], transformer_weights={"pca": 10}
     )
-    X_fit_transformed = fs.fit_transform(X, y)
+    x_fit_transformed = fs.fit_transform(X, y)
     # test it works with transformers missing fit_transform
     fs = FeatureUnion(
         [("mock", Transf()), ("pca", pca), ("select", select)],
         transformer_weights={"mock": 10},
     )
-    X_fit_transformed_wo_method = fs.fit_transform(X, y)
+    x_fit_transformed_wo_method = fs.fit_transform(X, y)
     # check against expected result
 
     # We use a different pca object to control the random_state stream
-    assert_array_almost_equal(X_transformed[:, :-1], 10 * pca.fit_transform(X))
-    assert_array_equal(X_transformed[:, -1], select.fit_transform(X, y).ravel())
-    assert_array_almost_equal(X_fit_transformed[:, :-1], 10 * pca.fit_transform(X))
-    assert_array_equal(X_fit_transformed[:, -1], select.fit_transform(X, y).ravel())
-    assert X_fit_transformed_wo_method.shape == (X.shape[0], 7)
+    assert_array_almost_equal(x_transformed[:, :-1], 10 * pca.fit_transform(X))
+    assert_array_equal(x_transformed[:, -1], select.fit_transform(X, y).ravel())
+    assert_array_almost_equal(x_fit_transformed[:, :-1], 10 * pca.fit_transform(X))
+    assert_array_equal(x_fit_transformed[:, -1], select.fit_transform(X, y).ravel())
+    assert x_fit_transformed_wo_method.shape == (X.shape[0], 7)
 
 
 # TODO: remove mark once loky bug is fixed:
