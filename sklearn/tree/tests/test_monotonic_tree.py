@@ -283,39 +283,39 @@ def test_assert_1d_reg_tree_children_monotonic_bounded():
 
 
 def assert_1d_reg_monotonic(clf, monotonic_sign, min_x, max_x, n_steps):
-    X_grid = np.linspace(min_x, max_x, n_steps).reshape(-1, 1)
-    y_pred_grid = clf.predict(X_grid)
+    x_grid = np.linspace(min_x, max_x, n_steps).reshape(-1, 1)
+    y_pred_grid = clf.predict(x_grid)
     if monotonic_sign == 1:
         assert (np.diff(y_pred_grid) >= 0.0).all()
     elif monotonic_sign == -1:
         assert (np.diff(y_pred_grid) <= 0.0).all()
 
 
-@pytest.mark.parametrize("TreeRegressor", TREE_REGRESSOR_CLASSES)
-def test_1d_opposite_monotonicity_cst_data(TreeRegressor):
+@pytest.mark.parametrize("tree_regressor", TREE_REGRESSOR_CLASSES)
+def test_1d_opposite_monotonicity_cst_data(tree_regressor):
     # Check that positive monotonic data with negative monotonic constraint
     # yield constant predictions, equal to the average of target values
     X = np.linspace(-2, 2, 10).reshape(-1, 1)
     y = X.ravel()
-    clf = TreeRegressor(monotonic_cst=[-1])
+    clf = tree_regressor(monotonic_cst=[-1])
     clf.fit(X, y)
     assert clf.tree_.node_count == 1
-    assert clf.tree_.value[0] == 0.0
+    assert clf.tree_.value[0] == pytest.approx(0.0)
 
     # Swap monotonicity
-    clf = TreeRegressor(monotonic_cst=[1])
+    clf = tree_regressor(monotonic_cst=[1])
     clf.fit(X, -y)
     assert clf.tree_.node_count == 1
-    assert clf.tree_.value[0] == 0.0
+    assert clf.tree_.value[0] == pytest.approx(0.0)
 
 
-@pytest.mark.parametrize("TreeRegressor", TREE_REGRESSOR_CLASSES)
+@pytest.mark.parametrize("tree_regressor", TREE_REGRESSOR_CLASSES)
 @pytest.mark.parametrize("with_missing", (True, False))
 @pytest.mark.parametrize("monotonic_sign", (-1, 1))
 @pytest.mark.parametrize("depth_first_builder", (True, False))
 @pytest.mark.parametrize("criterion", ("absolute_error", "squared_error"))
 def test_1d_tree_nodes_values(
-    TreeRegressor,
+    tree_regressor,
     with_missing,
     monotonic_sign,
     depth_first_builder,
@@ -339,22 +339,22 @@ def test_1d_tree_nodes_values(
     #        a <=  root  <= b
     # c <= d <= (a + b) / 2 <= e <= f
 
-    rng = np.random.RandomState(global_random_seed)
+    rng = np.random.default_rng(global_random_seed)
     n_samples = 1000
     n_features = 1
-    X = rng.rand(n_samples, n_features)
-    y = rng.rand(n_samples)
+    X = rng.random((n_samples, n_features))
+    y = rng.random(n_samples)
 
     if depth_first_builder:
         # No max_leaf_nodes, default depth first tree builder
-        clf = TreeRegressor(
+        clf = tree_regressor(
             monotonic_cst=[monotonic_sign],
             criterion=criterion,
             random_state=global_random_seed,
         )
     else:
         # max_leaf_nodes triggers best first tree builder
-        clf = TreeRegressor(
+        clf = tree_regressor(
             monotonic_cst=[monotonic_sign],
             max_leaf_nodes=n_samples,
             criterion=criterion,
@@ -473,13 +473,13 @@ def test_assert_nd_reg_tree_children_monotonic_bounded():
         assert_nd_reg_tree_children_monotonic_bounded(reg.tree_, [1])
 
 
-@pytest.mark.parametrize("TreeRegressor", TREE_REGRESSOR_CLASSES)
+@pytest.mark.parametrize("tree_regressor", TREE_REGRESSOR_CLASSES)
 @pytest.mark.parametrize("with_missing", (True, False))
 @pytest.mark.parametrize("monotonic_sign", (-1, 1))
 @pytest.mark.parametrize("depth_first_builder", (True, False))
 @pytest.mark.parametrize("criterion", ("absolute_error", "squared_error"))
 def test_nd_tree_nodes_values(
-    TreeRegressor,
+    tree_regressor,
     with_missing,
     monotonic_sign,
     depth_first_builder,
@@ -506,23 +506,23 @@ def test_nd_tree_nodes_values(
     # For iii) we check that each node value is within the proper lower and
     # upper bounds.
 
-    rng = np.random.RandomState(global_random_seed)
+    rng = np.random.default_rng(global_random_seed)
     n_samples = 1000
     n_features = 2
     monotonic_cst = [monotonic_sign, 0]
-    X = rng.rand(n_samples, n_features)
-    y = rng.rand(n_samples)
+    X = rng.random((n_samples, n_features))
+    y = rng.random(n_samples)
 
     if depth_first_builder:
         # No max_leaf_nodes, default depth first tree builder
-        clf = TreeRegressor(
+        clf = tree_regressor(
             monotonic_cst=monotonic_cst,
             criterion=criterion,
             random_state=global_random_seed,
         )
     else:
         # max_leaf_nodes triggers best first tree builder
-        clf = TreeRegressor(
+        clf = tree_regressor(
             monotonic_cst=monotonic_cst,
             max_leaf_nodes=n_samples,
             criterion=criterion,

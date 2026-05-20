@@ -8,7 +8,6 @@ from textwrap import dedent
 
 import numpy as np
 import pytest
-from numpy.random import default_rng
 
 from sklearn.base import is_classifier
 from sklearn.exceptions import NotFittedError
@@ -422,8 +421,8 @@ def test_criterion_in_gradient_boosting_graphviz(criterion):
 
 
 def test_precision():
-    rng_reg = default_rng(2)
-    rng_clf = default_rng(8)
+    rng_reg = np.random.default_rng(2)
+    rng_clf = np.random.default_rng(8)
     for X, y, clf in zip(
         (rng_reg.random((5, 2)), rng_clf.random((1000, 4))),
         (rng_reg.random((5,)), rng_clf.integers(2, size=(1000,))),
