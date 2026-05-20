@@ -508,20 +508,20 @@ def test_scaler_float16_overflow():
 
     with np.errstate(over="raise"):
         scaler = StandardScaler().fit(X)
-        X_scaled = scaler.transform(X)
+        x_scaled = scaler.transform(X)
 
     # Calculate the float64 equivalent to verify result
-    X_scaled_f64 = StandardScaler().fit_transform(X.astype(np.float64))
+    x_scaled_f64 = StandardScaler().fit_transform(X.astype(np.float64))
 
     # Overflow calculations may cause -inf, inf, or nan. Since there is no nan
     # input, all of the outputs should be finite. This may be redundant since a
     # FloatingPointError exception will be thrown on overflow above.
-    assert np.all(np.isfinite(X_scaled))
+    assert np.all(np.isfinite(x_scaled))
 
     # The normal distribution is very unlikely to go above 4. At 4.0-8.0 the
     # float16 precision is 2^-8 which is around 0.004. Thus only 2 decimals are
     # checked to account for precision differences.
-    assert_array_almost_equal(X_scaled, X_scaled_f64, decimal=2)
+    assert_array_almost_equal(x_scaled, x_scaled_f64, decimal=2)
 
 
 def test_handle_zeros_in_scale():
@@ -688,11 +688,11 @@ def test_partial_fit_sparse_input(sample_weight, sparse_container):
         sample_weight = rng.random(X.shape[0])
 
     null_transform = StandardScaler(with_mean=False, with_std=False, copy=True)
-    X_null = null_transform.partial_fit(X, sample_weight=sample_weight).transform(X)
-    assert_array_equal(X_null.toarray(), X.toarray())
-    X_orig = null_transform.inverse_transform(X_null)
-    assert_array_equal(X_orig.toarray(), X_null.toarray())
-    assert_array_equal(X_orig.toarray(), X.toarray())
+    x_null = null_transform.partial_fit(X, sample_weight=sample_weight).transform(X)
+    assert_array_equal(x_null.toarray(), X.toarray())
+    x_orig = null_transform.inverse_transform(x_null)
+    assert_array_equal(x_orig.toarray(), x_null.toarray())
+    assert_array_equal(x_orig.toarray(), X.toarray())
 
 
 @pytest.mark.parametrize("sample_weight", [True, None])
@@ -705,24 +705,24 @@ def test_standard_scaler_transform_with_partial_fit(sample_weight):
 
     scaler_incr = StandardScaler()
     for i, batch in enumerate(gen_batches(X.shape[0], 1)):
-        X_sofar = X[: (i + 1), :]
-        chunks_copy = X_sofar.copy()
+        x_sofar = X[: (i + 1), :]
+        chunks_copy = x_sofar.copy()
         if sample_weight is None:
-            scaled_batch = StandardScaler().fit_transform(X_sofar)
+            scaled_batch = StandardScaler().fit_transform(x_sofar)
             scaler_incr = scaler_incr.partial_fit(X[batch])
         else:
             scaled_batch = StandardScaler().fit_transform(
-                X_sofar, sample_weight=sample_weight[: i + 1]
+                x_sofar, sample_weight=sample_weight[: i + 1]
             )
             scaler_incr = scaler_incr.partial_fit(
                 X[batch], sample_weight=sample_weight[batch]
             )
-        scaled_incr = scaler_incr.transform(X_sofar)
+        scaled_incr = scaler_incr.transform(x_sofar)
 
         assert_array_almost_equal(scaled_batch, scaled_incr)
-        assert_array_almost_equal(X_sofar, chunks_copy)  # No change
+        assert_array_almost_equal(x_sofar, chunks_copy)  # No change
         right_input = scaler_incr.inverse_transform(scaled_incr)
-        assert_array_almost_equal(X_sofar, right_input)
+        assert_array_almost_equal(x_sofar, right_input)
 
         zero = np.zeros(X.shape[1])
         epsilon = np.finfo(float).eps
@@ -812,13 +812,13 @@ def test_preprocessing_integer_array_api_on_float32_only_device(estimator):
 
     # TODO: replace this torch/MPS-specific coverage by array-api-strict once
     # https://github.com/data-apis/array-api-strict/pull/206 is released.
-    X_np = np.asarray([[1, 2, 3], [4, 5, 6], [7, 8, 10]], dtype=np.int64)
-    X_xp = xp.asarray(X_np, device=device)
+    x_np = np.asarray([[1, 2, 3], [4, 5, 6], [7, 8, 10]], dtype=np.int64)
+    x_xp = xp.asarray(x_np, device=device)
 
     with config_context(array_api_dispatch=True):
-        X_out = estimator.fit_transform(X_xp)
+        x_out = estimator.fit_transform(x_xp)
 
-    assert X_out.dtype == xp.float32
+    assert x_out.dtype == xp.float32
 
 
 def test_normalize_integer_array_api_on_float32_only_device():
@@ -826,13 +826,13 @@ def test_normalize_integer_array_api_on_float32_only_device():
 
     # TODO: replace this torch/MPS-specific coverage by array-api-strict once
     # https://github.com/data-apis/array-api-strict/pull/206 is released.
-    X_np = np.asarray([[1, 2, 3], [4, 5, 6], [7, 8, 10]], dtype=np.int64)
-    X_xp = xp.asarray(X_np, device=device)
+    x_np = np.asarray([[1, 2, 3], [4, 5, 6], [7, 8, 10]], dtype=np.int64)
+    x_xp = xp.asarray(x_np, device=device)
 
     with config_context(array_api_dispatch=True):
-        X_out = normalize(X_xp)
+        x_out = normalize(x_xp)
 
-    assert X_out.dtype == xp.float32
+    assert x_out.dtype == xp.float32
 
 
 @pytest.mark.parametrize(
