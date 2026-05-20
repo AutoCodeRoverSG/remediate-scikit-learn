@@ -338,9 +338,9 @@ class Pipeline(_BaseComposition):
             stop -= 1
 
         for idx, (name, trans) in enumerate(islice(self.steps, 0, stop)):
-            if not filter_passthrough:
-                yield idx, name, trans
-            elif trans is not None and trans != "passthrough":
+            if not filter_passthrough or (
+                trans is not None and trans != "passthrough"
+            ):
                 yield idx, name, trans
 
     def __len__(self):
@@ -1049,10 +1049,10 @@ class Pipeline(_BaseComposition):
         # not branching here since params is only available if
         # enable_metadata_routing=True
         routed_params = process_routing(self, "transform", **params)
-        Xt = X
+        xt = X
         for _, name, transform in self._iter():
-            Xt = transform.transform(Xt, **routed_params[name].transform)
-        return Xt
+            xt = transform.transform(xt, **routed_params[name].transform)
+        return xt
 
     def _can_inverse_transform(self):
         return all(hasattr(t, "inverse_transform") for _, _, t in self._iter())
@@ -1136,24 +1136,24 @@ class Pipeline(_BaseComposition):
             Result of calling `score` on the final estimator.
         """
         check_is_fitted(self)
-        Xt = X
+        xt = X
         if not _routing_enabled():
             for _, name, transform in self._iter(with_final=False):
-                Xt = transform.transform(Xt)
+                xt = transform.transform(xt)
             score_params = {}
             if sample_weight is not None:
                 score_params["sample_weight"] = sample_weight
-            return self.steps[-1][1].score(Xt, y, **score_params)
+            return self.steps[-1][1].score(xt, y, **score_params)
 
         # metadata routing is enabled.
         routed_params = process_routing(
             self, "score", sample_weight=sample_weight, **params
         )
 
-        Xt = X
+        xt = X
         for _, name, transform in self._iter(with_final=False):
-            Xt = transform.transform(Xt, **routed_params[name].transform)
-        return self.steps[-1][1].score(Xt, y, **routed_params[self.steps[-1][0]].score)
+            xt = transform.transform(xt, **routed_params[name].transform)
+        return self.steps[-1][1].score(xt, y, **routed_params[self.steps[-1][0]].score)
 
     @property
     def classes_(self):
@@ -1740,7 +1740,7 @@ class FeatureUnion(TransformerMixin, _BaseComposition):
         if not self.transformer_weights:
             return
 
-        transformer_names = set(name for name, _ in self.transformer_list)
+        transformer_names = {name for name, _ in self.transformer_list}
         for name in self.transformer_weights:
             if name not in transformer_names:
                 raise ValueError(
@@ -1927,8 +1927,7 @@ class FeatureUnion(TransformerMixin, _BaseComposition):
                     routed_params[name] = Bunch(fit_transform={})
                     routed_params[name].fit_transform = params
                 else:
-                    routed_params[name] = Bunch(fit={})
-                    routed_params[name] = Bunch(transform={})
+                    routed_params[name] = Bunch(fit={}, transform={})
                     routed_params[name].fit = params
 
         results = self._parallel_func(X, y, _fit_transform_one, routed_params)
@@ -1937,10 +1936,10 @@ class FeatureUnion(TransformerMixin, _BaseComposition):
             xp, _, device = get_namespace_and_device(X)
             return xp.zeros((X.shape[0], 0), device=device)
 
-        Xs, transformers = zip(*results)
+        xs, transformers = zip(*results)
         self._update_transformer_list(transformers)
 
-        return self._hstack(Xs)
+        return self._hstack(xs)
 
     def _log_message(self, name, idx, total):
         if not self.verbose:
@@ -1999,21 +1998,21 @@ class FeatureUnion(TransformerMixin, _BaseComposition):
             for name, _ in self.transformer_list:
                 routed_params[name] = Bunch(transform={})
 
-        Xs = Parallel(n_jobs=self.n_jobs)(
+        xs = Parallel(n_jobs=self.n_jobs)(
             delayed(_transform_one)(trans, X, None, weight, params=routed_params[name])
             for name, trans, weight in self._iter()
         )
-        if not Xs:
+        if not xs:
             # All transformers are None
             xp, _, device = get_namespace_and_device(X)
             return xp.zeros((X.shape[0], 0), device=device)
 
-        return self._hstack(Xs)
+        return self._hstack(xs)
 
-    def _hstack(self, Xs):
-        xp, _ = get_namespace(*Xs)
+    def _hstack(self, xs):
+        xp, _ = get_namespace(*xs)
         # Check if Xs dimensions are valid
-        for X, (name, _) in zip(Xs, self.transformer_list):
+        for X, (name, _) in zip(xs, self.transformer_list):
             if hasattr(X, "shape") and len(X.shape) != 2:
                 raise ValueError(
                     f"Transformer '{name}' returned an array or dataframe with "
@@ -2022,13 +2021,13 @@ class FeatureUnion(TransformerMixin, _BaseComposition):
                 )
 
         adapter = _get_container_adapter("transform", self)
-        if adapter and all(adapter.is_supported_container(X) for X in Xs):
-            return adapter.hstack(Xs, self.get_feature_names_out())
+        if adapter and all(adapter.is_supported_container(X) for X in xs):
+            return adapter.hstack(xs, self.get_feature_names_out())
 
-        if any(sparse.issparse(f) for f in Xs):
-            return sparse.hstack(Xs).tocsr()
+        if any(sparse.issparse(f) for f in xs):
+            return sparse.hstack(xs).tocsr()
 
-        return xp.concat(Xs, axis=1)
+        return xp.concat(xs, axis=1)
 
     def _update_transformer_list(self, transformers):
         transformers = iter(transformers)
