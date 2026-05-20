@@ -321,7 +321,7 @@ def test_randomized_eigsh_reconst_low_rank(n, rank):
 @pytest.mark.parametrize("dtype", (np.float32, np.float64))
 @pytest.mark.parametrize("csr_container", CSR_CONTAINERS)
 def test_row_norms(dtype, csr_container):
-    X = np.random.RandomState(42).randn(100, 100)
+    X = np.random.default_rng(42).standard_normal((100, 100))
     if dtype is np.float32:
         precision = 4
     else:
@@ -463,9 +463,9 @@ def test_randomized_svd_transpose_consistency():
 def test_randomized_svd_power_iteration_normalizer():
     # randomized_svd with power_iteration_normalized='none' diverges for
     # large number of power iterations on this dataset
-    rng = np.random.RandomState(42)
-    X = make_low_rank_matrix(100, 500, effective_rank=50, random_state=rng)
-    X += 3 * rng.randint(0, 2, size=X.shape)
+    rng = np.random.default_rng(42)
+    X = make_low_rank_matrix(100, 500, effective_rank=50, random_state=42)
+    X += 3 * rng.integers(0, 2, size=X.shape)
     n_components = 50
 
     # Check that it diverges with many (non-normalized) power iterations
@@ -508,8 +508,7 @@ def test_randomized_svd_power_iteration_normalizer():
 @pytest.mark.parametrize("sparse_container", DOK_CONTAINERS + LIL_CONTAINERS)
 def test_randomized_svd_sparse_warnings(sparse_container):
     # randomized_svd throws a warning for lil and dok matrix
-    rng = np.random.RandomState(42)
-    X = make_low_rank_matrix(50, 20, effective_rank=10, random_state=rng)
+    X = make_low_rank_matrix(50, 20, effective_rank=10, random_state=42)
     n_components = 5
 
     X = sparse_container(X)
@@ -524,16 +523,16 @@ def test_randomized_svd_sparse_warnings(sparse_container):
             n_components,
             n_iter=1,
             power_iteration_normalizer="none",
-            random_state=rng,
+            random_state=42,
         )
 
 
 def test_svd_flip():
     # Check that svd_flip works in both situations, and reconstructs input.
-    rs = np.random.RandomState(1999)
+    rs = np.random.default_rng(1999)
     n_samples = 20
     n_features = 10
-    X = rs.randn(n_samples, n_features)
+    X = rs.standard_normal((n_samples, n_features))
 
     # Check matrix reconstruction
     U, S, vt = linalg.svd(X, full_matrices=False)
@@ -555,8 +554,8 @@ def test_svd_flip():
 
 @pytest.mark.parametrize("n_samples, n_features", [(3, 4), (4, 3)])
 def test_svd_flip_max_abs_cols(n_samples, n_features, global_random_seed):
-    rs = np.random.RandomState(global_random_seed)
-    X = rs.randn(n_samples, n_features)
+    rng = np.random.default_rng(global_random_seed)
+    X = rng.standard_normal((n_samples, n_features))
     U, _, vt = linalg.svd(X, full_matrices=False)
 
     U1, _ = svd_flip(U, vt, u_based_decision=True)
@@ -621,8 +620,8 @@ def test_randomized_svd_lapack_driver(n, m, k, seed):
     # Check that different SVD drivers provide consistent results
 
     # Matrix being compressed
-    rng = np.random.RandomState(seed)
-    X = rng.rand(n, m)
+    rng = np.random.default_rng(seed)
+    X = rng.random((n, m))
 
     # Number of components
     u1, s1, vt1 = randomized_svd(X, k, svd_lapack_driver="gesdd", random_state=0)
@@ -696,10 +695,10 @@ def test_cartesian_mix_types(arrays, output_dtype):
 @pytest.mark.parametrize("dtype", [np.float32, np.float64])
 @pytest.mark.parametrize("as_list", (True, False))
 def test_incremental_weighted_mean_and_variance_simple(dtype, as_list):
-    rng = np.random.RandomState(42)
+    rng = np.random.default_rng(42)
     mult = 10
-    X = rng.rand(1000, 20).astype(dtype) * mult
-    sample_weight = rng.rand(X.shape[0]) * mult
+    X = rng.random((1000, 20)).astype(dtype) * mult
+    sample_weight = rng.random(X.shape[0]) * mult
     X1 = X.tolist() if as_list else X
     mean, var, _ = _incremental_mean_and_var(X1, 0, 0, 0, sample_weight=sample_weight)
 
@@ -1154,11 +1153,11 @@ def test_randomized_range_finder_array_api_compliance(
     atol = 1e-5 if dtype_name == "float32" else 0
 
     with config_context(array_api_dispatch=True):
-        Q_np = randomized_range_finder(X, size=size, n_iter=n_iter, random_state=0)
-        Q_xp = randomized_range_finder(x_xp, size=size, n_iter=n_iter, random_state=0)
+        q_np = randomized_range_finder(X, size=size, n_iter=n_iter, random_state=0)
+        q_xp = randomized_range_finder(x_xp, size=size, n_iter=n_iter, random_state=0)
 
-        assert get_namespace(Q_xp)[0].__name__ == xp.__name__
-        assert_allclose(move_to(Q_xp, xp=np, device="cpu"), Q_np, atol=atol)
+        assert get_namespace(q_xp)[0].__name__ == xp.__name__
+        assert_allclose(move_to(q_xp, xp=np, device="cpu"), q_np, atol=atol)
 
     max_dtype = _max_precision_float_dtype(xp, device=device)
     # Also test with integer input only once per namespace/device for
@@ -1166,13 +1165,13 @@ def test_randomized_range_finder_array_api_compliance(
     if x_xp.dtype != max_dtype or array_namespace in {"array_api_strict", "torch"}:
         return
 
-    X_int = (X * 10).astype(np.int64)
+    x_int = (X * 10).astype(np.int64)
     atol *= 10
-    x_xp = xp.asarray(X_int, device=device)
+    x_xp = xp.asarray(x_int, device=device)
     with config_context(array_api_dispatch=True):
-        Q_np = randomized_range_finder(X_int, size=size, n_iter=n_iter, random_state=0)
-        Q_xp = randomized_range_finder(x_xp, size=size, n_iter=n_iter, random_state=0)
+        q_np = randomized_range_finder(x_int, size=size, n_iter=n_iter, random_state=0)
+        q_xp = randomized_range_finder(x_xp, size=size, n_iter=n_iter, random_state=0)
 
-        assert get_namespace(Q_xp)[0].__name__ == xp.__name__
-        assert Q_xp.dtype == max_dtype
-        assert_allclose(move_to(Q_xp, xp=np, device="cpu"), Q_np, atol=atol)
+        assert get_namespace(q_xp)[0].__name__ == xp.__name__
+        assert q_xp.dtype == max_dtype
+        assert_allclose(move_to(q_xp, xp=np, device="cpu"), q_np, atol=atol)
