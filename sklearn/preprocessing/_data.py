@@ -261,10 +261,10 @@ def scale(X, *, axis=0, with_mean=True, with_std=True, copy=True):
             scale_ = np.nanstd(X, axis)
         # Xr is a view on the original array that enables easy use of
         # broadcasting on the axis in which we are interested in
-        Xr = np.rollaxis(X, axis)
+        x_rolled = np.rollaxis(X, axis)
         if with_mean:
-            Xr -= mean_
-            mean_1 = np.nanmean(Xr, axis=0)
+            x_rolled -= mean_
+            mean_1 = np.nanmean(x_rolled, axis=0)
             # Verify that mean_1 is 'close to zero'. If X contains very
             # large values, mean_1 can also be very large, due to a lack of
             # precision of mean_. In this case, a pre-scaling of the
@@ -278,12 +278,12 @@ def scale(X, *, axis=0, with_mean=True, with_std=True, copy=True):
                     "contain too large values. You may need "
                     "to prescale your features."
                 )
-                Xr -= mean_1
+                x_rolled -= mean_1
         if with_std:
             scale_ = _handle_zeros_in_scale(scale_, copy=False)
-            Xr /= scale_
+            x_rolled /= scale_
             if with_mean:
-                mean_2 = np.nanmean(Xr, axis=0)
+                mean_2 = np.nanmean(x_rolled, axis=0)
                 # If mean_2 is not 'close to zero', it comes from the fact that
                 # scale_ is very small so that mean_2 = mean_1/scale_ > 0, even
                 # if mean_1 was close to zero. The problem is thus essentially
@@ -297,7 +297,7 @@ def scale(X, *, axis=0, with_mean=True, with_std=True, copy=True):
                         "deviation of the data is probably "
                         "very close to 0. "
                     )
-                    Xr -= mean_2
+                    x_rolled -= mean_2
     return X
 
 
@@ -957,13 +957,13 @@ class StandardScaler(OneToOneFeatureMixin, TransformerMixin, BaseEstimator):
         self : object
             Fitted scaler.
         """
-        xp, _, X_device = get_namespace_and_device(X)
+        xp, _, x_device = get_namespace_and_device(X)
         first_call = not hasattr(self, "n_samples_seen_")
         X = validate_data(
             self,
             X,
             accept_sparse=("csr", "csc"),
-            dtype=supported_float_dtypes(xp, X_device),
+            dtype=supported_float_dtypes(xp, x_device),
             ensure_all_finite="allow-nan",
             reset=first_call,
         )
@@ -981,7 +981,7 @@ class StandardScaler(OneToOneFeatureMixin, TransformerMixin, BaseEstimator):
         # incr_mean_variance_axis and _incremental_variance_axis
         dtype = xp.int64 if sample_weight is None else X.dtype
         if first_call:
-            self.n_samples_seen_ = xp.zeros(n_features, dtype=dtype, device=X_device)
+            self.n_samples_seen_ = xp.zeros(n_features, dtype=dtype, device=x_device)
         elif size(self.n_samples_seen_) == 1:
             self.n_samples_seen_ = xp.repeat(self.n_samples_seen_, X.shape[1])
             self.n_samples_seen_ = xp.astype(self.n_samples_seen_, dtype, copy=False)
@@ -1088,7 +1088,7 @@ class StandardScaler(OneToOneFeatureMixin, TransformerMixin, BaseEstimator):
         X_tr : {ndarray, sparse matrix} of shape (n_samples, n_features)
             Transformed array.
         """
-        xp, _, X_device = get_namespace_and_device(X)
+        xp, _, x_device = get_namespace_and_device(X)
         check_is_fitted(self)
 
         copy = copy if copy is not None else self.copy
@@ -1098,7 +1098,7 @@ class StandardScaler(OneToOneFeatureMixin, TransformerMixin, BaseEstimator):
             reset=False,
             accept_sparse="csr",
             copy=copy,
-            dtype=supported_float_dtypes(xp, X_device),
+            dtype=supported_float_dtypes(xp, x_device),
             force_writeable=True,
             ensure_all_finite="allow-nan",
         )
@@ -1134,7 +1134,7 @@ class StandardScaler(OneToOneFeatureMixin, TransformerMixin, BaseEstimator):
         X_original : {ndarray, sparse matrix} of shape (n_samples, n_features)
             Transformed array.
         """
-        xp, _, X_device = get_namespace_and_device(X)
+        xp, _, x_device = get_namespace_and_device(X)
         check_is_fitted(self)
 
         copy = copy if copy is not None else self.copy
@@ -1142,7 +1142,7 @@ class StandardScaler(OneToOneFeatureMixin, TransformerMixin, BaseEstimator):
             X,
             accept_sparse="csr",
             copy=copy,
-            dtype=supported_float_dtypes(xp, X_device),
+            dtype=supported_float_dtypes(xp, x_device),
             force_writeable=True,
             ensure_all_finite="allow-nan",
         )
@@ -2267,7 +2267,7 @@ def binarize(X, *, threshold=0.0, copy=True):
         X.data[not_cond] = 0
         X.eliminate_zeros()
     else:
-        xp, _, device = get_namespace_and_device(X)
+        xp, _, _ = get_namespace_and_device(X)
         float_dtype = _find_matching_floating_dtype(X, threshold, xp=xp)
         cond = xp.astype(X, float_dtype, copy=False) > threshold
         not_cond = xp.logical_not(cond)
@@ -2497,10 +2497,10 @@ class KernelCenterer(ClassNamePrefixFeaturesOutMixin, TransformerMixin, BaseEsti
     """
 
     # X is called K in these methods.
-    __metadata_request__transform = {"K": metadata_routing.UNUSED}
-    __metadata_request__fit = {"K": metadata_routing.UNUSED}
+    __metadata_request__transform = {"k": metadata_routing.UNUSED}
+    __metadata_request__fit = {"k": metadata_routing.UNUSED}
 
-    def fit(self, K, y=None):
+    def fit(self, k, y=None):
         """Fit KernelCenterer.
 
         Parameters
@@ -2516,24 +2516,24 @@ class KernelCenterer(ClassNamePrefixFeaturesOutMixin, TransformerMixin, BaseEsti
         self : object
             Returns the instance itself.
         """
-        xp, _ = get_namespace(K)
+        xp, _ = get_namespace(k)
 
-        K = validate_data(
-            self, K, dtype=_array_api.supported_float_dtypes(xp, device=device(K))
+        k = validate_data(
+            self, k, dtype=_array_api.supported_float_dtypes(xp, device=device(k))
         )
 
-        if K.shape[0] != K.shape[1]:
+        if k.shape[0] != k.shape[1]:
             raise ValueError(
                 "Kernel matrix must be a square matrix."
-                " Input is a {}x{} matrix.".format(K.shape[0], K.shape[1])
+                " Input is a {}x{} matrix.".format(k.shape[0], k.shape[1])
             )
 
-        n_samples = K.shape[0]
-        self.K_fit_rows_ = xp.sum(K, axis=0) / n_samples
+        n_samples = k.shape[0]
+        self.K_fit_rows_ = xp.sum(k, axis=0) / n_samples
         self.K_fit_all_ = xp.sum(self.K_fit_rows_) / n_samples
         return self
 
-    def transform(self, K, copy=True):
+    def transform(self, k, copy=True):
         """Center kernel matrix.
 
         Parameters
@@ -2551,24 +2551,24 @@ class KernelCenterer(ClassNamePrefixFeaturesOutMixin, TransformerMixin, BaseEsti
         """
         check_is_fitted(self)
 
-        xp, _ = get_namespace(K)
+        xp, _ = get_namespace(k)
 
-        K = validate_data(
+        k = validate_data(
             self,
-            K,
+            k,
             copy=copy,
             force_writeable=True,
-            dtype=_array_api.supported_float_dtypes(xp, device=device(K)),
+            dtype=_array_api.supported_float_dtypes(xp, device=device(k)),
             reset=False,
         )
 
-        K_pred_cols = (xp.sum(K, axis=1) / self.K_fit_rows_.shape[0])[:, None]
+        k_pred_cols = (xp.sum(k, axis=1) / self.K_fit_rows_.shape[0])[:, None]
 
-        K -= self.K_fit_rows_
-        K -= K_pred_cols
-        K += self.K_fit_all_
+        k -= self.K_fit_rows_
+        k -= k_pred_cols
+        k += self.K_fit_all_
 
-        return K
+        return k
 
     @property
     def _n_features_out(self):
@@ -2790,7 +2790,7 @@ class QuantileTransformer(OneToOneFeatureMixin, TransformerMixin, BaseEstimator)
         self.random_state = random_state
         self.copy = copy
 
-    def _dense_fit(self, X, random_state):
+    def _dense_fit(self, X, rng):
         """Compute percentiles for dense matrices.
 
         Parameters
@@ -2804,18 +2804,18 @@ class QuantileTransformer(OneToOneFeatureMixin, TransformerMixin, BaseEstimator)
                 " sparse matrix. This parameter has no effect."
             )
 
-        n_samples, n_features = X.shape
+        n_samples, _ = X.shape
         references = self.references_ * 100
 
         if self.subsample is not None and self.subsample < n_samples:
             # Take a subsample of `X`
             X = resample(
-                X, replace=False, n_samples=self.subsample, random_state=random_state
+                X, replace=False, n_samples=self.subsample, random_state=rng
             )
 
         self.quantiles_ = np.nanpercentile(X, references, axis=0)
 
-    def _sparse_fit(self, X, random_state):
+    def _sparse_fit(self, X, rng):
         """Compute percentiles for sparse matrices.
 
         Parameters
@@ -2837,7 +2837,7 @@ class QuantileTransformer(OneToOneFeatureMixin, TransformerMixin, BaseEstimator)
                     column_data = np.zeros(shape=column_subsample, dtype=X.dtype)
                 else:
                     column_data = np.zeros(shape=self.subsample, dtype=X.dtype)
-                column_data[:column_subsample] = random_state.choice(
+                column_data[:column_subsample] = rng.choice(
                     column_nnz_data, size=column_subsample, replace=False
                 )
             else:
