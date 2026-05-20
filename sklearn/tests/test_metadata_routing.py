@@ -470,16 +470,16 @@ def test_invalid_metadata():
 @config_context(enable_metadata_routing=True)
 def test_get_metadata_routing():
     class TestDefaults(_MetadataRequester):
-        __metadata_request__fit = {
+        _metadata_request__fit = {
             "sample_weight": None,
             "my_other_param": None,
         }
-        __metadata_request__score = {
+        _metadata_request__score = {
             "sample_weight": None,
             "my_param": True,
             "my_other_param": None,
         }
-        __metadata_request__predict = {"my_param": True}
+        _metadata_request__predict = {"my_param": True}
 
         def fit(self, X, y=None):
             return self  # pragma: no cover
@@ -542,7 +542,7 @@ def test_setting_default_requests():
 
     class ExplicitRequest(BaseEstimator):
         # `fit` doesn't accept `props` explicitly, but we want to request it
-        __metadata_request__fit = {"prop": None}
+        _metadata_request__fit = {"prop": None}
 
         def fit(self, X, y, **kwargs):
             return self
@@ -555,6 +555,7 @@ def test_setting_default_requests():
         __metadata_request__fit = {"prop": True}
 
         def fit(self, X, y, prop=None, **kwargs):
+            assert self.__metadata_request__fit == {"prop": True}
             return self
 
     test_cases[ExplicitRequestOverwrite] = {"prop": True}
@@ -569,7 +570,7 @@ def test_setting_default_requests():
     class ImplicitRequestRemoval(BaseEstimator):
         # `fit` (in this class or a parent) requests `prop`, but we don't want
         # it requested at all.
-        __metadata_request__fit = {"prop": metadata_routing.UNUSED}
+        _metadata_request__fit = {"prop": metadata_routing.UNUSED}
 
         def fit(self, X, y, prop=None, **kwargs):
             return self
@@ -589,7 +590,7 @@ def test_removing_non_existing_param_raises():
     class InvalidRequestRemoval(BaseEstimator):
         # `fit` (in this class or a parent) requests `prop`, but we don't want
         # it requested at all.
-        __metadata_request__fit = {"prop": metadata_routing.UNUSED}
+        _metadata_request__fit = {"prop": metadata_routing.UNUSED}
 
         def fit(self, X, y, **kwargs):
             return self
@@ -622,7 +623,7 @@ def test_method_metadata_request():
 @config_context(enable_metadata_routing=True)
 def test_get_routing_for_object():
     class Consumer(BaseEstimator):
-        __metadata_request__fit = {"prop": None}
+        _metadata_request__fit = {"prop": None}
 
         def fit(self, X, y=None):
             return self  # pragma: no cover
@@ -687,7 +688,7 @@ def test_metadata_router_consumes_method():
 @config_context(enable_metadata_routing=True)
 def test_metaestimator_warnings():
     class WeightedMetaRegressorWarn(WeightedMetaRegressor):
-        __metadata_request__fit = {"sample_weight": metadata_routing.WARN}
+        _metadata_request__fit = {"sample_weight": metadata_routing.WARN}
 
     with pytest.warns(
         UserWarning, match="Support for .* has recently been added to .* class"
@@ -700,7 +701,7 @@ def test_metaestimator_warnings():
 @config_context(enable_metadata_routing=True)
 def test_estimator_warnings():
     class ConsumingRegressorWarn(ConsumingRegressor):
-        __metadata_request__fit = {"sample_weight": metadata_routing.WARN}
+        _metadata_request__fit = {"sample_weight": metadata_routing.WARN}
 
     with pytest.warns(
         UserWarning, match="Support for .* has recently been added to .* class"
