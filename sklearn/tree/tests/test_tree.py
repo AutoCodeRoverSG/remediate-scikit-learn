@@ -1108,7 +1108,7 @@ def test_sample_weight():
     sample_weight[y == 2] = 0.5  # Samples of class '2' are no longer weightier
     clf = DecisionTreeClassifier(max_depth=1, random_state=0)
     clf.fit(X, y, sample_weight=sample_weight)
-    assert clf.tree_.threshold[0] == 49.5  # Threshold should have moved
+    assert clf.tree_.threshold[0] == pytest.approx(49.5)  # Threshold should have moved
 
     # Test that sample weighting is the same as having duplicates
     X = iris.data
@@ -1137,7 +1137,7 @@ def test_sample_weight_invalid():
 
     clf = DecisionTreeClassifier(random_state=0)
 
-    sample_weight = np.random.rand(100, 1)
+    sample_weight = np.random.default_rng(0).random((100, 1))
     with pytest.raises(ValueError):
         clf.fit(X, y, sample_weight=sample_weight)
 
@@ -2659,7 +2659,9 @@ def test_missing_values_is_resilience(
     score_native_tree = native_tree.score(x_missing_test, y_test)
 
     tree_with_imputer = make_pipeline(
-        SimpleImputer(), tree_cls(max_depth=max_depth, random_state=global_random_seed)
+        SimpleImputer(),
+        tree_cls(max_depth=max_depth, random_state=global_random_seed),
+        memory=None,
     )
     tree_with_imputer.fit(x_missing_train, y_train)
     score_tree_with_imputer = tree_with_imputer.score(x_missing_test, y_test)
@@ -2673,8 +2675,8 @@ def test_missing_values_is_resilience(
 # A single ExtraTree will randomly send missing values down the left, or right child,
 # and therefore will not necessarily have the same performance as the greedy
 # handling of missing values.
-@pytest.mark.parametrize("Tree, expected_score", zip(CLF_TREES.values(), [0.85, 0.53]))
-def test_missing_value_is_predictive(Tree, expected_score, global_random_seed):
+@pytest.mark.parametrize("tree_cls, expected_score", zip(CLF_TREES.values(), [0.85, 0.53]))
+def test_missing_value_is_predictive(tree_cls, expected_score, global_random_seed):
     """Check the tree learns when only the missing value is predictive."""
     rng = np.random.RandomState(0)
     n_samples = 500
@@ -2684,16 +2686,16 @@ def test_missing_value_is_predictive(Tree, expected_score, global_random_seed):
     # y = rng.randint(0, high=2, size=n_samples)
 
     # Create a predictive feature using `y` and with some noise
-    X_random_mask = rng.choice([False, True], size=n_samples, p=[0.95, 0.05])
+    x_random_mask = rng.choice([False, True], size=n_samples, p=[0.95, 0.05])
     y_mask = y.copy().astype(bool)
-    y_mask[X_random_mask] = ~y_mask[X_random_mask]
+    y_mask[x_random_mask] = ~y_mask[x_random_mask]
 
-    X_predictive = rng.standard_normal(size=n_samples)
-    X_predictive[y_mask] = np.nan
+    x_predictive = rng.standard_normal(size=n_samples)
+    x_predictive[y_mask] = np.nan
 
-    X[:, 5] = X_predictive
+    X[:, 5] = x_predictive
 
-    tree = Tree(random_state=global_random_seed)
+    tree = tree_cls(random_state=global_random_seed)
 
     # Check that the tree can learn the predictive feature
     # over an average of cross-validation fits.
@@ -2704,13 +2706,13 @@ def test_missing_value_is_predictive(Tree, expected_score, global_random_seed):
 
 
 @pytest.mark.parametrize(
-    "make_data, Tree",
+    "make_data, tree_cls",
     [
         (datasets.make_regression, DecisionTreeRegressor),
         (datasets.make_classification, DecisionTreeClassifier),
     ],
 )
-def test_sample_weight_non_uniform(make_data, Tree):
+def test_sample_weight_non_uniform(make_data, tree_cls):
     """Check sample weight is correctly handled with missing values."""
     rng = np.random.RandomState(0)
     n_samples, n_features = 1000, 10
@@ -2723,10 +2725,10 @@ def test_sample_weight_non_uniform(make_data, Tree):
     sample_weight = np.ones(X.shape[0])
     sample_weight[::2] = 0.0
 
-    tree_with_sw = Tree(random_state=0)
+    tree_with_sw = tree_cls(random_state=0)
     tree_with_sw.fit(X, y, sample_weight=sample_weight)
 
-    tree_samples_removed = Tree(random_state=0)
+    tree_samples_removed = tree_cls(random_state=0)
     tree_samples_removed.fit(X[1::2, :], y[1::2])
 
     assert_allclose(tree_samples_removed.predict(X), tree_with_sw.predict(X))
@@ -2747,7 +2749,7 @@ def test_deterministic_pickle():
 
 # TODO(1.11): remove the deprecated friedman_mse criterion parametrization
 @pytest.mark.filterwarnings("ignore:.*friedman_mse.*:FutureWarning")
-@pytest.mark.parametrize("Tree", [DecisionTreeRegressor, ExtraTreeRegressor])
+@pytest.mark.parametrize("tree_cls", [DecisionTreeRegressor, ExtraTreeRegressor])
 @pytest.mark.parametrize(
     "X",
     [
@@ -2760,7 +2762,7 @@ def test_deterministic_pickle():
     ],
 )
 @pytest.mark.parametrize("criterion", REG_CRITERIONS)
-def test_regression_tree_missing_values_toy(Tree, X, criterion, global_random_seed):
+def test_regression_tree_missing_values_toy(tree_cls, X, criterion, global_random_seed):
     """Check that regression trees correctly handle missing values in impurity
     calculations.
 
@@ -2779,7 +2781,7 @@ def test_regression_tree_missing_values_toy(Tree, X, criterion, global_random_se
     X = X.reshape(-1, 1)
     y = np.arange(1, 7)
 
-    tree = Tree(criterion=criterion, random_state=global_random_seed).fit(X, y)
+    tree = tree_cls(criterion=criterion, random_state=global_random_seed).fit(X, y)
     tree_ref = clone(tree).fit(y.reshape(-1, 1), y)
 
     impurity = tree.tree_.impurity
@@ -2787,7 +2789,7 @@ def test_regression_tree_missing_values_toy(Tree, X, criterion, global_random_se
 
     # Note: the impurity matches after the first split only on greedy trees
     # see https://github.com/scikit-learn/scikit-learn/issues/32125
-    if Tree is DecisionTreeRegressor:
+    if tree_cls is DecisionTreeRegressor:
         # Check the impurity match after the first split
         assert_allclose(tree.tree_.impurity[:2], tree_ref.tree_.impurity[:2])
 
@@ -2828,12 +2830,12 @@ def test_classification_tree_missing_values_toy():
     X, y = datasets.load_iris(return_X_y=True)
 
     rng = np.random.RandomState(42)
-    X_missing = X.copy()
+    x_missing = X.copy()
     mask = rng.binomial(
         n=np.ones(shape=(1, 4), dtype=np.int32), p=X[:, [2]] / 8
     ).astype(bool)
-    X_missing[mask] = np.nan
-    X_train, _, y_train, _ = train_test_split(X_missing, y, random_state=13)
+    x_missing[mask] = np.nan
+    X_train, _, y_train, _ = train_test_split(x_missing, y, random_state=13)
 
     # fmt: off
     # no black reformatting for this specific array
