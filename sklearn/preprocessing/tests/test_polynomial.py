@@ -132,8 +132,8 @@ def test_split_transform_feature_names_extrapolation_degree(extrapolation, degre
     feature_names = splt.get_feature_names_out(["a", "b"])
     assert len(feature_names) == splt.n_features_out_
 
-    X_trans = splt.transform(X)
-    assert X_trans.shape[1] == len(feature_names)
+    x_trans = splt.transform(X)
+    assert x_trans.shape[1] == len(feature_names)
 
 
 @pytest.mark.parametrize("degree", range(1, 5))
@@ -182,7 +182,8 @@ def test_spline_transformer_linear_regression(bias, intercept):
                 ),
             ),
             ("ols", LinearRegression(fit_intercept=intercept)),
-        ]
+        ],
+        memory=None,
     )
     pipe.fit(X, y)
     assert_allclose(pipe.predict(X), y, rtol=1e-3)
@@ -240,7 +241,8 @@ def test_spline_transformer_periodic_linear_regression(bias, intercept):
                 ),
             ),
             ("ols", LinearRegression(fit_intercept=intercept)),
-        ]
+        ],
+        memory=None,
     )
     pipe.fit(X, f(X[:, 0]))
 
@@ -260,13 +262,13 @@ def test_spline_transformer_periodic_spline_backport():
     transformer = SplineTransformer(
         degree=degree, extrapolation="periodic", knots=[[-1.0], [0.0], [1.0]]
     )
-    Xt = transformer.fit_transform(X)
+    x_trans = transformer.fit_transform(X)
 
     # Use periodic extrapolation in BSpline
     coef = np.array([[1.0, 0.0], [0.0, 1.0], [1.0, 0.0], [0.0, 1.0]])
     spl = BSpline(np.arange(-3, 4), coef, degree, "periodic")
-    Xspl = spl(X[:, 0])
-    assert_allclose(Xt, Xspl)
+    x_spl = spl(X[:, 0])
+    assert_allclose(x_trans, x_spl)
 
 
 def test_spline_transformer_periodic_splines_periodicity():
@@ -285,10 +287,10 @@ def test_spline_transformer_periodic_splines_periodicity():
         knots=[[1.0], [3.0], [4.0], [5.0], [8.0], [9.0]],
     )
 
-    Xt_1 = transformer_1.fit_transform(X)
-    Xt_2 = transformer_2.fit_transform(X)
+    xt_1 = transformer_1.fit_transform(X)
+    xt_2 = transformer_2.fit_transform(X)
 
-    assert_allclose(Xt_1, Xt_2[:, [4, 0, 1, 2, 3]])
+    assert_allclose(xt_1, xt_2[:, [4, 0, 1, 2, 3]])
 
 
 @pytest.mark.parametrize("degree", [3, 5])
@@ -301,12 +303,12 @@ def test_spline_transformer_periodic_splines_smoothness(degree):
         extrapolation="periodic",
         knots=[[0.0], [1.0], [3.0], [4.0], [5.0], [8.0]],
     )
-    Xt = transformer.fit_transform(X)
+    x_trans = transformer.fit_transform(X)
 
     delta = (X.max() - X.min()) / len(X)
     tol = 10 * delta
 
-    dXt = Xt
+    d_x_trans = x_trans
     # We expect splines of degree `degree` to be (`degree`-1) times
     # continuously differentiable. I.e. for d = 0, ..., `degree` - 1 the d-th
     # derivative should be continuous. This is the case if the (d+1)-th
@@ -316,17 +318,17 @@ def test_spline_transformer_periodic_splines_smoothness(degree):
     #
     # Note that the 0-th derivative is the function itself, such that we are
     # also checking its continuity.
-    for d in range(1, degree + 1):
+    for _ in range(1, degree + 1):
         # Check continuity of the (d-1)-th derivative
-        diff = np.diff(dXt, axis=0)
+        diff = np.diff(d_x_trans, axis=0)
         assert np.abs(diff).max() < tol
         # Compute d-th numeric derivative
-        dXt = diff / delta
+        d_x_trans = diff / delta
 
     # As degree `degree` splines are not `degree` times continuously
     # differentiable at the knots, the `degree + 1`-th numeric derivative
     # should have spikes at the knots.
-    diff = np.diff(dXt, axis=0)
+    diff = np.diff(d_x_trans, axis=0)
     assert np.abs(diff).max() > 1
 
 
