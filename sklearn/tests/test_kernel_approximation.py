@@ -366,28 +366,28 @@ def test_nystroem_approximation_array_api(
     # Ensure full-rank linear kernel to limit the impact of device-specific
     # rounding discrepancies.
     n_features = 2 * n_samples
-    x_np = rnd.uniform(size=(n_samples, n_features)).astype(dtype_name)
+    data_np = rnd.uniform(size=(n_samples, n_features)).astype(dtype_name)
     if kernel == "precomputed":
-        x_np = rbf_kernel(x_np[:n_components])
+        data_np = rbf_kernel(data_np[:n_components])
 
-    x_xp = xp.asarray(x_np, device=device)
+    data_xp = xp.asarray(data_np, device=device)
 
     nystroem = Nystroem(n_components=n_components, kernel=kernel, random_state=0)
-    x_np_transformed = nystroem.fit_transform(x_np)
+    result_np_transformed = nystroem.fit_transform(data_np)
 
     with config_context(array_api_dispatch=True):
-        x_xp_transformed = nystroem.fit_transform(x_xp)
-        x_xp_transformed_np = move_to(x_xp_transformed, xp=np, device="cpu")
+        result_xp_transformed = nystroem.fit_transform(data_xp)
+        result_xp_transformed_np = move_to(result_xp_transformed, xp=np, device="cpu")
 
         for attribute_name in ["components_", "normalization_"]:
             xp_attr, _, device_attr = get_namespace_and_device(
                 getattr(nystroem, attribute_name)
             )
             assert xp_attr is xp
-            assert device_attr == array_device(x_xp)
+            assert device_attr == array_device(data_xp)
 
     atol = _atol_for_type(dtype_name)
-    assert_allclose(x_np_transformed, x_xp_transformed_np, atol=atol)
+    assert_allclose(result_np_transformed, result_xp_transformed_np, atol=atol)
 
 
 def test_nystroem_default_parameters():
@@ -396,17 +396,17 @@ def test_nystroem_default_parameters():
 
     # rbf kernel should behave as gamma=None by default
     # aka gamma = 1 / n_features
-    nystroem = Nystroem(n_components=10)
-    X_transformed = nystroem.fit_transform(X)
+    nystroem = Nystroem(n_components=10, random_state=42)
+    x_transformed = nystroem.fit_transform(X)
     K = rbf_kernel(X, gamma=None)
-    K2 = np.dot(X_transformed, X_transformed.T)
+    K2 = np.dot(x_transformed, x_transformed.T)
     assert_array_almost_equal(K, K2)
 
     # chi2 kernel should behave as gamma=1 by default
-    nystroem = Nystroem(kernel="chi2", n_components=10)
-    X_transformed = nystroem.fit_transform(X)
+    nystroem = Nystroem(kernel="chi2", n_components=10, random_state=42)
+    x_transformed = nystroem.fit_transform(X)
     K = chi2_kernel(X, gamma=1)
-    K2 = np.dot(X_transformed, X_transformed.T)
+    K2 = np.dot(x_transformed, x_transformed.T)
     assert_array_almost_equal(K, K2)
 
 
@@ -417,12 +417,12 @@ def test_nystroem_singular_kernel():
     X = np.vstack([X] * 2)  # duplicate samples
 
     gamma = 100
-    N = Nystroem(gamma=gamma, n_components=X.shape[0]).fit(X)
-    X_transformed = N.transform(X)
+    N = Nystroem(gamma=gamma, n_components=X.shape[0], random_state=0).fit(X)
+    x_transformed = N.transform(X)
 
     K = rbf_kernel(X, gamma=gamma)
 
-    assert_array_almost_equal(K, np.dot(X_transformed, X_transformed.T))
+    assert_array_almost_equal(K, np.dot(x_transformed, x_transformed.T))
     assert np.all(np.isfinite(Y))
 
 
@@ -433,10 +433,14 @@ def test_nystroem_poly_kernel_params():
 
     K = polynomial_kernel(X, degree=3.1, coef0=0.1)
     nystroem = Nystroem(
-        kernel="polynomial", n_components=X.shape[0], degree=3.1, coef0=0.1
+        kernel="polynomial",
+        n_components=X.shape[0],
+        degree=3.1,
+        coef0=0.1,
+        random_state=rnd,
     )
-    X_transformed = nystroem.fit_transform(X)
-    assert_array_almost_equal(np.dot(X_transformed, X_transformed.T), K)
+    x_transformed = nystroem.fit_transform(X)
+    assert_array_almost_equal(np.dot(x_transformed, x_transformed.T), K)
 
 
 def test_nystroem_callable():
