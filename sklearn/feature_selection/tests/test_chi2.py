@@ -37,24 +37,24 @@ def test_chi2(csr_container):
     chi2 = mkchi2(k=2).fit(X, y)
     assert_array_equal(sorted(chi2.get_support(indices=True)), [0, 2])
 
-    Xsp = csr_container(X, dtype=np.float64)
-    chi2 = mkchi2(k=2).fit(Xsp, y)
+    x_sp = csr_container(X, dtype=np.float64)
+    chi2 = mkchi2(k=2).fit(x_sp, y)
     assert_array_equal(sorted(chi2.get_support(indices=True)), [0, 2])
-    Xtrans = chi2.transform(Xsp)
-    assert_array_equal(Xtrans.shape, [Xsp.shape[0], 2])
+    x_trans = chi2.transform(x_sp)
+    assert_array_equal(x_trans.shape, [x_sp.shape[0], 2])
 
     # == doesn't work on scipy.sparse matrices
-    Xtrans = Xtrans.toarray()
-    Xtrans2 = mkchi2(k=2).fit_transform(Xsp, y).toarray()
-    assert_array_almost_equal(Xtrans, Xtrans2)
+    x_trans = x_trans.toarray()
+    x_trans2 = mkchi2(k=2).fit_transform(x_sp, y).toarray()
+    assert_array_almost_equal(x_trans, x_trans2)
 
 
 @pytest.mark.parametrize("coo_container", COO_CONTAINERS)
 def test_chi2_coo(coo_container):
     # Check that chi2 works with a COO matrix
     # (as returned by CountVectorizer, DictVectorizer)
-    Xcoo = coo_container(X)
-    mkchi2(k=2).fit_transform(Xcoo, y)
+    x_coo = coo_container(X)
+    mkchi2(k=2).fit_transform(x_coo, y)
     # if we got here without an exception, we're safe
 
 
