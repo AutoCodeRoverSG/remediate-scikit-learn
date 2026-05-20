@@ -268,14 +268,14 @@ def check_categorical_onehot(X):
     ],
 )
 def test_one_hot_encoder(X):
-    Xtr = check_categorical_onehot(np.array(X)[:, [0]])
-    assert_allclose(Xtr, [[0, 1], [1, 0]])
+    x_tr = check_categorical_onehot(np.array(X)[:, [0]])
+    assert_allclose(x_tr, [[0, 1], [1, 0]])
 
-    Xtr = check_categorical_onehot(np.array(X)[:, [0, 1]])
-    assert_allclose(Xtr, [[0, 1, 1, 0], [1, 0, 0, 1]])
+    x_tr = check_categorical_onehot(np.array(X)[:, [0, 1]])
+    assert_allclose(x_tr, [[0, 1, 1, 0], [1, 0, 0, 1]])
 
-    Xtr = OneHotEncoder(categories="auto").fit_transform(X)
-    assert_allclose(Xtr.toarray(), [[0, 1, 1, 0, 1], [1, 0, 0, 1, 1]])
+    x_tr = OneHotEncoder(categories="auto").fit_transform(X)
+    assert_allclose(x_tr.toarray(), [[0, 1, 1, 0, 1], [1, 0, 0, 1, 1]])
 
 
 @pytest.mark.parametrize("handle_unknown", ["ignore", "infrequent_if_exist", "warn"])
@@ -284,15 +284,15 @@ def test_one_hot_encoder(X):
 def test_one_hot_encoder_inverse(handle_unknown, sparse_, drop):
     X = [["abc", 2, 55], ["def", 1, 55], ["abc", 3, 55]]
     enc = OneHotEncoder(sparse_output=sparse_, drop=drop)
-    X_tr = enc.fit_transform(X)
+    x_tr = enc.fit_transform(X)
     exp = np.array(X, dtype=object)
-    assert_array_equal(enc.inverse_transform(X_tr), exp)
+    assert_array_equal(enc.inverse_transform(x_tr), exp)
 
     X = [[2, 55], [1, 55], [3, 55]]
     enc = OneHotEncoder(sparse_output=sparse_, categories="auto", drop=drop)
-    X_tr = enc.fit_transform(X)
+    x_tr = enc.fit_transform(X)
     exp = np.array(X)
-    assert_array_equal(enc.inverse_transform(X_tr), exp)
+    assert_array_equal(enc.inverse_transform(x_tr), exp)
 
     if drop is None:
         # with unknown categories
@@ -303,10 +303,10 @@ def test_one_hot_encoder_inverse(handle_unknown, sparse_, drop):
             handle_unknown=handle_unknown,
             categories=[["abc", "def"], [1, 2], [54, 55, 56]],
         )
-        X_tr = enc.fit_transform(X)
+        x_tr = enc.fit_transform(X)
         exp = np.array(X, dtype=object)
         exp[2, 1] = None
-        assert_array_equal(enc.inverse_transform(X_tr), exp)
+        assert_array_equal(enc.inverse_transform(x_tr), exp)
 
         # with an otherwise numerical output, still object if unknown
         X = [[2, 55], [1, 55], [3, 55]]
@@ -315,22 +315,22 @@ def test_one_hot_encoder_inverse(handle_unknown, sparse_, drop):
             categories=[[1, 2], [54, 56]],
             handle_unknown=handle_unknown,
         )
-        X_tr = enc.fit_transform(X)
+        x_tr = enc.fit_transform(X)
         exp = np.array(X, dtype=object)
         exp[2, 0] = None
         exp[:, 1] = None
-        assert_array_equal(enc.inverse_transform(X_tr), exp)
+        assert_array_equal(enc.inverse_transform(x_tr), exp)
 
     # incorrect shape raises
-    X_tr = np.array([[0, 1, 1], [1, 0, 1]])
+    x_tr = np.array([[0, 1, 1], [1, 0, 1]])
     msg = re.escape("Shape of the passed X data is not correct")
     with pytest.raises(ValueError, match=msg):
-        enc.inverse_transform(X_tr)
+        enc.inverse_transform(x_tr)
 
 
 @pytest.mark.parametrize("sparse_", [False, True])
 @pytest.mark.parametrize(
-    "X, X_trans",
+    "X, x_trans",
     [
         ([[2, 55], [1, 55], [2, 55]], [[0, 1, 1], [0, 0, 0], [0, 1, 1]]),
         (
@@ -340,7 +340,7 @@ def test_one_hot_encoder_inverse(handle_unknown, sparse_, drop):
     ],
 )
 def test_one_hot_encoder_inverse_transform_raise_error_with_unknown(
-    X, X_trans, sparse_
+    X, x_trans, sparse_
 ):
     """Check that `inverse_transform` raise an error with unknown samples, no
     dropped feature, and `handle_unknown="error`.
@@ -355,16 +355,16 @@ def test_one_hot_encoder_inverse_transform_raise_error_with_unknown(
 
     if sparse_:
         # emulate sparse data transform by a one-hot encoder sparse.
-        X_trans = _convert_container(X_trans, "sparse")
+        x_trans = _convert_container(x_trans, "sparse")
     with pytest.raises(ValueError, match=msg):
-        enc.inverse_transform(X_trans)
+        enc.inverse_transform(x_trans)
 
 
 def test_one_hot_encoder_inverse_if_binary():
     X = np.array([["Male", 1], ["Female", 3], ["Female", 2]], dtype=object)
     ohe = OneHotEncoder(drop="if_binary", sparse_output=False)
-    X_tr = ohe.fit_transform(X)
-    assert_array_equal(ohe.inverse_transform(X_tr), X)
+    x_tr = ohe.fit_transform(X)
+    assert_array_equal(ohe.inverse_transform(x_tr), X)
 
 
 @pytest.mark.parametrize("drop", ["if_binary", "first", None])
@@ -374,11 +374,11 @@ def test_one_hot_encoder_drop_reset(drop, reset_drop):
     X = np.array([["Male", 1], ["Female", 3], ["Female", 2]], dtype=object)
     ohe = OneHotEncoder(drop=drop, sparse_output=False)
     ohe.fit(X)
-    X_tr = ohe.transform(X)
+    x_tr = ohe.transform(X)
     feature_names = ohe.get_feature_names_out()
     ohe.set_params(drop=reset_drop)
-    assert_array_equal(ohe.inverse_transform(X_tr), X)
-    assert_allclose(ohe.transform(X), X_tr)
+    assert_array_equal(ohe.inverse_transform(x_tr), X)
+    assert_allclose(ohe.transform(X), x_tr)
     assert_array_equal(ohe.get_feature_names_out(), feature_names)
 
 
@@ -438,9 +438,9 @@ def test_X_is_not_1D_pandas(method):
 )
 def test_one_hot_encoder_categories(X, cat_exp, cat_dtype):
     # order of categories should not depend on order of samples
-    for Xi in [X, X[::-1]]:
+    for x_i in [X, X[::-1]]:
         enc = OneHotEncoder(categories="auto")
-        enc.fit(Xi)
+        enc.fit(x_i)
         # assert enc.categories == 'auto'
         assert isinstance(enc.categories_, list)
         for res, exp in zip(enc.categories_, cat_exp):
@@ -455,7 +455,7 @@ def test_one_hot_encoder_categories(X, cat_exp, cat_dtype):
 
 @pytest.mark.parametrize("handle_unknown", ["ignore", "infrequent_if_exist", "warn"])
 @pytest.mark.parametrize(
-    "X, X2, cats, cat_dtype",
+    "X, x2, cats, cat_dtype",
     [
         (
             np.array([["a", "b"]], dtype=object).T,
@@ -503,7 +503,7 @@ def test_one_hot_encoder_categories(X, cat_exp, cat_dtype):
         "object-None-and-nan",
     ],
 )
-def test_one_hot_encoder_specified_categories(X, X2, cats, cat_dtype, handle_unknown):
+def test_one_hot_encoder_specified_categories(X, x2, cats, cat_dtype, handle_unknown):
     enc = OneHotEncoder(categories=cats)
     exp = np.array([[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]])
     assert_array_equal(enc.fit_transform(X).toarray(), exp)
@@ -517,10 +517,10 @@ def test_one_hot_encoder_specified_categories(X, X2, cats, cat_dtype, handle_unk
     # raise when fitting
     enc = OneHotEncoder(categories=cats)
     with pytest.raises(ValueError, match="Found unknown categories"):
-        enc.fit(X2)
+        enc.fit(x2)
     enc = OneHotEncoder(categories=cats, handle_unknown=handle_unknown)
     exp = np.array([[1.0, 0.0, 0.0], [0.0, 0.0, 0.0]])
-    assert_array_equal(enc.fit(X2).transform(X2).toarray(), exp)
+    assert_array_equal(enc.fit(x2).transform(x2).toarray(), exp)
 
 
 def test_one_hot_encoder_unsorted_categories():
@@ -541,15 +541,15 @@ def test_one_hot_encoder_unsorted_categories():
         enc.fit_transform(X)
 
 
-@pytest.mark.parametrize("Encoder", [OneHotEncoder, OrdinalEncoder])
-def test_encoder_nan_ending_specified_categories(Encoder):
+@pytest.mark.parametrize("encoder", [OneHotEncoder, OrdinalEncoder])
+def test_encoder_nan_ending_specified_categories(encoder):
     """Test encoder for specified categories that nan is at the end.
 
     Non-regression test for:
     https://github.com/scikit-learn/scikit-learn/issues/27088
     """
     cats = [np.array([0, np.nan, 1])]
-    enc = Encoder(categories=cats)
+    enc = encoder(categories=cats)
     X = np.array([[0, 1]], dtype=object).T
     with pytest.raises(ValueError, match="Nan should be the last element"):
         enc.fit(X)
@@ -571,10 +571,10 @@ def test_one_hot_encoder_specified_categories_mixed_columns():
 def test_one_hot_encoder_pandas():
     pd = pytest.importorskip("pandas")
 
-    X_df = pd.DataFrame({"A": ["a", "b"], "B": [1, 2]})
+    x_df = pd.DataFrame({"A": ["a", "b"], "B": [1, 2]})
 
-    Xtr = check_categorical_onehot(X_df)
-    assert_allclose(Xtr, [[1, 0, 1, 0], [0, 1, 0, 1]])
+    x_tr = check_categorical_onehot(x_df)
+    assert_allclose(x_tr, [[1, 0, 1, 0], [0, 1, 0, 1]])
 
 
 @pytest.mark.parametrize(
@@ -1471,8 +1471,8 @@ def test_ohe_missing_value_support_pandas():
         ]
     )
 
-    Xtr = check_categorical_onehot(df)
-    assert_allclose(Xtr, expected_df_trans)
+    x_tr = check_categorical_onehot(df)
+    assert_allclose(x_tr, expected_df_trans)
 
 
 @pytest.mark.parametrize("handle_unknown", ["ignore", "infrequent_if_exist", "warn"])
