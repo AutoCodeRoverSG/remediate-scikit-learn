@@ -608,11 +608,11 @@ def test_kbinsdiscrtizer_get_feature_names_out(encode, expected_names):
     kbd = KBinsDiscretizer(
         n_bins=4, encode=encode, quantile_method="averaged_inverted_cdf"
     ).fit(X)
-    Xt = kbd.transform(X)
+    x_trans = kbd.transform(X)
 
     input_features = [f"feat{i}" for i in range(3)]
     output_names = kbd.get_feature_names_out(input_features)
-    assert Xt.shape[1] == output_names.shape[0]
+    assert x_trans.shape[1] == output_names.shape[0]
 
     assert_array_equal(output_names, expected_names)
 
@@ -620,7 +620,7 @@ def test_kbinsdiscrtizer_get_feature_names_out(encode, expected_names):
 @pytest.mark.parametrize("strategy", ["uniform", "kmeans", "quantile"])
 def test_kbinsdiscretizer_subsample(strategy, global_random_seed):
     # Check that the bin edges are almost the same when subsampling is used.
-    X = np.random.RandomState(global_random_seed).random_sample((100000, 1)) + 1
+    X = np.random.default_rng(global_random_seed).random((100000, 1)) + 1
 
     if strategy == "quantile":
         kbd_subsampling = KBinsDiscretizer(
