@@ -136,15 +136,15 @@ def _fix_connected_components(
 
     for i in range(n_connected_components):
         idx_i = np.flatnonzero(component_labels == i)
-        Xi = X[idx_i]
+        x_i = X[idx_i]
         for j in range(i):
             idx_j = np.flatnonzero(component_labels == j)
-            Xj = X[idx_j]
+            x_j = X[idx_j]
 
             if metric == "precomputed":
                 D = X[np.ix_(idx_i, idx_j)]
             else:
-                D = pairwise_distances(Xi, Xj, metric=metric, **kwargs)
+                D = pairwise_distances(x_i, x_j, metric=metric, **kwargs)
 
             ii, jj = np.unravel_index(D.argmin(axis=None), D.shape)
             if mode == "connectivity":
