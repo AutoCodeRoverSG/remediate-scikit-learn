@@ -462,7 +462,7 @@ def test_score_samples_on_pipeline_without_score_samples():
     y = np.array([1, 2])
     # Test that a pipeline does not have score_samples method when the final
     # step of the pipeline does not have score_samples defined.
-    pipe = make_pipeline(LogisticRegression())
+    pipe = make_pipeline(LogisticRegression(), memory=None)
     pipe.fit(X, y)
 
     inner_msg = "'LogisticRegression' object has no attribute 'score_samples'"
@@ -485,7 +485,7 @@ def test_pipeline_methods_preprocessing_classifier():
     clf = LogisticRegression()
 
     for preprocessing in [scaler, pca]:
-        pipe = Pipeline([("preprocess", preprocessing), ("svc", clf)])
+        pipe = Pipeline([("preprocess", preprocessing), ("svc", clf)], memory=None)
         pipe.fit(X, y)
 
         # check shapes of various prediction functions
@@ -520,7 +520,9 @@ def test_fit_predict_on_pipeline():
     separate_pred = km.fit_predict(scaled)
 
     # use a pipeline to do the transform and clustering in one step
-    pipe = Pipeline([("scaler", scaler_for_pipeline), ("Kmeans", km_for_pipeline)])
+    pipe = Pipeline(
+        [("scaler", scaler_for_pipeline), ("Kmeans", km_for_pipeline)], memory=None
+    )
     pipeline_pred = pipe.fit_predict(iris.data)
 
     assert_array_almost_equal(pipeline_pred, separate_pred)
@@ -531,7 +533,7 @@ def test_fit_predict_on_pipeline_without_fit_predict():
     # step of pipeline does not have fit_predict defined
     scaler = StandardScaler()
     pca = PCA(svd_solver="full")
-    pipe = Pipeline([("scaler", scaler), ("pca", pca)])
+    pipe = Pipeline([("scaler", scaler), ("pca", pca)], memory=None)
 
     outer_msg = "'Pipeline' has no attribute 'fit_predict'"
     inner_msg = "'PCA' object has no attribute 'fit_predict'"
@@ -544,7 +546,7 @@ def test_fit_predict_on_pipeline_without_fit_predict():
 def test_fit_predict_with_intermediate_fit_params():
     # tests that Pipeline passes fit_params to intermediate steps
     # when fit_predict is invoked
-    pipe = Pipeline([("transf", TransfFitParams()), ("clf", FitParamT())])
+    pipe = Pipeline([("transf", TransfFitParams()), ("clf", FitParamT())], memory=None)
     pipe.fit_predict(
         X=None, y=None, transf__should_get_this=True, clf__should_succeed=True
     )
@@ -559,7 +561,7 @@ def test_fit_predict_with_intermediate_fit_params():
 def test_predict_methods_with_predict_params(method_name):
     # tests that Pipeline passes predict_* to the final estimator
     # when predict_* is invoked
-    pipe = Pipeline([("transf", Transf()), ("clf", DummyEstimatorParams())])
+    pipe = Pipeline([("transf", Transf()), ("clf", DummyEstimatorParams())], memory=None)
     pipe.fit(None, None)
     method = getattr(pipe, method_name)
     method(X=None, got_attribute=True)
@@ -577,19 +579,19 @@ def test_feature_union(csr_container):
     select = SelectKBest(k=1)
     fs = FeatureUnion([("svd", svd), ("select", select)])
     fs.fit(X, y)
-    X_transformed = fs.transform(X)
-    assert X_transformed.shape == (X.shape[0], 3)
+    x_transformed = fs.transform(X)
+    assert x_transformed.shape == (X.shape[0], 3)
 
     # check if it does the expected thing
-    assert_array_almost_equal(X_transformed[:, :-1], svd.fit_transform(X))
-    assert_array_equal(X_transformed[:, -1], select.fit_transform(X, y).ravel())
+    assert_array_almost_equal(x_transformed[:, :-1], svd.fit_transform(X))
+    assert_array_equal(x_transformed[:, -1], select.fit_transform(X, y).ravel())
 
     # test if it also works for sparse input
     # We use a different svd object to control the random_state stream
     fs = FeatureUnion([("svd", svd), ("select", select)])
-    X_sp = csr_container(X)
-    X_sp_transformed = fs.fit_transform(X_sp, y)
-    assert_array_almost_equal(X_transformed, X_sp_transformed.toarray())
+    x_sp = csr_container(X)
+    x_sp_transformed = fs.fit_transform(x_sp, y)
+    assert_array_almost_equal(x_transformed, x_sp_transformed.toarray())
 
     # Test clone
     fs2 = clone(fs)
@@ -601,8 +603,8 @@ def test_feature_union(csr_container):
 
     # test it works with transformers missing fit_transform
     fs = FeatureUnion([("mock", Transf()), ("svd", svd), ("select", select)])
-    X_transformed = fs.fit_transform(X, y)
-    assert X_transformed.shape == (X.shape[0], 8)
+    x_transformed = fs.fit_transform(X, y)
+    assert x_transformed.shape == (X.shape[0], 8)
 
     # test error if some elements do not support transform
     msg = "All estimators should implement fit and transform.*\\bNoTrans\\b"
@@ -695,7 +697,7 @@ def test_pipeline_transform():
     # Also test pipeline.transform and pipeline.inverse_transform
     X = iris.data
     pca = PCA(n_components=2, svd_solver="full")
-    pipeline = Pipeline([("pca", pca)])
+    pipeline = Pipeline([("pca", pca)], memory=None)
 
     # test transform and fit_transform:
     X_trans = pipeline.fit(X).transform(X)
