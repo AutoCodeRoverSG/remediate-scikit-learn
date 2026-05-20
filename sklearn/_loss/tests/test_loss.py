@@ -87,7 +87,7 @@ def random_y_true_raw_prediction(
     loss, n_samples, y_bound=(-100, 100), raw_bound=(-5, 5), seed=42
 ):
     """Random generate y_true and raw_prediction in valid range."""
-    rng = np.random.RandomState(seed)
+    rng = np.random.default_rng(seed)
     if loss.is_multiclass:
         raw_prediction = np.empty((n_samples, loss.n_classes))
         raw_prediction.flat[:] = rng.uniform(
@@ -494,7 +494,7 @@ def test_loss_dtype(
 
 @pytest.mark.parametrize("loss", LOSS_INSTANCES, ids=loss_instance_name)
 @pytest.mark.parametrize("sample_weight", [None, "range"])
-def test_loss_same_as_C_functions(loss, sample_weight):
+def test_loss_same_as_c_functions(loss, sample_weight):
     """Test that Python and Cython functions return same results."""
     y_true, raw_prediction = random_y_true_raw_prediction(
         loss=loss,
@@ -615,7 +615,7 @@ def test_loss_gradients_are_the_same(loss, sample_weight, global_random_seed):
         loss_out=out_l2,
         gradient_out=out_g2,
     )
-    g3, h3 = loss.gradient_hessian(
+    g3, _ = loss.gradient_hessian(
         y_true=y_true,
         raw_prediction=raw_prediction,
         sample_weight=sample_weight,
@@ -673,7 +673,7 @@ def test_sample_weight_multiplies(loss, sample_weight, global_random_seed):
     if sample_weight == "ones":
         sample_weight = np.ones(shape=n_samples, dtype=np.float64)
     else:
-        rng = np.random.RandomState(global_random_seed)
+        rng = np.random.default_rng(global_random_seed)
         sample_weight = rng.normal(size=n_samples).astype(np.float64)
 
     assert_allclose(
@@ -867,7 +867,7 @@ def test_gradients_hessians_numerically(loss, sample_weight, global_random_seed)
         # would have no effect on the probabilities, and thus on the loss.
         for k in range(loss.n_classes):
 
-            def loss_func(x):
+            def loss_func(x, k=k):
                 raw = raw_prediction.copy()
                 raw[:, k] = x
                 return loss.loss(
@@ -879,7 +879,7 @@ def test_gradients_hessians_numerically(loss, sample_weight, global_random_seed)
             g_numeric = numerical_derivative(loss_func, raw_prediction[:, k], eps=1e-5)
             assert_allclose(g[:, k], g_numeric, rtol=5e-6, atol=1e-10)
 
-            def grad_func(x):
+            def grad_func(x, k=k):
                 raw = raw_prediction.copy()
                 raw[:, k] = x
                 return loss.gradient(
@@ -1000,11 +1000,11 @@ def test_loss_intercept_only(loss, sample_weight):
             raw_prediction=np.full_like(y_true, a),
             sample_weight=sample_weight,
         )
-        assert a.shape == tuple()  # scalar
+        assert a.shape == ()  # scalar
         assert a.dtype == y_true.dtype
         assert_all_finite(a)
-        a == approx(opt.x, rel=1e-7)
-        grad.sum() == approx(0, abs=1e-12)
+        assert a == approx(opt.x, rel=1e-7)
+        assert grad.sum() == approx(0, abs=1e-12)
     else:
         # The constraint corresponds to sum(raw_prediction) = 0. Without it, we would
         # need to apply loss.symmetrize_raw_prediction to opt.x before comparing.
@@ -1274,7 +1274,7 @@ def test_init_gradient_and_hessian_raises(loss, params, err_msg):
     """Test that init_gradient_and_hessian raises errors for invalid input."""
     loss = loss()
     with pytest.raises((ValueError, TypeError), match=err_msg):
-        gradient, hessian = loss.init_gradient_and_hessian(n_samples=5, **params)
+        loss.init_gradient_and_hessian(n_samples=5, **params)
 
 
 @pytest.mark.parametrize(
