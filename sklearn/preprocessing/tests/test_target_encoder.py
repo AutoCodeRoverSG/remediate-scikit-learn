@@ -586,21 +586,21 @@ def test_invariance_of_encoding_under_label_permutation(smooth, global_random_se
     # Shuffle the labels to make sure that the encoding is invariant to the
     # permutation of the labels
     permutated_labels = rng.permutation(n_categories)
-    X_train_permuted = permutated_labels[X_train.astype(np.int32)]
-    X_test_permuted = permutated_labels[X_test.astype(np.int32)]
+    x_train_permuted = permutated_labels[X_train.astype(np.int32)]
+    x_test_permuted = permutated_labels[X_test.astype(np.int32)]
 
     target_encoder = TargetEncoder(
         smooth=smooth,
         cv=KFold(n_splits=2, shuffle=True, random_state=global_random_seed),
     )
-    X_train_encoded = target_encoder.fit_transform(X_train, y_train)
-    X_test_encoded = target_encoder.transform(X_test)
+    x_train_encoded = target_encoder.fit_transform(X_train, y_train)
+    x_test_encoded = target_encoder.transform(X_test)
 
-    X_train_permuted_encoded = target_encoder.fit_transform(X_train_permuted, y_train)
-    X_test_permuted_encoded = target_encoder.transform(X_test_permuted)
+    x_train_permuted_encoded = target_encoder.fit_transform(x_train_permuted, y_train)
+    x_test_permuted_encoded = target_encoder.transform(x_test_permuted)
 
-    assert_allclose(X_train_encoded, X_train_permuted_encoded)
-    assert_allclose(X_test_encoded, X_test_permuted_encoded)
+    assert_allclose(x_train_encoded, x_train_permuted_encoded)
+    assert_allclose(x_test_encoded, x_test_permuted_encoded)
 
 
 @pytest.mark.parametrize("smooth", [0.0, "auto"])
@@ -628,7 +628,7 @@ def test_target_encoding_for_linear_regression(smooth, global_random_seed):
     # to identify the informative feature from other pure noise features.
     noise = 0.8 * rng.randn(n_samples)
     n_categories = 100
-    X_informative = KBinsDiscretizer(
+    x_informative = KBinsDiscretizer(
         n_bins=n_categories,
         encode="ordinal",
         strategy="uniform",
@@ -640,11 +640,11 @@ def test_target_encoding_for_linear_regression(smooth, global_random_seed):
     # values. As highlighted in the previous test, the target encoding should be
     # invariant to such a permutation.
     permutated_labels = rng.permutation(n_categories)
-    X_informative = permutated_labels[X_informative.astype(np.int32)]
+    x_informative = permutated_labels[x_informative.astype(np.int32)]
 
     # Generate a shuffled copy of the informative feature to destroy the
     # relationship with the target.
-    X_shuffled = rng.permutation(X_informative)
+    x_shuffled = rng.permutation(x_informative)
 
     # Also include a very high cardinality categorical feature that is by
     # itself independent of the target variable: target encoding such a feature
@@ -654,13 +654,13 @@ def test_target_encoding_for_linear_regression(smooth, global_random_seed):
     # should be removed from a machine learning datasets but here we want to
     # study the ability of the default behavior of TargetEncoder to mitigate
     # them automatically.
-    X_near_unique_categories = rng.choice(
+    x_near_unique_categories = rng.choice(
         int(0.9 * n_samples), size=n_samples, replace=True
     ).reshape(-1, 1)
 
     # Assemble the dataset and do a train-test split:
     X = np.concatenate(
-        [X_informative, X_shuffled, X_near_unique_categories],
+        [x_informative, x_shuffled, x_near_unique_categories],
         axis=1,
     )
     X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
@@ -676,7 +676,7 @@ def test_target_encoding_for_linear_regression(smooth, global_random_seed):
     # implemented when using fit_transform.
     cv = KFold(shuffle=True, random_state=rng)
     model_with_cv = make_pipeline(
-        TargetEncoder(smooth=smooth, cv=cv), linear_regression
+        TargetEncoder(smooth=smooth, cv=cv), linear_regression, memory=None
     ).fit(X_train, y_train)
 
     # This model should be able to fit the data well and also generalise to the
