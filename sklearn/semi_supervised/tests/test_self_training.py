@@ -211,11 +211,11 @@ def test_no_unlabeled():
 def test_early_stopping():
     lr = LogisticRegression()
     st = SelfTrainingClassifier(lr)
-    X_train_easy = [[1], [0], [1], [0.5]]
+    x_train_easy = [[1], [0], [1], [0.5]]
     y_train_easy = [1, 0, -1, -1]
     # X = [[0.5]] cannot be predicted on with a high confidence, so training
     # stops early
-    st.fit(X_train_easy, y_train_easy)
+    st.fit(x_train_easy, y_train_easy)
     assert st.n_iter_ == 1
     assert st.termination_condition_ == "no_change"
 

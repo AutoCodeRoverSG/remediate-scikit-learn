@@ -146,27 +146,27 @@ def test_docstring_parameters():
         raise AssertionError("Docstring Error:\n" + msg)
 
 
-def _construct_searchcv_instance(SearchCV):
-    return SearchCV(LogisticRegression(), {"C": [0.1, 1]})
+def _construct_searchcv_instance(search_cv):
+    return search_cv(LogisticRegression(), {"C": [0.1, 1]})
 
 
-def _construct_compose_pipeline_instance(Estimator):
+def _construct_compose_pipeline_instance(estimator):
     # Minimal / degenerate instances: only useful to test the docstrings.
-    if Estimator.__name__ == "ColumnTransformer":
-        return Estimator(transformers=[("transformer", "passthrough", [0, 1])])
-    elif Estimator.__name__ == "Pipeline":
-        return Estimator(steps=[("clf", LogisticRegression())])
-    elif Estimator.__name__ == "FeatureUnion":
-        return Estimator(transformer_list=[("transformer", FunctionTransformer())])
+    if estimator.__name__ == "ColumnTransformer":
+        return estimator(transformers=[("transformer", "passthrough", [0, 1])])
+    elif estimator.__name__ == "Pipeline":
+        return estimator(steps=[("clf", LogisticRegression())])
+    elif estimator.__name__ == "FeatureUnion":
+        return estimator(transformer_list=[("transformer", FunctionTransformer())])
 
 
-def _construct_sparse_coder(Estimator):
+def _construct_sparse_coder(estimator):
     # XXX: hard-coded assumption that n_features=3
     dictionary = np.array(
         [[0, 1, 0], [-1, -1, 2], [1, 1, 1], [0, 1, 1], [0, 2, 1]],
         dtype=np.float64,
     )
-    return Estimator(dictionary=dictionary)
+    return estimator(dictionary=dictionary)
 
 
 # TODO(1.10): remove copy warning filter
@@ -174,60 +174,60 @@ def _construct_sparse_coder(Estimator):
     "ignore:The default value of `copy` will change from False to True in 1.10."
 )
 @pytest.mark.filterwarnings("ignore::sklearn.exceptions.ConvergenceWarning")
-@pytest.mark.parametrize("name, Estimator", all_estimators())
-def test_fit_docstring_attributes(name, Estimator):
+@pytest.mark.parametrize("name, estimator_class", all_estimators())
+def test_fit_docstring_attributes(name, estimator_class):
     pytest.importorskip("numpydoc")
     from numpydoc import docscrape
 
-    doc = docscrape.ClassDoc(Estimator)
+    doc = docscrape.ClassDoc(estimator_class)
     attributes = doc["Attributes"]
 
-    if Estimator.__name__ in (
+    if estimator_class.__name__ in (
         "HalvingRandomSearchCV",
         "RandomizedSearchCV",
         "HalvingGridSearchCV",
         "GridSearchCV",
     ):
-        est = _construct_searchcv_instance(Estimator)
-    elif Estimator.__name__ in (
+        est = _construct_searchcv_instance(estimator_class)
+    elif estimator_class.__name__ in (
         "ColumnTransformer",
         "Pipeline",
         "FeatureUnion",
     ):
-        est = _construct_compose_pipeline_instance(Estimator)
-    elif Estimator.__name__ == "SparseCoder":
-        est = _construct_sparse_coder(Estimator)
-    elif Estimator.__name__ == "FrozenEstimator":
+        est = _construct_compose_pipeline_instance(estimator_class)
+    elif estimator_class.__name__ == "SparseCoder":
+        est = _construct_sparse_coder(estimator_class)
+    elif estimator_class.__name__ == "FrozenEstimator":
         X, y = make_classification(n_samples=20, n_features=5, random_state=0)
-        est = Estimator(LogisticRegression().fit(X, y))
+        est = estimator_class(LogisticRegression().fit(X, y))
     else:
         # TODO(devtools): use _tested_estimators instead of all_estimators in the
         # decorator
-        est = next(_construct_instances(Estimator))
+        est = next(_construct_instances(estimator_class))
 
-    if Estimator.__name__ == "SelectKBest":
+    if estimator_class.__name__ == "SelectKBest":
         est.set_params(k=2)
-    elif Estimator.__name__ == "DummyClassifier":
+    elif estimator_class.__name__ == "DummyClassifier":
         est.set_params(strategy="stratified")
-    elif Estimator.__name__ == "CCA" or Estimator.__name__.startswith("PLS"):
+    elif estimator_class.__name__ == "CCA" or estimator_class.__name__.startswith("PLS"):
         # default = 2 is invalid for single target
         est.set_params(n_components=1)
-    elif Estimator.__name__ in (
+    elif estimator_class.__name__ in (
         "GaussianRandomProjection",
         "SparseRandomProjection",
     ):
         # default="auto" raises an error with the shape of `X`
         est.set_params(n_components=2)
-    elif Estimator.__name__ == "TSNE":
+    elif estimator_class.__name__ == "TSNE":
         # default raises an error, perplexity must be less than n_samples
         est.set_params(perplexity=2)
     # TODO(1.10) remove
-    elif Estimator.__name__ == "MDS":
+    elif estimator_class.__name__ == "MDS":
         # default raises a FutureWarning
         est.set_params(n_init=1, init="random")
     # TODO(1.10) remove l1_ratios
     # TODO(1.11) remove completely
-    elif Estimator.__name__ == "LogisticRegressionCV":
+    elif estimator_class.__name__ == "LogisticRegressionCV":
         # default 'l1_ratios' value creates a FutureWarning
         # default 'scoring' value creates a FutureWarning
         est.set_params(l1_ratios=(0,), scoring="neg_log_loss")
@@ -237,7 +237,7 @@ def test_fit_docstring_attributes(name, Estimator):
     if "max_iter" in est.get_params():
         est.set_params(max_iter=2)
         # min value for `TSNE` is 250
-        if Estimator.__name__ == "TSNE":
+        if estimator_class.__name__ == "TSNE":
             est.set_params(max_iter=250)
 
     if "random_state" in est.get_params():
@@ -246,9 +246,9 @@ def test_fit_docstring_attributes(name, Estimator):
     # In case we want to deprecate some attributes in the future
     skipped_attributes = {}
 
-    if Estimator.__name__.endswith("Vectorizer"):
+    if estimator_class.__name__.endswith("Vectorizer"):
         # Vectorizer require some specific input data
-        if Estimator.__name__ in (
+        if estimator_class.__name__ in (
             "CountVectorizer",
             "HashingVectorizer",
             "TfidfVectorizer",
@@ -259,7 +259,7 @@ def test_fit_docstring_attributes(name, Estimator):
                 "And this is the third one.",
                 "Is this the first document?",
             ]
-        elif Estimator.__name__ == "DictVectorizer":
+        elif estimator_class.__name__ == "DictVectorizer":
             X = [{"foo": 1, "bar": 2}, {"foo": 3, "baz": 1}]
         y = None
     else:
@@ -302,7 +302,7 @@ def test_fit_docstring_attributes(name, Estimator):
     undocumented_attrs = set(undocumented_attrs).difference(skipped_attributes)
     if undocumented_attrs:
         raise AssertionError(
-            f"Undocumented attributes for {Estimator.__name__}: {undocumented_attrs}"
+            f"Undocumented attributes for {estimator_class.__name__}: {undocumented_attrs}"
         )
 
 

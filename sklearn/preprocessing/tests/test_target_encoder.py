@@ -569,7 +569,7 @@ def test_invariance_of_encoding_under_label_permutation(smooth, global_random_se
     # Check that the encoding does not depend on the integer of the value of
     # the integer labels. This is quite a trivial property but it is helpful
     # to understand the following test.
-    rng = np.random.RandomState(global_random_seed)
+    rng = np.random.default_rng(global_random_seed)
 
     # Random y and informative categorical X to make the test non-trivial when
     # using smoothing.
@@ -620,19 +620,19 @@ def test_target_encoding_for_linear_regression(smooth, global_random_seed):
     # Construct a random target variable. We need a large number of samples for
     # this test to be stable across all values of the random seed.
     n_samples = 50_000
-    rng = np.random.RandomState(global_random_seed)
-    y = rng.randn(n_samples)
+    rng = np.random.default_rng(global_random_seed)
+    y = rng.standard_normal(n_samples)
 
     # Generate a single informative ordinal feature with medium cardinality.
     # Inject some irreducible noise to make it harder for a multivariate model
     # to identify the informative feature from other pure noise features.
-    noise = 0.8 * rng.randn(n_samples)
+    noise = 0.8 * rng.standard_normal(n_samples)
     n_categories = 100
     x_informative = KBinsDiscretizer(
         n_bins=n_categories,
         encode="ordinal",
         strategy="uniform",
-        random_state=rng,
+        random_state=global_random_seed,
     ).fit_transform((y + noise).reshape(-1, 1))
 
     # Let's permute the labels to hide the fact that this feature is
@@ -674,7 +674,7 @@ def test_target_encoding_for_linear_regression(smooth, global_random_seed):
 
     # Now do the same with target encoding using the internal CV mechanism
     # implemented when using fit_transform.
-    cv = KFold(shuffle=True, random_state=rng)
+    cv = KFold(shuffle=True, random_state=global_random_seed)
     model_with_cv = make_pipeline(
         TargetEncoder(smooth=smooth, cv=cv), linear_regression, memory=None
     ).fit(X_train, y_train)
