@@ -309,7 +309,7 @@ def _partial_dependence_brute(
         # (n_points, 1) for the regressors in cross_decomposition (I think)
         # (n_points, 1) for binary classification (positive class already selected)
         # (n_points, n_classes) for multiclass classification
-        pred, _ = _get_response_values(est, x_eval, response_method=response_method)
+        pred, _, _ = _get_response_values(est, x_eval, response_method=response_method)
 
         predictions.append(pred)
         # average over samples

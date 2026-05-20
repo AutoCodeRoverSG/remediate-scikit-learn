@@ -231,9 +231,7 @@ def _get_response_values(
     else:
         y_pred, pos_label = prediction_method(X), None
 
-    if return_response_method_used:
-        return y_pred, pos_label, prediction_method.__name__
-    return y_pred, pos_label
+    return y_pred, pos_label, prediction_method.__name__
 
 
 def _get_response_values_binary(

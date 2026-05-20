@@ -407,16 +407,16 @@ def _safe_repr(object, context, maxlevels, level, changed_only=False):
         if issubclass(typ, list):
             if not object:
                 return "[]", True, False
-            format = "[%s]"
+            fmt = "[%s]"
         elif len(object) == 1:
-            format = "(%s,)"
+            fmt = "(%s,)"
         else:
             if not object:
                 return "()", True, False
-            format = "(%s)"
+            fmt = "(%s)"
         objid = id(object)
         if maxlevels and level >= maxlevels:
-            return format % "...", False, objid in context
+            return fmt % "...", False, objid in context
         if objid in context:
             return pprint._recursion(object), False, True
         context[objid] = 1
@@ -435,7 +435,7 @@ def _safe_repr(object, context, maxlevels, level, changed_only=False):
             if orecur:
                 recursive = True
         del context[objid]
-        return format % ", ".join(components), readable, recursive
+        return fmt % ", ".join(components), readable, recursive
 
     if issubclass(typ, BaseEstimator):
         objid = id(object)
