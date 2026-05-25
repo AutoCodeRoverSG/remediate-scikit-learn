@@ -101,7 +101,7 @@ def _generate_func_supporting_param(param, dataset_type=("load", "fetch")):
         if not inspect.isfunction(obj):
             continue
 
-        is_dataset_type = any([name.startswith(t) for t in dataset_type])
+        is_dataset_type = any(name.startswith(t) for t in dataset_type)
         is_support_param = param in inspect.signature(obj).parameters
         if is_dataset_type and is_support_param:
             # check if we should skip if we don't have network support
