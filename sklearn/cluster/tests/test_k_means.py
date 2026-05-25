@@ -929,13 +929,13 @@ def test_weighted_vs_repeated(global_random_seed):
     [X] + X_as_any_csr,
     ids=data_containers_ids,
 )
-@pytest.mark.parametrize("Estimator", [KMeans, MiniBatchKMeans])
-def test_unit_weights_vs_no_weights(Estimator, input_data, global_random_seed):
+@pytest.mark.parametrize("estimator", [KMeans, MiniBatchKMeans])
+def test_unit_weights_vs_no_weights(estimator, input_data, global_random_seed):
     # Check that not passing sample weights should be equivalent to passing
     # sample weights all equal to one.
     sample_weight = np.ones(n_samples)
 
-    km = Estimator(n_clusters=n_clusters, random_state=global_random_seed, n_init=1)
+    km = estimator(n_clusters=n_clusters, random_state=global_random_seed, n_init=1)
     km_none = clone(km).fit(input_data, sample_weight=None)
     km_ones = clone(km).fit(input_data, sample_weight=sample_weight)
 
@@ -948,13 +948,13 @@ def test_unit_weights_vs_no_weights(Estimator, input_data, global_random_seed):
     [X] + X_as_any_csr,
     ids=data_containers_ids,
 )
-@pytest.mark.parametrize("Estimator", [KMeans, MiniBatchKMeans])
-def test_scaled_weights(Estimator, input_data, global_random_seed):
+@pytest.mark.parametrize("estimator", [KMeans, MiniBatchKMeans])
+def test_scaled_weights(estimator, input_data, global_random_seed):
     # Check that scaling all sample weights by a common factor
     # shouldn't change the result
     sample_weight = np.random.RandomState(global_random_seed).uniform(size=n_samples)
 
-    km = Estimator(n_clusters=n_clusters, random_state=global_random_seed, n_init=1)
+    km = estimator(n_clusters=n_clusters, random_state=global_random_seed, n_init=1)
     km_orig = clone(km).fit(input_data, sample_weight=sample_weight)
     km_scaled = clone(km).fit(input_data, sample_weight=0.5 * sample_weight)
 
@@ -984,8 +984,8 @@ def test_kmeans_empty_cluster_relocated(array_constr):
     assert_allclose(km.cluster_centers_, [[-1], [1]])
 
 
-@pytest.mark.parametrize("Estimator", [KMeans, MiniBatchKMeans])
-def test_result_equal_in_diff_n_threads(Estimator, global_random_seed):
+@pytest.mark.parametrize("estimator", [KMeans, MiniBatchKMeans])
+def test_result_equal_in_diff_n_threads(estimator, global_random_seed):
     # Check that KMeans/MiniBatchKMeans give the same results in parallel mode
     # than in sequential mode.
     rnd = np.random.RandomState(global_random_seed)
@@ -993,13 +993,13 @@ def test_result_equal_in_diff_n_threads(Estimator, global_random_seed):
 
     with _get_threadpool_controller().limit(limits=1, user_api="openmp"):
         result_1 = (
-            Estimator(n_clusters=n_clusters, random_state=global_random_seed)
+            estimator(n_clusters=n_clusters, random_state=global_random_seed)
             .fit(X)
             .labels_
         )
     with _get_threadpool_controller().limit(limits=2, user_api="openmp"):
         result_2 = (
-            Estimator(n_clusters=n_clusters, random_state=global_random_seed)
+            estimator(n_clusters=n_clusters, random_state=global_random_seed)
             .fit(X)
             .labels_
         )
@@ -1075,20 +1075,20 @@ def test_euclidean_distance(dtype, squared, global_random_seed):
 def test_inertia(dtype, global_random_seed):
     # Check that the _inertia_(dense/sparse) helpers produce correct results.
     rng = np.random.RandomState(global_random_seed)
-    X_sparse = _sparse_random_array(
+    x_sparse = _sparse_random_array(
         (100, 10), density=0.5, format="csr", rng=rng, dtype=dtype
     )
-    X_dense = X_sparse.toarray()
+    x_dense = x_sparse.toarray()
     sample_weight = rng.randn(100).astype(dtype, copy=False)
     centers = rng.randn(5, 10).astype(dtype, copy=False)
     labels = rng.randint(5, size=100, dtype=np.int32)
 
-    distances = ((X_dense - centers[labels]) ** 2).sum(axis=1)
+    distances = ((x_dense - centers[labels]) ** 2).sum(axis=1)
     expected = np.sum(distances * sample_weight)
 
-    inertia_dense = _inertia_dense(X_dense, sample_weight, centers, labels, n_threads=1)
+    inertia_dense = _inertia_dense(x_dense, sample_weight, centers, labels, n_threads=1)
     inertia_sparse = _inertia_sparse(
-        X_sparse, sample_weight, centers, labels, n_threads=1
+        x_sparse, sample_weight, centers, labels, n_threads=1
     )
 
     rtol = 1e-4 if dtype == np.float32 else 1e-6
@@ -1099,14 +1099,14 @@ def test_inertia(dtype, global_random_seed):
     # Check the single_label parameter.
     label = 1
     mask = labels == label
-    distances = ((X_dense[mask] - centers[label]) ** 2).sum(axis=1)
+    distances = ((x_dense[mask] - centers[label]) ** 2).sum(axis=1)
     expected = np.sum(distances * sample_weight[mask])
 
     inertia_dense = _inertia_dense(
-        X_dense, sample_weight, centers, labels, n_threads=1, single_label=label
+        x_dense, sample_weight, centers, labels, n_threads=1, single_label=label
     )
     inertia_sparse = _inertia_sparse(
-        X_sparse, sample_weight, centers, labels, n_threads=1, single_label=label
+        x_sparse, sample_weight, centers, labels, n_threads=1, single_label=label
     )
 
     assert_allclose(inertia_dense, inertia_sparse, rtol=rtol)
