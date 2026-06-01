@@ -686,22 +686,22 @@ def test_dense_sparse(Estimator, X_csr, global_random_seed):
     assert_allclose(km_dense.cluster_centers_, km_sparse.cluster_centers_)
 
 
-@pytest.mark.parametrize("X_csr", X_as_any_csr)
+@pytest.mark.parametrize("x_csr", X_as_any_csr)
 @pytest.mark.parametrize(
     "init", ["random", "k-means++", centers], ids=["random", "k-means++", "ndarray"]
 )
 @pytest.mark.parametrize("Estimator", [KMeans, MiniBatchKMeans])
-def test_predict_dense_sparse(Estimator, init, X_csr):
+def test_predict_dense_sparse(Estimator, init, x_csr):
     # check that models trained on sparse input also works for dense input at
     # predict time and vice versa.
     n_init = 10 if isinstance(init, str) else 1
     km = Estimator(n_clusters=n_clusters, init=init, n_init=n_init, random_state=0)
 
-    km.fit(X_csr)
+    km.fit(x_csr)
     assert_array_equal(km.predict(X), km.labels_)
 
     km.fit(X)
-    assert_array_equal(km.predict(X_csr), km.labels_)
+    assert_array_equal(km.predict(x_csr), km.labels_)
 
 
 @pytest.mark.parametrize("array_constr", data_containers, ids=data_containers_ids)
@@ -1075,20 +1075,20 @@ def test_euclidean_distance(dtype, squared, global_random_seed):
 def test_inertia(dtype, global_random_seed):
     # Check that the _inertia_(dense/sparse) helpers produce correct results.
     rng = np.random.RandomState(global_random_seed)
-    X_sparse = _sparse_random_array(
+    x_sparse = _sparse_random_array(
         (100, 10), density=0.5, format="csr", rng=rng, dtype=dtype
     )
-    X_dense = X_sparse.toarray()
+    x_dense = x_sparse.toarray()
     sample_weight = rng.randn(100).astype(dtype, copy=False)
     centers = rng.randn(5, 10).astype(dtype, copy=False)
     labels = rng.randint(5, size=100, dtype=np.int32)
 
-    distances = ((X_dense - centers[labels]) ** 2).sum(axis=1)
+    distances = ((x_dense - centers[labels]) ** 2).sum(axis=1)
     expected = np.sum(distances * sample_weight)
 
-    inertia_dense = _inertia_dense(X_dense, sample_weight, centers, labels, n_threads=1)
+    inertia_dense = _inertia_dense(x_dense, sample_weight, centers, labels, n_threads=1)
     inertia_sparse = _inertia_sparse(
-        X_sparse, sample_weight, centers, labels, n_threads=1
+        x_sparse, sample_weight, centers, labels, n_threads=1
     )
 
     rtol = 1e-4 if dtype == np.float32 else 1e-6
@@ -1099,14 +1099,14 @@ def test_inertia(dtype, global_random_seed):
     # Check the single_label parameter.
     label = 1
     mask = labels == label
-    distances = ((X_dense[mask] - centers[label]) ** 2).sum(axis=1)
+    distances = ((x_dense[mask] - centers[label]) ** 2).sum(axis=1)
     expected = np.sum(distances * sample_weight[mask])
 
     inertia_dense = _inertia_dense(
-        X_dense, sample_weight, centers, labels, n_threads=1, single_label=label
+        x_dense, sample_weight, centers, labels, n_threads=1, single_label=label
     )
     inertia_sparse = _inertia_sparse(
-        X_sparse, sample_weight, centers, labels, n_threads=1, single_label=label
+        x_sparse, sample_weight, centers, labels, n_threads=1, single_label=label
     )
 
     assert_allclose(inertia_dense, inertia_sparse, rtol=rtol)
@@ -1114,28 +1114,28 @@ def test_inertia(dtype, global_random_seed):
     assert_allclose(inertia_sparse, expected, rtol=rtol)
 
 
-@pytest.mark.parametrize("Klass, default_n_init", [(KMeans, 10), (MiniBatchKMeans, 3)])
-def test_n_init_auto(Klass, default_n_init):
-    est = Klass(n_init="auto", init="k-means++")
+@pytest.mark.parametrize("klass, default_n_init", [(KMeans, 10), (MiniBatchKMeans, 3)])
+def test_n_init_auto(klass, default_n_init):
+    est = klass(n_init="auto", init="k-means++")
     est.fit(X)
     assert est._n_init == 1
 
-    est = Klass(n_init="auto", init="random")
+    est = klass(n_init="auto", init="random")
     est.fit(X)
-    assert est._n_init == 10 if Klass.__name__ == "KMeans" else 3
+    assert est._n_init == 10 if klass.__name__ == "KMeans" else 3
 
 
-@pytest.mark.parametrize("Estimator", [KMeans, MiniBatchKMeans])
-def test_sample_weight_unchanged(Estimator):
+@pytest.mark.parametrize("estimator", [KMeans, MiniBatchKMeans])
+def test_sample_weight_unchanged(estimator):
     # Check that sample_weight is not modified in place by KMeans (#17204)
     X = np.array([[1], [2], [4]])
     sample_weight = np.array([0.5, 0.2, 0.3])
-    Estimator(n_clusters=2, random_state=0).fit(X, sample_weight=sample_weight)
+    estimator(n_clusters=2, random_state=0).fit(X, sample_weight=sample_weight)
 
     assert_array_equal(sample_weight, np.array([0.5, 0.2, 0.3]))
 
 
-@pytest.mark.parametrize("Estimator", [KMeans, MiniBatchKMeans])
+@pytest.mark.parametrize("estimator", [KMeans, MiniBatchKMeans])
 @pytest.mark.parametrize(
     "param, match",
     [
@@ -1162,11 +1162,11 @@ def test_sample_weight_unchanged(Estimator):
         ),
     ],
 )
-def test_wrong_params(Estimator, param, match):
+def test_wrong_params(estimator, param, match):
     # Check that error are raised with clear error message when wrong values
     # are passed for the parameters
     # Set n_init=1 by default to avoid warning with precomputed init
-    km = Estimator(n_init=1)
+    km = estimator(n_init=1)
     with pytest.raises(ValueError, match=match):
         km.set_params(**param).fit(X)
 
