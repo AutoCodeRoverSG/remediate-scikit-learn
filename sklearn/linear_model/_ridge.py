@@ -794,7 +794,6 @@ def _ridge_regression(
                 tol,
                 verbose,
                 random_state,
-                False,
                 max_squared_sum,
                 init,
                 is_saga=solver == "saga",

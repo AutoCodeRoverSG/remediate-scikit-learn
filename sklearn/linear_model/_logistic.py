@@ -526,7 +526,6 @@ def _logistic_regression_path(
                 tol,
                 verbose,
                 random_state,
-                False,
                 max_squared_sum,
                 warm_start_sag,
                 is_saga=(solver == "saga"),

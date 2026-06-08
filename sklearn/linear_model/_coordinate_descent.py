@@ -2767,7 +2767,7 @@ class MultiTaskElasticNet(ElasticNet):
         X, y, X_offset, y_offset, X_scale, _, _ = _pre_fit(
             X=X,
             y=y,
-            Xy=None,
+            xy=None,
             precompute=False,
             fit_intercept=self.fit_intercept,
             copy=False,  # TODO: improve

@@ -697,7 +697,7 @@ def test_inplace_swap_row(csc_container, csr_container):
     assert_array_equal(X, X_csc.toarray())
     assert_array_equal(X, X_csr.toarray())
     with pytest.raises(TypeError):
-        inplace_swap_row(X_csr.tolil())
+        inplace_swap_row(X_csr.tolil(), 0, 1)
 
     X = np.array(
         [[0, 3, 0], [2, 4, 0], [0, 0, 0], [9, 8, 7], [4, 0, 5]], dtype=np.float32
@@ -719,7 +719,7 @@ def test_inplace_swap_row(csc_container, csr_container):
     assert_array_equal(X, X_csc.toarray())
     assert_array_equal(X, X_csr.toarray())
     with pytest.raises(TypeError):
-        inplace_swap_row(X_csr.tolil())
+        inplace_swap_row(X_csr.tolil(), 0, 1)
 
 
 @pytest.mark.parametrize("csc_container", CSC_CONTAINERS)
