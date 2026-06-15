@@ -352,7 +352,11 @@ def test_incr_mean_variance_axis(csc_container, csr_container, lil_container):
 
         with pytest.raises(TypeError):
             incr_mean_variance_axis(
-                X=axis, axis=last_mean, last_mean=last_var, last_var=last_n
+                X=axis,
+                axis=last_mean,
+                last_mean=last_var,
+                last_var=last_n,
+                last_n=last_n,
             )
         with pytest.raises(TypeError):
             incr_mean_variance_axis(
@@ -697,7 +701,7 @@ def test_inplace_swap_row(csc_container, csr_container):
     assert_array_equal(X, X_csc.toarray())
     assert_array_equal(X, X_csr.toarray())
     with pytest.raises(TypeError):
-        inplace_swap_row(X_csr.tolil())
+        inplace_swap_row(X_csr.tolil(), 0, 1)
 
     X = np.array(
         [[0, 3, 0], [2, 4, 0], [0, 0, 0], [9, 8, 7], [4, 0, 5]], dtype=np.float32
@@ -719,7 +723,7 @@ def test_inplace_swap_row(csc_container, csr_container):
     assert_array_equal(X, X_csc.toarray())
     assert_array_equal(X, X_csr.toarray())
     with pytest.raises(TypeError):
-        inplace_swap_row(X_csr.tolil())
+        inplace_swap_row(X_csr.tolil(), 0, 1)
 
 
 @pytest.mark.parametrize("csc_container", CSC_CONTAINERS)
@@ -747,7 +751,7 @@ def test_inplace_swap_column(csc_container, csr_container):
     assert_array_equal(X, X_csc.toarray())
     assert_array_equal(X, X_csr.toarray())
     with pytest.raises(TypeError):
-        inplace_swap_column(X_csr.tolil())
+        inplace_swap_column(X_csr.tolil(), 0, 1)
 
     X = np.array(
         [[0, 3, 0], [2, 4, 0], [0, 0, 0], [9, 8, 7], [4, 0, 5]], dtype=np.float32
@@ -769,7 +773,7 @@ def test_inplace_swap_column(csc_container, csr_container):
     assert_array_equal(X, X_csc.toarray())
     assert_array_equal(X, X_csr.toarray())
     with pytest.raises(TypeError):
-        inplace_swap_column(X_csr.tolil())
+        inplace_swap_column(X_csr.tolil(), 0, 1)
 
 
 @pytest.mark.parametrize("dtype", [np.float32, np.float64])

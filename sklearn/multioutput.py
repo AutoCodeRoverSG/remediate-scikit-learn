@@ -549,10 +549,10 @@ class MultiOutputClassifier(ClassifierMixin, _MultiOutputEstimator):
             # raise an AttributeError if `predict_proba` does not exist for
             # each estimator
             [getattr(est, "predict_proba") for est in self.estimators_]
-            return True
-        # raise an AttributeError if `predict_proba` does not exist for the
-        # unfitted estimator
-        getattr(self.estimator, "predict_proba")
+        else:
+            # raise an AttributeError if `predict_proba` does not exist for the
+            # unfitted estimator
+            getattr(self.estimator, "predict_proba")
         return True
 
     @available_if(_check_predict_proba)
@@ -583,7 +583,7 @@ class MultiOutputClassifier(ClassifierMixin, _MultiOutputEstimator):
         results = [estimator.predict_proba(X) for estimator in self.estimators_]
         return results
 
-    def score(self, X, y):
+    def score(self, X, y, sample_weight=None):
         """Return the mean accuracy on the given test data and labels.
 
         Parameters
@@ -612,7 +612,7 @@ class MultiOutputClassifier(ClassifierMixin, _MultiOutputEstimator):
                 " score {1} should be same".format(n_outputs_, y.shape[1])
             )
         y_pred = self.predict(X)
-        return np.mean(np.all(y == y_pred, axis=1))
+        return np.average(np.all(y == y_pred, axis=1), weights=sample_weight)
 
     def __sklearn_tags__(self):
         tags = super().__sklearn_tags__()
