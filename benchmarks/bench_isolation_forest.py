@@ -16,6 +16,7 @@ splitting the data set might lead to a test set containing no outliers. In this
 case a warning is raised when computing the ROC curve.
 """
 
+import sys
 from time import time
 
 import matplotlib.pyplot as plt
@@ -49,7 +50,7 @@ random_state = 1
 fig_roc, ax_roc = plt.subplots(1, 1, figsize=(8, 5))
 
 # Set this to true for plotting score histograms for each dataset:
-with_decision_function_histograms = False
+with_decision_function_histograms = "--with-histograms" in sys.argv
 
 # datasets available = ['http', 'smtp', 'SA', 'SF', 'shuttle', 'forestcover']
 datasets = ["http", "smtp", "SA", "SF", "shuttle", "forestcover"]
