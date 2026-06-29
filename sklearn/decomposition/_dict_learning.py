@@ -545,28 +545,8 @@ def _update_dict(
         print(f"{n_unused} unused atoms resampled.")
 
 
-def _dict_learning(
-    X,
-    n_components,
-    *,
-    alpha,
-    max_iter,
-    tol,
-    method_params,
-    n_jobs,
-    init,
-    callback,
-    verbose,
-    random_state,
-    return_n_iter,
-    positive,
-):
-    """Main dictionary learning algorithm"""
-    positive_dict, positive_code = positive
-    dict_init, code_init = init
-    method, method_max_iter = method_params
-
-    t0 = time.time()
+def _initialize_code_and_dictionary(X, n_components, code_init, dict_init):
+    """Initialize code and dictionary for dictionary learning."""
     # Init the code and the dictionary with SVD of Y
     if code_init is not None and dict_init is not None:
         code = np.array(code_init, order="F")
@@ -590,6 +570,49 @@ def _dict_learning(
     # Fortran-order dict better suited for the sparse coding which is the
     # bottleneck of this algorithm.
     dictionary = np.asfortranarray(dictionary)
+    return code, dictionary
+
+
+def _check_convergence(ii, errors, tol, verbose):
+    """Check convergence and log if converged. Returns True if converged."""
+    if ii > 0:
+        d_e = errors[-2] - errors[-1]
+
+        if d_e < tol * errors[-1]:
+            if verbose == 1:
+                # A line return
+                print("")
+            elif verbose:
+                print("--- Convergence reached after %d iterations" % ii)
+            return True
+    return False
+
+
+def _dict_learning(
+    X,
+    n_components,
+    *,
+    alpha,
+    max_iter,
+    tol,
+    method_params,
+    n_jobs,
+    init,
+    callback,
+    verbose,
+    random_state,
+    return_n_iter,
+    positive,
+):
+    """Main dictionary learning algorithm"""
+    positive_dict, positive_code = positive
+    dict_init, code_init = init
+    method, method_max_iter = method_params
+
+    t0 = time.time()
+    code, dictionary = _initialize_code_and_dictionary(
+        X, n_components, code_init, dict_init
+    )
 
     errors = []
     current_cost = np.nan
@@ -640,16 +663,8 @@ def _dict_learning(
         )
         errors.append(current_cost)
 
-        if ii > 0:
-            d_e = errors[-2] - errors[-1]
-            
-            if d_e < tol * errors[-1]:
-                if verbose == 1:
-                    # A line return
-                    print("")
-                elif verbose:
-                    print("--- Convergence reached after %d iterations" % ii)
-                break
+        if _check_convergence(ii, errors, tol, verbose):
+            break
         if ii % 5 == 0 and callback is not None:
             callback(locals())
 

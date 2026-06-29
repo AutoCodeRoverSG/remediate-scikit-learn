@@ -612,83 +612,106 @@ class TreeGrower:
             self._finalize_leaf(right_child_node)
 
         if self.with_monotonic_cst:
-            # Set value bounds for respecting monotonic constraints
-            # See test_nodes_values() for details
-            if (
-                self.monotonic_cst[node.split_info.feature_idx]
-                == MonotonicConstraint.NO_CST
-            ):
-                lower_left = lower_right = node.children_lower_bound
-                upper_left = upper_right = node.children_upper_bound
-            else:
-                mid = (left_child_node.value + right_child_node.value) / 2
-                if (
-                    self.monotonic_cst[node.split_info.feature_idx]
-                    == MonotonicConstraint.POS
-                ):
-                    lower_left, upper_left = node.children_lower_bound, mid
-                    lower_right, upper_right = mid, node.children_upper_bound
-                else:  # NEG
-                    lower_left, upper_left = mid, node.children_upper_bound
-                    lower_right, upper_right = node.children_lower_bound, mid
-            left_child_node.set_children_bounds(lower_left, upper_left)
-            right_child_node.set_children_bounds(lower_right, upper_right)
+            self._apply_monotonic_constraints(
+                node, left_child_node, right_child_node
+            )
 
         # Compute histograms of children, and compute their best possible split
         # (if needed)
         should_split_left = not left_child_node.is_leaf
         should_split_right = not right_child_node.is_leaf
         if should_split_left or should_split_right:
-            # We will compute the histograms of both nodes even if one of them
-            # is a leaf, since computing the second histogram is very cheap
-            # (using histogram subtraction).
-            n_samples_left = left_child_node.sample_indices.shape[0]
-            n_samples_right = right_child_node.sample_indices.shape[0]
-            if n_samples_left < n_samples_right:
-                smallest_child = left_child_node
-                largest_child = right_child_node
-            else:
-                smallest_child = right_child_node
-                largest_child = left_child_node
-
-            # We use the brute O(n_samples) method on the child that has the
-            # smallest number of samples, and the subtraction trick O(n_bins)
-            # on the other one.
-            # Note that both left and right child have the same allowed_features.
-            tic = time()
-            smallest_child.histograms = self.histogram_builder.compute_histograms_brute(
-                smallest_child.sample_indices, smallest_child.allowed_features
+            self._compute_histograms_and_split(
+                node,
+                left_child_node,
+                right_child_node,
+                should_split_left,
+                should_split_right,
             )
-            largest_child.histograms = (
-                self.histogram_builder.compute_histograms_subtraction(
-                    node.histograms,
-                    smallest_child.histograms,
-                    smallest_child.allowed_features,
-                )
-            )
-            # node.histograms is reused in largest_child.histograms. To break cyclic
-            # memory references and help garbage collection, we set it to None.
-            node.histograms = None
-            self.total_compute_hist_time += time() - tic
-
-            tic = time()
-            if should_split_left:
-                self._compute_best_split_and_push(left_child_node)
-            if should_split_right:
-                self._compute_best_split_and_push(right_child_node)
-            self.total_find_split_time += time() - tic
-
-            # Release memory used by histograms as they are no longer needed
-            # for leaf nodes since they won't be split.
-            for child in (left_child_node, right_child_node):
-                if child.is_leaf:
-                    del child.histograms
 
         # Release memory used by histograms as they are no longer needed for
         # internal nodes once children histograms have been computed.
         del node.histograms
 
         return left_child_node, right_child_node
+
+    def _apply_monotonic_constraints(self, node, left_child_node, right_child_node):
+        """Apply monotonic constraints to set children bounds."""
+        # Set value bounds for respecting monotonic constraints
+        # See test_nodes_values() for details
+        if (
+            self.monotonic_cst[node.split_info.feature_idx]
+            == MonotonicConstraint.NO_CST
+        ):
+            lower_left = lower_right = node.children_lower_bound
+            upper_left = upper_right = node.children_upper_bound
+        else:
+            mid = (left_child_node.value + right_child_node.value) / 2
+            if (
+                self.monotonic_cst[node.split_info.feature_idx]
+                == MonotonicConstraint.POS
+            ):
+                lower_left, upper_left = node.children_lower_bound, mid
+                lower_right, upper_right = mid, node.children_upper_bound
+            else:  # NEG
+                lower_left, upper_left = mid, node.children_upper_bound
+                lower_right, upper_right = node.children_lower_bound, mid
+        left_child_node.set_children_bounds(lower_left, upper_left)
+        right_child_node.set_children_bounds(lower_right, upper_right)
+
+    def _compute_histograms_and_split(
+        self,
+        node,
+        left_child_node,
+        right_child_node,
+        should_split_left,
+        should_split_right,
+    ):
+        """Compute histograms for children and find best splits."""
+        # We will compute the histograms of both nodes even if one of them
+        # is a leaf, since computing the second histogram is very cheap
+        # (using histogram subtraction).
+        n_samples_left = left_child_node.sample_indices.shape[0]
+        n_samples_right = right_child_node.sample_indices.shape[0]
+        if n_samples_left < n_samples_right:
+            smallest_child = left_child_node
+            largest_child = right_child_node
+        else:
+            smallest_child = right_child_node
+            largest_child = left_child_node
+
+        # We use the brute O(n_samples) method on the child that has the
+        # smallest number of samples, and the subtraction trick O(n_bins)
+        # on the other one.
+        # Note that both left and right child have the same allowed_features.
+        tic = time()
+        smallest_child.histograms = self.histogram_builder.compute_histograms_brute(
+            smallest_child.sample_indices, smallest_child.allowed_features
+        )
+        largest_child.histograms = (
+            self.histogram_builder.compute_histograms_subtraction(
+                node.histograms,
+                smallest_child.histograms,
+                smallest_child.allowed_features,
+            )
+        )
+        # node.histograms is reused in largest_child.histograms. To break cyclic
+        # memory references and help garbage collection, we set it to None.
+        node.histograms = None
+        self.total_compute_hist_time += time() - tic
+
+        tic = time()
+        if should_split_left:
+            self._compute_best_split_and_push(left_child_node)
+        if should_split_right:
+            self._compute_best_split_and_push(right_child_node)
+        self.total_find_split_time += time() - tic
+
+        # Release memory used by histograms as they are no longer needed
+        # for leaf nodes since they won't be split.
+        for child in (left_child_node, right_child_node):
+            if child.is_leaf:
+                del child.histograms
 
     def _compute_interactions(self, node):
         r"""Compute features allowed by interactions to be inherited by child nodes.

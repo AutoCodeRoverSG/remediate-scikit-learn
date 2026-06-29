@@ -448,6 +448,31 @@ def _dump_svmlight(X, y, f, multilabel, one_based, comment, query_id):
     )
 
 
+def _validate_comment(comment):
+    """Validate and encode the comment for SVMlight format."""
+    if comment is None:
+        return comment
+    # Convert comment string to list of lines in UTF-8.
+    # If a byte string is passed, then check whether it's ASCII;
+    # if a user wants to get fancy, they'll have to decode themselves.
+    if isinstance(comment, bytes):
+        comment.decode("ascii")  # just for the exception
+    else:
+        comment = comment.encode("utf-8")
+    if b"\0" in comment:
+        raise ValueError("comment string contains NUL byte")
+    return comment
+
+
+def _sort_sparse_indices(val, original):
+    """Sort sparse matrix indices, returning the sorted result."""
+    if val is original and hasattr(val, "sorted_indices"):
+        return val.sorted_indices()
+    if hasattr(val, "sort_indices"):
+        val.sort_indices()
+    return val
+
+
 @validate_params(
     {
         "X": ["array-like", "sparse matrix"],
@@ -524,16 +549,7 @@ def dump_svmlight_file(
     >>> output_file = "my_dataset.svmlight"
     >>> dump_svmlight_file(X, y, output_file)  # doctest: +SKIP
     """
-    if comment is not None:
-        # Convert comment string to list of lines in UTF-8.
-        # If a byte string is passed, then check whether it's ASCII;
-        # if a user wants to get fancy, they'll have to decode themselves.
-        if isinstance(comment, bytes):
-            comment.decode("ascii")  # just for the exception
-        else:
-            comment = comment.encode("utf-8")
-        if b"\0" in comment:
-            raise ValueError("comment string contains NUL byte")
+    comment = _validate_comment(comment)
 
     yval = check_array(y, accept_sparse="csr", ensure_2d=False)
     if sp.issparse(yval):
@@ -555,19 +571,8 @@ def dump_svmlight_file(
     # We had some issues with CSR matrices with unsorted indices (e.g. #1501),
     # so sort them here, but first make sure we don't modify the user's X.
     # TODO We can do this cheaper; sorted_indices copies the whole matrix.
-    if yval is y and hasattr(yval, "sorted_indices"):
-        y = yval.sorted_indices()
-    else:
-        y = yval
-        if hasattr(y, "sort_indices"):
-            y.sort_indices()
-
-    if x_val is X and hasattr(x_val, "sorted_indices"):
-        X = x_val.sorted_indices()
-    else:
-        X = x_val
-        if hasattr(X, "sort_indices"):
-            X.sort_indices()
+    y = _sort_sparse_indices(yval, y)
+    X = _sort_sparse_indices(x_val, X)
 
     if query_id is None:
         # NOTE: query_id is passed to Cython functions using a fused type on query_id.
