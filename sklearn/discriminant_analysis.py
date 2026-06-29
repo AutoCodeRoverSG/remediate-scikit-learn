@@ -1050,6 +1050,30 @@ class QuadraticDiscriminantAnalysis(
 
         return scaling, rotation, cov
 
+    def _check_rank(self, scaling_class, n_features, x_class, class_label):
+        """Raise an error if the covariance matrix is not full rank."""
+        rank = np.sum(scaling_class > self.tol)
+        if rank < n_features:
+            n_samples_class = x_class.shape[0]
+            if self.solver == "svd" and n_samples_class <= n_features:
+                raise linalg.LinAlgError(
+                    f"The covariance matrix of class {class_label} is not full "
+                    f"rank. When using `solver='svd'` the number of samples in "
+                    f"each class should be more than the number of features, but "
+                    f"class {class_label} has {n_samples_class} samples and "
+                    f"{n_features} features. Try using `solver='eigen'` and "
+                    f"setting the parameter `shrinkage` for regularization."
+                )
+            else:
+                msg_param = (
+                    "shrinkage" if self.solver == "eigen" else "reg_param"
+                )
+                raise linalg.LinAlgError(
+                    f"The covariance matrix of class {class_label} is not full "
+                    f"rank. Increase the value of `{msg_param}` to reduce the "
+                    f"collinearity.",
+                )
+
     @_fit_context(prefer_skip_nested_validation=True)
     def fit(self, X, y):
         """Fit the model according to the given training data and parameters.
@@ -1122,25 +1146,7 @@ class QuadraticDiscriminantAnalysis(
 
             scaling_class, rotation_class, cov_class = specific_solver(x_class)
 
-            rank = np.sum(scaling_class > self.tol)
-            if rank < n_features:
-                n_samples_class = x_class.shape[0]
-                if self.solver == "svd" and n_samples_class <= n_features:
-                    raise linalg.LinAlgError(
-                        f"The covariance matrix of class {class_label} is not full "
-                        f"rank. When using `solver='svd'` the number of samples in "
-                        f"each class should be more than the number of features, but "
-                        f"class {class_label} has {n_samples_class} samples and "
-                        f"{n_features} features. Try using `solver='eigen'` and "
-                        f"setting the parameter `shrinkage` for regularization."
-                    )
-                else:
-                    msg_param = "shrinkage" if self.solver == "eigen" else "reg_param"
-                    raise linalg.LinAlgError(
-                        f"The covariance matrix of class {class_label} is not full "
-                        f"rank. Increase the value of `{msg_param}` to reduce the "
-                        f"collinearity.",
-                    )
+            self._check_rank(scaling_class, n_features, x_class, class_label)
 
             cov.append(cov_class)
             scalings.append(scaling_class)

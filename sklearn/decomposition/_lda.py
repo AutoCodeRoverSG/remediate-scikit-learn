@@ -633,6 +633,34 @@ class LatentDirichletAllocation(
 
         return self
 
+    def _check_perplexity_and_convergence(
+        self, X, i, evaluate_every, max_iter, last_bound, parallel
+    ):
+        """Evaluate perplexity and check for convergence during fitting.
+
+        Returns (last_bound, should_break).
+        """
+        if evaluate_every > 0 and (i + 1) % evaluate_every == 0:
+            doc_topics_distr, _ = self._e_step(
+                X, cal_sstats=False, random_init=False, parallel=parallel
+            )
+            bound = self._perplexity_precomp_distr(
+                X, doc_topics_distr, sub_sampling=False
+            )
+            if self.verbose:
+                print(
+                    "iteration: %d of max_iter: %d, perplexity: %.4f"
+                    % (i + 1, max_iter, bound)
+                )
+
+            if last_bound and abs(last_bound - bound) < self.perp_tol:
+                return bound, True
+            return bound, False
+
+        elif self.verbose:
+            print("iteration: %d of max_iter: %d" % (i + 1, max_iter))
+        return last_bound, False
+
     @_fit_context(prefer_skip_nested_validation=True)
     def fit(self, X, y=None):
         """Learn model for the data X with variational Bayes method.
@@ -685,25 +713,11 @@ class LatentDirichletAllocation(
                     )
 
                 # check perplexity
-                if evaluate_every > 0 and (i + 1) % evaluate_every == 0:
-                    doc_topics_distr, _ = self._e_step(
-                        X, cal_sstats=False, random_init=False, parallel=parallel
-                    )
-                    bound = self._perplexity_precomp_distr(
-                        X, doc_topics_distr, sub_sampling=False
-                    )
-                    if self.verbose:
-                        print(
-                            "iteration: %d of max_iter: %d, perplexity: %.4f"
-                            % (i + 1, max_iter, bound)
-                        )
-
-                    if last_bound and abs(last_bound - bound) < self.perp_tol:
-                        break
-                    last_bound = bound
-
-                elif self.verbose:
-                    print("iteration: %d of max_iter: %d" % (i + 1, max_iter))
+                last_bound, converged = self._check_perplexity_and_convergence(
+                    X, i, evaluate_every, max_iter, last_bound, parallel
+                )
+                if converged:
+                    break
                 self.n_iter_ += 1
 
         # calculate final perplexity value on train set
