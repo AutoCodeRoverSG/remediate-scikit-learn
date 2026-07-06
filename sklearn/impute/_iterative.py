@@ -735,6 +735,93 @@ class IterativeImputer(_BaseImputer):
 
         return limit
 
+    def _check_early_stopping(self, x_t, xt_previous, normalized_tol):
+        """Check if the iterative imputation has converged.
+
+        Returns True if the early stopping criterion is met.
+        """
+        inf_norm = np.linalg.norm(x_t - xt_previous, ord=np.inf, axis=None)
+        if self.verbose > 0:
+            print(
+                "[IterativeImputer] Change: {}, scaled tolerance: {} ".format(
+                    inf_norm, normalized_tol
+                )
+            )
+        if inf_norm < normalized_tol:
+            if self.verbose > 0:
+                print("[IterativeImputer] Early stopping criterion reached.")
+            return True
+        return False
+
+    def _warn_if_not_converged(self):
+        """Warn if early stopping criterion was not reached."""
+        if not self.sample_posterior:
+            warnings.warn(
+                "[IterativeImputer] Early stopping criterion not reached.",
+                ConvergenceWarning,
+            )
+
+    def _iterative_imputation_loop(
+        self,
+        x_t,
+        mask_missing_values,
+        ordered_idx,
+        abs_corr_mat,
+        n_features,
+        X,
+        routed_params,
+    ):
+        """Run the iterative imputation loop over all rounds.
+
+        Returns the updated ``x_t`` array after all imputation rounds.
+        """
+        if self.verbose > 0:
+            print("[IterativeImputer] Completing matrix with shape %s" % (X.shape,))
+        start_t = time()
+        converged = False
+        if not self.sample_posterior:
+            xt_previous = x_t.copy()
+            normalized_tol = self.tol * np.max(np.abs(X[~mask_missing_values]))
+        for self.n_iter_ in range(1, self.max_iter + 1):
+            if self.imputation_order == "random":
+                ordered_idx = self._get_ordered_idx(mask_missing_values)
+
+            for feat_idx in ordered_idx:
+                neighbor_feat_idx = self._get_neighbor_feat_idx(
+                    n_features, feat_idx, abs_corr_mat
+                )
+                x_t, estimator = self._impute_one_feature(
+                    x_t,
+                    mask_missing_values,
+                    feat_idx,
+                    neighbor_feat_idx,
+                    estimator=None,
+                    fit_mode=True,
+                    params=routed_params.estimator.fit,
+                )
+                estimator_triplet = _ImputerTriplet(
+                    feat_idx, neighbor_feat_idx, estimator
+                )
+                self.imputation_sequence_.append(estimator_triplet)
+
+            if self.verbose > 1:
+                print(
+                    "[IterativeImputer] Ending imputation round "
+                    "%d/%d, elapsed time %0.2f"
+                    % (self.n_iter_, self.max_iter, time() - start_t)
+                )
+
+            if not self.sample_posterior:
+                if self._check_early_stopping(
+                    x_t, xt_previous, normalized_tol
+                ):
+                    converged = True
+                    break
+                xt_previous = x_t.copy()
+        if not converged:
+            self._warn_if_not_converged()
+        return x_t
+
     @_fit_context(
         # IterativeImputer.estimator is not validated yet
         prefer_skip_nested_validation=False
@@ -833,60 +920,15 @@ class IterativeImputer(_BaseImputer):
         abs_corr_mat = self._get_abs_corr_mat(x_t)
 
         _, n_features = x_t.shape
-        if self.verbose > 0:
-            print("[IterativeImputer] Completing matrix with shape %s" % (X.shape,))
-        start_t = time()
-        if not self.sample_posterior:
-            xt_previous = x_t.copy()
-            normalized_tol = self.tol * np.max(np.abs(X[~mask_missing_values]))
-        for self.n_iter_ in range(1, self.max_iter + 1):
-            if self.imputation_order == "random":
-                ordered_idx = self._get_ordered_idx(mask_missing_values)
-
-            for feat_idx in ordered_idx:
-                neighbor_feat_idx = self._get_neighbor_feat_idx(
-                    n_features, feat_idx, abs_corr_mat
-                )
-                x_t, estimator = self._impute_one_feature(
-                    x_t,
-                    mask_missing_values,
-                    feat_idx,
-                    neighbor_feat_idx,
-                    estimator=None,
-                    fit_mode=True,
-                    params=routed_params.estimator.fit,
-                )
-                estimator_triplet = _ImputerTriplet(
-                    feat_idx, neighbor_feat_idx, estimator
-                )
-                self.imputation_sequence_.append(estimator_triplet)
-
-            if self.verbose > 1:
-                print(
-                    "[IterativeImputer] Ending imputation round "
-                    "%d/%d, elapsed time %0.2f"
-                    % (self.n_iter_, self.max_iter, time() - start_t)
-                )
-
-            if not self.sample_posterior:
-                inf_norm = np.linalg.norm(x_t - xt_previous, ord=np.inf, axis=None)
-                if self.verbose > 0:
-                    print(
-                        "[IterativeImputer] Change: {}, scaled tolerance: {} ".format(
-                            inf_norm, normalized_tol
-                        )
-                    )
-                if inf_norm < normalized_tol:
-                    if self.verbose > 0:
-                        print("[IterativeImputer] Early stopping criterion reached.")
-                    break
-                xt_previous = x_t.copy()
-        else:
-            if not self.sample_posterior:
-                warnings.warn(
-                    "[IterativeImputer] Early stopping criterion not reached.",
-                    ConvergenceWarning,
-                )
+        x_t = self._iterative_imputation_loop(
+            x_t,
+            mask_missing_values,
+            ordered_idx,
+            abs_corr_mat,
+            n_features,
+            X,
+            routed_params,
+        )
         _assign_where(x_t, X, cond=~mask_missing_values)
 
         return super()._concatenate_indicator(x_t, x_indicator)
