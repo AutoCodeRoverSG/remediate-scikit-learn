@@ -31,70 +31,75 @@ _PREFIT_ESTIMATOR_EXPECTED_MSG = (
 )
 
 
+def _is_l1_penalized_estimator(estimator):
+    """Check if the estimator uses an L1 penalty."""
+    est_name = estimator.__class__.__name__
+    if hasattr(estimator, "penalty") and estimator.penalty == "l1":
+        return True
+    if "Lasso" in est_name:
+        return True
+    if est_name == "ElasticNet" and (
+        hasattr(estimator, "l1_ratio") and np.isclose(estimator.l1_ratio, 1.0)
+    ):
+        return True
+    if est_name == "ElasticNetCV" and (
+        hasattr(estimator, "l1_ratio_") and np.isclose(estimator.l1_ratio_, 1.0)
+    ):
+        return True
+    if est_name == "LogisticRegression" and (
+        hasattr(estimator, "l1_ratio") and np.isclose(estimator.l1_ratio, 1.0)
+    ):
+        return True
+    if est_name == "LogisticRegressionCV" and (
+        hasattr(estimator, "l1_ratio_")
+        and np.all(np.isclose(estimator.l1_ratio_, 1.0))
+    ):
+        return True
+    return False
+
+
+def _resolve_threshold_string(threshold, importances):
+    """Resolve a string threshold to a numeric value."""
+    if "*" in threshold:
+        scale, reference = threshold.split("*")
+        scale = float(scale.strip())
+        reference = reference.strip()
+
+        if reference == "median":
+            reference = np.median(importances)
+        elif reference == "mean":
+            reference = np.mean(importances)
+        else:
+            raise ValueError("Unknown reference: " + reference)
+
+        return scale * reference
+
+    if threshold == "median":
+        return np.median(importances)
+
+    if threshold == "mean":
+        return np.mean(importances)
+
+    raise ValueError(
+        "Expected threshold='mean' or threshold='median' got %s" % threshold
+    )
+
+
 def _calculate_threshold(estimator, importances, threshold):
     """Interpret the threshold value"""
 
     if threshold is None:
         # determine default from estimator
-        est_name = estimator.__class__.__name__
-        is_l1_penalized = hasattr(estimator, "penalty") and estimator.penalty == "l1"
-        is_lasso = "Lasso" in est_name
-        is_elasticnet_l1_penalized = est_name == "ElasticNet" and (
-            hasattr(estimator, "l1_ratio") and np.isclose(estimator.l1_ratio, 1.0)
-        )
-        is_elasticnetcv_l1_penalized = est_name == "ElasticNetCV" and (
-            hasattr(estimator, "l1_ratio_") and np.isclose(estimator.l1_ratio_, 1.0)
-        )
-        is_logreg_l1_penalized = est_name == "LogisticRegression" and (
-            hasattr(estimator, "l1_ratio") and np.isclose(estimator.l1_ratio, 1.0)
-        )
-        is_logregcv_l1_penalized = est_name == "LogisticRegressionCV" and (
-            hasattr(estimator, "l1_ratio_")
-            and np.all(np.isclose(estimator.l1_ratio_, 1.0))
-        )
-        if (
-            is_l1_penalized
-            or is_lasso
-            or is_elasticnet_l1_penalized
-            or is_elasticnetcv_l1_penalized
-            or is_logreg_l1_penalized
-            or is_logregcv_l1_penalized
-        ):
+        if _is_l1_penalized_estimator(estimator):
             # the natural default threshold is 0 when l1 penalty was used
             threshold = 1e-5
         else:
             threshold = "mean"
 
     if isinstance(threshold, str):
-        if "*" in threshold:
-            scale, reference = threshold.split("*")
-            scale = float(scale.strip())
-            reference = reference.strip()
+        return _resolve_threshold_string(threshold, importances)
 
-            if reference == "median":
-                reference = np.median(importances)
-            elif reference == "mean":
-                reference = np.mean(importances)
-            else:
-                raise ValueError("Unknown reference: " + reference)
-
-            threshold = scale * reference
-
-        elif threshold == "median":
-            threshold = np.median(importances)
-
-        elif threshold == "mean":
-            threshold = np.mean(importances)
-
-        else:
-            raise ValueError(
-                "Expected threshold='mean' or threshold='median' got %s" % threshold
-            )
-
-    else:
-        threshold = float(threshold)
-
-    return threshold
+    return float(threshold)
 
 
 class SelectFromModel(MetaEstimatorMixin, SelectorMixin, BaseEstimator):

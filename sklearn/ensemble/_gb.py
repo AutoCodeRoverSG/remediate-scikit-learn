@@ -618,6 +618,73 @@ class BaseGradientBoosting(BaseEnsemble, metaclass=ABCMeta):
         """Check that the estimator is initialized, raising an error if not."""
         check_is_fitted(self)
 
+    def _prepare_data_split(self, X, y, sample_weight):
+        """Split data into training and validation sets for early stopping."""
+        if self.n_iter_no_change is not None:
+            stratify = y if is_classifier(self) else None
+            (
+                x_train,
+                x_val,
+                y_train,
+                y_val,
+                sample_weight_train,
+                sample_weight_val,
+            ) = train_test_split(
+                X,
+                y,
+                sample_weight,
+                random_state=self.random_state,
+                test_size=self.validation_fraction,
+                stratify=stratify,
+            )
+            if is_classifier(self):
+                if self.n_classes_ != np.unique(y_train).shape[0]:
+                    # We choose to error here. The problem is that the init
+                    # estimator would be trained on y, which has some missing
+                    # classes now, so its predictions would not have the
+                    # correct shape.
+                    raise ValueError(
+                        "The training data after the early stopping split "
+                        "is missing some classes. Try using another random "
+                        "seed."
+                    )
+        else:
+            x_train, y_train, sample_weight_train = X, y, sample_weight
+            x_val = y_val = sample_weight_val = None
+
+        return x_train, x_val, y_train, y_val, sample_weight_train, sample_weight_val
+
+    def _fit_init_estimator(
+        self, x_train, y_train, sample_weight_is_none, sample_weight_train
+    ):
+        """Fit the init estimator, handling sample weight support detection."""
+        if sample_weight_is_none:
+            self.init_.fit(x_train, y_train)
+        else:
+            msg = (
+                "The initial estimator {} does not support sample "
+                "weights.".format(self.init_.__class__.__name__)
+            )
+            try:
+                self.init_.fit(
+                    x_train, y_train, sample_weight=sample_weight_train
+                )
+            except TypeError as e:
+                if "unexpected keyword argument 'sample_weight'" in str(e):
+                    # regular estimator without SW support
+                    raise ValueError(msg) from e
+                else:  # regular estimator whose input checking failed
+                    raise
+            except ValueError as e:
+                if (
+                    "pass parameters to specific steps of "
+                    "your pipeline using the "
+                    "stepname__parameter" in str(e)
+                ):  # pipeline
+                    raise ValueError(msg) from e
+                else:  # regular estimator whose input checking failed
+                    raise
+
     @_fit_context(
         # GradientBoosting*.init is not validated yet
         prefer_skip_nested_validation=False
@@ -694,37 +761,14 @@ class BaseGradientBoosting(BaseEnsemble, metaclass=ABCMeta):
         # self.loss is guaranteed to be a string
         self._loss = self._get_loss(sample_weight=sample_weight)
 
-        if self.n_iter_no_change is not None:
-            stratify = y if is_classifier(self) else None
-            (
-                x_train,
-                x_val,
-                y_train,
-                y_val,
-                sample_weight_train,
-                sample_weight_val,
-            ) = train_test_split(
-                X,
-                y,
-                sample_weight,
-                random_state=self.random_state,
-                test_size=self.validation_fraction,
-                stratify=stratify,
-            )
-            if is_classifier(self):
-                if self.n_classes_ != np.unique(y_train).shape[0]:
-                    # We choose to error here. The problem is that the init
-                    # estimator would be trained on y, which has some missing
-                    # classes now, so its predictions would not have the
-                    # correct shape.
-                    raise ValueError(
-                        "The training data after the early stopping split "
-                        "is missing some classes. Try using another random "
-                        "seed."
-                    )
-        else:
-            x_train, y_train, sample_weight_train = X, y, sample_weight
-            x_val = y_val = sample_weight_val = None
+        (
+            x_train,
+            x_val,
+            y_train,
+            y_val,
+            sample_weight_train,
+            sample_weight_val,
+        ) = self._prepare_data_split(X, y, sample_weight)
 
         n_samples = x_train.shape[0]
 
@@ -741,32 +785,9 @@ class BaseGradientBoosting(BaseEnsemble, metaclass=ABCMeta):
                 )
             else:
                 # XXX clean this once we have a support_sample_weight tag
-                if sample_weight_is_none:
-                    self.init_.fit(x_train, y_train)
-                else:
-                    msg = (
-                        "The initial estimator {} does not support sample "
-                        "weights.".format(self.init_.__class__.__name__)
-                    )
-                    try:
-                        self.init_.fit(
-                            x_train, y_train, sample_weight=sample_weight_train
-                        )
-                    except TypeError as e:
-                        if "unexpected keyword argument 'sample_weight'" in str(e):
-                            # regular estimator without SW support
-                            raise ValueError(msg) from e
-                        else:  # regular estimator whose input checking failed
-                            raise
-                    except ValueError as e:
-                        if (
-                            "pass parameters to specific steps of "
-                            "your pipeline using the "
-                            "stepname__parameter" in str(e)
-                        ):  # pipeline
-                            raise ValueError(msg) from e
-                        else:  # regular estimator whose input checking failed
-                            raise
+                self._fit_init_estimator(
+                    x_train, y_train, sample_weight_is_none, sample_weight_train
+                )
 
                 raw_predictions = _init_raw_predictions(
                     x_train, self.init_, self._loss, is_classifier(self)
@@ -827,6 +848,115 @@ class BaseGradientBoosting(BaseEnsemble, metaclass=ABCMeta):
         self.n_estimators_ = n_stages
         return self
 
+    def _compute_loss_factor(self):
+        """Compute backward-compatible loss scaling factor.
+
+        Older versions of GBT had its own loss functions. With the new common
+        private loss function submodule _loss, we often are a factor of 2
+        away from the old version. Here we keep backward compatibility for
+        oob_scores_ and oob_improvement_, even if the old way is quite
+        inconsistent (sometimes the gradient is half the gradient, sometimes
+        not).
+        """
+        if isinstance(self._loss, (HalfSquaredError, HalfBinomialLoss)):
+            return 2
+        return 1
+
+    def _handle_oob_subsampling(
+        self,
+        do_oob,
+        i,
+        n_samples,
+        n_inbag,
+        rng,
+        y,
+        sample_weight,
+        raw_predictions,
+        factor,
+        sample_mask,
+        initial_loss,
+    ):
+        """Subsample and compute initial OOB loss at stage 0.
+
+        When ``do_oob`` is False the inputs are returned unchanged.
+        """
+        if not do_oob:
+            return sample_mask, None, None, initial_loss
+        sample_mask = _random_sample_mask(n_samples, n_inbag, rng)
+        y_oob_masked = y[~sample_mask]
+        sample_weight_oob_masked = sample_weight[~sample_mask]
+        if i == 0:  # store the initial loss to compute the OOB score
+            initial_loss = factor * self._loss(
+                y_true=y_oob_masked,
+                raw_prediction=raw_predictions[~sample_mask],
+                sample_weight=sample_weight_oob_masked,
+            )
+        return sample_mask, y_oob_masked, sample_weight_oob_masked, initial_loss
+
+    def _track_loss(
+        self,
+        do_oob,
+        i,
+        factor,
+        y,
+        raw_predictions,
+        sample_weight,
+        sample_mask,
+        y_oob_masked,
+        sample_weight_oob_masked,
+        initial_loss,
+    ):
+        """Track training and OOB loss at each boosting stage."""
+        if do_oob:
+            self.train_score_[i] = factor * self._loss(
+                y_true=y[sample_mask],
+                raw_prediction=raw_predictions[sample_mask],
+                sample_weight=sample_weight[sample_mask],
+            )
+            self.oob_scores_[i] = factor * self._loss(
+                y_true=y_oob_masked,
+                raw_prediction=raw_predictions[~sample_mask],
+                sample_weight=sample_weight_oob_masked,
+            )
+            previous_loss = initial_loss if i == 0 else self.oob_scores_[i - 1]
+            self.oob_improvement_[i] = previous_loss - self.oob_scores_[i]
+            self.oob_score_ = self.oob_scores_[-1]
+        else:
+            # no need to fancy index w/ no subsampling
+            self.train_score_[i] = factor * self._loss(
+                y_true=y,
+                raw_prediction=raw_predictions,
+                sample_weight=sample_weight,
+            )
+
+    def _check_validation_early_stopping(
+        self,
+        i,
+        factor,
+        y_val,
+        y_val_pred_iter,
+        sample_weight_val,
+        loss_history,
+    ):
+        """Check early stopping based on validation set score.
+
+        Returns True if training should stop.
+        """
+        if self.n_iter_no_change is not None:
+            # By calling next(y_val_pred_iter), we get the predictions
+            # for X_val after the addition of the current stage
+            validation_loss = factor * self._loss(
+                y_val, next(y_val_pred_iter), sample_weight_val
+            )
+
+            # Require validation_score to be better (less) than at least
+            # one of the last n_iter_no_change evaluations
+            if np.any(validation_loss + self.tol < loss_history):
+                loss_history[i % len(loss_history)] = validation_loss
+            else:
+                return True
+        return False
+
     def _fit_stages(
         self,
         X,
@@ -859,42 +989,40 @@ class BaseGradientBoosting(BaseEnsemble, metaclass=ABCMeta):
         x_csc = csc_array(X) if issparse(X) else None
         x_csr = csr_array(X) if issparse(X) else None
 
+        loss_history = None
+        y_val_pred_iter = None
         if self.n_iter_no_change is not None:
             loss_history = np.full(self.n_iter_no_change, np.inf)
             # We create a generator to get the predictions for X_val after
             # the addition of each successive stage
             y_val_pred_iter = self._staged_raw_predict(x_val, check_input=False)
 
-        # Older versions of GBT had its own loss functions. With the new common
-        # private loss function submodule _loss, we often are a factor of 2
-        # away from the old version. Here we keep backward compatibility for
-        # oob_scores_ and oob_improvement_, even if the old way is quite
-        # inconsistent (sometimes the gradient is half the gradient, sometimes
-        # not).
-        if isinstance(
-            self._loss,
-            (
-                HalfSquaredError,
-                HalfBinomialLoss,
-            ),
-        ):
-            factor = 2
-        else:
-            factor = 1
+        factor = self._compute_loss_factor()
+        initial_loss = None
+        y_oob_masked = None
+        sample_weight_oob_masked = None
 
         # perform boosting iterations
         for i in range(begin_at_stage, self.n_estimators):
             # subsampling
-            if do_oob:
-                sample_mask = _random_sample_mask(n_samples, n_inbag, rng)
-                y_oob_masked = y[~sample_mask]
-                sample_weight_oob_masked = sample_weight[~sample_mask]
-                if i == 0:  # store the initial loss to compute the OOB score
-                    initial_loss = factor * self._loss(
-                        y_true=y_oob_masked,
-                        raw_prediction=raw_predictions[~sample_mask],
-                        sample_weight=sample_weight_oob_masked,
-                    )
+            (
+                sample_mask,
+                y_oob_masked,
+                sample_weight_oob_masked,
+                initial_loss,
+            ) = self._handle_oob_subsampling(
+                do_oob,
+                i,
+                n_samples,
+                n_inbag,
+                rng,
+                y,
+                sample_weight,
+                raw_predictions,
+                factor,
+                sample_mask,
+                initial_loss,
+            )
 
             # fit next stage of trees
             raw_predictions = self._fit_stage(
@@ -910,27 +1038,18 @@ class BaseGradientBoosting(BaseEnsemble, metaclass=ABCMeta):
             )
 
             # track loss
-            if do_oob:
-                self.train_score_[i] = factor * self._loss(
-                    y_true=y[sample_mask],
-                    raw_prediction=raw_predictions[sample_mask],
-                    sample_weight=sample_weight[sample_mask],
-                )
-                self.oob_scores_[i] = factor * self._loss(
-                    y_true=y_oob_masked,
-                    raw_prediction=raw_predictions[~sample_mask],
-                    sample_weight=sample_weight_oob_masked,
-                )
-                previous_loss = initial_loss if i == 0 else self.oob_scores_[i - 1]
-                self.oob_improvement_[i] = previous_loss - self.oob_scores_[i]
-                self.oob_score_ = self.oob_scores_[-1]
-            else:
-                # no need to fancy index w/ no subsampling
-                self.train_score_[i] = factor * self._loss(
-                    y_true=y,
-                    raw_prediction=raw_predictions,
-                    sample_weight=sample_weight,
-                )
+            self._track_loss(
+                do_oob,
+                i,
+                factor,
+                y,
+                raw_predictions,
+                sample_weight,
+                sample_mask,
+                y_oob_masked,
+                sample_weight_oob_masked,
+                initial_loss,
+            )
 
             if self.verbose > 0:
                 verbose_reporter.update(i, self)
@@ -942,19 +1061,15 @@ class BaseGradientBoosting(BaseEnsemble, metaclass=ABCMeta):
 
             # We also provide an early stopping based on the score from
             # validation set (X_val, y_val), if n_iter_no_change is set
-            if self.n_iter_no_change is not None:
-                # By calling next(y_val_pred_iter), we get the predictions
-                # for X_val after the addition of the current stage
-                validation_loss = factor * self._loss(
-                    y_val, next(y_val_pred_iter), sample_weight_val
-                )
-
-                # Require validation_score to be better (less) than at least
-                # one of the last n_iter_no_change evaluations
-                if np.any(validation_loss + self.tol < loss_history):
-                    loss_history[i % len(loss_history)] = validation_loss
-                else:
-                    break
+            if self._check_validation_early_stopping(
+                i,
+                factor,
+                y_val,
+                y_val_pred_iter,
+                sample_weight_val,
+                loss_history,
+            ):
+                break
 
         return i + 1 if begin_at_stage < self.n_estimators else begin_at_stage
 
