@@ -958,7 +958,7 @@ class BaseGradientBoosting(BaseEnsemble, metaclass=ABCMeta):
 
         return i + 1 if begin_at_stage < self.n_estimators else begin_at_stage
 
-    def _make_estimator(self, append=True):
+    def _make_estimator(self, append=True, random_state=None):
         # we don't need _make_estimator
         raise NotImplementedError()
 

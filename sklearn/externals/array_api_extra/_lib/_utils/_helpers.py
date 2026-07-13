@@ -301,6 +301,9 @@ def meta_namespace(
     return array_namespace(*metas)
 
 
+_BOOLEAN_INDEXING = "boolean indexing"
+
+
 def capabilities(
     xp: ModuleType, *, device: Device | None = None
 ) -> dict[str, int | None]:
@@ -324,20 +327,20 @@ def capabilities(
     """
     out = xp.__array_namespace_info__().capabilities()
     if is_pydata_sparse_namespace(xp) or is_jax_namespace(xp):
-        if out["boolean indexing"]:
+        if out[_BOOLEAN_INDEXING]:
             # FIXME https://github.com/pydata/sparse/issues/876
             # boolean indexing is supported, but not when the index is a sparse array.
             # boolean indexing by list or numpy array is not part of the Array API.
             # Backwards compatibility with jax <0.6.0
             # https://github.com/jax-ml/jax/issues/27418
             out = out.copy()
-            out["boolean indexing"] = False
+            out[_BOOLEAN_INDEXING] = False
     elif is_torch_namespace(xp):
         # FIXME https://github.com/data-apis/array-api/issues/945
         device = xp.get_default_device() if device is None else xp.device(device)
         if device.type == "meta":  # type: ignore[union-attr]  # pyright: ignore[reportAttributeAccessIssue,reportOptionalMemberAccess]
             out = out.copy()
-            out["boolean indexing"] = False
+            out[_BOOLEAN_INDEXING] = False
             out["data-dependent shapes"] = False
 
     return out
