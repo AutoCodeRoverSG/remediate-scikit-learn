@@ -227,6 +227,34 @@ class _EstimatorPrettyPrinter(pprint.PrettyPrinter):
             items, stream, indent, allowance, context, level, is_dict=False
         )
 
+    def _format_compact_entry(
+        self, ent, is_dict, context, level, width, max_width, delim, delimnl, write
+    ):
+        """Format a single key-value entry in compact mode.
+
+        Returns (handled, width, delim) where handled indicates whether the
+        entry was written compactly.
+        """
+        k, v = ent
+        krepr = self._repr(k, context, level)
+        vrepr = self._repr(v, context, level)
+        if not is_dict:
+            krepr = krepr.strip("'")
+        middle = ": " if is_dict else "="
+        rep = krepr + middle + vrepr
+        w = len(rep) + 2
+        if width < w:
+            width = max_width
+            if delim:
+                delim = delimnl
+        if width >= w:
+            width -= w
+            write(delim)
+            delim = ", "
+            write(rep)
+            return True, width, delim
+        return False, width, delim
+
     def _format_params_or_dict_items(
         self, object, stream, indent, allowance, context, level, is_dict
     ):
@@ -265,23 +293,11 @@ class _EstimatorPrettyPrinter(pprint.PrettyPrinter):
                 max_width -= allowance
                 width -= allowance
             if self._compact:
-                k, v = ent
-                krepr = self._repr(k, context, level)
-                vrepr = self._repr(v, context, level)
-                if not is_dict:
-                    krepr = krepr.strip("'")
-                middle = ": " if is_dict else "="
-                rep = krepr + middle + vrepr
-                w = len(rep) + 2
-                if width < w:
-                    width = max_width
-                    if delim:
-                        delim = delimnl
-                if width >= w:
-                    width -= w
-                    write(delim)
-                    delim = ", "
-                    write(rep)
+                handled, width, delim = self._format_compact_entry(
+                    ent, is_dict, context, level,
+                    width, max_width, delim, delimnl, write,
+                )
+                if handled:
                     continue
             write(delim)
             delim = delimnl
@@ -289,6 +305,28 @@ class _EstimatorPrettyPrinter(pprint.PrettyPrinter):
             self._format(
                 class_(ent), stream, indent, allowance if last else 1, context, level
             )
+
+    def _format_items_compact(
+        self, ent, width, max_width, delim, delimnl, write, context, level
+    ):
+        """Format a single item in compact mode.
+
+        Returns updated (width, delim, skip) where skip indicates whether
+        the non-compact fallback should be skipped.
+        """
+        rep = self._repr(ent, context, level)
+        w = len(rep) + 2
+        if width < w:
+            width = max_width
+            if delim:
+                delim = delimnl
+        if width >= w:
+            width -= w
+            write(delim)
+            delim = ", "
+            write(rep)
+            return width, delim, True
+        return width, delim, False
 
     def _format_items(self, items, stream, indent, allowance, context, level):
         """Format the items of an iterable (list, tuple...). Same as the
@@ -322,17 +360,10 @@ class _EstimatorPrettyPrinter(pprint.PrettyPrinter):
                 max_width -= allowance
                 width -= allowance
             if self._compact:
-                rep = self._repr(ent, context, level)
-                w = len(rep) + 2
-                if width < w:
-                    width = max_width
-                    if delim:
-                        delim = delimnl
-                if width >= w:
-                    width -= w
-                    write(delim)
-                    delim = ", "
-                    write(rep)
+                width, delim, skip = self._format_items_compact(
+                    ent, width, max_width, delim, delimnl, write, context, level
+                )
+                if skip:
                     continue
             write(delim)
             delim = delimnl
